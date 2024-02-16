@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
+    "module": "esNext",
+    "target": "ES6",
+    "lib": [
+      "DOM",
+      "ESNext",
+    ],
+    "moduleResolution": "node",
+    "noImplicitAny": true,
+    "noUnusedParameters": true,
+    "allowSyntheticDefaultImports": true,
+  },
+  "include": [
+    "editor/src/**/*.d.ts",
+    "editor/src/**/*.tsx",
+    "editor/src/**/*.ts"
+  ]
+}

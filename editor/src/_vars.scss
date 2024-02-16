@@ -1,0 +1,22 @@
+$col-bg: #171717;
+$col-text: #ffffff;
+$col-text-dim: #8f8f8f;
+$col-accent: #11a2ca;
+$col-interactive: lighten($col-accent, 20%);
+$col-interactive-hover: lighten($col-accent, 50%);
+$col-warning: #b06f24;
+
+$dim-border-radius: 8px;
+
+$mask-blur: blur(2px);
+
+$page-break: 600px;
+$page-width: 900px;
+
+$z-index-header: 20;
+$z-index-menu: 40;
+$z-index-modal: 80;
+
+@function spacing($amount) {
+  @return $amount * 8px;
+}

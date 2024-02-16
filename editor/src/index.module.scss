@@ -1,0 +1,54 @@
+@import './vars';
+
+html {
+  background-color: $col-bg;
+  color: $col-text;
+  font-family: 'Roboto', sans-serif;
+  font-size: 14pt;
+  font-weight: 300;
+  overflow-x: hidden;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+}
+
+hr {
+  border-bottom: none;
+  border-left: none;
+  border-right: none;
+  border-top: 1px solid $col-accent;
+  display: block;
+  height: 1px;
+  margin: 1em 0;
+  padding: 0;
+}
+
+a {
+  color: $col-interactive;
+  text-decoration: none;
+  font-weight: 600;
+
+  &:hover {
+    color: $col-interactive-hover;
+  }
+}
+
+input,
+textarea {
+  background-color: lighten($col-bg, 5%);
+  border-radius: $dim-border-radius;
+  border: 1px solid $col-interactive;
+  color: $col-text;
+  padding: spacing(1);
+}
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
