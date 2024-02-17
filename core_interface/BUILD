@@ -7,6 +7,7 @@ rust_binary(
     srcs = ["src/main.rs"],
     edition = "2021",
     deps = [
+        "//proto:rust_proto",
         "@rules_rust//wasm_bindgen/3rdparty:wasm_bindgen",
     ],
 )
