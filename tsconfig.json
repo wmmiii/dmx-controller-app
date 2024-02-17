@@ -12,10 +12,18 @@
     "noImplicitAny": true,
     "noUnusedParameters": true,
     "allowSyntheticDefaultImports": true,
+    "paths": {
+      "@dmx-controller/*": [
+        "./bazel-bin/*",
+        "./*"
+      ]
+    }
   },
   "include": [
+    "bazel-bin/*",
+    "core/**/*.js",
     "editor/src/**/*.d.ts",
+    "editor/src/**/*.ts",
     "editor/src/**/*.tsx",
-    "editor/src/**/*.ts"
   ]
 }

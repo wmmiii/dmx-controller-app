@@ -8119,7 +8119,7 @@
     },
     "@@aspect_rules_ts~2.1.0//ts:extensions.bzl%ext": {
       "general": {
-        "bzlTransitiveDigest": "wimojLw16uMaQPs9p612+Fe1WE/AFL/TeEb+yG4kuAQ=",
+        "bzlTransitiveDigest": "NIKnw1B2mMpPArLmrgk609jGMhRPnI/pcNvKTYOcve8=",
         "accumulatedFileDigests": {},
         "envVariables": {},
         "generatedRepoSpecs": {
@@ -8143,7 +8143,13 @@
             }
           }
         },
-        "recordedRepoMappingEntries": []
+        "recordedRepoMappingEntries": [
+          [
+            "aspect_rules_ts~2.1.0",
+            "bazel_tools",
+            "bazel_tools"
+          ]
+        ]
       }
     },
     "@@bazel_features~1.1.1//private:extensions.bzl%version_extension": {

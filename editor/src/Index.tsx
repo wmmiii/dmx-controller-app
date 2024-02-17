@@ -57,7 +57,6 @@ export default function Index(): JSX.Element {
         parity: 'none',
         stopBits: 2,
       });
-      await port.setSignals({ break: false });
 
       setPort(port);
     } catch (e) {

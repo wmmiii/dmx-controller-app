@@ -27,3 +27,25 @@ load("//:deps.bzl", "go_dependencies")
 
 # gazelle:repository_macro deps.bzl%go_dependencies
 go_dependencies()
+
+###############################################################################
+# R U L E S  R U S T
+###############################################################################
+
+http_archive(
+    name = "rules_rust",
+    integrity = "sha256-GuRaQT0LlDOYcyDfKtQQ22oV+vtsiM8P0b87qsvoJts=",
+    urls = ["https://github.com/bazelbuild/rules_rust/releases/download/0.39.0/rules_rust-v0.39.0.tar.gz"],
+)
+
+
+load("@rules_rust//rust:repositories.bzl", "rust_repositories")
+
+rust_repositories()
+
+
+load("@rules_rust//wasm_bindgen:repositories.bzl", "rust_wasm_bindgen_dependencies", "rust_wasm_bindgen_register_toolchains")
+
+rust_wasm_bindgen_dependencies()
+
+rust_wasm_bindgen_register_toolchains()

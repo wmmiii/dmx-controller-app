@@ -49,7 +49,7 @@ interface WritableDevice {
   /**
    * Manually overrides a channel. Valid numbers are [0, 255].
    */
-  setChannel(index: number, value: number);
+  setChannel(index: number, value: number): void;
 
   /**
    * Sets the color based on a [0, 1] value for red, green, and blue.
@@ -196,7 +196,7 @@ export function getPhysicalWritableDevice(
   };
 }
 
-function mapDegrees(value, minDeg, maxDeg): number {
+function mapDegrees(value: number, minDeg: number, maxDeg: number): number {
   return Math.max(
     Math.min(
       255 * (value - minDeg) / (maxDeg - minDeg),
