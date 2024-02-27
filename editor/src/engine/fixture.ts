@@ -164,7 +164,7 @@ export function getPhysicalWritableDevice(
             (mapDegrees(d, channel.minDeg, channel.maxDeg) * 255) % 255;
         });
       default:
-        return;
+        continue;
     }
   }
 
