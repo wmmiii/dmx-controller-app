@@ -1,4 +1,5 @@
 $col-bg: #171717;
+$col-bg-higher: #202020;
 $col-text: #ffffff;
 $col-text-dim: #8f8f8f;
 $col-accent: #11a2ca;
@@ -19,4 +20,12 @@ $z-index-modal: 80;
 
 @function spacing($amount) {
   @return $amount * 8px;
+}
+
+@mixin fill {
+  bottom: 0;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
 }

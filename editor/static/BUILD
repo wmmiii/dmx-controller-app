@@ -22,7 +22,7 @@ pkg_files(
 pkg_files(
     name = "static_files",
     srcs = glob(
-        ["*"],
+        ["**/*"],
         exclude = [
             "BUILD",
             "index.html",

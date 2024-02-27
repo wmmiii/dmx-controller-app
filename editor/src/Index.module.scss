@@ -1,7 +1,7 @@
 @import './vars';
 
 html {
-  background-color: $col-bg;
+  background-color: $col-bg-higher;
   color: $col-text;
   font-family: 'Roboto', sans-serif;
   font-size: 14pt;
@@ -48,14 +48,24 @@ textarea {
 }
 
 .wrapper {
+  @include fill;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-}
 
-.beat {
-  height: 100px;
-  width: 100px;
-  background-color: #2E2;
-  margin: 16px;
+  header {
+    display: flex;
+    flex-direction: row;
+    flex-shrink: 0;
+    gap: spacing(1);
+    min-height: 0;
+    padding: spacing(2);
+  }
+
+  main {
+    background-color: $col-bg;
+    border-radius: spacing(1);
+    flex: 1;
+    margin: spacing(1);
+    position: relative;
+  }
 }

@@ -11,8 +11,11 @@ TS_DEPS = [
     "//:node_modules/react-dom",
     "//:node_modules/react-router",
     "//:node_modules/react-router-dom",
+    "//:node_modules/wavesurfer.js",
     # "//core_interface:core_wasm",
     "//proto:ts_proto",
+    "//core_interface:core_wasm",
+    "//third_party/DVLP/local_storage_db",
 ]
 
 esbuild(
@@ -24,8 +27,8 @@ esbuild(
     ]),
     config = "esbuild.config.mjs",
     entry_point = "app.tsx",
-    tsconfig = "//:tsconfig",
     minify = True,
+    tsconfig = "//:tsconfig",
     visibility = ["//editor:__pkg__"],
     deps = TS_DEPS,
 )

@@ -1,0 +1,18 @@
+@import '../vars';
+
+.browser {
+  @include fill;
+  border: 1px solid transparent;
+}
+
+.highlightDrop {
+  border-color: $col-interactive;
+}
+
+.splitPane {
+  @include fill;
+}
+
+.audioDetails {
+  padding: spacing(1);
+}

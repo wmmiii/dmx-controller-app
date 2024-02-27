@@ -2,15 +2,23 @@ syntax = "proto3";
 
 package dmx_controller;
 
+import "proto/audio.proto";
 import "proto/fixture.proto";
 
 message Project {
+  message Assets {
+    repeated AudioFile audio_files = 1;
+  }
+
   string name = 1;
-  reserved 2 to 9;
+  reserved 2 to 10;
 
   // Universe descriptions
-  uint32 update_frequency_ms = 10;
-  int32 update_offset_ms = 11;
-  map<uint32, FixtureDefinition> fixture_definitions = 12;
-  map<uint32, PhysicalFixture> physical_fixtures = 13;
+  uint32 update_frequency_ms = 11;
+  int32 update_offset_ms = 12;
+  map<uint32, FixtureDefinition> fixture_definitions = 13;
+  map<uint32, PhysicalFixture> physical_fixtures = 14;
+  reserved 15 to 20;
+
+  Assets assets = 21;
 }

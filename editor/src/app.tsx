@@ -1,6 +1,8 @@
 import React from 'react';
 import * as ReactDOM from 'react-dom';
 import Index from './Index';
+import { ProjectProvider } from './contexts/ProjectContext';
+import { BrowserRouter } from 'react-router-dom';
 
 // import wasm, {hello_world} from '@dmx-controller/core_interface/core_wasm';
 
@@ -9,6 +11,10 @@ import Index from './Index';
 // });
 
 ReactDOM.render(
-  <Index />,
+  <BrowserRouter basename="/">
+    <ProjectProvider>
+      <Index />
+    </ProjectProvider>
+  </BrowserRouter>,
   document.getElementById('root')
 );

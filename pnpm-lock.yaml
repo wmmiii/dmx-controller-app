@@ -3,7 +3,7 @@ lockfileVersion: 5.4
 specifiers:
   '@bufbuild/protobuf': 1.7.2
   '@bufbuild/protoc-gen-connect-es': 0.13.0
-  '@bufbuild/protoc-gen-es': ^1.7.2
+  '@bufbuild/protoc-gen-es': 1.7.2
   '@types/dom-serial': 1.0.6
   '@types/react': 18.2.42
   '@types/react-dom': 18.2.17
@@ -16,12 +16,14 @@ specifiers:
   react-router: 6.20.1
   react-router-dom: 6.20.1
   typescript: 5.3.3
+  wavesurfer.js: 7.7.3
 
 dependencies:
   react: 18.2.0
   react-dom: 18.2.0_react@18.2.0
   react-router: 6.20.1_react@18.2.0
   react-router-dom: 6.20.1_biqbaboplfbrettd7655fr4n2y
+  wavesurfer.js: 7.7.3
 
 devDependencies:
   '@bufbuild/protobuf': 1.7.2
@@ -846,3 +848,7 @@ packages:
   /util-deprecate/1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
     dev: true
+
+  /wavesurfer.js/7.7.3:
+    resolution: {integrity: sha512-TC7cQb0RVggtNC+Dl05gcnhSFL5U+fww3ZYJUuqgfR+r9oY+bh/hChCipDFDjs5cWtuek3GEtsPXWa93a9XYxw==}
+    dev: false

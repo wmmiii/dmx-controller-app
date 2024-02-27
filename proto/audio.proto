@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package dmx_controller;
+
+message AudioFile {
+  message AudioMetadata {
+    string artist = 2;
+    string file_name = 3;
+  }
+
+  message BeatMetadata {
+    double length_ms = 1;
+    int32 offset_ms = 2;
+  }
+
+  string name = 1;
+  bytes contents = 2;
+  string mime = 3;
+  AudioMetadata metadata = 4;
+  BeatMetadata beat_metadata = 5;
+}
