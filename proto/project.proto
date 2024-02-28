@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package dmx_controller;
+
+import "proto/fixture.proto";
+
+message Project {
+  string name = 1;
+  reserved 2 to 9;
+
+  // Universe descriptions
+  uint32 update_frequency_ms = 10;
+  int32 update_offset_ms = 11;
+  map<uint32, FixtureDefinition> fixture_definitions = 12;
+  map<uint32, PhysicalFixture> physical_fixtures = 13;
+}

@@ -1,28 +1,42 @@
 import React, { JSX, useCallback, useEffect, useMemo, useState } from 'react';
 
 import styles from "./index.module.scss";
-import { FixtureDefinition, PhysicalFixture, getPhysicalWritableDevice } from './engine/fixture';
+import { getPhysicalWritableDevice } from './engine/fixture';
+import { FixtureDefinition, PhysicalFixture } from '@dmx-controller/proto/fixture_pb';
+import { Project } from '@dmx-controller/proto/project_pb';
 
-const miniLedMovingHead: FixtureDefinition = {
+const miniLedMovingHead = new FixtureDefinition({
   name: 'Mini LED Moving Head',
   manufacturer: 'Wash',
   channels: {
-    1: { type: 'pan', minDeg: -180, maxDeg: 360 },
-    2: { type: 'pan-fine', minDeg: -180, maxDeg: 360 },
-    3: { type: 'tilt', minDeg: -90, maxDeg: 90 },
-    4: { type: 'tilt-fine', minDeg: -90, maxDeg: 90 },
+    1: { type: 'pan', minDegrees: -180, maxDegrees: 360 },
+    2: { type: 'pan-fine', minDegrees: -180, maxDegrees: 360 },
+    3: { type: 'tilt', minDegrees: -90, maxDegrees: 90 },
+    4: { type: 'tilt-fine', minDegrees: -90, maxDegrees: 90 },
     7: { type: 'red' },
     8: { type: 'green' },
     9: { type: 'blue' },
-    10: { type: 'white' },
-  },
-}
+    10: { type: 'white' }
+  }
+});
 
-const fixture: PhysicalFixture = {
+const fixture = new PhysicalFixture({
   name: 'Moving Head 1',
-  definition: miniLedMovingHead,
+  fixtureDefinitionId: 0,
   channelOffset: 0,
-}
+});
+
+const project = new Project({
+  name: 'Test Project',
+  updateFrequencyMs: 10,
+  updateOffsetMs: 50,
+  fixtureDefinitions: {
+    0: miniLedMovingHead,
+  },
+  physicalFixtures: {
+    0: fixture,
+  },
+});
 
 const FRAME_LENGTH = 10;
 const BLACKOUT_UNIVERSE = new Uint8Array(512).fill(0);
@@ -50,7 +64,7 @@ const colors = [
   },
 ];
 
-const writableFixture = getPhysicalWritableDevice(fixture, universe);
+const writableFixture = getPhysicalWritableDevice(project, 0, universe);
 
 export default function Index(): JSX.Element {
   const [port, setPort] = useState<SerialPort>(null);

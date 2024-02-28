@@ -11,7 +11,8 @@ TS_DEPS = [
     "//:node_modules/react-dom",
     "//:node_modules/react-router",
     "//:node_modules/react-router-dom",
-    "//core_interface:core_wasm",
+    # "//core_interface:core_wasm",
+    "//proto:ts_proto",
 ]
 
 esbuild(

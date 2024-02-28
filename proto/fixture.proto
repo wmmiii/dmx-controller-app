@@ -3,6 +3,25 @@ syntax = "proto3";
 package dmx_controller;
 
 message FixtureDefinition {
+  message Channel {
+    string type = 1;
+
+    /* Minimum number of degrees that a "pan" or "tilt" channel can move.
+     * Also applicable for "fine" variants. */
+    int32 min_degrees = 2;
+
+    /* Maximm number of degrees that a "pan" or "tilt" channel can move.
+     * Also applicable for "fine" variants. */
+    int32 max_degrees = 3;
+  }
+
   string name = 1;
   string manufacturer = 2;
+  map<uint32, Channel> channels = 3;
+}
+
+message PhysicalFixture {
+  string name = 1;
+  uint32 fixture_definition_id = 2;
+  uint32 channel_offset = 3;
 }

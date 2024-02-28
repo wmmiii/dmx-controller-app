@@ -7,6 +7,9 @@
     "react-router-dom": "6.20.1"
   },
   "devDependencies": {
+    "@bufbuild/protobuf": "1.7.2",
+    "@bufbuild/protoc-gen-connect-es": "0.13.0",
+    "@bufbuild/protoc-gen-es": "1.7.2",
     "@types/dom-serial": "1.0.6",
     "@types/react": "18.2.42",
     "@types/react-dom": "18.2.17",

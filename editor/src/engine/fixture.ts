@@ -1,49 +1,6 @@
+import { Project } from "@dmx-controller/proto/project_pb";
 
 type DmxUniverse = Uint8Array;
-
-type ColorChannelType =
-  'blue' |
-  'blue-fine' |
-  'brightness' |
-  'brightness-fine' |
-  'green' |
-  'green-fine' |
-  'red' |
-  'red-fine' |
-  'white' |
-  'white-fine';
-
-type RotationChannelType =
-  'pan' |
-  'pan-fine' |
-  'tilt' |
-  'tilt-fine';
-
-type ChannelDefinition =
-  ColorChannelDefinition |
-  RotationChannelDefinition;
-
-interface ColorChannelDefinition {
-  type: ColorChannelType;
-}
-
-interface RotationChannelDefinition {
-  type: RotationChannelType;
-  minDeg: number;
-  maxDeg: number;
-}
-
-export interface FixtureDefinition {
-  name: string;
-  manufacturer?: string;
-  channels: { [channel: number]: ChannelDefinition };
-}
-
-export interface PhysicalFixture {
-  name: string;
-  definition: FixtureDefinition;
-  channelOffset: number;
-}
 
 interface WritableDevice {
   /**
@@ -78,9 +35,18 @@ interface WritableDevice {
 }
 
 export function getPhysicalWritableDevice(
-  device: PhysicalFixture,
-  universe: DmxUniverse): WritableDevice {
-  const definition = device.definition;
+  project: Project,
+  physicalFixtureId: number,
+  universe: DmxUniverse): WritableDevice | undefined {
+  const physicalFixture = project.physicalFixtures[physicalFixtureId];
+  if (physicalFixture == null) {
+    return undefined;
+  }
+  const definition =
+    project.fixtureDefinitions[physicalFixture.fixtureDefinitionId];
+  if (definition == null) {
+    return undefined;
+  }
 
   const rgbFunctions: Array<(r: number, g: number, b: number) => void> = [];
   const whiteFunctions: Array<(w: number) => void> = [];
@@ -90,7 +56,7 @@ export function getPhysicalWritableDevice(
 
   for (const stringIndex in definition.channels) {
     const channel = definition.channels[stringIndex];
-    const index = device.channelOffset + parseInt(stringIndex) - 1;
+    const index = physicalFixture.channelOffset + parseInt(stringIndex) - 1;
     switch (channel.type) {
       case 'red':
         rgbFunctions.push((r, _g, _b) => {
@@ -144,24 +110,24 @@ export function getPhysicalWritableDevice(
         break;
       case 'pan':
         panFunctions.push((d) => {
-          universe[index] = mapDegrees(d, channel.minDeg, channel.maxDeg);
+          universe[index] = mapDegrees(d, channel.minDegrees, channel.maxDegrees);
         });
         break;
       case 'pan-fine':
         panFunctions.push((d) => {
           universe[index] =
-            (mapDegrees(d, channel.minDeg, channel.maxDeg) * 255) % 255;
+            (mapDegrees(d, channel.minDegrees, channel.maxDegrees) * 255) % 255;
         });
         break;
       case 'tilt':
         tiltFunctions.push((d) => {
-          universe[index] = mapDegrees(d, channel.minDeg, channel.maxDeg);
+          universe[index] = mapDegrees(d, channel.minDegrees, channel.maxDegrees);
         });
         break;
       case 'tilt-fine':
         tiltFunctions.push((d) => {
           universe[index] =
-            (mapDegrees(d, channel.minDeg, channel.maxDeg) * 255) % 255;
+            (mapDegrees(d, channel.minDegrees, channel.maxDegrees) * 255) % 255;
         });
       default:
         continue;
@@ -170,7 +136,7 @@ export function getPhysicalWritableDevice(
 
   return {
     setChannel: (index, value) => {
-      universe[index + device.channelOffset - 1] = value;
+      universe[index + physicalFixture.channelOffset - 1] = value;
     },
 
     setRGB: (r, g, b) => {
@@ -196,10 +162,10 @@ export function getPhysicalWritableDevice(
   };
 }
 
-function mapDegrees(value: number, minDeg: number, maxDeg: number): number {
+function mapDegrees(value: number, minDegrees: number, maxDegrees: number): number {
   return Math.max(
     Math.min(
-      255 * (value - minDeg) / (maxDeg - minDeg),
+      255 * (value - minDegrees) / (maxDegrees - minDegrees),
       255),
     0);
 }
