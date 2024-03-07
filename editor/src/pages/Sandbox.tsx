@@ -4,6 +4,7 @@ import styles from "./Sandbox.module.scss";
 import { getPhysicalWritableDevice } from '../engine/fixture';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { TrackVisualizer } from '../components/TrackVisualizer';
+import { SerialContext } from '../contexts/SerialContext';
 
 const BLACKOUT_UNIVERSE = new Uint8Array(512).fill(0);
 const universe = new Uint8Array(512).fill(0);
@@ -32,8 +33,8 @@ const colors = [
 
 export default function Sandbox(): JSX.Element {
   const { project } = useContext(ProjectContext);
+  const {port, connect, disconnect} = useContext(SerialContext);
   const [t, setT] = useState<number>(0);
-  const [port, setPort] = useState<SerialPort>(null);
   const [beats, setBeats] = useState<number[]>([778.4899574468072, 778.4899574468072 + 996.8275319148936]);
   const [beatLead, setBeatLead] = useState<number>(50);
   const [blackout, setBlackout] = useState<boolean>(false);
@@ -71,30 +72,6 @@ export default function Sandbox(): JSX.Element {
       setBeats([...beats, t]);
     }
   }, [beats, t]);
-
-  const connect = useCallback(async () => {
-    const forceReconnect = port != null;
-    try {
-      let port: SerialPort;
-      const ports = await navigator.serial.getPorts();
-      if (ports.length === 0 || forceReconnect) {
-        port = await navigator.serial.requestPort();
-      } else {
-        port = ports[0];
-      }
-      await port.open({
-        baudRate: 128000,
-        dataBits: 8,
-        flowControl: 'none',
-        parity: 'none',
-        stopBits: 2,
-      });
-
-      setPort(port);
-    } catch (e) {
-      console.error(e);
-    }
-  }, [port]);
 
   useEffect(() => {
     const func = (ev: KeyboardEvent) => {
@@ -143,8 +120,7 @@ export default function Sandbox(): JSX.Element {
           await writer.write(BLACKOUT_UNIVERSE);
         } catch (e) {
           console.error(e);
-          port.close();
-          setPort(null);
+          disconnect();
         }
       })();
     } else {
@@ -168,8 +144,7 @@ export default function Sandbox(): JSX.Element {
           await writer.write(universe);
         } catch (e) {
           console.error(e);
-          port.close();
-          setPort(null);
+          disconnect();
         }
       })();
     }

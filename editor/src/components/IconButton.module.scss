@@ -1,0 +1,27 @@
+@import '../vars';
+
+.button {
+  align-items: center;
+  border-radius: spacing(1);
+  border-style: solid;
+  border-width: 1px;
+  cursor: pointer;
+  display: flex;
+  font-size: 24px;
+  height: 24px + spacing(2);
+  justify-content: center;
+  outline: none;
+  width: 24px + spacing(2);
+}
+
+.default-variant {
+  background-color: transparent;
+  border-color: $col-interactive;
+  color: $col-interactive;
+
+  &:active, &:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: $col-interactive-hover;
+    color: $col-interactive-hover;
+  }
+}
