@@ -1,0 +1,11 @@
+@import '../vars';
+
+.beat {
+  align-items: center;
+  background-color: $col-accent;
+  color: $col-bg;
+  display: flex;
+  font-size: 24px;
+  justify-content: center;
+  padding: spacing(2);
+}

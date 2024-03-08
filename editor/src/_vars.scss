@@ -29,3 +29,7 @@ $z-index-modal: 80;
   right: 0;
   top: 0;
 }
+
+@mixin drop-shadow {
+  box-shadow: 0 0 8px #000000;
+}

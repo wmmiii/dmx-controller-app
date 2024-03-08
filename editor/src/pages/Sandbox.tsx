@@ -5,6 +5,8 @@ import { getPhysicalWritableDevice } from '../engine/fixture';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { TrackVisualizer } from '../components/TrackVisualizer';
 import { SerialContext } from '../contexts/SerialContext';
+import { Button } from '../components/Button';
+import IconBxLink from '../icons/IconBxLink';
 
 const BLACKOUT_UNIVERSE = new Uint8Array(512).fill(0);
 const universe = new Uint8Array(512).fill(0);
@@ -33,7 +35,7 @@ const colors = [
 
 export default function Sandbox(): JSX.Element {
   const { project } = useContext(ProjectContext);
-  const {port, connect, disconnect} = useContext(SerialContext);
+  const { port, connect, disconnect } = useContext(SerialContext);
   const [t, setT] = useState<number>(0);
   const [beats, setBeats] = useState<number[]>([778.4899574468072, 778.4899574468072 + 996.8275319148936]);
   const [beatLead, setBeatLead] = useState<number>(50);
@@ -154,7 +156,7 @@ export default function Sandbox(): JSX.Element {
     <div className={styles.wrapper}>
       <TrackVisualizer fileId={0} onProgress={setT} />
       <p>Blackout: {String(blackout)}</p>
-      <button onClick={() => connect()}>Connect</button>
+      <Button onClick={() => connect()}>Connect</Button>
       {
         port == null ?
           <p>
@@ -164,9 +166,11 @@ export default function Sandbox(): JSX.Element {
             Connected!
           </p>
       }
-      <button onMouseDown={addBeat}>
+      <Button
+        icon={<IconBxLink />}
+        onClick={() => addBeat()}>
         Beat
-      </button>
+      </Button>
       <input type="number"
         onChange={(e) => setBeatLead(Number(e.target.value))}
         value={beatLead} />

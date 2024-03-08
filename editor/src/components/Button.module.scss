@@ -1,17 +1,32 @@
 @import '../vars';
 
-.button {
+.base-button {
   align-items: center;
   border-radius: spacing(1);
   border-style: solid;
   border-width: 1px;
   cursor: pointer;
-  display: flex;
-  font-size: 24px;
+  display: inline-flex;
   height: 24px + spacing(2);
-  justify-content: center;
   outline: none;
+}
+
+.button {
+  font-size: 18px;
+  padding: spacing(1) spacing(2);
+
+  .icon {
+    font-size: 24px;
+    height: 24px;
+    left: spacing(-1);
+    position: relative;
+    width: 24px;
+  }
+}
+
+.icon-button {
   width: 24px + spacing(2);
+  font-size: 24px;
 }
 
 .default-variant {
