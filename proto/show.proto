@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package dmx_controller;
+
+message Show {
+  message AudioTrack {
+    uint32 audio_file_id = 1;
+  }
+
+  string name = 1;
+  reserved 2 to 10;
+
+  AudioTrack audio_track = 11;
+}

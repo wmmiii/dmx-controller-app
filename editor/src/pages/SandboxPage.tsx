@@ -1,9 +1,9 @@
 import React, { JSX, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
-import styles from "./Sandbox.module.scss";
+import styles from "./SandboxPage.module.scss";
 import { getPhysicalWritableDevice } from '../engine/fixture';
 import { ProjectContext } from '../contexts/ProjectContext';
-import { TrackVisualizer } from '../components/TrackVisualizer';
+import { AudioTrackVisualizer } from '../components/AudioTrackVisualizer';
 import { SerialContext } from '../contexts/SerialContext';
 import { Button } from '../components/Button';
 import IconBxLink from '../icons/IconBxLink';
@@ -33,7 +33,7 @@ const colors = [
   },
 ];
 
-export default function Sandbox(): JSX.Element {
+export default function SandboxPage(): JSX.Element {
   const { project } = useContext(ProjectContext);
   const { port, connect, disconnect } = useContext(SerialContext);
   const [t, setT] = useState<number>(0);
@@ -154,7 +154,6 @@ export default function Sandbox(): JSX.Element {
 
   return (
     <div className={styles.wrapper}>
-      <TrackVisualizer fileId={0} onProgress={setT} />
       <p>Blackout: {String(blackout)}</p>
       <Button onClick={() => connect()}>Connect</Button>
       {

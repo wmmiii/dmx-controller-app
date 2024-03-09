@@ -4,6 +4,7 @@ package dmx_controller;
 
 import "proto/audio.proto";
 import "proto/fixture.proto";
+import "proto/show.proto";
 
 message Project {
   message Assets {
@@ -21,4 +22,6 @@ message Project {
   reserved 15 to 20;
 
   Assets assets = 21;
+
+  Show show = 31;
 }

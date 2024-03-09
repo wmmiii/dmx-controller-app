@@ -28,7 +28,7 @@ const fixture = new PhysicalFixture({
 
 const DEFAULT_PROJECT = new Project({
   name: "Untitled Project",
-  updateFrequencyMs: 10,
+  updateFrequencyMs: 15,
   updateOffsetMs: 50,
   fixtureDefinitions: {
     0: miniLedMovingHead,

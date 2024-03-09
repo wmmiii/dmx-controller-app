@@ -1,15 +1,14 @@
 import React, { useContext, useState } from 'react';
+import styles from './AssetBrowserPage.module.scss';
+import { AudioFile } from '@dmx-controller/proto/audio_pb';
+import { BeatEditor } from '../components/BeatEditor';
+import { Button } from '../components/Button';
 import { HorizontalSplitPane } from '../components/SplitPane';
 import { ProjectContext } from '../contexts/ProjectContext';
-import { AudioFile, AudioFile_BeatMetadata } from '@dmx-controller/proto/audio_pb';
-
-import styles from './AssetBrowser.module.scss';
 import { Project_Assets } from '@dmx-controller/proto/project_pb';
 import { formatBytes } from '../util/numberUtils';
-import { Button } from '../components/Button';
-import { BeatEditor } from '../components/BeatEditor';
 
-export default function AssetBrowser(): JSX.Element {
+export default function AssetBrowserPage(): JSX.Element {
   const { project, saveProject } = useContext(ProjectContext);
   const [highlightDrop, setHighlightDrop] = useState(false);
   const [selectedAudio, setSelectedAudio] = useState<AudioFile | null>(null);

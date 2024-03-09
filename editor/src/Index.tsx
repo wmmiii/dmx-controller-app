@@ -1,14 +1,16 @@
 import React, { JSX, useContext } from 'react';
 
-import styles from "./Index.module.scss";
-import AssetBrowser from './pages/AssetBrowser';
-import { Routes, Route } from 'react-router-dom';
-import Sandbox from './pages/Sandbox';
-import { Link } from 'react-router-dom';
-import { IconButton } from './components/IconButton';
+import AssetBrowserPage from './pages/AssetBrowserPage';
 import IconBxLink from './icons/IconBxLink';
 import IconBxUnlink from './icons/IconBxUnlink';
+import SandboxPage from './pages/SandboxPage';
+import ShowPage from './pages/ShowPage';
+import { IconButton } from './components/Button';
+import { Link } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { SerialContext } from './contexts/SerialContext';
+
+import styles from './Index.module.scss';
 
 export default function Index(): JSX.Element {
   const { port, connect, disconnect } = useContext(SerialContext);
@@ -17,6 +19,7 @@ export default function Index(): JSX.Element {
     <div className={styles.wrapper}>
       <header>
         <Link to="/">Sandbox</Link>
+        <Link to="/show">Show</Link>
         <Link to="/assets">Assets</Link>
         <div className={styles.spacer}></div>
         <IconButton onClick={() => {
@@ -31,8 +34,9 @@ export default function Index(): JSX.Element {
       </header>
       <main>
         <Routes>
-          <Route path="/" element={<Sandbox />} />
-          <Route path="/assets" element={<AssetBrowser />} />
+          <Route path="/" element={<SandboxPage />} />
+          <Route path="/show" element={<ShowPage />} />
+          <Route path="/assets" element={<AssetBrowserPage />} />
         </Routes>
       </main>
     </div>
