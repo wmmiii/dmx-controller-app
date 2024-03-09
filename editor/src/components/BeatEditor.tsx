@@ -1,6 +1,6 @@
 import { AudioFile, AudioFile_BeatMetadata } from "@dmx-controller/proto/audio_pb";
 import { Modal } from "./Modal";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import WaveSurfer from "wavesurfer.js";
 import SpectrogramPlugin from "wavesurfer.js/dist/plugins/spectrogram.js";
 import RegionsPlugin from "wavesurfer.js/dist/plugins/regions.js";
@@ -15,6 +15,7 @@ import IconBxPlay from "../icons/IconBxPlay";
 import IconBxSkipPrevious from "../icons/IconBxSkipPrevious";
 import IconBxSkipNext from "../icons/IconBxSkipNext";
 import { WAVEFORM_COLOR, WAVEFORM_CURSOR_COLOR, WAVEFORM_PROGRESS_COLOR } from "../util/styleUtils";
+import { ShortcutContext } from "../contexts/ShortcutContext";
 
 interface BeatEditorProps {
   file: AudioFile;
@@ -24,6 +25,7 @@ interface BeatEditorProps {
 
 export function BeatEditor({ file, onCancel, onSave }: BeatEditorProps):
   JSX.Element {
+  const shortcutContext = useContext(ShortcutContext);
   const waveRef = useRef<HTMLDivElement>();
   const [zoomLevel, setZoomLevel] = useState(64);
   const [waveSurfer, setWaveSurfer] = useState<WaveSurfer | null>(null);
@@ -196,6 +198,21 @@ export function BeatEditor({ file, onCancel, onSave }: BeatEditorProps):
       waveSurfer.playPause();
     }
   }, [waveSurfer]);
+
+  useEffect(() => {
+    const handler = (key: string) => {
+      switch (key) {
+        case 'Space':
+          playPause();
+          return true;
+        default:
+          return false;
+      }
+    };
+
+    shortcutContext.setShortcutHandler(handler);
+    return () => shortcutContext.clearShortcutHandler(handler);
+  }, [playPause]);
 
   const beat = ((t - firstBeat) % beatDuration) / beatDuration;
 

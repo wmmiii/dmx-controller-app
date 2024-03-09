@@ -7,6 +7,7 @@ import { AudioController, AudioTrackVisualizer } from '../components/AudioTrackV
 import { SerialContext } from '../contexts/SerialContext';
 import { getPhysicalWritableDevice } from '../engine/fixture';
 import { Button } from '../components/Button';
+import { ShortcutContext } from '../contexts/ShortcutContext';
 
 const COLORS = [
   {
@@ -33,6 +34,7 @@ const COLORS = [
 
 export default function ShowPage(): JSX.Element {
   const { project, saveProject } = useContext(ProjectContext);
+  const { setShortcutHandler, clearShortcutHandler } = useContext(ShortcutContext);
   const { setRenderUniverse, clearRenderUniverse } = useContext(SerialContext);
   const [playing, setPlaying] = useState(false);
   const audioController = useRef<AudioController>();
@@ -65,6 +67,25 @@ export default function ShowPage(): JSX.Element {
       saveProject(project);
     }
   }, [project, show]);
+
+  useEffect(() => {
+    const handler = (key: string) => {
+      switch (key) {
+        case 'Space':
+          if (playing) {
+            audioController.current?.pause();
+          } else {
+            audioController.current?.play();
+          }
+          return true;
+        default:
+          return false;
+      }
+    };
+
+    setShortcutHandler(handler);
+    return () => clearShortcutHandler(handler);
+  }, [playing, audioController.current]);
 
   useEffect(() => {
     if (!project || !beat) {

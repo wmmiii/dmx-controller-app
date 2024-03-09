@@ -4,6 +4,7 @@ import Index from './Index';
 import { ProjectProvider } from './contexts/ProjectContext';
 import { BrowserRouter } from 'react-router-dom';
 import { SerialProvider } from './contexts/SerialContext';
+import { ShortcutContext, ShortcutProvider } from './contexts/ShortcutContext';
 
 // import wasm, {hello_world} from '@dmx-controller/core_interface/core_wasm';
 
@@ -15,7 +16,9 @@ ReactDOM.render(
   <BrowserRouter basename="/">
     <ProjectProvider>
       <SerialProvider>
-        <Index />
+        <ShortcutProvider>
+          <Index />
+        </ShortcutProvider>
       </SerialProvider>
     </ProjectProvider>
   </BrowserRouter>,

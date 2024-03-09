@@ -1,6 +1,5 @@
 import { PropsWithChildren, createContext, useCallback, useContext, useEffect, useState } from "react";
 import { ProjectContext } from "./ProjectContext";
-import { render } from "react-dom";
 
 const BLACKOUT_UNIVERSE = new Uint8Array(512).fill(0);
 
@@ -10,6 +9,7 @@ export const SerialContext = createContext({
   port: null as (SerialPort | null),
   connect: () => { },
   disconnect: () => { },
+  blackout: true,
   setBlackout: (_blackout: boolean) => { },
   setRenderUniverse: (_render: RenderUniverse) => { },
   clearRenderUniverse: (_render: RenderUniverse) => { },
@@ -92,6 +92,7 @@ export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
       port: port,
       connect: connect,
       disconnect: disconnect,
+      blackout: blackout,
       setBlackout: setBlackout,
       setRenderUniverse: (r: RenderUniverse) => setRenderUniverse(() => r),
       clearRenderUniverse: (r: RenderUniverse) => {

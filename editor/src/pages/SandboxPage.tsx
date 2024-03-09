@@ -7,6 +7,7 @@ import { AudioTrackVisualizer } from '../components/AudioTrackVisualizer';
 import { SerialContext } from '../contexts/SerialContext';
 import { Button } from '../components/Button';
 import IconBxLink from '../icons/IconBxLink';
+import { ShortcutContext } from '../contexts/ShortcutContext';
 
 const BLACKOUT_UNIVERSE = new Uint8Array(512).fill(0);
 const universe = new Uint8Array(512).fill(0);
@@ -35,11 +36,12 @@ const colors = [
 
 export default function SandboxPage(): JSX.Element {
   const { project } = useContext(ProjectContext);
-  const { port, connect, disconnect } = useContext(SerialContext);
+  const { setShortcutHandler, clearShortcutHandler } = useContext(ShortcutContext);
+  const { port, blackout, setRenderUniverse, clearRenderUniverse } =
+    useContext(SerialContext);
   const [t, setT] = useState<number>(0);
   const [beats, setBeats] = useState<number[]>([778.4899574468072, 778.4899574468072 + 996.8275319148936]);
   const [beatLead, setBeatLead] = useState<number>(50);
-  const [blackout, setBlackout] = useState<boolean>(false);
 
   const writableFixture = useMemo(
     () => {
@@ -76,25 +78,19 @@ export default function SandboxPage(): JSX.Element {
   }, [beats, t]);
 
   useEffect(() => {
-    const func = (ev: KeyboardEvent) => {
-      console.log(ev.code);
-      switch (ev.code) {
+    const handler = (key: string) => {
+      switch (key) {
         case 'Space':
           addBeat();
-          break;
-        case 'KeyC':
-          connect();
-          break;
-        case 'KeyB':
-          setBlackout(!blackout);
-          break;
+          return true;
+        default:
+          return false;
       }
     };
 
-    document.addEventListener('keydown', func);
-
-    return () => document.removeEventListener('keydown', func);
-  }, [addBeat, connect, blackout, setBlackout]);
+    setShortcutHandler(handler);
+    return () => clearShortcutHandler(handler);
+  }, [addBeat]);
 
   useEffect(() => {
     const flash = 1 - ((t - beatStart) % beatLength) / beatLength;
@@ -110,52 +106,32 @@ export default function SandboxPage(): JSX.Element {
   }
 
   useEffect(() => {
-    if (!port || !writableFixture) {
-      return;
-    }
-
-    const writer = port.writable.getWriter();
-
-    if (blackout) {
-      (async () => {
-        try {
-          await writer.write(BLACKOUT_UNIVERSE);
-        } catch (e) {
-          console.error(e);
-          disconnect();
-        }
-      })();
-    } else {
+    const render = () => {
       writableFixture.setRGBW(0.8, 0, 1, 0);
       writableFixture.setTilt(-45);
       writableFixture.setChannel(5, 0);
       writableFixture.setChannel(6, 255);
+  
+      const pan = Math.sin(t / 1000) * 180;
+      writableFixture.setPan(pan);
+      const tilt = Math.sin(t / 1200) * 45;
+      writableFixture.setTilt(tilt);
+      const ts = t - beatStart + beatLead;
+      const beatNum = Math.floor(ts / beatLength);
+      const color = colors[beatNum % colors.length];
+      const flash = 1 - (ts % beatLength) / beatLength;
+      writableFixture.setRGB(color.r * flash, color.g * flash, color.b * flash);
 
-      (async () => {
-        const pan = Math.sin(t / 1000) * 180;
-        writableFixture.setPan(pan);
-        const tilt = Math.sin(t / 1200) * 45;
-        writableFixture.setTilt(tilt);
-        const ts = t - beatStart + beatLead;
-        const beatNum = Math.floor(ts / beatLength);
-        const color = colors[beatNum % colors.length];
-        const flash = 1 - (ts % beatLength) / beatLength;
-        writableFixture.setRGB(color.r * flash, color.g * flash, color.b * flash);
-
-        try {
-          await writer.write(universe);
-        } catch (e) {
-          console.error(e);
-          disconnect();
-        }
-      })();
-    }
-  }, [t, port, blackout, beatStart, beatLength, beatLead]);
+      return universe;
+    };
+    
+    setRenderUniverse(render);
+    return () => clearRenderUniverse(render);
+  }, [t, beatStart, beatLead, beatLength]);
 
   return (
     <div className={styles.wrapper}>
       <p>Blackout: {String(blackout)}</p>
-      <Button onClick={() => connect()}>Connect</Button>
       {
         port == null ?
           <p>
