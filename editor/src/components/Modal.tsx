@@ -8,9 +8,10 @@ interface ModalProps {
   title: string;
   onClose: () => void;
   children: React.ReactNode;
+  footer?: React.ReactNode;
 }
 
-export function Modal({ title, onClose, children }: ModalProps): JSX.Element {
+export function Modal({ title, onClose, children, footer }: ModalProps): JSX.Element {
   return (
     <div className={styles.wrapper} onClick={() => onClose()}>
       <div className={styles.modal} onClick={(e) => {
@@ -24,7 +25,15 @@ export function Modal({ title, onClose, children }: ModalProps): JSX.Element {
             <IconBxX />
           </IconButton>
         </div>
-        {children}
+        <div className={styles.main}>
+          {children}
+        </div>
+        {
+          footer &&
+          <div className={styles.footer}>
+            {footer}
+          </div>
+        }
       </div>
     </div>
   );

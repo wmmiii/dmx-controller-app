@@ -1,6 +1,6 @@
 @import '../vars';
 
-.beat {
+.beat-indicator {
   align-items: center;
   background-color: $col-accent;
   color: $col-bg;
@@ -8,4 +8,13 @@
   font-size: 24px;
   justify-content: center;
   padding: spacing(2);
+}
+
+.button-row {
+  align-items: center;
+  display: flex;
+  flex-direction: row;
+  gap: spacing(2);
+  justify-content: space-between;
+  margin: spacing(1) 0;
 }

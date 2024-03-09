@@ -102,8 +102,8 @@ interface AudioDetailsProps {
 }
 
 function AudioDetails({ file }: AudioDetailsProps): JSX.Element {
-  const [beatFile, setBeatFile] =
-    useState<AudioFile | null>(null);
+  const {project, saveProject} = useContext(ProjectContext);
+  const [beatFile, setBeatFile] = useState<AudioFile | null>(null);
 
   if (!file) {
     return (
@@ -125,7 +125,11 @@ function AudioDetails({ file }: AudioDetailsProps): JSX.Element {
         beatFile &&
         <BeatEditor
           file={file}
-          onCancel={() => setBeatFile(null)} />
+          onCancel={() => setBeatFile(null)}
+          onSave={() => {
+            saveProject(project);
+            setBeatFile(null);
+          }}/>
       }
     </div>
   );

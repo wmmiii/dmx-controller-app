@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useMemo, useRef } from 'react';
 import WaveSurfer from 'wavesurfer.js';
 import Spectrogram from 'wavesurfer.js/dist/plugins/spectrogram.js';
 import { ProjectContext } from '../contexts/ProjectContext';
+import { WAVEFORM_COLOR, WAVEFORM_CURSOR_COLOR, WAVEFORM_PROGRESS_COLOR } from '../util/styleUtils';
 
 interface TrackVisualizerProps {
   fileId: number;
@@ -30,8 +31,9 @@ export function TrackVisualizer({ fileId, onProgress, className }: TrackVisualiz
       if (containerRef.current != null && fileBlob != null) {
         const ws = WaveSurfer.create({
           container: containerRef.current,
-          waveColor: 'rgb(200, 0, 200)',
-          progressColor: 'rgb(100, 0, 100)',
+          waveColor: WAVEFORM_COLOR,
+          cursorColor: WAVEFORM_CURSOR_COLOR,
+          progressColor: WAVEFORM_PROGRESS_COLOR,
           sampleRate: 22050,
         });
 

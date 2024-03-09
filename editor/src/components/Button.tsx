@@ -5,7 +5,7 @@ import styles from './Button.module.scss';
 interface BaseButtonProps {
   className?: string;
   onClick: () => void;
-  variant?: 'default';
+  variant?: 'default'|'primary';
 }
 
 interface ButtonProps extends BaseButtonProps {
@@ -63,6 +63,8 @@ export function IconButton(
 
 function classFromVariant(variant: BaseButtonProps['variant']) {
   switch (variant) {
+    case 'primary':
+      return styles.primaryVariant;
     default:
       return styles.defaultVariant;
   }

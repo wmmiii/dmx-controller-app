@@ -40,3 +40,14 @@
     color: $col-interactive-hover;
   }
 }
+
+.primary-variant {
+  background-color: $col-interactive;
+  border-color: $col-interactive;
+  color: $col-bg;
+
+  &:active, &:hover {
+    background-color: $col-interactive-hover;
+    border-color: $col-interactive-hover;
+  }
+}

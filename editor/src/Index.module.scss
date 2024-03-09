@@ -47,6 +47,10 @@ textarea {
   padding: spacing(1);
 }
 
+li {
+  margin: spacing(1) 0;
+}
+
 .wrapper {
   @include fill;
   display: flex;
