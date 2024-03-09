@@ -57,6 +57,8 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
   }, [])
 
   const saveProject = useCallback((project: Project) => {
+    project.updateFrequencyMs = 10;
+    project.updateOffsetMs = 50;
     ldb.set(PROJECT_KEY, project.toJsonString(), () => {
       setProject(new Project(project));
     });

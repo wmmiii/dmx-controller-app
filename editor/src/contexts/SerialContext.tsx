@@ -1,4 +1,4 @@
-import { PropsWithChildren, createContext, useCallback, useContext, useEffect, useState } from "react";
+import { PropsWithChildren, createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { ProjectContext } from "./ProjectContext";
 
 const BLACKOUT_UNIVERSE = new Uint8Array(512).fill(0);
@@ -18,9 +18,10 @@ export const SerialContext = createContext({
 export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
   const { project } = useContext(ProjectContext);
   const [port, setPort] = useState<SerialPort | null>(null);
-  const [renderUniverse, setRenderUniverse] =
-    useState<RenderUniverse|null>(null);
-  const [blackout, setBlackout] = useState(false);
+  const renderUniverse = useRef<RenderUniverse>(() => BLACKOUT_UNIVERSE);
+  const blackout = useRef(false);
+  const [blackoutState, setBlackoutState] = useState(false);
+  const [updateFrequencyMs, setUpdateFrequencyMs] = useState(50);
 
   const connect = useCallback(async () => {
     const forceReconnect = port != null;
@@ -51,19 +52,33 @@ export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
     setPort(null);
   }, [port]);
 
+  useEffect(
+    () => setUpdateFrequencyMs(project?.updateFrequencyMs || 50),
+    [project?.updateFrequencyMs]);
+
   useEffect(() => {
-    if (!port || renderUniverse == null) {
+    if (!port) {
       return;
     }
 
     const writer = port.writable.getWriter();
 
+    let lock = false;
+
     const handle = setInterval(async () => {
-      let universe: Uint8Array;
-      if (blackout) {
+      if (lock) {
+        const newFreq = updateFrequencyMs + 1;
+        console.log('Dropped frame! Increasing update interval to', newFreq);
+        setUpdateFrequencyMs(newFreq);
+        return;
+      }
+
+      lock = true;
+      let universe;
+      if (blackout.current) {
         universe = BLACKOUT_UNIVERSE;
       } else {
-        universe = renderUniverse();
+        universe = renderUniverse.current();
       }
 
       try {
@@ -71,8 +86,10 @@ export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
       } catch (e) {
         console.error(e);
         disconnect();
+      } finally {
+        lock = false;
       }
-    }, project.updateFrequencyMs);
+    }, updateFrequencyMs);
 
     return () => {
       clearInterval(handle);
@@ -83,6 +100,7 @@ export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
     blackout,
     disconnect,
     port,
+    updateFrequencyMs,
     project,
     renderUniverse,
   ]);
@@ -92,12 +110,15 @@ export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
       port: port,
       connect: connect,
       disconnect: disconnect,
-      blackout: blackout,
-      setBlackout: setBlackout,
-      setRenderUniverse: (r: RenderUniverse) => setRenderUniverse(() => r),
+      blackout: blackoutState,
+      setBlackout: (b: boolean) => {
+        blackout.current = b;
+        setBlackoutState(b);
+      },
+      setRenderUniverse: (r: RenderUniverse) => renderUniverse.current = r,
       clearRenderUniverse: (r: RenderUniverse) => {
-        if (renderUniverse === r) {
-          setRenderUniverse(null);
+        if (renderUniverse.current === r) {
+          renderUniverse.current = () => BLACKOUT_UNIVERSE;
         }
       },
     }}>
