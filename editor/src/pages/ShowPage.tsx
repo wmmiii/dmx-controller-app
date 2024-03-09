@@ -1,6 +1,6 @@
 import React, { JSX, createRef, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
-import styles from "./Sandbox.module.scss";
+import styles from "./ShowPage.module.scss";
 import { ProjectContext } from '../contexts/ProjectContext';
 import { Show } from '@dmx-controller/proto/show_pb';
 import { AudioController, AudioTrackVisualizer } from '../components/AudioTrackVisualizer';
@@ -8,6 +8,7 @@ import { SerialContext } from '../contexts/SerialContext';
 import { getPhysicalWritableDevice } from '../engine/fixture';
 import { Button } from '../components/Button';
 import { ShortcutContext } from '../contexts/ShortcutContext';
+import { HorizontalSplitPane } from '../components/SplitPane';
 
 const COLORS = [
   {
@@ -121,18 +122,28 @@ export default function ShowPage(): JSX.Element {
   }, [beat, project, playing, t]);
 
   return (
-    <div className={styles.wrapper}>
-      <AudioTrackVisualizer
-        fileId={0}
-        setController={setAudioController}
-        setPlaying={setPlaying}
-        onProgress={setT} />
-      <Button onClick={() => audioController.current?.play()}>
-        Play
-      </Button>
-      <Button onClick={() => audioController.current?.pause()}>
-        Pause
-      </Button>
-    </div>
+    <HorizontalSplitPane
+      className={styles.wrapper}
+      defaultAmount={0.8}
+      left={
+        <>
+          <AudioTrackVisualizer
+            fileId={0}
+            setController={setAudioController}
+            setPlaying={setPlaying}
+            onProgress={setT} />
+          <Button onClick={() => audioController.current?.play()}>
+            Play
+          </Button>
+          <Button onClick={() => audioController.current?.pause()}>
+            Pause
+          </Button>
+        </>
+      }
+      right={
+        <>
+          Details pane
+        </>
+      } />
   );
 }

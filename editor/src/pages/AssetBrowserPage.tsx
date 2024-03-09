@@ -9,18 +9,39 @@ import { Project_Assets } from '@dmx-controller/proto/project_pb';
 import { formatBytes } from '../util/numberUtils';
 
 export default function AssetBrowserPage(): JSX.Element {
-  const { project, saveProject } = useContext(ProjectContext);
-  const [highlightDrop, setHighlightDrop] = useState(false);
   const [selectedAudio, setSelectedAudio] = useState<AudioFile | null>(null);
 
-  const classes = [styles.browser];
+  return (
+    <div className={styles.browser}>
+      <HorizontalSplitPane
+        className={styles.splitPane}
+        left={<AudioFileList selectAudioFile={setSelectedAudio} />}
+        right={<AudioDetails file={selectedAudio} />}
+      />
+    </div>
+  );
+}
+
+interface AudioFileListProps {
+  selectAudioFile: (f: AudioFile) => void;
+}
+
+function AudioFileList({ selectAudioFile }: AudioFileListProps): JSX.Element {
+  const { project, saveProject } = useContext(ProjectContext);
+  const [highlightDrop, setHighlightDrop] = useState(false);
+
+  if (!project) {
+    return null;
+  }
+
+  const classes = [styles.audioFileList];
   if (highlightDrop) {
     classes.push(styles.highlightDrop);
   }
 
   return (
-    <div
-      className={classes.join(' ')}
+    <ol
+      className={styles.audioFileList}
       onDragOver={(e) => {
         setHighlightDrop(true);
         e.preventDefault();
@@ -59,28 +80,6 @@ export default function AssetBrowserPage(): JSX.Element {
 
         setHighlightDrop(false);
       }}>
-      <HorizontalSplitPane
-        className={styles.splitPane}
-        left={<AudioFileList selectAudioFile={setSelectedAudio} />}
-        right={<AudioDetails file={selectedAudio} />}
-      />
-    </div>
-  );
-}
-
-interface AudioFileListProps {
-  selectAudioFile: (f: AudioFile) => void;
-}
-
-function AudioFileList({ selectAudioFile }: AudioFileListProps): JSX.Element {
-  const { project } = useContext(ProjectContext);
-
-  if (!project) {
-    return null;
-  }
-
-  return (
-    <ol>
       {
         project.assets?.audioFiles.map((f, i) => (
           <li key={i} onClick={() => selectAudioFile(f)}>
@@ -101,7 +100,7 @@ interface AudioDetailsProps {
 }
 
 function AudioDetails({ file }: AudioDetailsProps): JSX.Element {
-  const {project, saveProject} = useContext(ProjectContext);
+  const { project, saveProject } = useContext(ProjectContext);
   const [beatFile, setBeatFile] = useState<AudioFile | null>(null);
 
   if (!file) {
@@ -128,7 +127,7 @@ function AudioDetails({ file }: AudioDetailsProps): JSX.Element {
           onSave={() => {
             saveProject(project);
             setBeatFile(null);
-          }}/>
+          }} />
       }
     </div>
   );

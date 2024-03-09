@@ -1,8 +1,49 @@
+@import '../vars';
+
 .horizontalPane {
   display: flex;
   flex-direction: row;
 }
 
+.overlay {
+  bottom: 0;
+  cursor: ew-resize !important;
+  left: 0;
+  position: fixed;
+  right: 0;
+  top: 0;
+  z-index: 999;
+}
+
+.dragging {
+  .pane {
+    pointer-events: none;
+    user-select: none;
+  }
+}
+
 .pane {
   flex: 1;
+  position: relative;
+  min-width: spacing(4);
+  overflow: hidden;
+}
+
+.separator {
+  align-items: center;
+  background-color: $col-bg-higher;
+  cursor: ew-resize;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  justify-content: center;
+  width: spacing(1);
+
+  &::after {
+    background-color: $col-bg;
+    content: "";
+    flex-direction: column;
+    height: 24px;
+    width: 2px;
+  }
 }
