@@ -12,14 +12,16 @@ message Project {
   }
 
   string name = 1;
-  reserved 2 to 10;
+  uint32 version = 2;
+  reserved 3 to 10;
 
   // Universe descriptions
   uint32 update_frequency_ms = 11;
   int32 update_offset_ms = 12;
   map<uint32, FixtureDefinition> fixture_definitions = 13;
   map<uint32, PhysicalFixture> physical_fixtures = 14;
-  reserved 15 to 20;
+  map<uint32, PhysicalFixtureGroup> physical_fixture_groups = 15;
+  reserved 16 to 20;
 
   Assets assets = 21;
 

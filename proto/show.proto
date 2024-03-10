@@ -2,13 +2,44 @@ syntax = "proto3";
 
 package dmx_controller;
 
+import "proto/effect.proto";
+
 message Show {
   message AudioTrack {
     uint32 audio_file_id = 1;
+  }
+
+  message LightTrack {
+    string name = 1;
+    oneof output {
+      uint32 physical_fixture_id = 2;
+      uint32 physical_fixture_group_id = 3;
+    }
+    repeated LightLayer layers = 4;
+  }
+
+  message DefaultChannelValues {
+    message Channel {
+      uint32 index = 1;
+      uint32 value = 2;
+    }
+
+    string name = 1;
+    oneof output {
+      uint32 physical_fixture_id = 2;
+      uint32 physical_fixture_group_id = 3;
+    }
+    repeated Channel channels = 4;
+  }
+
+  message LightLayer {
+    repeated Effect effects = 1;
   }
 
   string name = 1;
   reserved 2 to 10;
 
   AudioTrack audio_track = 11;
+  repeated DefaultChannelValues default_channel_values = 12;
+  repeated LightTrack light_tracks = 13;
 }

@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package dmx_controller;
+
+enum EffectTiming {
+  // The `t` value passed in corresponds to the actual `t` value of the show.
+  ABSOLUTE = 0;
+  // The `t` value passed in corresponds to the [0, 1] value of where we are in
+  // the effect itself.
+  ONE_SHOT = 1; 
+}
+
+message Effect {
+
+  message ChannelEffect {
+    uint32 channel = 1;
+    uint32 value = 2;
+  }
+
+  message ColorEffect {
+    double r = 1;
+    double g = 2;
+    double b = 3;
+  }
+
+  uint32 start_ms = 1;
+  uint32 end_ms = 2;
+  reserved 3 to 10;
+
+  // Timing details
+  EffectTiming timing_mode = 11;
+  int32 offset_ms = 12;
+  double timing_multiplier = 13;
+  reserved 14 to 100;
+
+  oneof effect {
+    ChannelEffect channel_effect = 101;
+    ColorEffect color_effect = 102;
+  }
+}

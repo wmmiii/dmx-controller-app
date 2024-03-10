@@ -1,8 +1,8 @@
 import { Project } from "@dmx-controller/proto/project_pb";
 
-type DmxUniverse = Uint8Array;
+export type DmxUniverse = Uint8Array;
 
-interface WritableDevice {
+export interface WritableDevice {
   /**
    * Manually overrides a channel. Valid numbers are [0, 255].
    */
@@ -168,4 +168,38 @@ function mapDegrees(value: number, minDegrees: number, maxDegrees: number): numb
       255 * (value - minDegrees) / (maxDegrees - minDegrees),
       255),
     0);
+}
+
+export function getPhysicalWritableDeviceFromGroup(
+  project: Project,
+  physicalFixtureGroupId: number,
+  universe: DmxUniverse): WritableDevice | undefined {
+  const group = project.physicalFixtureGroups[physicalFixtureGroupId];
+  if (!group) {
+    return undefined;
+  }
+
+  const writableDevices = [
+    ...group.physicalFixtureIds
+      .map((id) => getPhysicalWritableDevice(project, id, universe))
+      .filter((device) => device != null),
+    ...group.physicalFixtureGroupIds
+      .map((id) => getPhysicalWritableDeviceFromGroup(project, id, universe))
+      .filter((device) => device != null),
+  ];
+
+  return {
+    setChannel: (index: number, value: number) =>
+      writableDevices.forEach((d) => d.setChannel(index, value)),
+    setRGB: (red: number, green: number, blue: number) =>
+      writableDevices.forEach(d => d.setRGB(red, green, blue)),
+    setRGBW: (red: number, green: number, blue: number, white: number) =>
+      writableDevices.forEach(d => d.setRGBW(red, green, blue, white)),
+    setBrightness: (brightness: number) =>
+      writableDevices.forEach(d => d.setBrightness(brightness)),
+    setPan: (degrees: number) =>
+      writableDevices.forEach(d => d.setPan(degrees)),
+    setTilt: (degrees: number) =>
+      writableDevices.forEach(d => d.setTilt(degrees)),
+  };
 }

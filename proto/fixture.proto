@@ -25,3 +25,9 @@ message PhysicalFixture {
   uint32 fixture_definition_id = 2;
   uint32 channel_offset = 3;
 }
+
+message PhysicalFixtureGroup {
+  string name = 1;
+  repeated uint32 physical_fixture_ids = 2;
+  repeated uint32 physical_fixture_group_ids = 3;
+}

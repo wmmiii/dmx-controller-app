@@ -68,7 +68,7 @@ export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
     const handle = setInterval(async () => {
       if (lock) {
         const newFreq = updateFrequencyMs + 1;
-        console.log('Dropped frame! Increasing update interval to', newFreq);
+        console.error('Dropped frame! Increasing update interval to', newFreq);
         setUpdateFrequencyMs(newFreq);
         return;
       }
