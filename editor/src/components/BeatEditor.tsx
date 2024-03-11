@@ -14,7 +14,7 @@ import IconBxPause from "../icons/IconBxPause";
 import IconBxPlay from "../icons/IconBxPlay";
 import IconBxSkipPrevious from "../icons/IconBxSkipPrevious";
 import IconBxSkipNext from "../icons/IconBxSkipNext";
-import { WAVEFORM_COLOR, WAVEFORM_CURSOR_COLOR, WAVEFORM_PROGRESS_COLOR } from "../util/styleUtils";
+import { WAVEFORM_COLOR, WAVEFORM_CURSOR_COLOR, WAVEFORM_PROGRESS_COLOR, WAVEFORM_SAMPLE_RATE } from "../util/styleUtils";
 import { ShortcutContext } from "../contexts/ShortcutContext";
 
 interface BeatEditorProps {
@@ -81,7 +81,7 @@ export function BeatEditor({ file, onCancel, onSave }: BeatEditorProps):
         waveColor: WAVEFORM_COLOR,
         cursorColor: WAVEFORM_CURSOR_COLOR,
         progressColor: WAVEFORM_PROGRESS_COLOR,
-        sampleRate: 22050,
+        sampleRate: WAVEFORM_SAMPLE_RATE,
       });
 
       ws.on('click', (seconds) => ws.seekTo(seconds));
