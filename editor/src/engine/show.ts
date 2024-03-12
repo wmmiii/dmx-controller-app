@@ -43,11 +43,32 @@ export function renderUniverse(t: number, project: Project):
 function applyEffect(t: number, effect: Effect, device: WritableDevice): void {
   const e = effect.effect.value;
   switch (effect.effect.case) {
-    case 'channelEffect':
-      device.setChannel(e.channel, e.value);
-      break;
-    case 'colorEffect':
-      device.setRGB(e.r, e.g, e.b);
+    case 'fixtureState':
+      const color = e.color.value;
+      switch (e.color.case) {
+        case 'rgb':
+          device.setRGB(color.red, color.green, color.blue);
+          break;
+        case 'rgbw':
+          device.setRGBW(color.red, color.green, color.blue, color.white);
+          break;
+      }
+
+      if (e.brightness != null) {
+        device.setBrightness(e.brightness);
+      }
+
+      if (e.pan != null) {
+        device.setPan(e.pan);
+      }
+
+      if (e.tilt != null) {
+        device.setTilt(e.tilt);
+      }
+
+      for (const channel of e.channels) {
+        device.setChannel(channel.index, channel.value);
+      }
       break;
   }
 }

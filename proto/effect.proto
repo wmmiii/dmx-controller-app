@@ -7,20 +7,39 @@ enum EffectTiming {
   ABSOLUTE = 0;
   // The `t` value passed in corresponds to the [0, 1] value of where we are in
   // the effect itself.
-  ONE_SHOT = 1; 
+  ONE_SHOT = 1;
+}
+
+message RGB {
+  double red = 1;
+  double green = 2;
+  double blue = 3;
+}
+
+message RGBW {
+  double red = 1;
+  double green = 2;
+  double blue = 3;
+  double white = 4;
 }
 
 message Effect {
 
-  message ChannelEffect {
-    uint32 channel = 1;
-    uint32 value = 2;
-  }
+  message FixtureState {
 
-  message ColorEffect {
-    double r = 1;
-    double g = 2;
-    double b = 3;
+    message Channel {
+      uint32 index = 1;
+      uint32 value = 2;
+    }
+
+    repeated Channel channels = 1;
+    oneof color {
+      RGB rgb = 2;
+      RGBW rgbw = 3;
+    }
+    optional double brightness = 4;
+    optional double pan = 5;
+    optional double tilt = 6;
   }
 
   uint32 start_ms = 1;
@@ -33,8 +52,5 @@ message Effect {
   double timing_multiplier = 13;
   reserved 14 to 100;
 
-  oneof effect {
-    ChannelEffect channel_effect = 101;
-    ColorEffect color_effect = 102;
-  }
+  oneof effect { FixtureState fixture_state = 101; }
 }

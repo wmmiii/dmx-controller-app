@@ -5,7 +5,7 @@ pkg_tar(
     srcs = [
         "//editor/src:bundle",
         "//editor/static",
-        "//core_interface:core_files",
+        # "//core_interface:core_files",
     ],
     visibility = ["//dev/server:__pkg__"],
 )

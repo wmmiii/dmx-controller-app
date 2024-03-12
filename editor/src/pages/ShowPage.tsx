@@ -1,4 +1,4 @@
-import React, { JSX, createRef, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { JSX, createContext, createRef, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import styles from "./ShowPage.module.scss";
 import { ProjectContext } from '../contexts/ProjectContext';
@@ -12,6 +12,8 @@ import { renderUniverse } from '../engine/show';
 import { OutputDescription, OutputSelector } from '../components/OutputSelector';
 import IconBxZoomIn from '../icons/IconBxZoomin';
 import IconBxZoomOut from '../icons/IconBxZoomOut';
+import { Effect as EffectComponent, EffectDetails, EffectSelectContext } from '../components/Effect';
+import { Effect } from '@dmx-controller/proto/effect_pb';
 
 const DEFAULT_SHOW = new Show({
   name: 'Untitled Show',
@@ -52,11 +54,16 @@ const DEFAULT_SHOW = new Show({
               endMs: 1000,
               effect: {
                 value: {
-                  r: 1,
-                  g: 0,
-                  b: 0,
+                  color: {
+                    value: {
+                      red: 1,
+                      green: 0,
+                      blue: 0,
+                    },
+                    case: 'rgb',
+                  },
                 },
-                case: 'colorEffect',
+                case: 'fixtureState',
               }
             },
             {
@@ -64,11 +71,16 @@ const DEFAULT_SHOW = new Show({
               endMs: 2000,
               effect: {
                 value: {
-                  r: 0,
-                  g: 1,
-                  b: 0,
+                  color: {
+                    value: {
+                      red: 0,
+                      green: 1,
+                      blue: 0,
+                    },
+                    case: 'rgb',
+                  },
                 },
-                case: 'colorEffect',
+                case: 'fixtureState',
               }
             },
             {
@@ -76,11 +88,16 @@ const DEFAULT_SHOW = new Show({
               endMs: 3000,
               effect: {
                 value: {
-                  r: 0,
-                  g: 0,
-                  b: 1,
+                  color: {
+                    value: {
+                      red: 0,
+                      green: 0,
+                      blue: 1,
+                    },
+                    case: 'rgb',
+                  },
                 },
-                case: 'colorEffect',
+                case: 'fixtureState',
               }
             },
           ]
@@ -90,19 +107,21 @@ const DEFAULT_SHOW = new Show({
   ],
 });
 
+
 export default function ShowPage(): JSX.Element {
+  const [selectedEffect, setSelectedEffect] = useState<Effect | null>(null);
+
   return (
-    <HorizontalSplitPane
-      className={styles.wrapper}
-      defaultAmount={0.8}
-      left={
-        <Tracks />
-      }
-      right={
-        <>
-          Details pane
-        </>
-      } />
+    <EffectSelectContext.Provider value={{
+      selectedEffect: selectedEffect,
+      selectEffect: setSelectedEffect,
+    }}>
+      <HorizontalSplitPane
+        className={styles.wrapper}
+        defaultAmount={0.8}
+        left={<Tracks />}
+        right={<DetailsPane />} />
+    </EffectSelectContext.Provider>
   );
 }
 
@@ -207,10 +226,14 @@ interface LightTrackProps {
   visible: { startMs: number, endMs: number };
 }
 
-function LightTrack({ track, leftWidth, visible }: LightTrackProps):
+function LightTrack({
+  track,
+  leftWidth,
+  visible }: LightTrackProps):
   JSX.Element {
   const { project, saveProject } = useContext(ProjectContext);
   const trackRef = useRef<HTMLDivElement>();
+  const [_lastUpdate, setLastUpdate] = useState(new Date().getTime());
 
   const device: OutputDescription = useMemo(() => {
     switch (track.output.case) {
@@ -232,6 +255,15 @@ function LightTrack({ track, leftWidth, visible }: LightTrackProps):
       const bounding = trackRef.current.getBoundingClientRect();
       return ((ms - visible.startMs) * bounding.width) /
         (visible.endMs - visible.startMs);
+    }
+    return 0;
+  }, [visible, trackRef.current]);
+
+  const pxToMx = useCallback((px: number) => {
+    if (trackRef.current) {
+      const bounding = trackRef.current.getBoundingClientRect();
+      return Math.floor(((px - bounding.left) / bounding.width) *
+        (visible.endMs - visible.startMs) + visible.startMs);
     }
     return 0;
   }, [visible, trackRef.current]);
@@ -260,14 +292,18 @@ function LightTrack({ track, leftWidth, visible }: LightTrackProps):
           track.layers.map((l, i) => (
             <div key={i} className={styles.layer}>
               {l.effects.map((e, i) => (
-                <div
+                <EffectComponent
                   key={i}
                   className={styles.effect}
                   style={{
                     left: msToPx(e.startMs),
                     width: msToPx(e.endMs) - msToPx(e.startMs),
-                  }}>
-                </div>
+                  }}
+                  effect={e}
+                  minMs={l.effects[i - 1]?.endMs || 0}
+                  maxMs={l.effects[i + 1]?.startMs || Number.MAX_SAFE_INTEGER}
+                  pxToMs={pxToMx}
+                  forceUpdate={() => setLastUpdate(new Date().getTime())} />
               ))}
             </div>
           ))
@@ -277,4 +313,20 @@ function LightTrack({ track, leftWidth, visible }: LightTrackProps):
   );
 }
 
+function DetailsPane(): JSX.Element {
+  const {selectedEffect} = useContext(EffectSelectContext);
+ 
+  if (selectedEffect == null) {
+    return (
+      <div className={styles.effectDetails}>
+        Select an effect to view details.
+      </div>
+    );
+  }
 
+  return (
+    <EffectDetails
+      className={styles.effectDetails} 
+      effect={selectedEffect} />
+  );
+}
