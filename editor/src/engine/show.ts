@@ -1,5 +1,5 @@
 import { DmxUniverse, WritableDevice, getPhysicalWritableDevice, getPhysicalWritableDeviceFromGroup } from "./fixture";
-import { Effect, Effect_StaticEffect } from "@dmx-controller/proto/effect_pb";
+import { Effect, Effect_RampEffect, Effect_StaticEffect, FixtureState } from "@dmx-controller/proto/effect_pb";
 import { Project } from "@dmx-controller/proto/project_pb";
 import { Show_LightTrack } from "@dmx-controller/proto/show_pb";
 
@@ -22,16 +22,11 @@ export function renderUniverse(t: number, project: Project):
     }
 
     for (const track of show.lightTracks) {
-      const device = getDevice(track.output, project, universe);
-      if (!device) {
-        continue;
-      }
-
       for (const layer of track.layers) {
         const effect = layer.effects.find((e) => e.startMs <= t && e.endMs > t);
         if (effect) {
           // TODO: Calculate beat and pass it in.
-          applyEffect(t, effect, device);
+          applyEffect(t, effect, track.output, project, universe);
         }
       }
     }
@@ -40,37 +35,62 @@ export function renderUniverse(t: number, project: Project):
   return universe;
 }
 
-function applyEffect(t: number, effect: Effect, device: WritableDevice): void {
+function applyEffect(
+  t: number,
+  effect: Effect,
+  output: Show_LightTrack['output'],
+  project: Project,
+  universe: DmxUniverse): void {
   const e = effect.effect.value;
   switch (effect.effect.case) {
     case 'staticEffect':
-      const state = (e as Effect_StaticEffect).state;
-      const color = state.color.value;
-      switch (state.color.case) {
-        case 'rgb':
-          device.setRGB(color.red, color.green, color.blue);
-          break;
-        case 'rgbw':
-          device.setRGBW(color.red, color.green, color.blue, color.white);
-          break;
-      }
+      const device = getDevice(output, project, universe);
+      applyState((e as Effect_StaticEffect).state, device);
+      break;
+    case 'rampEffect':
+      rampEffect(
+        t,
+        effect.effect.value,
+        effect.startMs,
+        effect.endMs,
+        output,
+        project,
+        universe);
+      break;
+  }
+}
 
-      if (state.brightness != null) {
-        device.setBrightness(state.brightness);
-      }
-
-      if (state.pan != null) {
-        device.setPan(state.pan);
-      }
-
-      if (state.tilt != null) {
-        device.setTilt(state.tilt);
-      }
-
-      for (const channel of state.channels) {
-        device.setChannel(channel.index, channel.value);
+function applyState(state: FixtureState, device: WritableDevice): void {
+  const color = state.color.value;
+  switch (state.color.case) {
+    case 'rgb':
+      {
+        const color = state.color.value;
+        device.setRGB(color.red, color.green, color.blue);
       }
       break;
+    case 'rgbw':
+      {
+        const color = state.color.value;
+        device.setRGBW(color.red, color.green, color.blue, color.white);
+      }
+      break;
+  }
+
+  if (state.brightness != null) {
+    device.setBrightness(state.brightness);
+  }
+
+  if (state.pan != null) {
+    device.setPan(state.pan);
+  }
+
+  if (state.tilt != null) {
+    device.setTilt(state.tilt);
+  }
+
+  for (const channel of state.channels) {
+    device.setChannel(channel.index, channel.value);
   }
 }
 
@@ -92,5 +112,28 @@ function getDevice(
         universe);
     default:
       throw Error('Unknown device!');
+  }
+}
+
+function rampEffect(
+  globalT: number,
+  effect: Effect_RampEffect,
+  startMs: number,
+  endMs: number,
+  output: Show_LightTrack['output'],
+  project: Project,
+  universe: DmxUniverse): void {
+  // TODO: Support different time mappings.
+  const t = Math.min(Math.max((globalT - startMs) / (endMs - startMs), 0), 1);
+
+  const start = new Uint8Array(universe);
+  const end = new Uint8Array(universe);
+
+  applyState(effect.start, getDevice(output, project, start));
+  applyState(effect.end, getDevice(output, project, end));
+
+  for (let i = 0; i < universe.length; ++i) {
+    // TODO: Support different easing functions.
+    universe[i] = Math.floor(start[i] * (1 - t) + end[i] * t);
   }
 }

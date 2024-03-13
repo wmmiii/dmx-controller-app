@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
-import { Effect, Effect_StaticEffect } from "@dmx-controller/proto/effect_pb";
+import { Effect, Effect_RampEffect, Effect_StaticEffect } from "@dmx-controller/proto/effect_pb";
 import { CSSProperties } from "react";
 import FixtureState from './FixtureState';
 
@@ -34,18 +34,31 @@ export function Effect({
   const [drag, setDrag] = useState<{ offset: number, width: number } | null>(null);
 
   if (effect.effect.case === 'staticEffect') {
-    const fixtureState = effect.effect.value.state;
-    const color = fixtureState.color.value;
-    switch (fixtureState.color.case) {
-      case 'rgb': // Fall-through
-      case 'rgbw':
-        const r = Math.floor(color.red * 255);
-        const g = Math.floor(color.green * 255);
-        const b = Math.floor(color.blue * 255);
-        style.background = `rgba(${r}, ${g}, ${b}, 0.1)`;
-        style.borderColor = `rgb(${r}, ${g}, ${b})`;
-        break;
+    const color = effect.effect.value.state.color.value;
+    if (color) {
+      const r = Math.floor(color.red * 255);
+      const g = Math.floor(color.green * 255);
+      const b = Math.floor(color.blue * 255);
+      style.background = `rgb(${r}, ${g}, ${b})`;
     }
+  } else if (effect.effect.case === 'rampEffect') {
+    const start = effect.effect.value.start.color.value || {
+      red: 0,
+      green: 0,
+      blue: 0,
+    };
+    const end = effect.effect.value.end.color.value || {
+      red: 0,
+      green: 0,
+      blue: 0,
+    };
+    const startR = Math.floor(start.red * 255);
+    const startG = Math.floor(start.green * 255);
+    const startB = Math.floor(start.blue * 255);
+    const endR = Math.floor(end.red * 255);
+    const endG = Math.floor(end.green * 255);
+    const endB = Math.floor(end.blue * 255);
+    style.background = `linear-gradient(90deg, rgb(${startR},${startG},${startB}) 0%, rgb(${endR},${endG},${endB}) 100%)`;
   }
 
   const containerClasses = [styles.effect, className];
@@ -112,55 +125,112 @@ export function Effect({
   );
 }
 
-
-
 interface EffectDetailsBaseProps<T> {
-  className: string;
+  className?: string;
   effect: T;
   onChange: (effect: T) => void;
 }
 
-export function EffectDetails(
-  { className, effect, onChange }: EffectDetailsBaseProps<Effect>):
-  JSX.Element {
+export function EffectDetails({
+  className,
+  effect,
+  onChange,
+}: EffectDetailsBaseProps<Effect>): JSX.Element {
 
   const classes = [styles.effectDetails, className];
 
+  let details: JSX.Element;
+
   switch (effect.effect.case) {
     case 'staticEffect':
-      return (
+      details = (
         <StaticEffectDetails
-          className={classes.join(' ')}
           effect={effect.effect.value}
           onChange={(e) => {
             effect.effect.value = e;
             onChange(effect);
           }} />
       );
+      break;
     case 'rampEffect':
-      return (
-        <div className={classes.join(' ')}>
-          <h3>Ramp Effect</h3>
-        </div>
+      details = (
+        <RampEffectDetails
+          effect={effect.effect.value}
+          onChange={(e) => {
+            effect.effect.value = e;
+            onChange(effect);
+          }} />
       );
+      break;
     default:
-      return (
-        <div className={classes.join(' ')}>
-          <h3>Unrecognized Effect</h3>
-        </div>
+      details = (
+        <p>Unrecognized effect type: {effect.effect.case}</p>
       );
-
   }
+
+  return (
+    <div className={classes.join(' ')}>
+      <select
+        value={effect.effect.case}
+        onChange={(e) => {
+          switch (e.target.value) {
+            case 'staticEffect':
+              effect.effect = {
+                value: new Effect_StaticEffect({
+                  state: {},
+                }),
+                case: 'staticEffect',
+              };
+              break;
+            case 'rampEffect':
+              effect.effect = {
+                value: new Effect_RampEffect({
+                  start: {},
+                  end: {},
+                }),
+                case: 'rampEffect',
+              };
+              break;
+            default:
+              console.log('Unrecognized event type: ', e.target.value);
+              return;
+          }
+          onChange(effect);
+        }}>
+        <option value="staticEffect">Static Effect</option>
+        <option value="rampEffect">Ramp Effect</option>
+      </select>
+
+      {details}
+    </div>
+  )
 }
 
-function StaticEffectDetails(
-  { className, effect, onChange }: EffectDetailsBaseProps<Effect_StaticEffect>): JSX.Element {
+function StaticEffectDetails({
+  effect,
+  onChange,
+}: EffectDetailsBaseProps<Effect_StaticEffect>): JSX.Element {
   return (
-    <div className={className}>
-      <h3>Static Effect</h3>
+    <FixtureState
+      state={effect.state}
+      onChange={() => onChange(effect)} />
+  );
+}
+
+function RampEffectDetails({
+  effect,
+  onChange,
+}: EffectDetailsBaseProps<Effect_RampEffect>): JSX.Element {
+  return (
+    <>
+      <h2>Start</h2>
       <FixtureState
-        state={effect.state}
+        state={effect.start}
         onChange={() => onChange(effect)} />
-    </div>
+      <h2>End</h2>
+      <FixtureState
+        state={effect.end}
+        onChange={() => onChange(effect)} />
+    </>
   );
 }

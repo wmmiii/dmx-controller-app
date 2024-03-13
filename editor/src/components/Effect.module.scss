@@ -1,12 +1,23 @@
+@use 'sass:color';
 @import '../vars';
 
 $handle-size: 30px;
 
 .effect {
-  background-color: rgba(255, 255, 255, 0.1);
-  border: 2px solid $col-border;
+  background-color: $col-border;
   box-sizing: border-box;
   cursor: grab;
+
+  &::after {
+    background-color: color.scale($col-bg, $alpha: -20%);
+    bottom: 2px;
+    content: "";
+    left: 2px;
+    position: absolute;
+    right: 2px;
+    top: 2px;
+    z-index: 1;
+  }
 
   &:hover {
 
@@ -16,8 +27,11 @@ $handle-size: 30px;
     }
   }
 
-  &.selected {
-    border: 8px solid;
+  &.selected::after {
+    bottom: 8px;
+    left: 8px;
+    right: 8px;
+    top: 8px;
   }
 }
 
@@ -41,6 +55,7 @@ $handle-size: 30px;
   position: absolute;
   top: 0;
   width: $handle-size;
+  z-index: 2;
 }
 
 .dragEnd {
@@ -54,6 +69,7 @@ $handle-size: 30px;
   right: 0;
   top: 0;
   width: $handle-size;
+  z-index: 2;
 }
 
 .effectDetails {
