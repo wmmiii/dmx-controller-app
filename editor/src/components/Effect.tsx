@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
-import { Effect } from "@dmx-controller/proto/effect_pb";
+import { Effect, Effect_StaticEffect } from "@dmx-controller/proto/effect_pb";
 import { CSSProperties } from "react";
+import FixtureState from './FixtureState';
 
 import styles from './Effect.module.scss';
 
@@ -32,8 +33,8 @@ export function Effect({
   const [dragEnd, setDragEnd] = useState(false);
   const [drag, setDrag] = useState<{ offset: number, width: number } | null>(null);
 
-  if (effect.effect.case === 'fixtureState') {
-    const fixtureState = effect.effect.value;
+  if (effect.effect.case === 'staticEffect') {
+    const fixtureState = effect.effect.value.state;
     const color = fixtureState.color.value;
     switch (fixtureState.color.case) {
       case 'rgb': // Fall-through
@@ -58,16 +59,18 @@ export function Effect({
     <div
       className={containerClasses.join(' ')}
       style={style}
-      onClick={() => selectEffect(effect)}
-      onMouseDown={(e) => setDrag({
-        offset: pxToMs(e.clientX) - effect.startMs,
-        width: effect.endMs - effect.startMs,
-      })}>
+      onMouseDown={(e) => {
+        selectEffect(effect);
+        setDrag({
+          offset: pxToMs(e.clientX) - effect.startMs,
+          width: effect.endMs - effect.startMs,
+        });
+      }}>
       {
         (dragStart || dragEnd || drag != null) &&
         <div
           className={styles.dragMask}
-          style={{cursor: maskCursor}}
+          style={{ cursor: maskCursor }}
           onMouseMove={(e) => {
             const ms = pxToMs(e.clientX);
             if (dragStart) {
@@ -109,26 +112,55 @@ export function Effect({
   );
 }
 
-interface EffectDetailsProps {
+
+
+interface EffectDetailsBaseProps<T> {
   className: string;
-  effect: Effect;
+  effect: T;
+  onChange: (effect: T) => void;
 }
 
-export function EffectDetails({ className, effect }: EffectDetailsProps):
+export function EffectDetails(
+  { className, effect, onChange }: EffectDetailsBaseProps<Effect>):
   JSX.Element {
+
+  const classes = [styles.effectDetails, className];
+
   switch (effect.effect.case) {
-    case 'fixtureState':
+    case 'staticEffect':
       return (
-        <div className={className}>
-          <h3>Fixture State</h3>
+        <StaticEffectDetails
+          className={classes.join(' ')}
+          effect={effect.effect.value}
+          onChange={(e) => {
+            effect.effect.value = e;
+            onChange(effect);
+          }} />
+      );
+    case 'rampEffect':
+      return (
+        <div className={classes.join(' ')}>
+          <h3>Ramp Effect</h3>
         </div>
       );
     default:
       return (
-        <div className={className}>
+        <div className={classes.join(' ')}>
           <h3>Unrecognized Effect</h3>
         </div>
       );
 
   }
+}
+
+function StaticEffectDetails(
+  { className, effect, onChange }: EffectDetailsBaseProps<Effect_StaticEffect>): JSX.Element {
+  return (
+    <div className={className}>
+      <h3>Static Effect</h3>
+      <FixtureState
+        state={effect.state}
+        onChange={() => onChange(effect)} />
+    </div>
+  );
 }

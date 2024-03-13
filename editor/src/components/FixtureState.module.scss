@@ -1,0 +1,28 @@
+@import '../vars';
+
+.stateRow {
+  align-items: center;
+  display: flex;
+  flex-direction: row;
+  gap: spacing(1);
+  justify-content: space-between;
+  margin: spacing(2) 0;
+
+  .input {
+    display: flex;
+    flex-direction: row;
+    flex: 1;
+    gap: spacing(1);
+    justify-content: space-between;
+
+    input[type='number'] {
+      width: 3em;
+      flex-shrink: 0;
+    }
+
+    input[type='range'] {
+      flex: 1;
+      width: 0;
+    }
+  }
+}

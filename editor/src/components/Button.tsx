@@ -55,7 +55,7 @@ export function IconButton(
   return (
     <button
       className={classes.join(' ')}
-      onClick={onClick}>
+      onMouseDown={onClick}>
       {children}
     </button>
   );

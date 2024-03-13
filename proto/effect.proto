@@ -2,14 +2,6 @@ syntax = "proto3";
 
 package dmx_controller;
 
-enum EffectTiming {
-  // The `t` value passed in corresponds to the actual `t` value of the show.
-  ABSOLUTE = 0;
-  // The `t` value passed in corresponds to the [0, 1] value of where we are in
-  // the effect itself.
-  ONE_SHOT = 1;
-}
-
 message RGB {
   double red = 1;
   double green = 2;
@@ -23,23 +15,46 @@ message RGBW {
   double white = 4;
 }
 
+message FixtureState {
+
+  message Channel {
+    uint32 index = 1;
+    uint32 value = 2;
+  }
+
+  repeated Channel channels = 1;
+  oneof color {
+    RGB rgb = 2;
+    RGBW rgbw = 3;
+  }
+  optional double brightness = 4;
+  optional double pan = 5;
+  optional double tilt = 6;
+}
+
+enum EffectTiming {
+  // The `t` value passed in corresponds to the actual `t` value of the show.
+  ABSOLUTE = 0;
+  // The `t` value passed in corresponds to the [0, 1] value of where we are in
+  // the effect itself.
+  ONE_SHOT = 1;
+}
+
 message Effect {
 
-  message FixtureState {
+  message StaticEffect { FixtureState state = 1; }
 
-    message Channel {
-      uint32 index = 1;
-      uint32 value = 2;
+  message RampEffect {
+    enum EasingFunction {
+      LINEAR = 0;
+      EASE_IN = 1;
+      EASE_OUT = 2;
+      EASE_IN_OUT = 3;
     }
 
-    repeated Channel channels = 1;
-    oneof color {
-      RGB rgb = 2;
-      RGBW rgbw = 3;
-    }
-    optional double brightness = 4;
-    optional double pan = 5;
-    optional double tilt = 6;
+    EasingFunction easing = 1;
+    FixtureState start = 2;
+    FixtureState end = 3;
   }
 
   uint32 start_ms = 1;
@@ -52,5 +67,8 @@ message Effect {
   double timing_multiplier = 13;
   reserved 14 to 100;
 
-  oneof effect { FixtureState fixture_state = 101; }
+  oneof effect {
+    StaticEffect static_effect = 101;
+    RampEffect ramp_effect = 102;
+  }
 }

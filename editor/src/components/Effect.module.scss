@@ -9,6 +9,7 @@ $handle-size: 30px;
   cursor: grab;
 
   &:hover {
+
     .dragStart,
     .dragEnd {
       opacity: 1;
@@ -53,4 +54,10 @@ $handle-size: 30px;
   right: 0;
   top: 0;
   width: $handle-size;
+}
+
+.effectDetails {
+  @include fill;
+  overflow-y: auto;
+  padding: spacing(1);
 }

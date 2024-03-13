@@ -54,16 +54,18 @@ const DEFAULT_SHOW = new Show({
               endMs: 1000,
               effect: {
                 value: {
-                  color: {
-                    value: {
-                      red: 1,
-                      green: 0,
-                      blue: 0,
+                  state: {
+                    color: {
+                      value: {
+                        red: 1,
+                        green: 0,
+                        blue: 0,
+                      },
+                      case: 'rgb',
                     },
-                    case: 'rgb',
                   },
                 },
-                case: 'fixtureState',
+                case: 'staticEffect',
               }
             },
             {
@@ -71,16 +73,18 @@ const DEFAULT_SHOW = new Show({
               endMs: 2000,
               effect: {
                 value: {
-                  color: {
-                    value: {
-                      red: 0,
-                      green: 1,
-                      blue: 0,
+                  state: {
+                    color: {
+                      value: {
+                        red: 0,
+                        green: 1,
+                        blue: 0,
+                      },
+                      case: 'rgb',
                     },
-                    case: 'rgb',
-                  },
+                  }
                 },
-                case: 'fixtureState',
+                case: 'staticEffect',
               }
             },
             {
@@ -88,16 +92,18 @@ const DEFAULT_SHOW = new Show({
               endMs: 3000,
               effect: {
                 value: {
-                  color: {
-                    value: {
-                      red: 0,
-                      green: 0,
-                      blue: 1,
+                  state: {
+                    color: {
+                      value: {
+                        red: 0,
+                        green: 0,
+                        blue: 1,
+                      },
+                      case: 'rgb',
                     },
-                    case: 'rgb',
                   },
                 },
-                case: 'fixtureState',
+                case: 'staticEffect',
               }
             },
           ]
@@ -110,22 +116,29 @@ const DEFAULT_SHOW = new Show({
 
 export default function ShowPage(): JSX.Element {
   const [selectedEffect, setSelectedEffect] = useState<Effect | null>(null);
+  
+  const [_lastUpdate, setLastUpdate] = useState(new Date().getTime());
+  const forceUpdate = () => setLastUpdate(new Date().getTime());
 
   return (
     <EffectSelectContext.Provider value={{
       selectedEffect: selectedEffect,
-      selectEffect: setSelectedEffect,
+      selectEffect: (effect) => setSelectedEffect(effect),
     }}>
       <HorizontalSplitPane
         className={styles.wrapper}
         defaultAmount={0.8}
-        left={<Tracks />}
-        right={<DetailsPane />} />
+        left={<Tracks forceUpdate={forceUpdate} />}
+        right={<DetailsPane forceUpdate={forceUpdate} />} />
     </EffectSelectContext.Provider>
   );
 }
 
-function Tracks(): JSX.Element {
+interface PaneProps {
+  forceUpdate: () => void;
+}
+
+function Tracks({forceUpdate}: PaneProps): JSX.Element {
   const { project, saveProject } = useContext(ProjectContext);
   const { setShortcutHandler, clearShortcutHandler } = useContext(ShortcutContext);
   const { setRenderUniverse, clearRenderUniverse } = useContext(SerialContext);
@@ -212,7 +225,11 @@ function Tracks(): JSX.Element {
       <div className={styles.lightTracks}>
         {
           show?.lightTracks.map(t => (
-            <LightTrack track={t} leftWidth={leftWidth} visible={visible} />
+            <LightTrack
+              track={t}
+              leftWidth={leftWidth}
+              visible={visible} 
+              forceUpdate={forceUpdate} />
           ))
         }
       </div>
@@ -224,16 +241,17 @@ interface LightTrackProps {
   track: Show_LightTrack;
   leftWidth: number;
   visible: { startMs: number, endMs: number };
+  forceUpdate: () => void;
 }
 
 function LightTrack({
   track,
   leftWidth,
-  visible }: LightTrackProps):
+  visible,
+  forceUpdate }: LightTrackProps):
   JSX.Element {
   const { project, saveProject } = useContext(ProjectContext);
   const trackRef = useRef<HTMLDivElement>();
-  const [_lastUpdate, setLastUpdate] = useState(new Date().getTime());
 
   const device: OutputDescription = useMemo(() => {
     switch (track.output.case) {
@@ -303,7 +321,7 @@ function LightTrack({
                   minMs={l.effects[i - 1]?.endMs || 0}
                   maxMs={l.effects[i + 1]?.startMs || Number.MAX_SAFE_INTEGER}
                   pxToMs={pxToMx}
-                  forceUpdate={() => setLastUpdate(new Date().getTime())} />
+                  forceUpdate={forceUpdate} />
               ))}
             </div>
           ))
@@ -313,9 +331,9 @@ function LightTrack({
   );
 }
 
-function DetailsPane(): JSX.Element {
-  const {selectedEffect} = useContext(EffectSelectContext);
- 
+function DetailsPane({forceUpdate}: PaneProps): JSX.Element {
+  const { selectedEffect, selectEffect } = useContext(EffectSelectContext);
+
   if (selectedEffect == null) {
     return (
       <div className={styles.effectDetails}>
@@ -326,7 +344,8 @@ function DetailsPane(): JSX.Element {
 
   return (
     <EffectDetails
-      className={styles.effectDetails} 
-      effect={selectedEffect} />
+      className={styles.effectDetails}
+      effect={selectedEffect}
+      onChange={forceUpdate} />
   );
 }

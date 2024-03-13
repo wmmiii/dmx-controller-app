@@ -9,6 +9,7 @@ TS_DEPS = [
     "//:node_modules/esbuild-scss-modules-plugin",
     "//:node_modules/react",
     "//:node_modules/react-dom",
+    "//:node_modules/react-pick-color",
     "//:node_modules/react-router",
     "//:node_modules/react-router-dom",
     "//:node_modules/wavesurfer.js",
