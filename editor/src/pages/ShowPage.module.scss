@@ -5,10 +5,12 @@
 }
 
 .trackContainer {
+  @include fill;
   display: flex;
   flex-direction: column;
 
   .audioVisualizer,
+  .timelineOptions,
   .lightTrack {
     display: flex;
     flex-direction: row;
@@ -28,6 +30,14 @@
     flex: 1;
     overflow-y: auto;
   }
+}
+
+.timelineOptions .right {
+  display: flex;
+  flex-direction: row;
+  gap: spacing(2);
+  align-items: center;
+  padding: spacing(1) 0;
 }
 
 .lightTrack {

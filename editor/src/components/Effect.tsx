@@ -16,7 +16,8 @@ interface EffectProps {
   effect: Effect;
   minMs: number;
   maxMs: number;
-  pxToMs: (px: number) => number;
+  pxToMs: (px: number, snapToBeat: boolean) => number;
+  snapToBeat: (t: number) => number;
   forceUpdate: () => void;
 }
 
@@ -27,11 +28,12 @@ export function Effect({
   minMs,
   maxMs,
   pxToMs,
+  snapToBeat,
   forceUpdate }: EffectProps): JSX.Element {
   const { selectedEffect, selectEffect } = useContext(EffectSelectContext);
   const [dragStart, setDragStart] = useState(false);
   const [dragEnd, setDragEnd] = useState(false);
-  const [drag, setDrag] = useState<{ offset: number, width: number } | null>(null);
+  const [drag, setDrag] = useState<{ offsetMs: number, widthMs: number } | null>(null);
 
   if (effect.effect.case === 'staticEffect') {
     const color = effect.effect.value.state.color.value;
@@ -75,8 +77,8 @@ export function Effect({
       onMouseDown={(e) => {
         selectEffect(effect);
         setDrag({
-          offset: pxToMs(e.clientX) - effect.startMs,
-          width: effect.endMs - effect.startMs,
+          offsetMs: pxToMs(e.clientX, false) - effect.startMs,
+          widthMs: effect.endMs - effect.startMs,
         });
       }}>
       {
@@ -85,20 +87,22 @@ export function Effect({
           className={styles.dragMask}
           style={{ cursor: maskCursor }}
           onMouseMove={(e) => {
-            const ms = pxToMs(e.clientX);
+            const ms = pxToMs(e.clientX, true);
             if (dragStart) {
-              effect.startMs = Math.min(Math.max(ms, minMs), effect.endMs - 1);
+              effect.startMs = Math.min(Math.max(
+                snapToBeat(ms), minMs), effect.endMs - 1);
             } else if (dragEnd) {
-              effect.endMs = Math.max(Math.min(ms, maxMs), effect.startMs + 1);;
+              effect.endMs = Math.max(Math.min(
+                snapToBeat(ms), maxMs), effect.startMs + 1);;
             } else if (drag != null) {
-              const startMs = ms - drag.offset;
-              const endMs = startMs + drag.width;
+              const startMs = snapToBeat(ms - drag.offsetMs);
+              const endMs = startMs + drag.widthMs;
               if (startMs < minMs) {
                 effect.startMs = minMs;
-                effect.endMs = minMs + drag.width;
+                effect.endMs = minMs + drag.widthMs;
               } else if (endMs > maxMs) {
                 effect.endMs = maxMs;
-                effect.startMs = maxMs - drag.width;
+                effect.startMs = maxMs - drag.widthMs;
               } else {
                 effect.startMs = startMs;
                 effect.endMs = endMs;

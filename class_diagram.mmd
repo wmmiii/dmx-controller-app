@@ -1,0 +1,18 @@
+---
+title: dmx-controller.app
+---
+
+classDiagram
+  note "This is the propsoed\nstructure"
+  Project --> Show
+  Project --> Scene
+  Project --> FixtureDefinition
+  Project --> Universe
+  Project --> AudioFile
+  Show ..> AudioFile
+  Show ..> Universe
+  Show --> Layer
+  Scene --> Layer
+  Layer --> Effect
+  Universe --> PhysicalFixture
+  PhysicalFixture ..> FixtureDefinition

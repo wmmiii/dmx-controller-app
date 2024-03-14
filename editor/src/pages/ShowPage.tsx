@@ -1,4 +1,4 @@
-import React, { JSX, createContext, createRef, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { JSX, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import styles from "./ShowPage.module.scss";
 import { ProjectContext } from '../contexts/ProjectContext';
@@ -14,6 +14,7 @@ import IconBxZoomIn from '../icons/IconBxZoomin';
 import IconBxZoomOut from '../icons/IconBxZoomOut';
 import { Effect as EffectComponent, EffectDetails, EffectSelectContext } from '../components/Effect';
 import { Effect } from '@dmx-controller/proto/effect_pb';
+import IconBxPulse from '../icons/IconBxPulse';
 
 const DEFAULT_SHOW = new Show({
   name: 'Untitled Show',
@@ -116,7 +117,7 @@ const DEFAULT_SHOW = new Show({
 
 export default function ShowPage(): JSX.Element {
   const [selectedEffect, setSelectedEffect] = useState<Effect | null>(null);
-  
+
   const [_lastUpdate, setLastUpdate] = useState(new Date().getTime());
   const forceUpdate = () => setLastUpdate(new Date().getTime());
 
@@ -138,7 +139,7 @@ interface PaneProps {
   forceUpdate: () => void;
 }
 
-function Tracks({forceUpdate}: PaneProps): JSX.Element {
+function Tracks({ forceUpdate }: PaneProps): JSX.Element {
   const { project, saveProject } = useContext(ProjectContext);
   const { setShortcutHandler, clearShortcutHandler } = useContext(ShortcutContext);
   const { setRenderUniverse, clearRenderUniverse } = useContext(SerialContext);
@@ -153,6 +154,8 @@ function Tracks({forceUpdate}: PaneProps): JSX.Element {
     (startMs: number, endMs: number) => setVisible({ startMs, endMs }),
     [setVisible]);
   const [minPxPerSec, setMinPxPerSec] = useState(128);
+  const [snapToBeat, setSnapToBeat] = useState(true);
+  const [beatSubdivisions, setBeatSubdivisions] = useState(1);
 
   const setAudioController = useCallback(
     (c: AudioController) => audioController.current = c,
@@ -198,10 +201,33 @@ function Tracks({forceUpdate}: PaneProps): JSX.Element {
     return () => clearRenderUniverse(render);
   }, [project, playing, t]);
 
+  const nearestBeat = useCallback((t: number) => {
+    if (project?.assets.audioFiles[0]?.beatMetadata) {
+      const beatMetadata = project.assets.audioFiles[0].beatMetadata;
+      const lengthMs = beatMetadata.lengthMs / beatSubdivisions;
+      const beatNumber = Math.round((t - beatMetadata.offsetMs) / lengthMs);
+      return Math.floor(beatMetadata.offsetMs + beatNumber * lengthMs);
+    }
+    return undefined;
+  }, [project, beatSubdivisions]);
+
   return (
     <div className={styles.trackContainer}>
       <div className={styles.audioVisualizer}>
-        <div className={styles.left} style={{ width: leftWidth }}>
+        <div className={styles.left} style={{ width: leftWidth }}></div>
+        <AudioTrackVisualizer
+          className={styles.right}
+          fileId={0}
+          setController={setAudioController}
+          setPlaying={setPlaying}
+          setVisible={setVisibleCallback}
+          minPxPerSec={minPxPerSec}
+          beatSubdivisions={beatSubdivisions}
+          onProgress={setT} />
+      </div>
+      <div className={styles.timelineOptions}>
+        <div className={styles.left} style={{ width: leftWidth }}></div>
+        <div className={styles.right}>
           <Button
             icon={<IconBxZoomIn />}
             onClick={() => setMinPxPerSec(minPxPerSec * 2)}>
@@ -212,15 +238,23 @@ function Tracks({forceUpdate}: PaneProps): JSX.Element {
             onClick={() => setMinPxPerSec(minPxPerSec / 2)}>
             Zoom Out
           </Button>
+          <Button
+            variant={snapToBeat ? 'primary' : 'default'}
+            icon={<IconBxPulse />}
+            onClick={() => setSnapToBeat(!snapToBeat)}>
+            Snap to Beat
+          </Button>
+          <span>
+            Subdivide beat&nbsp;
+            <input
+              disabled={!snapToBeat}
+              type="number"
+              min="1"
+              max="16"
+              value={beatSubdivisions}
+              onChange={(e) => setBeatSubdivisions(parseInt(e.target.value))} />
+          </span>
         </div>
-        <AudioTrackVisualizer
-          className={styles.right}
-          fileId={0}
-          setController={setAudioController}
-          setPlaying={setPlaying}
-          setVisible={setVisibleCallback}
-          minPxPerSec={minPxPerSec}
-          onProgress={setT} />
       </div>
       <div className={styles.lightTracks}>
         {
@@ -228,7 +262,8 @@ function Tracks({forceUpdate}: PaneProps): JSX.Element {
             <LightTrack
               track={t}
               leftWidth={leftWidth}
-              visible={visible} 
+              visible={visible}
+              nearestBeat={snapToBeat ? nearestBeat : undefined}
               forceUpdate={forceUpdate} />
           ))
         }
@@ -241,6 +276,7 @@ interface LightTrackProps {
   track: Show_LightTrack;
   leftWidth: number;
   visible: { startMs: number, endMs: number };
+  nearestBeat?: (ms: number) => number;
   forceUpdate: () => void;
 }
 
@@ -248,7 +284,9 @@ function LightTrack({
   track,
   leftWidth,
   visible,
-  forceUpdate }: LightTrackProps):
+  nearestBeat,
+  forceUpdate,
+}: LightTrackProps):
   JSX.Element {
   const { project, saveProject } = useContext(ProjectContext);
   const trackRef = useRef<HTMLDivElement>();
@@ -277,6 +315,15 @@ function LightTrack({
     return 0;
   }, [visible, trackRef.current]);
 
+  const beatSnapRangeMs = useMemo(() => {
+    if (trackRef.current) {
+      const bounding = trackRef.current.getBoundingClientRect();
+      return Math.floor(
+        10 * (visible.endMs - visible.startMs) / bounding.width);
+    }
+    return 0;
+  }, [visible, trackRef.current]);
+
   const pxToMx = useCallback((px: number) => {
     if (trackRef.current) {
       const bounding = trackRef.current.getBoundingClientRect();
@@ -284,7 +331,17 @@ function LightTrack({
         (visible.endMs - visible.startMs) + visible.startMs);
     }
     return 0;
-  }, [visible, trackRef.current]);
+  }, [visible, nearestBeat, beatSnapRangeMs, trackRef.current]);
+
+  const snapToBeat = useCallback((t: number) => {
+    if (nearestBeat) {
+      const beat = nearestBeat(t);
+      if (Math.abs(beat - t) < beatSnapRangeMs) {
+        return beat;
+      }
+    }
+    return t;
+  }, [nearestBeat, beatSnapRangeMs]);
 
   return (
     <div className={styles.lightTrack}>
@@ -321,6 +378,7 @@ function LightTrack({
                   minMs={l.effects[i - 1]?.endMs || 0}
                   maxMs={l.effects[i + 1]?.startMs || Number.MAX_SAFE_INTEGER}
                   pxToMs={pxToMx}
+                  snapToBeat={snapToBeat}
                   forceUpdate={forceUpdate} />
               ))}
             </div>
@@ -331,7 +389,7 @@ function LightTrack({
   );
 }
 
-function DetailsPane({forceUpdate}: PaneProps): JSX.Element {
+function DetailsPane({ forceUpdate }: PaneProps): JSX.Element {
   const { selectedEffect, selectEffect } = useContext(EffectSelectContext);
 
   if (selectedEffect == null) {
