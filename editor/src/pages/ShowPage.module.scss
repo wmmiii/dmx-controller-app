@@ -65,20 +65,3 @@
   overflow: hidden;
   min-width: 0;
 }
-
-.layer {
-  height: 120px;
-  position: relative;
-  overflow: hidden;
-  border-bottom: 1px solid $col-border;
-
-  &:last-child {
-    border-bottom: none
-  }
-}
-
-.effect {
-  bottom: 0;
-  position: absolute;
-  top: 0;
-}

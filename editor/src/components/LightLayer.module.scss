@@ -1,0 +1,32 @@
+@import '../vars';
+
+.layer {
+  height: 120px;
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid $col-border;
+
+  &:last-child {
+    border-bottom: none
+  }
+}
+
+.effect,
+.newEffect {
+  bottom: 0;
+  position: absolute;
+  top: 0;
+}
+
+.newEffect {
+  background-color: #ffffff;
+}
+
+.createMask {
+  bottom: 0;
+  left: 0;
+  position: fixed;
+  right: 0;
+  top: 0;
+  z-index: $z-index-interactive-mask;
+}

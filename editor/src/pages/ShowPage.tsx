@@ -12,9 +12,10 @@ import { renderUniverse } from '../engine/show';
 import { OutputDescription, OutputSelector } from '../components/OutputSelector';
 import IconBxZoomIn from '../icons/IconBxZoomin';
 import IconBxZoomOut from '../icons/IconBxZoomOut';
-import { Effect as EffectComponent, EffectDetails, EffectSelectContext } from '../components/Effect';
+import { EffectDetails, EffectSelectContext, SelectedEffect } from '../components/Effect';
 import { Effect } from '@dmx-controller/proto/effect_pb';
 import IconBxPulse from '../icons/IconBxPulse';
+import { LightLayer } from '../components/LightLayer';
 
 const DEFAULT_SHOW = new Show({
   name: 'Untitled Show',
@@ -114,10 +115,9 @@ const DEFAULT_SHOW = new Show({
   ],
 });
 
-
 export default function ShowPage(): JSX.Element {
   const { setShortcuts } = useContext(ShortcutContext);
-  const [selectedEffect, setSelectedEffect] = useState<Effect | null>(null);
+  const [selectedEffect, setSelectedEffect] = useState<SelectedEffect | null>(null);
 
   const [_lastUpdate, setLastUpdate] = useState(new Date().getTime());
   const forceUpdate = () => setLastUpdate(new Date().getTime());
@@ -126,13 +126,25 @@ export default function ShowPage(): JSX.Element {
     {
       shortcut: { key: 'Escape' },
       action: () => setSelectedEffect(null),
-      description: 'Deselect currently selected effect.',
+      description: 'Deselect the currently selected effect.',
     },
-  ]), [setSelectedEffect]);
+    {
+      shortcut: { key: 'Delete' },
+      action: () => {
+        selectedEffect?.delete();
+        setSelectedEffect(null);
+      },
+      description: 'Delete the currently selected effect.',
+    }
+  ]), [selectedEffect, setSelectedEffect]);
 
   return (
     <EffectSelectContext.Provider value={{
-      selectedEffect: selectedEffect,
+      selectedEffect: selectedEffect?.effect || null,
+      deleteSelectedEffect: () => {
+        selectedEffect?.delete();
+        setSelectedEffect(null);
+      },
       selectEffect: (effect) => setSelectedEffect(effect),
     }}>
       <HorizontalSplitPane
@@ -149,7 +161,7 @@ interface PaneProps {
 }
 
 function Tracks({ forceUpdate }: PaneProps): JSX.Element {
-  const { project, saveProject } = useContext(ProjectContext);
+  const { project, markDirty } = useContext(ProjectContext);
   const { setShortcuts } = useContext(ShortcutContext);
   const { setRenderUniverse, clearRenderUniverse } = useContext(SerialContext);
 
@@ -176,7 +188,7 @@ function Tracks({ forceUpdate }: PaneProps): JSX.Element {
   useEffect(() => {
     if (project && !show && project.assets?.audioFiles.length > 0) {
       project.show = DEFAULT_SHOW
-      saveProject(project);
+      markDirty();
     }
   }, [project, show]);
 
@@ -292,7 +304,7 @@ function LightTrack({
   forceUpdate,
 }: LightTrackProps):
   JSX.Element {
-  const { project, saveProject } = useContext(ProjectContext);
+  const { project, markDirty } = useContext(ProjectContext);
   const trackRef = useRef<HTMLDivElement>();
 
   const device: OutputDescription = useMemo(() => {
@@ -328,7 +340,7 @@ function LightTrack({
     return 0;
   }, [visible, trackRef.current]);
 
-  const pxToMx = useCallback((px: number) => {
+  const pxToMs = useCallback((px: number) => {
     if (trackRef.current) {
       const bounding = trackRef.current.getBoundingClientRect();
       return Math.floor(((px - bounding.left) / bounding.width) *
@@ -363,30 +375,19 @@ function LightTrack({
                 break;
             }
             track.output.value = device.id;
-            saveProject(project);
+            markDirty();
           }} />
       </div>
       <div className={styles.right} ref={trackRef}>
         {
           track.layers.map((l, i) => (
-            <div key={i} className={styles.layer}>
-              {l.effects.map((e, i) => (
-                <EffectComponent
-                  key={i}
-                  className={styles.effect}
-                  style={{
-                    left: msToPx(e.startMs),
-                    width: msToPx(e.endMs) - msToPx(e.startMs),
-                  }}
-                  effect={e}
-                  minMs={l.effects[i - 1]?.endMs || 0}
-                  maxMs={l.effects[i + 1]?.startMs || Number.MAX_SAFE_INTEGER}
-                  pxToMs={pxToMx}
-                  snapToBeat={snapToBeat}
-                  save={() => saveProject(project)}
-                  forceUpdate={forceUpdate} />
-              ))}
-            </div>
+            <LightLayer
+              key={i}
+              layer={l}
+              msToPx={msToPx}
+              pxToMs={pxToMs}
+              snapToBeat={snapToBeat}
+              forceUpdate={forceUpdate} />
           ))
         }
       </div>

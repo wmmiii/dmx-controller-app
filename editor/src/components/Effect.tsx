@@ -1,24 +1,31 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
-import { Effect, Effect_RampEffect, Effect_StaticEffect } from "@dmx-controller/proto/effect_pb";
+import { Effect as EffectProto, Effect_RampEffect, Effect_StaticEffect } from "@dmx-controller/proto/effect_pb";
 import { CSSProperties } from "react";
 import FixtureState from './FixtureState';
 
 import styles from './Effect.module.scss';
 
+export interface SelectedEffect {
+  effect: EffectProto;
+  delete: () => void;
+}
+
 export const EffectSelectContext = createContext({
-  selectedEffect: null as Effect | null,
-  selectEffect: (_effect: Effect) => { },
+  selectedEffect: null as EffectProto | null,
+  deleteSelectedEffect: () => {},
+  selectEffect: (_selected: SelectedEffect) => { },
 });
 
 interface EffectProps {
   className: string;
   style: CSSProperties;
-  effect: Effect;
+  effect: EffectProto;
   minMs: number;
   maxMs: number;
-  pxToMs: (px: number, snapToBeat: boolean) => number;
+  pxToMs: (px: number) => number;
   snapToBeat: (t: number) => number;
   save: () => void;
+  onDelete: () => void;
   forceUpdate: () => void;
 }
 
@@ -31,15 +38,16 @@ export function Effect({
   pxToMs,
   snapToBeat,
   save,
+  onDelete,
   forceUpdate,
- }: EffectProps): JSX.Element {
+}: EffectProps): JSX.Element {
   const { selectedEffect, selectEffect } = useContext(EffectSelectContext);
   const [dragStart, setDragStart] = useState(false);
   const [dragEnd, setDragEnd] = useState(false);
   const [drag, setDrag] = useState<{ offsetMs: number, widthMs: number } | null>(null);
 
   if (effect.effect.case === 'staticEffect') {
-    const color = effect.effect.value.state.color.value;
+    const color = effect.effect.value.state?.color?.value;
     if (color) {
       const r = Math.floor(color.red * 255);
       const g = Math.floor(color.green * 255);
@@ -78,11 +86,16 @@ export function Effect({
       className={containerClasses.join(' ')}
       style={style}
       onMouseDown={(e) => {
-        selectEffect(effect);
+        selectEffect({
+          effect: effect,
+          delete: onDelete,
+        });
         setDrag({
-          offsetMs: pxToMs(e.clientX, false) - effect.startMs,
+          offsetMs: pxToMs(e.clientX) - effect.startMs,
           widthMs: effect.endMs - effect.startMs,
         });
+        e.preventDefault();
+        e.stopPropagation();
       }}>
       {
         (dragStart || dragEnd || drag != null) &&
@@ -90,7 +103,7 @@ export function Effect({
           className={styles.dragMask}
           style={{ cursor: maskCursor }}
           onMouseMove={(e) => {
-            const ms = pxToMs(e.clientX, true);
+            const ms = pxToMs(e.clientX);
             if (dragStart) {
               effect.startMs = Math.min(Math.max(
                 snapToBeat(ms), minMs), effect.endMs - 1);
@@ -112,22 +125,34 @@ export function Effect({
               }
             }
             forceUpdate();
+            e.preventDefault();
+            e.stopPropagation();
           }}
-          onMouseUp={() => {
+          onMouseUp={(e) => {
             setDragStart(false);
             setDragEnd(false);
             setDrag(null);
             save();
+            e.preventDefault();
+            e.stopPropagation();
           }}>
         </div>
       }
       <div
         className={styles.dragStart}
-        onMouseDown={() => setDragStart(true)}>
+        onMouseDown={(e) => {
+          setDragStart(true);
+          e.preventDefault();
+          e.stopPropagation();
+        }}>
       </div>
       <div
         className={styles.dragEnd}
-        onMouseDown={() => setDragEnd(true)}>
+        onMouseDown={(e) => {
+          setDragEnd(true);
+          e.preventDefault();
+          e.stopPropagation();
+        }}>
       </div>
     </div >
   );
@@ -143,7 +168,7 @@ export function EffectDetails({
   className,
   effect,
   onChange,
-}: EffectDetailsBaseProps<Effect>): JSX.Element {
+}: EffectDetailsBaseProps<EffectProto>): JSX.Element {
 
   const classes = [styles.effectDetails, className];
 

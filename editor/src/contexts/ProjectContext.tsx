@@ -1,4 +1,4 @@
-import React, { PropsWithChildren, createContext, useCallback, useEffect, useState } from 'react';
+import React, { PropsWithChildren, createContext, useCallback, useEffect, useRef, useState } from 'react';
 import { FixtureDefinition, PhysicalFixture } from '@dmx-controller/proto/fixture_pb';
 import { Project } from '@dmx-controller/proto/project_pb';
 import ldb from '@dmx-controller/third_party/DVLP/local_storage_db/localdata.min.js';
@@ -40,11 +40,13 @@ const DEFAULT_PROJECT = new Project({
 
 export const ProjectContext = createContext({
   project: null as (Project | null),
-  saveProject: (_project: Project) => { },
+  markDirty: () => { },
 });
 
 export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
   const [project, setProject] = useState<Project | null>(null);
+  const [dirty, setDirty] = useState(false);
+  const saveHandle = useRef<number|undefined>();
 
   useEffect(() => {
     ldb.get(PROJECT_KEY, (str: string) => {
@@ -54,20 +56,27 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
         setProject(DEFAULT_PROJECT);
       }
     });
-  }, [])
+  }, []);
 
-  const saveProject = useCallback((project: Project) => {
-    project.updateFrequencyMs = 10;
-    project.updateOffsetMs = 50;
-    ldb.set(PROJECT_KEY, project.toJsonString(), () => {
-      setProject(new Project(project));
-    });
-  }, [setProject]);
+  useEffect(() => {
+    if (dirty) {
+      clearTimeout(saveHandle.current);
+      saveHandle.current = setTimeout(() => {
+        console.time('save');
+        ldb.set(PROJECT_KEY, project.toJsonString(), () => {
+          console.timeEnd('save');
+          setProject(new Project(project));
+        });
+      }, 1000);
+      setDirty(false);
+    }
+
+  }, [dirty, project, setProject]);
 
   return (
     <ProjectContext.Provider value={{
       project: project,
-      saveProject: saveProject,
+      markDirty: () => setDirty(true),
     }}>
       {children}
     </ProjectContext.Provider>
