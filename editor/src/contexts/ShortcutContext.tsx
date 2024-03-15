@@ -46,7 +46,7 @@ export function ShortcutProvider({ children }: PropsWithChildren): JSX.Element {
     shortcutBundles.current.push(shortcuts);
     return () => {
       const index = shortcutBundles.current.indexOf(shortcuts);
-      if (index) {
+      if (index >= 0) {
         shortcutBundles.current.splice(index, 1);
       }
     };

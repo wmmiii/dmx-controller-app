@@ -29,7 +29,7 @@ export function LightLayer({
   snapToBeat,
   forceUpdate,
 }: LightLayerProps): JSX.Element {
-  const { markDirty } = useContext(ProjectContext);
+  const { save } = useContext(ProjectContext);
   const [newEffect, setNewEffect] = useState<NewEffect | null>(null);
 
   return (
@@ -84,7 +84,7 @@ export function LightLayer({
                   case: 'staticEffect',
                 },
               }));
-              markDirty();
+              save();
               setNewEffect(null);
             }}>
           </div>
@@ -103,10 +103,10 @@ export function LightLayer({
           maxMs={layer.effects[i + 1]?.startMs || Number.MAX_SAFE_INTEGER}
           pxToMs={pxToMs}
           snapToBeat={snapToBeat}
-          save={() => markDirty()}
+          save={() => save()}
           onDelete={() => {
             layer.effects.splice(i, 1);
-            markDirty();
+            save();
           }}
           forceUpdate={forceUpdate} />
       ))}

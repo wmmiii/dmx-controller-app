@@ -27,7 +27,7 @@ interface AudioFileListProps {
 }
 
 function AudioFileList({ selectAudioFile }: AudioFileListProps): JSX.Element {
-  const { project, markDirty } = useContext(ProjectContext);
+  const { project, saveAssets } = useContext(ProjectContext);
   const [highlightDrop, setHighlightDrop] = useState(false);
 
   if (!project) {
@@ -75,7 +75,7 @@ function AudioFileList({ selectAudioFile }: AudioFileListProps): JSX.Element {
             }
           }
 
-          markDirty();
+          saveAssets();
         })();
 
         setHighlightDrop(false);
@@ -100,7 +100,7 @@ interface AudioDetailsProps {
 }
 
 function AudioDetails({ file }: AudioDetailsProps): JSX.Element {
-  const { markDirty } = useContext(ProjectContext);
+  const { saveAssets } = useContext(ProjectContext);
   const [beatFile, setBeatFile] = useState<AudioFile | null>(null);
 
   if (!file) {
@@ -125,7 +125,7 @@ function AudioDetails({ file }: AudioDetailsProps): JSX.Element {
           file={file}
           onCancel={() => setBeatFile(null)}
           onSave={() => {
-            markDirty();
+            saveAssets();
             setBeatFile(null);
           }} />
       }

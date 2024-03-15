@@ -1,9 +1,10 @@
 import React, { PropsWithChildren, createContext, useCallback, useEffect, useRef, useState } from 'react';
 import { FixtureDefinition, PhysicalFixture } from '@dmx-controller/proto/fixture_pb';
-import { Project } from '@dmx-controller/proto/project_pb';
+import { Project, Project_Assets } from '@dmx-controller/proto/project_pb';
 import ldb from '@dmx-controller/third_party/DVLP/local_storage_db/localdata.min.js';
 
 const PROJECT_KEY = "tmp-project";
+const ASSETS_KEY = "tmp-assets";
 
 const miniLedMovingHead = new FixtureDefinition({
   name: 'Mini LED Moving Head',
@@ -40,43 +41,51 @@ const DEFAULT_PROJECT = new Project({
 
 export const ProjectContext = createContext({
   project: null as (Project | null),
-  markDirty: () => { },
+  save: () => { },
+  saveAssets: () => { },
 });
 
 export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
   const [project, setProject] = useState<Project | null>(null);
-  const [dirty, setDirty] = useState(false);
-  const saveHandle = useRef<number|undefined>();
 
   useEffect(() => {
     ldb.get(PROJECT_KEY, (str: string) => {
       if (str) {
-        setProject(Project.fromJsonString(str));
+        ldb.get(ASSETS_KEY, (assetStr: string) => {
+          const p = Project.fromJsonString(str);
+          p.assets = Project_Assets.fromJsonString(assetStr);
+          setProject(p);
+        });
       } else {
         setProject(DEFAULT_PROJECT);
       }
     });
   }, []);
 
-  useEffect(() => {
-    if (dirty) {
-      clearTimeout(saveHandle.current);
-      saveHandle.current = setTimeout(() => {
-        console.time('save');
-        ldb.set(PROJECT_KEY, project.toJsonString(), () => {
-          console.timeEnd('save');
-          setProject(new Project(project));
-        });
-      }, 1000);
-      setDirty(false);
-    }
+  const save = useCallback(() => {
+    console.time('save');
+    const minProject = new Project(project);
+    minProject.assets = undefined;
+    ldb.set(PROJECT_KEY, minProject.toJsonString(), () => {
+      console.timeEnd('save');
+      setProject(new Project(project));
+    });
+  }, [project, setProject]);
 
-  }, [dirty, project, setProject]);
+  const saveAssets = useCallback(() => {
+    console.time('save assets');
+    const assets = new Project_Assets(project.assets);
+    ldb.set(ASSETS_KEY, assets.toJsonString(), () => {
+      console.timeEnd('save assets');
+      save();
+    });
+  }, [project, save]);
 
   return (
     <ProjectContext.Provider value={{
       project: project,
-      markDirty: () => setDirty(true),
+      save: save,
+      saveAssets: saveAssets,
     }}>
       {children}
     </ProjectContext.Provider>

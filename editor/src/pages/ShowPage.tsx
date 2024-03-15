@@ -161,7 +161,7 @@ interface PaneProps {
 }
 
 function Tracks({ forceUpdate }: PaneProps): JSX.Element {
-  const { project, markDirty } = useContext(ProjectContext);
+  const { project, save } = useContext(ProjectContext);
   const { setShortcuts } = useContext(ShortcutContext);
   const { setRenderUniverse, clearRenderUniverse } = useContext(SerialContext);
 
@@ -188,7 +188,7 @@ function Tracks({ forceUpdate }: PaneProps): JSX.Element {
   useEffect(() => {
     if (project && !show && project.assets?.audioFiles.length > 0) {
       project.show = DEFAULT_SHOW
-      markDirty();
+      save();
     }
   }, [project, show]);
 
@@ -304,7 +304,7 @@ function LightTrack({
   forceUpdate,
 }: LightTrackProps):
   JSX.Element {
-  const { project, markDirty } = useContext(ProjectContext);
+  const { project, save } = useContext(ProjectContext);
   const trackRef = useRef<HTMLDivElement>();
 
   const device: OutputDescription = useMemo(() => {
@@ -375,7 +375,7 @@ function LightTrack({
                 break;
             }
             track.output.value = device.id;
-            markDirty();
+            save();
           }} />
       </div>
       <div className={styles.right} ref={trackRef}>
