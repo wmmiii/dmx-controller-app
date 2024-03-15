@@ -36,7 +36,7 @@ const colors = [
 
 export default function SandboxPage(): JSX.Element {
   const { project } = useContext(ProjectContext);
-  const { setShortcutHandler, clearShortcutHandler } = useContext(ShortcutContext);
+  const { setShortcuts: setShortcutHandler } = useContext(ShortcutContext);
   const { port, blackout, setRenderUniverse, clearRenderUniverse } =
     useContext(SerialContext);
   const [t, setT] = useState<number>(0);

@@ -25,7 +25,7 @@ interface BeatEditorProps {
 
 export function BeatEditor({ file, onCancel, onSave }: BeatEditorProps):
   JSX.Element {
-  const shortcutContext = useContext(ShortcutContext);
+  const { setShortcuts } = useContext(ShortcutContext);
   const waveRef = useRef<HTMLDivElement>();
   const [zoomLevel, setZoomLevel] = useState(64);
   const [waveSurfer, setWaveSurfer] = useState<WaveSurfer | null>(null);
@@ -199,20 +199,13 @@ export function BeatEditor({ file, onCancel, onSave }: BeatEditorProps):
     }
   }, [waveSurfer]);
 
-  useEffect(() => {
-    const handler = (key: string) => {
-      switch (key) {
-        case 'Space':
-          playPause();
-          return true;
-        default:
-          return false;
-      }
-    };
-
-    shortcutContext.setShortcutHandler(handler);
-    return () => shortcutContext.clearShortcutHandler(handler);
-  }, [playPause]);
+  useEffect(() => setShortcuts([
+    {
+      shortcut: { key: 'Space' },
+      action: () => playPause(),
+      description: 'Play file audio.',
+    },
+  ]), [playPause]);
 
   const beat = ((t - firstBeat) % beatDuration) / beatDuration;
 
@@ -228,6 +221,7 @@ export function BeatEditor({ file, onCancel, onSave }: BeatEditorProps):
     <Modal
       title="Beat Editor"
       onClose={() => onCancel()}
+      fullScreen={true}
       footer={
         <div className={styles.buttonRow}>
           <Button variant="default" onClick={onCancel}>Close</Button>

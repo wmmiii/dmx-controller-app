@@ -116,10 +116,19 @@ const DEFAULT_SHOW = new Show({
 
 
 export default function ShowPage(): JSX.Element {
+  const { setShortcuts } = useContext(ShortcutContext);
   const [selectedEffect, setSelectedEffect] = useState<Effect | null>(null);
 
   const [_lastUpdate, setLastUpdate] = useState(new Date().getTime());
   const forceUpdate = () => setLastUpdate(new Date().getTime());
+
+  useEffect(() => setShortcuts([
+    {
+      shortcut: { key: 'Escape' },
+      action: () => setSelectedEffect(null),
+      description: 'Deselect currently selected effect.',
+    },
+  ]), [setSelectedEffect]);
 
   return (
     <EffectSelectContext.Provider value={{
@@ -141,7 +150,7 @@ interface PaneProps {
 
 function Tracks({ forceUpdate }: PaneProps): JSX.Element {
   const { project, saveProject } = useContext(ProjectContext);
-  const { setShortcutHandler, clearShortcutHandler } = useContext(ShortcutContext);
+  const { setShortcuts } = useContext(ShortcutContext);
   const { setRenderUniverse, clearRenderUniverse } = useContext(SerialContext);
 
   const [playing, setPlaying] = useState(false);
@@ -171,24 +180,19 @@ function Tracks({ forceUpdate }: PaneProps): JSX.Element {
     }
   }, [project, show]);
 
-  useEffect(() => {
-    const handler = (key: string) => {
-      switch (key) {
-        case 'Space':
-          if (playing) {
-            audioController.current?.pause();
-          } else {
-            audioController.current?.play();
-          }
-          return true;
-        default:
-          return false;
-      }
-    };
-
-    setShortcutHandler(handler);
-    return () => clearShortcutHandler(handler);
-  }, [playing, audioController.current]);
+  useEffect(() => setShortcuts([
+    {
+      shortcut: { key: 'Space' },
+      action: () => {
+        if (playing) {
+          audioController?.current.pause();
+        } else {
+          audioController?.current.play();
+        }
+      },
+      description: 'Play/pause show.',
+    },
+  ]), [audioController.current, playing]);
 
   useEffect(() => {
     if (!project) {
@@ -379,6 +383,7 @@ function LightTrack({
                   maxMs={l.effects[i + 1]?.startMs || Number.MAX_SAFE_INTEGER}
                   pxToMs={pxToMx}
                   snapToBeat={snapToBeat}
+                  save={() => saveProject(project)}
                   forceUpdate={forceUpdate} />
               ))}
             </div>

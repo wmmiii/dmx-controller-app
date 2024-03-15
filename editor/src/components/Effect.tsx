@@ -18,6 +18,7 @@ interface EffectProps {
   maxMs: number;
   pxToMs: (px: number, snapToBeat: boolean) => number;
   snapToBeat: (t: number) => number;
+  save: () => void;
   forceUpdate: () => void;
 }
 
@@ -29,7 +30,9 @@ export function Effect({
   maxMs,
   pxToMs,
   snapToBeat,
-  forceUpdate }: EffectProps): JSX.Element {
+  save,
+  forceUpdate,
+ }: EffectProps): JSX.Element {
   const { selectedEffect, selectEffect } = useContext(EffectSelectContext);
   const [dragStart, setDragStart] = useState(false);
   const [dragEnd, setDragEnd] = useState(false);
@@ -114,6 +117,7 @@ export function Effect({
             setDragStart(false);
             setDragEnd(false);
             setDrag(null);
+            save();
           }}>
         </div>
       }
@@ -196,7 +200,7 @@ export function EffectDetails({
               };
               break;
             default:
-              console.log('Unrecognized event type: ', e.target.value);
+              console.error('Unrecognized event type: ', e.target.value);
               return;
           }
           onChange(effect);
