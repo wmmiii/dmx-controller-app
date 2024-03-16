@@ -5,7 +5,7 @@ import styles from './Button.module.scss';
 interface BaseButtonProps {
   className?: string;
   onClick: () => void;
-  variant?: 'default'|'primary';
+  variant?: 'default' | 'primary';
 }
 
 interface ButtonProps extends BaseButtonProps {
@@ -37,11 +37,12 @@ export function Button(
 
 
 interface IconButtonProps extends BaseButtonProps {
+  title: string;
   children: JSX.Element;
 }
 
 export function IconButton(
-  { className, onClick, variant, children }: IconButtonProps):
+  { className, onClick, variant, title, children }: IconButtonProps):
   JSX.Element {
   const classes = [
     styles.baseButton,
@@ -54,6 +55,7 @@ export function IconButton(
 
   return (
     <button
+      title={title}
       className={classes.join(' ')}
       onMouseDown={onClick}>
       {children}

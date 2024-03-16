@@ -7,7 +7,7 @@
   border-width: 1px;
   cursor: pointer;
   display: inline-flex;
-  height: 24px + spacing(2);
+  min-height: 24px + spacing(2);
   outline: none;
 }
 
@@ -25,8 +25,9 @@
 }
 
 .icon-button {
-  width: 24px + spacing(2);
   font-size: 24px;
+  height: 24px + spacing(2);
+  width: 24px + spacing(2);
 }
 
 .default-variant {
@@ -34,7 +35,8 @@
   border-color: $col-interactive;
   color: $col-interactive;
 
-  &:active, &:hover {
+  &:active,
+  &:hover {
     background-color: rgba(255, 255, 255, 0.1);
     border-color: $col-interactive-hover;
     color: $col-interactive-hover;
@@ -46,7 +48,8 @@
   border-color: $col-interactive;
   color: $col-bg;
 
-  &:active, &:hover {
+  &:active,
+  &:hover {
     background-color: $col-interactive-hover;
     border-color: $col-interactive-hover;
   }

@@ -1,21 +1,22 @@
 import React, { JSX, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
-import styles from "./ShowPage.module.scss";
-import { ProjectContext } from '../contexts/ProjectContext';
-import { Show, Show_LightTrack } from '@dmx-controller/proto/show_pb';
-import { AudioController, AudioTrackVisualizer } from '../components/AudioTrackVisualizer';
-import { SerialContext } from '../contexts/SerialContext';
-import { Button } from '../components/Button';
-import { ShortcutContext } from '../contexts/ShortcutContext';
-import { HorizontalSplitPane } from '../components/SplitPane';
-import { renderUniverse } from '../engine/show';
-import { OutputDescription, OutputSelector } from '../components/OutputSelector';
+import IconBxPlus from '../icons/IconBxPlus';
+import IconBxPulse from '../icons/IconBxPulse';
 import IconBxZoomIn from '../icons/IconBxZoomin';
 import IconBxZoomOut from '../icons/IconBxZoomOut';
+import styles from "./ShowPage.module.scss";
+import { AudioController, AudioTrackVisualizer } from '../components/AudioTrackVisualizer';
+import { Button, IconButton } from '../components/Button';
 import { EffectDetails, EffectSelectContext, SelectedEffect } from '../components/Effect';
-import { Effect } from '@dmx-controller/proto/effect_pb';
-import IconBxPulse from '../icons/IconBxPulse';
+import { HorizontalSplitPane } from '../components/SplitPane';
 import { LightLayer } from '../components/LightLayer';
+import { OutputDescription, OutputSelector } from '../components/OutputSelector';
+import { ProjectContext } from '../contexts/ProjectContext';
+import { SerialContext } from '../contexts/SerialContext';
+import { ShortcutContext } from '../contexts/ShortcutContext';
+import { Show, Show_LightLayer, Show_LightTrack } from '@dmx-controller/proto/show_pb';
+import { renderUniverse } from '../engine/show';
+import IconBxBrushAlt from '../icons/IconBxBrush';
 
 const DEFAULT_SHOW = new Show({
   name: 'Untitled Show',
@@ -377,6 +378,14 @@ function LightTrack({
             track.output.value = device.id;
             save();
           }} />
+        <IconButton
+          title="Cleanup Empty Layers"
+          onClick={() => {
+            track.layers = track.layers.filter((l) => l.effects.length > 0);
+            save();
+          }}>
+          <IconBxBrushAlt />
+        </IconButton>
       </div>
       <div className={styles.right} ref={trackRef}>
         {
@@ -390,6 +399,16 @@ function LightTrack({
               forceUpdate={forceUpdate} />
           ))
         }
+        <div className={styles.newLayer}>
+          <Button
+            icon={<IconBxPlus />}
+            onClick={() => {
+              track.layers.push(new Show_LightLayer());
+              save();
+            }}>
+            New Layer
+          </Button>
+        </div>
       </div>
     </div>
   );
