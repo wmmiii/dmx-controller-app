@@ -10,8 +10,7 @@
   flex-direction: column;
 
   .audioVisualizer,
-  .timelineOptions,
-  .lightTrack {
+  .timelineOptions {
     display: flex;
     flex-direction: row;
     flex-shrink: 0;
@@ -38,34 +37,6 @@
   gap: spacing(2);
   align-items: center;
   padding: spacing(1) 0;
-}
-
-.lightTrack {
-  border-top: 1px solid $col-border;
-  min-height: 120px;
-
-  &:last-child {
-    border-bottom: 1px solid $col-border;
-  }
-
-  .left {
-    border-right: 1px solid $col-border;
-    box-sizing: border-box;
-    padding: spacing(1);
-  }
-
-  .right {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .newLayer {
-    width: 100%;
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    padding: spacing(2);
-  }
 }
 
 .lightTracks {
