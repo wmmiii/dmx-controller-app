@@ -1,8 +1,9 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import MinimapPlugin from "wavesurfer.js/dist/plugins/minimap.js";
 import RegionsPlugin from "wavesurfer.js/dist/plugins/regions.js";
 import WaveSurfer from 'wavesurfer.js';
-import { ProjectContext } from '../contexts/ProjectContext';
 import { BEAT_MARKER, WAVEFORM_COLOR, WAVEFORM_CURSOR_COLOR, WAVEFORM_PROGRESS_COLOR, WAVEFORM_SAMPLE_RATE } from '../util/styleUtils';
+import { ProjectContext } from '../contexts/ProjectContext';
 
 export interface AudioController {
   play: () => void;
@@ -52,10 +53,19 @@ export function AudioTrackVisualizer({
     if (containerRef.current != null && fileBlob != null) {
       const ws = WaveSurfer.create({
         container: containerRef.current,
-        waveColor: WAVEFORM_COLOR,
         cursorColor: WAVEFORM_CURSOR_COLOR,
+        hideScrollbar: true,
         progressColor: WAVEFORM_PROGRESS_COLOR,
         sampleRate: WAVEFORM_SAMPLE_RATE,
+        waveColor: WAVEFORM_COLOR,
+
+        plugins: [
+          MinimapPlugin.create({
+            height: 20,
+            waveColor: WAVEFORM_COLOR,
+            progressColor: WAVEFORM_PROGRESS_COLOR,
+          }),
+        ],
       });
 
       ws.on('audioprocess', (seconds: number) => onProgress(seconds * 1000));

@@ -227,18 +227,6 @@ function Tracks({ forceUpdate }: PaneProps): JSX.Element {
 
   return (
     <div className={styles.trackContainer}>
-      <div className={styles.audioVisualizer}>
-        <div className={styles.left} style={{ width: leftWidth }}></div>
-        <AudioTrackVisualizer
-          className={styles.right}
-          fileId={0}
-          setController={setAudioController}
-          setPlaying={setPlaying}
-          setVisible={setVisibleCallback}
-          minPxPerSec={minPxPerSec}
-          beatSubdivisions={beatSubdivisions}
-          onProgress={setT} />
-      </div>
       <div className={styles.timelineOptions}>
         <div className={styles.left} style={{ width: leftWidth }}></div>
         <div className={styles.right}>
@@ -269,6 +257,18 @@ function Tracks({ forceUpdate }: PaneProps): JSX.Element {
               onChange={(e) => setBeatSubdivisions(parseInt(e.target.value))} />
           </span>
         </div>
+      </div>
+      <div className={styles.audioVisualizer}>
+        <div className={styles.left} style={{ width: leftWidth }}></div>
+        <AudioTrackVisualizer
+          className={styles.right}
+          fileId={0}
+          setController={setAudioController}
+          setPlaying={setPlaying}
+          setVisible={setVisibleCallback}
+          minPxPerSec={minPxPerSec}
+          beatSubdivisions={beatSubdivisions}
+          onProgress={setT} />
       </div>
       <div className={styles.lightTracks}>
         {

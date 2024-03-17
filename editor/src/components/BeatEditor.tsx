@@ -1,21 +1,21 @@
-import { AudioFile, AudioFile_BeatMetadata } from "@dmx-controller/proto/audio_pb";
-import { Modal } from "./Modal";
-import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import WaveSurfer from "wavesurfer.js";
-import SpectrogramPlugin from "wavesurfer.js/dist/plugins/spectrogram.js";
-import RegionsPlugin from "wavesurfer.js/dist/plugins/regions.js";
-import { Button } from "./Button";
-import IconBxZoomIn from "../icons/IconBxZoomin";
-import IconBxZoomOut from "../icons/IconBxZoomOut";
-import IconBxPulse from "../icons/IconBxPulse";
-
-import styles from './BeatEditor.module.scss';
 import IconBxPause from "../icons/IconBxPause";
 import IconBxPlay from "../icons/IconBxPlay";
-import IconBxSkipPrevious from "../icons/IconBxSkipPrevious";
+import IconBxPulse from "../icons/IconBxPulse";
 import IconBxSkipNext from "../icons/IconBxSkipNext";
-import { WAVEFORM_COLOR, WAVEFORM_CURSOR_COLOR, WAVEFORM_PROGRESS_COLOR, WAVEFORM_SAMPLE_RATE } from "../util/styleUtils";
+import IconBxSkipPrevious from "../icons/IconBxSkipPrevious";
+import IconBxZoomIn from "../icons/IconBxZoomin";
+import IconBxZoomOut from "../icons/IconBxZoomOut";
+import MinimapPlugin from "wavesurfer.js/dist/plugins/minimap.js";
+import RegionsPlugin from "wavesurfer.js/dist/plugins/regions.js";
+import SpectrogramPlugin from "wavesurfer.js/dist/plugins/spectrogram.js";
+import WaveSurfer from "wavesurfer.js";
+import styles from './BeatEditor.module.scss';
+import { AudioFile, AudioFile_BeatMetadata } from "@dmx-controller/proto/audio_pb";
+import { Button } from "./Button";
+import { Modal } from "./Modal";
 import { ShortcutContext } from "../contexts/ShortcutContext";
+import { WAVEFORM_COLOR, WAVEFORM_CURSOR_COLOR, WAVEFORM_PROGRESS_COLOR, WAVEFORM_SAMPLE_RATE } from "../util/styleUtils";
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
 interface BeatEditorProps {
   file: AudioFile;
@@ -78,10 +78,19 @@ export function BeatEditor({ file, onCancel, onSave }: BeatEditorProps):
     if (waveRef.current != null && fileBlob != null) {
       const ws = WaveSurfer.create({
         container: waveRef.current,
-        waveColor: WAVEFORM_COLOR,
         cursorColor: WAVEFORM_CURSOR_COLOR,
+        hideScrollbar: true,
         progressColor: WAVEFORM_PROGRESS_COLOR,
-        sampleRate: WAVEFORM_SAMPLE_RATE,
+        sampleRate: WAVEFORM_SAMPLE_RATE * 2,
+        waveColor: WAVEFORM_COLOR,
+
+        plugins: [
+          MinimapPlugin.create({
+            height: 20,
+            waveColor: WAVEFORM_COLOR,
+            progressColor: WAVEFORM_PROGRESS_COLOR,
+          }),
+        ],
       });
 
       ws.on('click', (seconds) => ws.seekTo(seconds));
