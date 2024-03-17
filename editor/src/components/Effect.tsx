@@ -1,9 +1,13 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
-import { Effect as EffectProto, EffectTiming, Effect_RampEffect, Effect_RampEffect_EasingFunction, Effect_StaticEffect } from "@dmx-controller/proto/effect_pb";
+import { Effect as EffectProto, EffectTiming, Effect_RampEffect, Effect_RampEffect_EasingFunction, Effect_StaticEffect, FixtureState as FixtureStateProto } from "@dmx-controller/proto/effect_pb";
 import { CSSProperties } from "react";
 import FixtureState from './FixtureState';
 
 import styles from './Effect.module.scss';
+import IconRgb from '../icons/IconRgb';
+import IconBxsSun from '../icons/IconBxsSun';
+import IconPanTilt from '../icons/IconPanTilt';
+import { DEFAULT_EFFECT_COLOR } from '../util/styleUtils';
 
 export interface SelectedEffect {
   effect: EffectProto;
@@ -46,32 +50,17 @@ export function Effect({
   const [dragEnd, setDragEnd] = useState(false);
   const [drag, setDrag] = useState<{ offsetMs: number, widthMs: number } | null>(null);
 
+  const icons: Set<(props: any) => JSX.Element> = new Set();
   if (effect.effect.case === 'staticEffect') {
-    const color = effect.effect.value.state?.color?.value;
-    if (color) {
-      const r = Math.floor(color.red * 255);
-      const g = Math.floor(color.green * 255);
-      const b = Math.floor(color.blue * 255);
-      style.background = `rgb(${r}, ${g}, ${b})`;
-    }
+    style.background = stateColor(effect.effect.value.state);
+    stateIcons(effect.effect.value.state).forEach(i => icons.add(i));
   } else if (effect.effect.case === 'rampEffect') {
-    const start = effect.effect.value.start.color.value || {
-      red: 0,
-      green: 0,
-      blue: 0,
-    };
-    const end = effect.effect.value.end.color.value || {
-      red: 0,
-      green: 0,
-      blue: 0,
-    };
-    const startR = Math.floor(start.red * 255);
-    const startG = Math.floor(start.green * 255);
-    const startB = Math.floor(start.blue * 255);
-    const endR = Math.floor(end.red * 255);
-    const endG = Math.floor(end.green * 255);
-    const endB = Math.floor(end.blue * 255);
-    style.background = `linear-gradient(90deg, rgb(${startR},${startG},${startB}) 0%, rgb(${endR},${endG},${endB}) 100%)`;
+    const start = stateColor(effect.effect.value.start);
+    const end = stateColor(effect.effect.value.end);
+    style.background = `linear-gradient(90deg, ${start} 0%, ${end} 100%)`;
+
+    stateIcons(effect.effect.value.start).forEach(i => icons.add(i));
+    stateIcons(effect.effect.value.end).forEach(i => icons.add(i));
   }
 
   const containerClasses = [styles.effect, className];
@@ -138,6 +127,15 @@ export function Effect({
           }}>
         </div>
       }
+      <div className={styles.inner}>
+        <div className={styles.icons}>
+          {Array.from(icons).map(I => (
+            <div className={styles.icon}>
+              <I />
+            </div>
+          ))}
+        </div>
+      </div>
       <div
         className={styles.dragStart}
         onMouseDown={(e) => {
@@ -255,6 +253,34 @@ export function EffectDetails({
       {details}
     </div>
   )
+}
+
+function stateColor(state: FixtureStateProto): string {
+  const color = state?.color?.value;
+  if (color) {
+    const white = Math.floor((color.white || 0) * 255);
+    const r = Math.min(Math.floor(color.red * 255) + white, 255);
+    const g = Math.min(Math.floor(color.green * 255) + white, 255);
+    const b = Math.min(Math.floor(color.blue * 255) + white, 255);
+    return `rgb(${r}, ${g}, ${b})`;
+  } else {
+    return DEFAULT_EFFECT_COLOR;
+  }
+}
+
+function stateIcons(state: FixtureStateProto):
+  Array<(props: any) => JSX.Element> {
+  const icons: Array<(props: any) => JSX.Element> = [];
+  if (state.color.case != null) {
+    icons.push(IconRgb);
+  }
+  if (state.brightness != null) {
+    icons.push(IconBxsSun);
+  }
+  if (state.pan != null || state.tilt != null) {
+    icons.push(IconPanTilt);
+  }
+  return icons;
 }
 
 function StaticEffectDetails({

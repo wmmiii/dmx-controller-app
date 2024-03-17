@@ -1,7 +1,7 @@
 import React, { useContext, useMemo } from 'react';
 import { ProjectContext } from '../contexts/ProjectContext';
 
-interface OutputDescription {
+export interface OutputDescription {
   id: number;
   type: 'fixture' | 'group';
 }

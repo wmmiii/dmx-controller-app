@@ -83,7 +83,7 @@ export function LightTrack({
   return (
     <div className={styles.lightTrack}>
       <div className={styles.left} style={{ width: leftWidth }}>
-        {track.name}<br />
+        {track.name}
         <OutputSelector
           value={device}
           setValue={(device) => {

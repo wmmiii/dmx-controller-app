@@ -7,6 +7,7 @@ import RangeInput from './RangeInput';
 import IconBxPlus from '../icons/IconBxPlus';
 
 import styles from './FixtureState.module.scss';
+import { BACKGROUND_COLOR } from '../util/styleUtils';
 
 interface FixtureStateProps {
   state: FixtureStateProto;
@@ -79,7 +80,12 @@ export default function FixtureState(
               state.color.value.green = rgb.g / 255;
               state.color.value.blue = rgb.b / 255;
               onChange(state);
-            }} />
+            }}
+            theme={{
+              background: 'transparent',
+              borderColor: 'none',
+              width: '100%',
+            }}/>
         }
       </label>
       {

@@ -39,12 +39,17 @@ a {
 }
 
 input,
-textarea {
+textarea,
+select {
   background-color: lighten($col-bg, 5%);
   border-radius: $dim-border-radius;
   border: 1px solid $col-interactive;
   color: $col-text;
   padding: spacing(1);
+}
+
+select {
+  cursor: pointer;
 }
 
 li {
