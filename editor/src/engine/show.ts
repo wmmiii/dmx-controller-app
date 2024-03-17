@@ -1,7 +1,14 @@
 import { DmxUniverse, WritableDevice, getPhysicalWritableDevice, getPhysicalWritableDeviceFromGroup } from "./fixture";
-import { Effect, Effect_RampEffect, Effect_StaticEffect, FixtureState } from "@dmx-controller/proto/effect_pb";
+import { Effect, Effect_RampEffect, Effect_RampEffect_EasingFunction, Effect_StaticEffect, EffectTiming, FixtureState } from "@dmx-controller/proto/effect_pb";
 import { Project } from "@dmx-controller/proto/project_pb";
 import { Show_LightTrack } from "@dmx-controller/proto/show_pb";
+
+interface RenderContext {
+  t: number;
+  output: Show_LightTrack['output'];
+  project: Project;
+  universe: DmxUniverse;
+}
 
 export function renderUniverse(t: number, project: Project):
   DmxUniverse {
@@ -21,12 +28,29 @@ export function renderUniverse(t: number, project: Project):
       }
     }
 
+
+    const context: Partial<RenderContext> = {
+      t: t,
+      project: project,
+      universe: universe,
+    };
+    const beat = project.assets?.audioFiles[show.audioTrack?.audioFileId]?.beatMetadata;
+    let beatAmount: number = undefined;
+    let beatIndex: number = undefined;
+    if (beat) {
+      beatAmount = ((t - beat.offsetMs) % beat.lengthMs) / beat.lengthMs;
+      beatIndex = Math.floor((t - beat.offsetMs) / beat.lengthMs);
+    }
+
     for (const track of show.lightTracks) {
       for (const layer of track.layers) {
         const effect = layer.effects.find((e) => e.startMs <= t && e.endMs > t);
         if (effect) {
-          // TODO: Calculate beat and pass it in.
-          applyEffect(t, effect, track.output, project, universe);
+          applyEffect(
+            Object.assign({ output: track.output }, context) as RenderContext,
+            effect,
+            beatAmount,
+            beatIndex);
         }
       }
     }
@@ -35,33 +59,39 @@ export function renderUniverse(t: number, project: Project):
   return universe;
 }
 
-function applyEffect(
-  t: number,
-  effect: Effect,
-  output: Show_LightTrack['output'],
-  project: Project,
-  universe: DmxUniverse): void {
+function applyEffect(context: RenderContext, effect: Effect, beatAmount: number, beatIndex: number): void {
+  // Calculate timing
+  let t: number;
+  switch (effect.timingMode) {
+    case EffectTiming.ONE_SHOT:
+      t = (context.t - effect.startMs) / (effect.endMs - effect.startMs);
+      break;
+    case EffectTiming.BEAT:
+      t = beatAmount || 0;
+      break;
+    case EffectTiming.ABSOLUTE:
+    default:
+      t = context.t;
+  }
+
+  context.t = t;
+
   const e = effect.effect.value;
   switch (effect.effect.case) {
     case 'staticEffect':
-      const device = getDevice(output, project, universe);
+      const device = getDevice(
+        context.output,
+        context.project,
+        context.universe);
       applyState((e as Effect_StaticEffect).state, device);
       break;
     case 'rampEffect':
-      rampEffect(
-        t,
-        effect.effect.value,
-        effect.startMs,
-        effect.endMs,
-        output,
-        project,
-        universe);
+      rampEffect(context, e as Effect_RampEffect);
       break;
   }
 }
 
 function applyState(state: FixtureState, device: WritableDevice): void {
-  const color = state.color.value;
   switch (state.color.case) {
     case 'rgb':
       {
@@ -116,15 +146,31 @@ function getDevice(
 }
 
 function rampEffect(
-  globalT: number,
-  effect: Effect_RampEffect,
-  startMs: number,
-  endMs: number,
-  output: Show_LightTrack['output'],
-  project: Project,
-  universe: DmxUniverse): void {
-  // TODO: Support different time mappings.
-  const t = Math.min(Math.max((globalT - startMs) / (endMs - startMs), 0), 1);
+  {
+    t,
+    output,
+    project,
+    universe,
+  }: RenderContext,
+  effect: Effect_RampEffect): void {
+  let effectT: number;
+  switch (effect.easing) {
+    case Effect_RampEffect_EasingFunction.EASE_IN:
+      effectT = t * t * t;
+      break;
+    case Effect_RampEffect_EasingFunction.EASE_OUT:
+      effectT = 1 - Math.pow(1 - t, 3);
+      break;
+    case Effect_RampEffect_EasingFunction.EASE_IN_OUT:
+      effectT = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      break;
+    case Effect_RampEffect_EasingFunction.SINE:
+      effectT = -(Math.cos(Math.PI * t) - 1) / 2;
+      break;
+    case Effect_RampEffect_EasingFunction.LINEAR: // Fall-through
+    default:
+      effectT = t;
+  }
 
   const start = new Uint8Array(universe);
   const end = new Uint8Array(universe);
@@ -133,7 +179,6 @@ function rampEffect(
   applyState(effect.end, getDevice(output, project, end));
 
   for (let i = 0; i < universe.length; ++i) {
-    // TODO: Support different easing functions.
-    universe[i] = Math.floor(start[i] * (1 - t) + end[i] * t);
+    universe[i] = Math.floor(start[i] * (1 - effectT) + end[i] * effectT);
   }
 }

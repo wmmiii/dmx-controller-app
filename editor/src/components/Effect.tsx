@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
-import { Effect as EffectProto, Effect_RampEffect, Effect_StaticEffect } from "@dmx-controller/proto/effect_pb";
+import { Effect as EffectProto, EffectTiming, Effect_RampEffect, Effect_RampEffect_EasingFunction, Effect_StaticEffect } from "@dmx-controller/proto/effect_pb";
 import { CSSProperties } from "react";
 import FixtureState from './FixtureState';
 
@@ -12,7 +12,7 @@ export interface SelectedEffect {
 
 export const EffectSelectContext = createContext({
   selectedEffect: null as EffectProto | null,
-  deleteSelectedEffect: () => {},
+  deleteSelectedEffect: () => { },
   selectEffect: (_selected: SelectedEffect) => { },
 });
 
@@ -203,36 +203,54 @@ export function EffectDetails({
 
   return (
     <div className={classes.join(' ')}>
-      <select
-        value={effect.effect.case}
-        onChange={(e) => {
-          switch (e.target.value) {
-            case 'staticEffect':
-              effect.effect = {
-                value: new Effect_StaticEffect({
-                  state: {},
-                }),
-                case: 'staticEffect',
-              };
-              break;
-            case 'rampEffect':
-              effect.effect = {
-                value: new Effect_RampEffect({
-                  start: {},
-                  end: {},
-                }),
-                case: 'rampEffect',
-              };
-              break;
-            default:
-              console.error('Unrecognized event type: ', e.target.value);
-              return;
-          }
-          onChange(effect);
-        }}>
-        <option value="staticEffect">Static Effect</option>
-        <option value="rampEffect">Ramp Effect</option>
-      </select>
+      <label>
+        Effect type:&nbsp;
+        <select
+          value={effect.effect.case}
+          onChange={(e) => {
+            switch (e.target.value) {
+              case 'staticEffect':
+                effect.effect = {
+                  value: new Effect_StaticEffect({
+                    state: {},
+                  }),
+                  case: 'staticEffect',
+                };
+                break;
+              case 'rampEffect':
+                effect.effect = {
+                  value: new Effect_RampEffect({
+                    start: {},
+                    end: {},
+                  }),
+                  case: 'rampEffect',
+                };
+                break;
+              default:
+                console.error('Unrecognized event type: ', e.target.value);
+                return;
+            }
+            onChange(effect);
+          }}>
+          <option value="staticEffect">Static Effect</option>
+          <option value="rampEffect">Ramp Effect</option>
+        </select>
+      </label>
+
+      <label>
+        Timing mode:&nbsp;
+        <select
+          value={effect.timingMode}
+          onChange={(e) => {
+            const timing =
+              Object.entries(EffectTiming)[parseInt(e.target.value)][0];
+            effect.timingMode = (timing as any);
+            onChange(effect);
+          }}>
+          <option value={EffectTiming.ONE_SHOT}>One Shot</option>
+          <option value={EffectTiming.BEAT}>Beat</option>
+        </select>
+      </label>
 
       {details}
     </div>
@@ -256,6 +274,31 @@ function RampEffectDetails({
 }: EffectDetailsBaseProps<Effect_RampEffect>): JSX.Element {
   return (
     <>
+      <label>
+        Easing:&nbsp;
+        <select
+          value={effect.easing}
+          onChange={(e) => {
+            const easing =
+              Object.entries(Effect_RampEffect_EasingFunction)[parseInt(e.target.value)][0];
+            effect.easing = (easing as any);
+            onChange(effect);
+          }}>
+          <option value={Effect_RampEffect_EasingFunction.LINEAR}>Linear</option>
+          <option value={Effect_RampEffect_EasingFunction.EASE_IN}>
+            Ease in
+          </option>
+          <option value={Effect_RampEffect_EasingFunction.EASE_OUT}>
+            Ease out
+          </option>
+          <option value={Effect_RampEffect_EasingFunction.EASE_IN_OUT}>
+            Ease in/out
+          </option>
+          <option value={Effect_RampEffect_EasingFunction.SINE}>
+            Sine
+          </option>
+        </select>
+      </label>
       <h2>Start</h2>
       <FixtureState
         state={effect.start}

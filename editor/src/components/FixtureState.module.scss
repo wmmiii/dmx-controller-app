@@ -1,12 +1,11 @@
 @import '../vars';
 
-.stateRow {
+.state-row {
   align-items: center;
   display: flex;
   flex-direction: row;
   gap: spacing(1);
   justify-content: space-between;
-  margin: spacing(2) 0;
 
   .input {
     display: flex;

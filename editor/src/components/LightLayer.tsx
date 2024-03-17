@@ -74,6 +74,10 @@ export function LightLayer({
               }));
             }}
             onMouseUp={() => {
+              if (Math.abs(newEffect.firstMs - newEffect.secondMs) < 100) {
+                setNewEffect(null);
+                return;
+              }
               layer.effects.splice(newEffect.effectIndex, 0, new Effect({
                 startMs: Math.min(newEffect.firstMs, newEffect.secondMs),
                 endMs: Math.max(newEffect.firstMs, newEffect.secondMs),

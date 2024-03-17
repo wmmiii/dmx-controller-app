@@ -9,13 +9,12 @@ import IconBxPlus from '../icons/IconBxPlus';
 import styles from './FixtureState.module.scss';
 
 interface FixtureStateProps {
-  className?: string;
   state: FixtureStateProto;
   onChange: (state: FixtureStateProto) => void;
 }
 
 export default function FixtureState(
-  { className, state, onChange }: FixtureStateProps):
+  { state, onChange }: FixtureStateProps):
   JSX.Element {
 
   const onColorTypeChange = useCallback((type: string) => {
@@ -55,7 +54,7 @@ export default function FixtureState(
   }, [state]);
 
   return (
-    <div className={className}>
+    <>
       <label>
         Color mode:&nbsp;
         <select
@@ -102,7 +101,7 @@ export default function FixtureState(
           <label className={styles.stateRow}>
             Brightness:&nbsp;
             <RangeInput
-          className={styles.input}
+              className={styles.input}
               max="1"
               value={state.brightness}
               onChange={(v) => {
@@ -186,6 +185,6 @@ export default function FixtureState(
             </IconButton>
           </label>
       }
-    </div >
+    </>
   );
 }
