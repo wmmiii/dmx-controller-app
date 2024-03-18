@@ -126,6 +126,7 @@ export function getPhysicalWritableDevice(
         break;
       case 'tilt-fine':
         tiltFunctions.push((d) => {
+          const m = mapDegrees(d, channel.minDegrees, channel.maxDegrees);
           universe[index] =
             (mapDegrees(d, channel.minDegrees, channel.maxDegrees) * 255) % 255;
         });

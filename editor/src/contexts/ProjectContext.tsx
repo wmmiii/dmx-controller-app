@@ -1,7 +1,7 @@
 import React, { PropsWithChildren, createContext, useCallback, useEffect, useRef, useState } from 'react';
 import { FixtureDefinition, PhysicalFixture } from '@dmx-controller/proto/fixture_pb';
 import { Project, Project_Assets } from '@dmx-controller/proto/project_pb';
-import ldb from '@dmx-controller/third_party/DVLP/local_storage_db/localdata.min.js';
+import { getBlob, storeBlob } from '../util/storageUtil';
 
 const PROJECT_KEY = "tmp-project";
 const ASSETS_KEY = "tmp-assets";
@@ -49,36 +49,40 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
   const [project, setProject] = useState<Project | null>(null);
 
   useEffect(() => {
-    ldb.get(PROJECT_KEY, (str: string) => {
-      if (str) {
-        ldb.get(ASSETS_KEY, (assetStr: string) => {
-          const p = Project.fromJsonString(str);
-          p.assets = Project_Assets.fromJsonString(assetStr);
+    (async () => {
+      try {
+        const projectBlob = await getBlob(PROJECT_KEY);
+        const assetsBlob = await getBlob(ASSETS_KEY);
+        if (projectBlob == null || assetsBlob == null) {
+          setProject(DEFAULT_PROJECT);
+          return;
+        } else {
+          const p = Project.fromBinary(projectBlob);
+          p.assets = Project_Assets.fromBinary(assetsBlob);
           setProject(p);
-        });
-      } else {
+        }
+      } catch (ex) {
+        console.error(ex);
         setProject(DEFAULT_PROJECT);
       }
-    });
+    })();
   }, []);
 
-  const save = useCallback(() => {
+  const save = useCallback(async () => {
     console.time('save');
     const minProject = new Project(project);
     minProject.assets = undefined;
-    ldb.set(PROJECT_KEY, minProject.toJsonString(), () => {
-      console.timeEnd('save');
-      setProject(new Project(project));
-    });
+    await storeBlob(PROJECT_KEY, minProject.toBinary());
+    console.timeEnd('save');
+    setProject(new Project(project));
   }, [project, setProject]);
 
-  const saveAssets = useCallback(() => {
+  const saveAssets = useCallback(async () => {
     console.time('save assets');
     const assets = new Project_Assets(project.assets);
-    ldb.set(ASSETS_KEY, assets.toJsonString(), () => {
-      console.timeEnd('save assets');
-      save();
-    });
+    await storeBlob(ASSETS_KEY, assets.toBinary());
+    console.timeEnd('save assets');
+    await save();
   }, [project, save]);
 
   return (

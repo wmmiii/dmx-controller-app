@@ -117,9 +117,6 @@ export default function ShowPage(): JSX.Element {
   const { setShortcuts } = useContext(ShortcutContext);
   const [selectedEffect, setSelectedEffect] = useState<SelectedEffect | null>(null);
 
-  const [_lastUpdate, setLastUpdate] = useState(new Date().getTime());
-  const forceUpdate = () => setLastUpdate(new Date().getTime());
-
   useEffect(() => setShortcuts([
     {
       shortcut: { key: 'Escape' },
@@ -148,17 +145,13 @@ export default function ShowPage(): JSX.Element {
       <HorizontalSplitPane
         className={styles.wrapper}
         defaultAmount={0.8}
-        left={<Tracks forceUpdate={forceUpdate} />}
-        right={<DetailsPane forceUpdate={forceUpdate} />} />
+        left={<Tracks />}
+        right={<DetailsPane />} />
     </EffectSelectContext.Provider>
   );
 }
 
-interface PaneProps {
-  forceUpdate: () => void;
-}
-
-function Tracks({ forceUpdate }: PaneProps): JSX.Element {
+function Tracks(): JSX.Element {
   const { project, save } = useContext(ProjectContext);
   const { setShortcuts } = useContext(ShortcutContext);
   const { setRenderUniverse, clearRenderUniverse } = useContext(SerialContext);
@@ -172,7 +165,7 @@ function Tracks({ forceUpdate }: PaneProps): JSX.Element {
   const setVisibleCallback = useCallback(
     (startMs: number, endMs: number) => setVisible({ startMs, endMs }),
     [setVisible]);
-  const [minPxPerSec, setMinPxPerSec] = useState(128);
+  const [minPxPerSec, setMinPxPerSec] = useState(64);
   const [snapToBeat, setSnapToBeat] = useState(true);
   const [beatSubdivisions, setBeatSubdivisions] = useState(1);
 
@@ -278,7 +271,7 @@ function Tracks({ forceUpdate }: PaneProps): JSX.Element {
               leftWidth={leftWidth}
               visible={visible}
               nearestBeat={snapToBeat ? nearestBeat : undefined}
-              forceUpdate={forceUpdate} />
+              forceUpdate={save} />
           ))
         }
       </div>
@@ -287,8 +280,9 @@ function Tracks({ forceUpdate }: PaneProps): JSX.Element {
 }
 
 
-function DetailsPane({ forceUpdate }: PaneProps): JSX.Element {
-  const { selectedEffect, selectEffect } = useContext(EffectSelectContext);
+function DetailsPane(): JSX.Element {
+  const {save} = useContext(ProjectContext);
+  const { selectedEffect } = useContext(EffectSelectContext);
 
   if (selectedEffect == null) {
     return (
@@ -302,6 +296,6 @@ function DetailsPane({ forceUpdate }: PaneProps): JSX.Element {
     <EffectDetails
       className={styles.effectDetails}
       effect={selectedEffect}
-      onChange={forceUpdate} />
+      onChange={save} />
   );
 }

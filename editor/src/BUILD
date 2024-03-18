@@ -14,7 +14,6 @@ TS_DEPS = [
     "//:node_modules/react-router-dom",
     "//:node_modules/wavesurfer.js",
     "//proto:ts_proto",
-    "//third_party/DVLP/local_storage_db",
 ]
 
 esbuild(

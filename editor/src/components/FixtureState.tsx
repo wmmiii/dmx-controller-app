@@ -7,7 +7,6 @@ import RangeInput from './RangeInput';
 import IconBxPlus from '../icons/IconBxPlus';
 
 import styles from './FixtureState.module.scss';
-import { BACKGROUND_COLOR } from '../util/styleUtils';
 
 interface FixtureStateProps {
   state: FixtureStateProto;

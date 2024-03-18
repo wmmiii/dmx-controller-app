@@ -240,9 +240,7 @@ export function EffectDetails({
         <select
           value={effect.timingMode}
           onChange={(e) => {
-            const timing =
-              Object.entries(EffectTiming)[parseInt(e.target.value)][0];
-            effect.timingMode = (timing as any);
+            effect.timingMode = parseInt(e.target.value)
             onChange(effect);
           }}>
           <option value={EffectTiming.ONE_SHOT}>One Shot</option>
@@ -305,9 +303,7 @@ function RampEffectDetails({
         <select
           value={effect.easing}
           onChange={(e) => {
-            const easing =
-              Object.entries(Effect_RampEffect_EasingFunction)[parseInt(e.target.value)][0];
-            effect.easing = (easing as any);
+            effect.easing = parseInt(e.target.value);
             onChange(effect);
           }}>
           <option value={Effect_RampEffect_EasingFunction.LINEAR}>Linear</option>
