@@ -69,7 +69,8 @@ message Effect {
   EffectTiming timing_mode = 11;
   int32 offset_ms = 12;
   double timing_multiplier = 13;
-  reserved 14 to 100;
+  bool mirrored = 14;
+  reserved 15 to 100;
 
   oneof effect {
     StaticEffect static_effect = 101;

@@ -2,6 +2,22 @@ import { Project } from "@dmx-controller/proto/project_pb";
 
 export type DmxUniverse = Uint8Array;
 
+export type ChannelTypes =
+  'red' |
+  'red-fine' |
+  'green' |
+  'green-fine' |
+  'blue' |
+  'blue-fine' |
+  'white' |
+  'white-fine' |
+  'brightness' |
+  'brightness-fine' |
+  'pan' |
+  'pan-fine' |
+  'tilt' |
+  'tilt-fine';
+
 export interface WritableDevice {
   /**
    * Manually overrides a channel. Valid numbers are [0, 255].
@@ -32,6 +48,11 @@ export interface WritableDevice {
    * Sets the tilt based on a [0, 360] degree value.
    */
   setTilt(degrees: number): void;
+
+  /**
+   * Returns the type of all the channels according to this device.
+   */
+  readonly channelTypes: ChannelTypes[];
 }
 
 export function getPhysicalWritableDevice(
@@ -54,10 +75,13 @@ export function getPhysicalWritableDevice(
   const panFunctions: Array<(d: number) => void> = [];
   const tiltFunctions: Array<(d: number) => void> = [];
 
+  const channelTypes: ChannelTypes[] = [];
+
   for (const stringIndex in definition.channels) {
     const channel = definition.channels[stringIndex];
     const index = physicalFixture.channelOffset + parseInt(stringIndex) - 1;
-    switch (channel.type) {
+    channelTypes[index] = channel.type;
+    switch (channel.type as ChannelTypes) {
       case 'red':
         rgbFunctions.push((r, _g, _b) => {
           universe[index] = r * 255;
@@ -160,6 +184,8 @@ export function getPhysicalWritableDevice(
     setTilt: (degrees: number) => {
       tiltFunctions.forEach(f => f(degrees));
     },
+
+    channelTypes,
   };
 }
 
@@ -180,18 +206,24 @@ export function getPhysicalWritableDeviceFromGroup(
     return undefined;
   }
 
-  const writableDevices = [
+  const writableDevices: WritableDevice[] = [
     ...group.physicalFixtureIds
-      .map((id) => getPhysicalWritableDevice(project, id, universe))
+      .map((id) => getPhysicalWritableDevice(
+        project, id, universe))
       .filter((device) => device != null),
     ...group.physicalFixtureGroupIds
-      .map((id) => getPhysicalWritableDeviceFromGroup(project, id, universe))
+      .map((id) => getPhysicalWritableDeviceFromGroup(
+        project, id, universe))
       .filter((device) => device != null),
   ];
 
+  const channelTypes: ChannelTypes[] = [];
+  writableDevices.forEach(d => d.channelTypes
+    .forEach((c, i) => channelTypes[i] = c));
+
   return {
     setChannel: (index: number, value: number) =>
-      writableDevices.forEach((d) => d.setChannel(index, value)),
+      writableDevices.forEach(d => d.setChannel(index, value)),
     setRGB: (red: number, green: number, blue: number) =>
       writableDevices.forEach(d => d.setRGB(red, green, blue)),
     setRGBW: (red: number, green: number, blue: number, white: number) =>
@@ -202,5 +234,6 @@ export function getPhysicalWritableDeviceFromGroup(
       writableDevices.forEach(d => d.setPan(degrees)),
     setTilt: (degrees: number) =>
       writableDevices.forEach(d => d.setTilt(degrees)),
+    channelTypes,
   };
 }

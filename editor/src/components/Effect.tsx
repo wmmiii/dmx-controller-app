@@ -8,6 +8,7 @@ import IconRgb from '../icons/IconRgb';
 import IconBxsSun from '../icons/IconBxsSun';
 import IconPanTilt from '../icons/IconPanTilt';
 import { DEFAULT_EFFECT_COLOR } from '../util/styleUtils';
+import { Button } from './Button';
 
 export interface SelectedEffect {
   effect: EffectProto;
@@ -246,6 +247,31 @@ export function EffectDetails({
           <option value={EffectTiming.ONE_SHOT}>One Shot</option>
           <option value={EffectTiming.BEAT}>Beat</option>
         </select>
+      </label>
+
+      <label>
+        Timing multiplier:&nbsp;
+        <input
+          type="number"
+          max="128"
+          min="0"
+          value={effect.timingMultiplier || 1}
+          onChange={(e) => {
+            effect.timingMultiplier = parseFloat(e.target.value);
+            onChange(effect);
+          }} />
+      </label>
+
+      <label>
+        Mirrored:&nbsp;
+        <Button
+          variant={effect.mirrored ? 'primary' : 'default'}
+          onClick={() => {
+            effect.mirrored = !effect.mirrored;
+            onChange(effect);
+          }}>
+          Mirrored
+        </Button>
       </label>
 
       {details}
