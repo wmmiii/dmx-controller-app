@@ -13,6 +13,8 @@ export const SerialContext = createContext({
   setBlackout: (_blackout: boolean) => { },
   setRenderUniverse: (_render: RenderUniverse) => { },
   clearRenderUniverse: (_render: RenderUniverse) => { },
+  currentFps: 0,
+  maxFps: 0,
 });
 
 export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
@@ -21,7 +23,8 @@ export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
   const renderUniverse = useRef<RenderUniverse>(() => BLACKOUT_UNIVERSE);
   const blackout = useRef(false);
   const [blackoutState, setBlackoutState] = useState(false);
-  const [updateFrequencyMs, setUpdateFrequencyMs] = useState(50);
+  const [updateFrequencyMs, setUpdateFrequencyMs] = useState(20);
+  const [maxFps, setMaxFps] = useState(0);
 
   const connect = useCallback(async () => {
     const forceReconnect = port != null;
@@ -52,6 +55,11 @@ export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
     setPort(null);
   }, [port]);
 
+  useEffect(() => {
+    navigator.serial.onconnect = connect;
+    navigator.serial.ondisconnect = disconnect;
+  }, []);
+
   useEffect(
     () => setUpdateFrequencyMs(project?.updateFrequencyMs || 50),
     [project?.updateFrequencyMs]);
@@ -66,6 +74,7 @@ export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
     let lock = false;
 
     const handle = setInterval(async () => {
+      const start = new Date().getTime();
       if (lock) {
         const newFreq = updateFrequencyMs + 1;
         console.error('Dropped frame! Increasing update interval to', newFreq);
@@ -82,12 +91,15 @@ export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
       }
 
       try {
+        await writer.ready;
         await writer.write(universe);
+        await writer.write(new Uint8Array(512));
       } catch (e) {
         console.error(e);
         disconnect();
       } finally {
         lock = false;
+        setMaxFps(Math.floor(1000 / (new Date().getTime() - start)));
       }
     }, updateFrequencyMs);
 
@@ -121,6 +133,8 @@ export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
           renderUniverse.current = () => BLACKOUT_UNIVERSE;
         }
       },
+      currentFps: Math.floor(1000 / updateFrequencyMs),
+      maxFps: maxFps,
     }}>
       {children}
     </SerialContext.Provider>

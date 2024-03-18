@@ -15,7 +15,7 @@ import { SerialContext } from './contexts/SerialContext';
 import styles from './Index.module.scss';
 
 export default function Index(): JSX.Element {
-  const { port, blackout, setBlackout, connect, disconnect } = useContext(SerialContext);
+  const { port, blackout, setBlackout, connect, disconnect, currentFps, maxFps } = useContext(SerialContext);
 
   return (
     <div className={styles.wrapper}>
@@ -24,10 +24,13 @@ export default function Index(): JSX.Element {
         <Link to="/show">Show</Link>
         <Link to="/assets">Assets</Link>
         <div className={styles.spacer}></div>
-        <IconButton onClick={() => setBlackout(!blackout)}>
+        <div>
+          Fps: {currentFps} / {maxFps}
+        </div>
+        <IconButton title="Blackout" onClick={() => setBlackout(!blackout)}>
           {blackout ? <IconBxBulb /> : <IconBxsBulb />}
         </IconButton>
-        <IconButton onClick={() => {
+        <IconButton title="Connect to serial" onClick={() => {
           if (port) {
             disconnect();
           } else {
