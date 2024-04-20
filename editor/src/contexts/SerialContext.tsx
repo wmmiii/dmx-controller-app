@@ -37,7 +37,7 @@ export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
         port = ports[0];
       }
       await port.open({
-        baudRate: 128000,
+        baudRate: 192_000,
         dataBits: 8,
         flowControl: 'none',
         parity: 'none',
@@ -60,9 +60,9 @@ export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
     navigator.serial.ondisconnect = disconnect;
   }, []);
 
-  useEffect(
-    () => setUpdateFrequencyMs(project?.updateFrequencyMs || 50),
-    [project?.updateFrequencyMs]);
+  // useEffect(
+  //   () => setUpdateFrequencyMs(project?.updateFrequencyMs || 50),
+  //   [project?.updateFrequencyMs]);
 
   useEffect(() => {
     if (!port) {
@@ -93,7 +93,6 @@ export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
       try {
         await writer.ready;
         await writer.write(universe);
-        await writer.write(new Uint8Array(512));
       } catch (e) {
         console.error(e);
         disconnect();

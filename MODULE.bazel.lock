@@ -8819,7 +8819,7 @@
     },
     "@@rules_go~//go:extensions.bzl%go_sdk": {
       "os:linux,arch:amd64": {
-        "bzlTransitiveDigest": "fPPVH253PBJkIMD0kIJyCfyiZd4YjAur7UAXZVb1u2g=",
+        "bzlTransitiveDigest": "ar1YLbhR11M5TCnDCO7Xk7Z25BLUy+Db1ZBjRa5Gwmw=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
         "envVariables": {},
