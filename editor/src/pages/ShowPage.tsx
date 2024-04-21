@@ -220,6 +220,12 @@ function Tracks(): JSX.Element {
 
   return (
     <div className={styles.trackContainer}>
+      <div className={styles.meta}>
+        Show:
+        <select>
+          value
+        </select>
+      </div>
       <div className={styles.timelineOptions}>
         <div className={styles.left} style={{ width: leftWidth }}></div>
         <div className={styles.right}>

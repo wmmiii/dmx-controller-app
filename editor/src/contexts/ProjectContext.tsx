@@ -3,8 +3,8 @@ import { FixtureDefinition, PhysicalFixture } from '@dmx-controller/proto/fixtur
 import { Project, Project_Assets } from '@dmx-controller/proto/project_pb';
 import { getBlob, storeBlob } from '../util/storageUtil';
 
-const PROJECT_KEY = "tmp-project";
-const ASSETS_KEY = "tmp-assets";
+const PROJECT_KEY = "tmp-project-1";
+const ASSETS_KEY = "tmp-assets-1";
 
 const miniLedMovingHead = new FixtureDefinition({
   name: 'Mini LED Moving Head',
@@ -43,6 +43,8 @@ export const ProjectContext = createContext({
   project: null as (Project | null),
   save: () => { },
   saveAssets: () => { },
+  downloadProject: () => { },
+  openProject: (_project: Uint8Array) => { },
 });
 
 export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
@@ -68,28 +70,65 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
     })();
   }, []);
 
-  const save = useCallback(async () => {
+  const saveImpl = useCallback(async (project: Project) => {
     console.time('save');
     const minProject = new Project(project);
     minProject.assets = undefined;
     await storeBlob(PROJECT_KEY, minProject.toBinary());
     console.timeEnd('save');
+  }, []);
+
+  const save = useCallback(async () => {
+    saveImpl(project);
     setProject(new Project(project));
   }, [project, setProject]);
 
-  const saveAssets = useCallback(async () => {
+  const saveAssetsImpl = useCallback(async (project: Project) => {
     console.time('save assets');
     const assets = new Project_Assets(project.assets);
     await storeBlob(ASSETS_KEY, assets.toBinary());
     console.timeEnd('save assets');
-    await save();
+  }, []);
+
+  const saveAssets = useCallback(async () => {
+    saveAssetsImpl(project);
+    await saveImpl(project);
   }, [project, save]);
+
+  const downloadProject = useCallback(() => {
+    const blob = new Blob([project.toBinary()], {
+      type: 'application/protobuf',
+    });
+
+    let url = '';
+    try {
+      url = URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = project.name + '.proto';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }, [project]);
+
+  const openProject = useCallback(async (projectBlob: Uint8Array) => {
+    const p = Project.fromBinary(projectBlob);
+    await saveAssetsImpl(p);
+    await saveImpl(p);
+    setProject(p);
+  }, []);
 
   return (
     <ProjectContext.Provider value={{
       project: project,
       save: save,
       saveAssets: saveAssets,
+      downloadProject: downloadProject,
+      openProject: openProject,
     }}>
       {children}
     </ProjectContext.Provider>
