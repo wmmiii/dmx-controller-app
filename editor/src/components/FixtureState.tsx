@@ -1,7 +1,7 @@
 import React, { useCallback } from 'react';
-import { FixtureState as FixtureStateProto, RGB, RGBW } from "@dmx-controller/proto/effect_pb";
+import { FixtureState as FixtureStateProto, FixtureState_Channel, RGB, RGBW } from "@dmx-controller/proto/effect_pb";
 import ColorPicker from 'react-pick-color';
-import { IconButton } from './Button';
+import { Button, IconButton } from './Button';
 import IconBxX from '../icons/IconBxX';
 import RangeInput from './RangeInput';
 import IconBxPlus from '../icons/IconBxPlus';
@@ -84,7 +84,7 @@ export default function FixtureState(
               background: 'transparent',
               borderColor: 'none',
               width: '100%',
-            }}/>
+            }} />
         }
       </label>
       {
@@ -113,19 +113,23 @@ export default function FixtureState(
                 state.brightness = v;
                 onChange(state);
               }} />&nbsp;
-            <IconButton onClick={() => {
-              state.brightness = undefined;
-              onChange(state);
-            }}>
+            <IconButton
+              title="Remove Brightness"
+              onClick={() => {
+                state.brightness = undefined;
+                onChange(state);
+              }}>
               <IconBxX />
             </IconButton>
           </label> :
           <label className={styles.stateRow}>
             Brightness&nbsp;
-            <IconButton onClick={() => {
-              state.brightness = 1;
-              onChange(state);
-            }}>
+            <IconButton
+              title="Remove Brightness"
+              onClick={() => {
+                state.brightness = 1;
+                onChange(state);
+              }}>
               <IconBxPlus />
             </IconButton>
           </label>
@@ -143,19 +147,23 @@ export default function FixtureState(
                 state.pan = parseFloat(e.target.value);
                 onChange(state);
               }} />&nbsp;
-            <IconButton onClick={() => {
-              state.pan = undefined;
-              onChange(state);
-            }}>
+            <IconButton
+              title="Remove Pan"
+              onClick={() => {
+                state.pan = undefined;
+                onChange(state);
+              }}>
               <IconBxX />
             </IconButton>
           </label> :
           <label className={styles.stateRow}>
             Pan&nbsp;
-            <IconButton onClick={() => {
-              state.pan = 0;
-              onChange(state);
-            }}>
+            <IconButton
+              title="Remove Pan"
+              onClick={() => {
+                state.pan = 0;
+                onChange(state);
+              }}>
               <IconBxPlus />
             </IconButton>
           </label>
@@ -173,23 +181,72 @@ export default function FixtureState(
                 state.tilt = parseFloat(e.target.value);
                 onChange(state);
               }} />&nbsp;
-            <IconButton onClick={() => {
-              state.tilt = undefined;
-              onChange(state);
-            }}>
+            <IconButton
+              title="Remove Tilt"
+              onClick={() => {
+                state.tilt = undefined;
+                onChange(state);
+              }}>
               <IconBxX />
             </IconButton>
           </label> :
           <label className={styles.stateRow}>
             Tilt&nbsp;
-            <IconButton onClick={() => {
-              state.tilt = 0;
-              onChange(state);
-            }}>
+            <IconButton
+              title="Remove Tilt"
+              onClick={() => {
+                state.tilt = 0;
+                onChange(state);
+              }}>
               <IconBxPlus />
             </IconButton>
           </label>
       }
+      <label>Channels:</label>
+      {
+        state.channels.map((c: FixtureState_Channel, i: number) => (
+          <div className={styles.stateRow}>
+            <input
+              className={styles.input}
+              title="index"
+              type="number"
+              value={c.index}
+              onChange={(e) => {
+                c.index = parseInt(e.target.value);
+                onChange(state);
+              }}
+              min="0"
+              max="512"
+              step="1" />
+            <input
+              className={styles.input}
+              title="value"
+              type="number"
+              value={c.value}
+              onChange={(e) => {
+                c.value = parseInt(e.target.value);
+                onChange(state);
+              }}
+              min="0"
+              max="512"
+              step="1" />
+            <IconButton
+              title="Remove Channel"
+              onClick={() => {
+                state.channels.splice(i, 1);
+                onChange(state);
+              }}>
+              <IconBxX />
+            </IconButton>
+          </div>
+        ))
+      }
+      <Button onClick={() => state.channels.push(new FixtureState_Channel({
+        index: 0,
+        value: 0,
+      }))}>
+        Add custom channel
+      </Button>
     </>
   );
 }

@@ -29,7 +29,6 @@ export function rampEffect(
       effectT = t;
   }
 
-  const before = new Uint8Array(universe);
   const start = new Uint8Array(universe);
   const end = new Uint8Array(universe);
 

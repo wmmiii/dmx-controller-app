@@ -208,7 +208,7 @@ function Tracks(): JSX.Element {
 
   const nearestBeat = useCallback((t: number) => {
     if (project?.assets.audioFiles[0]?.beatMetadata) {
-      const beatMetadata = project.assets.audioFiles[0].beatMetadata;
+      const beatMetadata = project.assets.audioFiles[show.audioTrack.audioFileId].beatMetadata;
       const lengthMs = beatMetadata.lengthMs / beatSubdivisions;
       const beatNumber = Math.round((t - beatMetadata.offsetMs) / lengthMs);
       return Math.floor(beatMetadata.offsetMs + beatNumber * lengthMs);
@@ -226,7 +226,7 @@ function Tracks(): JSX.Element {
             onChange={(e) => {
               if (e.target.value === '-1') {
                 project.shows.push(DEFAULT_SHOW);
-                project.selectedShow(project.shows.length - 1);
+                project.selectedShow = project.shows.length - 1;
                 save();
               } else {
                 project.selectedShow = parseInt(e.target.value);

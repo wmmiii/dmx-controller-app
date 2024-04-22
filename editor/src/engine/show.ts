@@ -81,8 +81,9 @@ function applyEffect(context: RenderContext, effect: Effect): void {
     case EffectTiming.BEAT:
       if (context.beatMetadata) {
         const beat = context.beatMetadata;
-        t = (((context.t - beat.offsetMs) % beat.lengthMs) / beat.lengthMs) * effect.timingMultiplier % 1;
-        const beatIndex = Math.floor((context.t - beat.offsetMs) / beat.lengthMs * effect.timingMultiplier);
+        const virtualBeat = (context.t - beat.offsetMs) * effect.timingMultiplier;
+        t = ((virtualBeat % beat.lengthMs) / beat.lengthMs) % 1;
+        const beatIndex = Math.floor(virtualBeat / beat.lengthMs);
         if (effect.mirrored && beatIndex % 2) {
           t = 1 - t;
         }
