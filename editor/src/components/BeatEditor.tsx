@@ -284,7 +284,8 @@ export function BeatEditor({ file, onCancel, onSave }: BeatEditorProps):
             type="number"
             step="1"
             value={beatsPerDuration}
-            onChange={(e) => setBeatsPerDuration(parseInt(e.target.value))} />
+            onChange={(e) =>
+              setBeatsPerDuration(Math.max(parseInt(e.target.value), 1))} />
         </div>
       </div>
       <h2>Instructions</h2>

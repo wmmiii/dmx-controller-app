@@ -25,5 +25,6 @@ message Project {
 
   Assets assets = 21;
 
-  Show show = 31;
+  repeated Show shows = 31;
+  int32 selected_show = 32;
 }

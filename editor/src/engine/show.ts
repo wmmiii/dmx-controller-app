@@ -18,7 +18,7 @@ export function renderUniverse(t: number, project: Project):
   DmxUniverse {
   const universe = new Uint8Array(512);
 
-  const show = project.show;
+  const show = project.shows[project.selectedShow || 0];
 
   if (show) {
     for (const defaultValues of show.defaultChannelValues) {

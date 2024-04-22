@@ -54,3 +54,15 @@
     border-color: $col-interactive-hover;
   }
 }
+
+.warning-variant {
+  background-color: $col-warning;
+  border-color: $col-warning;
+  color: $col-bg;
+
+  &:active,
+  &:hover {
+    background-color: $col-warning-hover;
+    border-color: $col-warning-hover;
+  }
+}

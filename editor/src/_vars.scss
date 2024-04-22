@@ -7,6 +7,7 @@ $col-accent: #11a2ca;
 $col-interactive: lighten($col-accent, 20%);
 $col-interactive-hover: lighten($col-accent, 50%);
 $col-warning: #b06f24;
+$col-warning-hover: lighten($col-warning, 50%);
 
 $dim-border-radius: 8px;
 

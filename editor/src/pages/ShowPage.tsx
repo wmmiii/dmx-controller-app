@@ -5,15 +5,17 @@ import IconBxZoomIn from '../icons/IconBxZoomin';
 import IconBxZoomOut from '../icons/IconBxZoomOut';
 import styles from "./ShowPage.module.scss";
 import { AudioController, AudioTrackVisualizer } from '../components/AudioTrackVisualizer';
+import { AudioFile } from '@dmx-controller/proto/audio_pb';
+import { Show, Show_AudioTrack } from '@dmx-controller/proto/show_pb';
 import { Button } from '../components/Button';
 import { EffectDetails, EffectSelectContext, SelectedEffect } from '../components/Effect';
 import { HorizontalSplitPane } from '../components/SplitPane';
+import { LightTrack } from '../components/LightTrack';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { SerialContext } from '../contexts/SerialContext';
 import { ShortcutContext } from '../contexts/ShortcutContext';
-import { Show } from '@dmx-controller/proto/show_pb';
 import { renderUniverse } from '../engine/show';
-import { LightTrack } from '../components/LightTrack';
+import { Modal } from '../components/Modal';
 
 const DEFAULT_SHOW = new Show({
   name: 'Untitled Show',
@@ -156,6 +158,8 @@ function Tracks(): JSX.Element {
   const { setShortcuts } = useContext(ShortcutContext);
   const { setRenderUniverse, clearRenderUniverse } = useContext(SerialContext);
 
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+
   const [playing, setPlaying] = useState(false);
   const audioController = useRef<AudioController>();
   const t = useRef<number>(0);
@@ -174,14 +178,8 @@ function Tracks(): JSX.Element {
     [audioController]);
   const setT = useCallback((ts: number) => t.current = ts, [t]);
 
-  const show = useMemo(() => project?.show, [project]);
-
-  useEffect(() => {
-    if (project && !show && project.assets?.audioFiles.length > 0) {
-      project.show = DEFAULT_SHOW
-      save();
-    }
-  }, [project, show]);
+  const show =
+    useMemo(() => project?.shows[project.selectedShow || 0], [project]);
 
   useEffect(() => setShortcuts([
     {
@@ -220,14 +218,32 @@ function Tracks(): JSX.Element {
 
   return (
     <div className={styles.trackContainer}>
-      <div className={styles.meta}>
-        Show:
-        <select>
-          value
-        </select>
-      </div>
       <div className={styles.timelineOptions}>
-        <div className={styles.left} style={{ width: leftWidth }}></div>
+        <div className={styles.meta} style={{ width: leftWidth }}>
+          Show:
+          <br />
+          <select
+            onChange={(e) => {
+              if (e.target.value === '-1') {
+                project.shows.push(DEFAULT_SHOW);
+                project.selectedShow(project.shows.length - 1);
+                save();
+              } else {
+                project.selectedShow = parseInt(e.target.value);
+                save();
+              }
+            }}
+            value={project?.selectedShow || 0}>
+            {
+              project?.shows.map((s: Show, i: number) => (
+                <option value={i}>{s.name}</option>
+              ))
+            }
+            <option value={-1}>
+              + Create New Show
+            </option>
+          </select>
+        </div>
         <div className={styles.right}>
           <Button
             icon={<IconBxZoomIn />}
@@ -258,10 +274,32 @@ function Tracks(): JSX.Element {
         </div>
       </div>
       <div className={styles.audioVisualizer}>
-        <div className={styles.left} style={{ width: leftWidth }}></div>
+        <div className={styles.meta} style={{ width: leftWidth }}>
+          <Button onClick={() => setShowDetailsModal(true)}>
+            Show Details
+          </Button>
+          Audio Track:
+          <br />
+          <select
+            onChange={(e) => {
+              show.audioTrack = new Show_AudioTrack({
+                audioFileId: parseInt(e.target.value),
+              });
+              save();
+            }}
+            value={show?.audioTrack.audioFileId}>
+            {
+              project?.assets.audioFiles.map((f: AudioFile, i: number) => (
+                <option value={i}>
+                  {f.name}
+                </option>
+              ))
+            }
+          </select>
+        </div>
         <AudioTrackVisualizer
           className={styles.right}
-          fileId={0}
+          fileId={show?.audioTrack.audioFileId || 0}
           setController={setAudioController}
           setPlaying={setPlaying}
           setVisible={setVisibleCallback}
@@ -281,13 +319,48 @@ function Tracks(): JSX.Element {
           ))
         }
       </div>
+      {
+        showDetailsModal &&
+        <Modal
+          title={show?.name + ' Metadata'}
+          onClose={() => setShowDetailsModal(false)}>
+          <div className={styles.detailsModal}>
+            <div>
+              Title:&nbsp;
+              <input
+                type="text"
+                value={show?.name}
+                onChange={(e) => {
+                  show.name = e.target.value;
+                  save();
+                }}
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                }}/>
+            </div>
+            <div>
+              <Button
+                variant='warning'
+                onClick={() => {
+                  project.shows.splice(project.selectedShow, 1);
+                  project.selectedShow = 0;
+                  save();
+                  setShowDetailsModal(false)
+                }}>
+                Delete Show
+              </Button>&nbsp;
+              Cannot be undone!
+            </div>
+          </div>
+        </Modal>
+      }
     </div>
   )
 }
 
 
 function DetailsPane(): JSX.Element {
-  const {save} = useContext(ProjectContext);
+  const { save } = useContext(ProjectContext);
   const { selectedEffect } = useContext(EffectSelectContext);
 
   if (selectedEffect == null) {
