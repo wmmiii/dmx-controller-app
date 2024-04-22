@@ -17,7 +17,7 @@ import { ProjectContext } from './contexts/ProjectContext';
 import IconBxUpload from './icons/IconBxUpload';
 
 export default function Index(): JSX.Element {
-  const { port, blackout, setBlackout, connect, disconnect, currentFps, maxFps } = useContext(SerialContext);
+  const { port, blackout, setBlackout, connect, disconnect, currentFps } = useContext(SerialContext);
   const { downloadProject, openProject } = useContext(ProjectContext);
 
   const uploadButtonRef = createRef<HTMLInputElement>();
@@ -42,7 +42,7 @@ export default function Index(): JSX.Element {
         <Link to="/assets">Assets</Link>
         <div className={styles.spacer}></div>
         <div>
-          Fps: {currentFps} / {maxFps}
+          Fps: {currentFps}
         </div>
         <IconButton title="Blackout" onClick={() => setBlackout(!blackout)}>
           {blackout ? <IconBxBulb /> : <IconBxsBulb />}

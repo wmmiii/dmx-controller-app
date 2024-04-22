@@ -163,6 +163,7 @@ function Tracks(): JSX.Element {
   const [playing, setPlaying] = useState(false);
   const audioController = useRef<AudioController>();
   const t = useRef<number>(0);
+  const [tState, setTState] = useState(0);
 
   const [leftWidth, _setLeftWidth] = useState(180);
   const [visible, setVisible] = useState({ startMs: 0, endMs: 1000 });
@@ -176,7 +177,10 @@ function Tracks(): JSX.Element {
   const setAudioController = useCallback(
     (c: AudioController) => audioController.current = c,
     [audioController]);
-  const setT = useCallback((ts: number) => t.current = ts, [t]);
+  const setT = useCallback((ts: number) => {
+    t.current = ts;
+    setTState(ts);
+  }, [t]);
 
   const show =
     useMemo(() => project?.shows[project.selectedShow || 0], [project]);
@@ -206,15 +210,27 @@ function Tracks(): JSX.Element {
     return () => clearRenderUniverse(render);
   }, [project, playing, t]);
 
+  const beatMetadata = useMemo(() => {
+    return project?.assets.audioFiles[show.audioTrack.audioFileId].beatMetadata;
+  }, [project, show]);
+
+  let beatNumber: number | undefined;
+  if (beatMetadata) {
+    beatNumber = Math.floor(
+      (tState - beatMetadata.offsetMs) /
+      beatMetadata.lengthMs) + 1;
+  } else {
+    beatNumber = undefined;
+  }
+
   const nearestBeat = useCallback((t: number) => {
-    if (project?.assets.audioFiles[0]?.beatMetadata) {
-      const beatMetadata = project.assets.audioFiles[show.audioTrack.audioFileId].beatMetadata;
+    if (beatMetadata) {
       const lengthMs = beatMetadata.lengthMs / beatSubdivisions;
       const beatNumber = Math.round((t - beatMetadata.offsetMs) / lengthMs);
       return Math.floor(beatMetadata.offsetMs + beatNumber * lengthMs);
     }
     return undefined;
-  }, [project, beatSubdivisions]);
+  }, [beatMetadata, beatSubdivisions]);
 
   return (
     <div className={styles.trackContainer}>
@@ -271,6 +287,16 @@ function Tracks(): JSX.Element {
               value={beatSubdivisions}
               onChange={(e) => setBeatSubdivisions(parseInt(e.target.value))} />
           </span>
+          <div className={styles.spacer}></div>
+          <span>
+            MS: {Math.floor(tState)}
+          </span>
+          {
+            beatNumber != null &&
+            <span>
+              Beat number: {beatNumber}
+            </span>
+          }
         </div>
       </div>
       <div className={styles.audioVisualizer}>
@@ -336,7 +362,7 @@ function Tracks(): JSX.Element {
                 }}
                 onKeyDown={(e) => {
                   e.stopPropagation();
-                }}/>
+                }} />
             </div>
             <div>
               <Button

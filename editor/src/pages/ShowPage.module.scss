@@ -36,7 +36,11 @@
   flex-direction: row;
   gap: spacing(2);
   align-items: center;
-  padding: spacing(1) 0;
+  padding: spacing(1) spacing(2) spacing(1) 0;
+}
+
+.spacer {
+  flex: 1;
 }
 
 .lightTracks {
