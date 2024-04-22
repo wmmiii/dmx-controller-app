@@ -169,7 +169,7 @@ function Tracks(): JSX.Element {
   const setVisibleCallback = useCallback(
     (startMs: number, endMs: number) => setVisible({ startMs, endMs }),
     [setVisible]);
-  const [minPxPerSec, setMinPxPerSec] = useState(64);
+  const [minPxPerSec, setMinPxPerSec] = useState(32);
   const [snapToBeat, setSnapToBeat] = useState(true);
   const [beatSubdivisions, setBeatSubdivisions] = useState(1);
 

@@ -5,7 +5,6 @@ import IconBxBulb from './icons/IconBxBulb';
 import IconBxLink from './icons/IconBxLink';
 import IconBxUnlink from './icons/IconBxUnlink';
 import IconBxsBulb from './icons/IconBxsBulb';
-import SandboxPage from './pages/SandboxPage';
 import ShowPage from './pages/ShowPage';
 import { IconButton } from './components/Button';
 import { Link } from 'react-router-dom';
@@ -39,7 +38,6 @@ export default function Index(): JSX.Element {
   return (
     <div className={styles.wrapper}>
       <header>
-        <Link to="/">Sandbox</Link>
         <Link to="/show">Show</Link>
         <Link to="/assets">Assets</Link>
         <div className={styles.spacer}></div>
@@ -70,7 +68,7 @@ export default function Index(): JSX.Element {
       </header>
       <main>
         <Routes>
-          <Route path="/" element={<SandboxPage />} />
+          <Route path="/" element={<ShowPage />} />
           <Route path="/show" element={<ShowPage />} />
           <Route path="/assets" element={<AssetBrowserPage />} />
         </Routes>
