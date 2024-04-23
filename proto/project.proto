@@ -4,6 +4,7 @@ package dmx_controller;
 
 import "proto/audio.proto";
 import "proto/fixture.proto";
+import "proto/sequence.proto";
 import "proto/show.proto";
 
 message Project {
@@ -27,4 +28,6 @@ message Project {
 
   repeated Show shows = 31;
   int32 selected_show = 32;
+
+  map<uint32, Sequence> sequences = 41;
 }

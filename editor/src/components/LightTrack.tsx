@@ -1,13 +1,14 @@
-import React, { useCallback, useContext, useMemo, useRef } from "react";
+import React, { useContext, useMemo, useRef } from "react";
 
 import IconBxBrushAlt from '../icons/IconBxBrush';
 import IconBxPlus from '../icons/IconBxPlus';
 import styles from "./LightTrack.module.scss";
 import { Button, IconButton } from "./Button";
+import { LightLayer as LightLayerProto } from '@dmx-controller/proto/light_layer_pb';
 import { LightLayer } from '../components/LightLayer';
 import { OutputDescription, OutputSelector } from '../components/OutputSelector';
 import { ProjectContext } from "../contexts/ProjectContext";
-import { Show_LightLayer, Show_LightTrack } from '@dmx-controller/proto/show_pb';
+import { Show_LightTrack } from '@dmx-controller/proto/show_pb';
 
 export interface MappingFunctions {
   msToPx: (ms: number) => number;
@@ -17,6 +18,7 @@ export interface MappingFunctions {
 
 interface LightTrackProps {
   track: Show_LightTrack;
+  maxMs: number;
   leftWidth: number;
   mappingFunctions: MappingFunctions;
   forceUpdate: () => void;
@@ -24,12 +26,13 @@ interface LightTrackProps {
 
 export function LightTrack({
   track,
+  maxMs,
   leftWidth,
   mappingFunctions,
   forceUpdate,
 }: LightTrackProps):
   JSX.Element {
-  const { project, save } = useContext(ProjectContext);
+  const { project } = useContext(ProjectContext);
   const trackRef = useRef<HTMLDivElement>();
 
   const device: OutputDescription = useMemo(() => {
@@ -63,13 +66,13 @@ export function LightTrack({
                 break;
             }
             track.output.value = device.id;
-            save();
+            forceUpdate();
           }} />
         <IconButton
           title="Cleanup Empty Layers"
           onClick={() => {
             track.layers = track.layers.filter((l) => l.effects.length > 0);
-            save();
+            forceUpdate();
           }}>
           <IconBxBrushAlt />
         </IconButton>
@@ -80,6 +83,7 @@ export function LightTrack({
             <LightLayer
               key={i}
               layer={l}
+              maxMs={maxMs}
               msToPx={mappingFunctions.msToPx}
               pxToMs={mappingFunctions.pxToMs}
               snapToBeat={mappingFunctions.snapToBeat}
@@ -90,8 +94,8 @@ export function LightTrack({
           <Button
             icon={<IconBxPlus />}
             onClick={() => {
-              track.layers.push(new Show_LightLayer());
-              save();
+              track.layers.push(new LightLayerProto());
+              forceUpdate();
             }}>
             New Layer
           </Button>

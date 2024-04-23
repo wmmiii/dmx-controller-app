@@ -37,7 +37,7 @@ enum EffectTiming {
   // the effect itself.
   ONE_SHOT = 0;
   // The `t` value passed in corresponds to the relative timing of the beat
-  // between [0, 1]. 
+  // between [0, 1].
   BEAT = 1;
   // The `t` value passed in corresponds to the actual `t` value of the show.
   ABSOLUTE = 2;
@@ -61,6 +61,8 @@ message Effect {
     FixtureState end = 3;
   }
 
+  message SqeuenceEffect { uint32 sequence_id = 1; }
+
   uint32 start_ms = 1;
   uint32 end_ms = 2;
   reserved 3 to 10;
@@ -75,5 +77,6 @@ message Effect {
   oneof effect {
     StaticEffect static_effect = 101;
     RampEffect ramp_effect = 102;
+    SqeuenceEffect sequence_effect = 103;
   }
 }

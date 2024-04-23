@@ -6,6 +6,7 @@ TS_DEPS = [
     "//:node_modules/@types/dom-serial",
     "//:node_modules/@types/react",
     "//:node_modules/@types/react-dom",
+    "//:node_modules/crunker",
     "//:node_modules/esbuild-scss-modules-plugin",
     "//:node_modules/react",
     "//:node_modules/react-dom",

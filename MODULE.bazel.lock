@@ -2312,7 +2312,7 @@
       "general": {
         "bzlTransitiveDigest": "1yZJTAs4LgOSsxBGd0zadYxcIMY+XrDs1diHts+t0/w=",
         "recordedFileInputs": {
-          "@@//pnpm-lock.yaml": "db124f2f28ecb4a53010f74986c31c8d445faeb33c22dca1c3e1d079c395cda0"
+          "@@//pnpm-lock.yaml": "0650dbfe593c0234e42c67f68bf073f08cfdf22587e2f9b96c4345372d97c6d2"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -3105,6 +3105,35 @@
               "generate_bzl_library_targets": false
             }
           },
+          "npm__crunker__2.4.0__links": {
+            "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
+            "ruleClassName": "npm_import_links",
+            "attributes": {
+              "package": "crunker",
+              "version": "2.4.0",
+              "dev": false,
+              "root_package": "",
+              "link_packages": {
+                "": [
+                  "crunker"
+                ]
+              },
+              "deps": {},
+              "transitive_closure": {
+                "crunker": [
+                  "2.4.0"
+                ]
+              },
+              "lifecycle_build_target": false,
+              "lifecycle_hooks_env": [],
+              "lifecycle_hooks_execution_requirements": [],
+              "bins": {},
+              "npm_translate_lock_repo": "npm",
+              "package_visibility": [
+                "//visibility:public"
+              ]
+            }
+          },
           "npm__to-regex-range__5.0.1": {
             "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
             "ruleClassName": "npm_import_rule",
@@ -3447,35 +3476,6 @@
               "generate_bzl_library_targets": false
             }
           },
-          "npm__wavesurfer.js__7.7.3__links": {
-            "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
-            "ruleClassName": "npm_import_links",
-            "attributes": {
-              "package": "wavesurfer.js",
-              "version": "7.7.3",
-              "dev": false,
-              "root_package": "",
-              "link_packages": {
-                "": [
-                  "wavesurfer.js"
-                ]
-              },
-              "deps": {},
-              "transitive_closure": {
-                "wavesurfer.js": [
-                  "7.7.3"
-                ]
-              },
-              "lifecycle_build_target": false,
-              "lifecycle_hooks_env": [],
-              "lifecycle_hooks_execution_requirements": [],
-              "bins": {},
-              "npm_translate_lock_repo": "npm",
-              "package_visibility": [
-                "//visibility:public"
-              ]
-            }
-          },
           "npm__lightningcss-linux-x64-gnu__1.22.1": {
             "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
             "ruleClassName": "npm_import_rule",
@@ -3558,34 +3558,6 @@
               "package_visibility": [
                 "//visibility:public"
               ]
-            }
-          },
-          "npm__wavesurfer.js__7.7.3": {
-            "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
-            "ruleClassName": "npm_import_rule",
-            "attributes": {
-              "package": "wavesurfer.js",
-              "version": "7.7.3",
-              "root_package": "",
-              "link_workspace": "",
-              "link_packages": {
-                "": [
-                  "wavesurfer.js"
-                ]
-              },
-              "integrity": "sha512-TC7cQb0RVggtNC+Dl05gcnhSFL5U+fww3ZYJUuqgfR+r9oY+bh/hChCipDFDjs5cWtuek3GEtsPXWa93a9XYxw==",
-              "url": "https://registry.npmjs.org/wavesurfer.js/-/wavesurfer.js-7.7.3.tgz",
-              "commit": "",
-              "patch_args": [],
-              "patches": [],
-              "custom_postinstall": "",
-              "npm_auth": "",
-              "npm_auth_basic": "",
-              "npm_auth_username": "",
-              "npm_auth_password": "",
-              "lifecycle_hooks": [],
-              "extra_build_content": "",
-              "generate_bzl_library_targets": false
             }
           },
           "npm__lightningcss-darwin-x64__1.22.1__links": {
@@ -4301,6 +4273,35 @@
               "generate_bzl_library_targets": false
             }
           },
+          "npm__wavesurfer.js__7.7.11__links": {
+            "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
+            "ruleClassName": "npm_import_links",
+            "attributes": {
+              "package": "wavesurfer.js",
+              "version": "7.7.11",
+              "dev": false,
+              "root_package": "",
+              "link_packages": {
+                "": [
+                  "wavesurfer.js"
+                ]
+              },
+              "deps": {},
+              "transitive_closure": {
+                "wavesurfer.js": [
+                  "7.7.11"
+                ]
+              },
+              "lifecycle_build_target": false,
+              "lifecycle_hooks_env": [],
+              "lifecycle_hooks_execution_requirements": [],
+              "bins": {},
+              "npm_translate_lock_repo": "npm",
+              "package_visibility": [
+                "//visibility:public"
+              ]
+            }
+          },
           "npm__at_esbuild_android-arm64__0.19.8": {
             "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
             "ruleClassName": "npm_import_rule",
@@ -4607,6 +4608,34 @@
               "link_packages": {},
               "integrity": "sha512-mKnC+QJ9pWVzv+C4/U3rRsHapFfHvQFoFB92e52xeyGMcX6/OlIl78je1u8vePzYZSkkogMPJ2yjxxsb89cxyw==",
               "url": "https://registry.npmjs.org/lodash-es/-/lodash-es-4.17.21.tgz",
+              "commit": "",
+              "patch_args": [],
+              "patches": [],
+              "custom_postinstall": "",
+              "npm_auth": "",
+              "npm_auth_basic": "",
+              "npm_auth_username": "",
+              "npm_auth_password": "",
+              "lifecycle_hooks": [],
+              "extra_build_content": "",
+              "generate_bzl_library_targets": false
+            }
+          },
+          "npm__crunker__2.4.0": {
+            "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
+            "ruleClassName": "npm_import_rule",
+            "attributes": {
+              "package": "crunker",
+              "version": "2.4.0",
+              "root_package": "",
+              "link_workspace": "",
+              "link_packages": {
+                "": [
+                  "crunker"
+                ]
+              },
+              "integrity": "sha512-3J0aBgLaB8jpGh6o+bisjYzOEkJLYxhnisHXogjY4fxYewh1aVCptWAz7RSTYPncCyxdfA+UaWAM1BrQiZvZgQ==",
+              "url": "https://registry.npmjs.org/crunker/-/crunker-2.4.0.tgz",
               "commit": "",
               "patch_args": [],
               "patches": [],
@@ -6765,6 +6794,34 @@
               "link_packages": {},
               "integrity": "sha512-ySFolZQfw9FoDb3ed9d80Cm9f0+r7qj+HJkWjeD9RBfpxEVTlVhol+gvaQB/78WbwYfbnNh8nWHHBSlg072y6A==",
               "url": "https://registry.npmjs.org/generic-names/-/generic-names-4.0.0.tgz",
+              "commit": "",
+              "patch_args": [],
+              "patches": [],
+              "custom_postinstall": "",
+              "npm_auth": "",
+              "npm_auth_basic": "",
+              "npm_auth_username": "",
+              "npm_auth_password": "",
+              "lifecycle_hooks": [],
+              "extra_build_content": "",
+              "generate_bzl_library_targets": false
+            }
+          },
+          "npm__wavesurfer.js__7.7.11": {
+            "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
+            "ruleClassName": "npm_import_rule",
+            "attributes": {
+              "package": "wavesurfer.js",
+              "version": "7.7.11",
+              "root_package": "",
+              "link_workspace": "",
+              "link_packages": {
+                "": [
+                  "wavesurfer.js"
+                ]
+              },
+              "integrity": "sha512-27otJlDBcUSbMh/YkxEZN0yXTHINQNYSOl5aJplYlIaHw2u3BrABUzOmUZV3dKIy8udOLJXS/67y5pOIzgAg+w==",
+              "url": "https://registry.npmjs.org/wavesurfer.js/-/wavesurfer.js-7.7.11.tgz",
               "commit": "",
               "patch_args": [],
               "patches": [],

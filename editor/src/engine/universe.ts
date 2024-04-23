@@ -5,6 +5,7 @@ import { Show_LightTrack } from "@dmx-controller/proto/show_pb";
 import { applyState, getDevice } from "./effectUtils";
 import { rampEffect } from "./rampEffect";
 import { AudioFile_BeatMetadata } from "@dmx-controller/proto/audio_pb";
+import { OutputDescription } from "../components/OutputSelector";
 
 interface RenderContext {
   t: number;
@@ -14,7 +15,7 @@ interface RenderContext {
   universe: DmxUniverse;
 }
 
-export function renderUniverse(t: number, project: Project):
+export function renderShowToUniverse(t: number, project: Project):
   DmxUniverse {
   const universe = new Uint8Array(512);
 
@@ -54,6 +55,42 @@ export function renderUniverse(t: number, project: Project):
             }, context) as RenderContext,
             effect);
         }
+      }
+    }
+  }
+
+  return universe;
+}
+
+export function renderSequenceToUniverse(
+  t: number,
+  sequenceId: number,
+  beatMetadata: AudioFile_BeatMetadata,
+  output: Show_LightTrack['output'],
+  project: Project,
+):
+  DmxUniverse {
+  const universe = new Uint8Array(512);
+
+  const sequence = project.sequences[sequenceId];
+
+  if (sequence) {
+    const context: Partial<RenderContext> = {
+      t: t,
+      beatMetadata: beatMetadata,
+      project: project,
+      universe: universe,
+    };
+
+    for (const layer of sequence.layers) {
+      const effect = layer.effects.find((e) => e.startMs <= t && e.endMs > t);
+      if (effect) {
+        applyEffect(
+          Object.assign({
+            t: context.t + effect.offsetMs,
+            output: output,
+          }, context) as RenderContext,
+          effect);
       }
     }
   }

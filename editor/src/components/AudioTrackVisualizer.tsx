@@ -1,9 +1,9 @@
-import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import MinimapPlugin from "wavesurfer.js/dist/plugins/minimap.js";
-import RegionsPlugin from "wavesurfer.js/dist/plugins/regions.js";
+import RegionsPlugin, { Region } from "wavesurfer.js/dist/plugins/regions.js";
 import WaveSurfer from 'wavesurfer.js';
 import { BEAT_MARKER, WAVEFORM_COLOR, WAVEFORM_CURSOR_COLOR, WAVEFORM_PROGRESS_COLOR, WAVEFORM_SAMPLE_RATE } from '../util/styleUtils';
-import { ProjectContext } from '../contexts/ProjectContext';
+import { AudioFile_BeatMetadata } from '@dmx-controller/proto/audio_pb';
 
 export interface AudioController {
   play: () => void;
@@ -11,46 +11,38 @@ export interface AudioController {
 }
 
 interface AudioTrackVisualizerProps {
-  fileId: number;
+  audioBlob: Blob;
+  beatMetadata: AudioFile_BeatMetadata;
   setController: (controller: AudioController) => void;
   setPlaying: (playing: boolean) => void;
   onProgress: (t: number) => void;
   setVisible?: (startMs: number, endMs: number) => void;
+  setTotalDuration?: (ms: number) => void;
   minPxPerSec: number;
   beatSubdivisions?: number;
+  loop?: boolean;
   className?: string;
 }
 
 export function AudioTrackVisualizer({
-  fileId,
+  audioBlob,
+  beatMetadata,
   setController,
   setPlaying,
   onProgress,
   setVisible,
+  setTotalDuration,
   minPxPerSec,
   beatSubdivisions,
+  loop,
   className,
 }: AudioTrackVisualizerProps): JSX.Element {
-  const { project } = useContext(ProjectContext);
   const containerRef = useRef<HTMLDivElement>();
   const [ws, setWs] = useState<WaveSurfer | null>(null);
   const [regions, setRegions] = useState<RegionsPlugin | null>(null);
 
-  const audioFile = useMemo(
-    () => project?.assets?.audioFiles[fileId],
-    [fileId, project]);
-
-  const fileBlob = useMemo(() => {
-    if (!audioFile) {
-      return undefined;
-    }
-    return new Blob([audioFile.contents], {
-      type: audioFile.mime,
-    });
-  }, [audioFile]);
-
   useEffect(() => {
-    if (containerRef.current != null && fileBlob != null) {
+    if (containerRef.current != null && audioBlob != null) {
       const ws = WaveSurfer.create({
         container: containerRef.current,
         cursorColor: WAVEFORM_CURSOR_COLOR,
@@ -71,11 +63,17 @@ export function AudioTrackVisualizer({
       ws.on('timeupdate', (seconds: number) => onProgress(seconds * 1000));
       ws.on('play', () => setPlaying(true));
       ws.on('pause', () => setPlaying(false));
+      ws.on('decode', (seconds: number) => {
+        const ms = seconds * 1000;
+        setVisible(0, ms);
+        if (setTotalDuration) {
+          setTotalDuration(ms);
+        }
+      });
 
       setRegions(ws.registerPlugin(RegionsPlugin.create()));
 
-      ws.loadBlob(fileBlob)
-        .then(() => setVisible(0, ws.getDuration()))
+      ws.loadBlob(audioBlob)
         .then(() => setWs(ws));
 
       return () => {
@@ -83,7 +81,7 @@ export function AudioTrackVisualizer({
         ws.destroy();
       };
     }
-  }, [containerRef.current, fileBlob, onProgress, setPlaying]);
+  }, [containerRef.current, audioBlob, onProgress, setPlaying]);
 
   const audioController: AudioController = useMemo(() => {
     if (ws) {
@@ -110,6 +108,16 @@ export function AudioTrackVisualizer({
     }
   }, [ws, setVisible]);
 
+  // Add loop callback.
+  useEffect(() => {
+    if (ws && loop) {
+      const callback = () => ws.play();
+      ws.on('finish', callback);
+
+      () => ws.un('finish', callback);
+    }
+  }, [ws, loop]);
+
   // Set zoom level.
   useEffect(() => {
     if (ws) {
@@ -127,12 +135,11 @@ export function AudioTrackVisualizer({
     if (ws && regions) {
       regions.clearRegions();
 
-      const beatData = audioFile?.beatMetadata;
-      if (beatData) {
+      if (beatMetadata) {
         for (
-          let t = beatData.offsetMs / 1000;
+          let t = beatMetadata.offsetMs / 1000;
           t < ws.getDuration();
-          t += (beatData.lengthMs / 1000)
+          t += (beatMetadata.lengthMs / 1000)
         ) {
           regions.addRegion({
             start: t,
@@ -143,9 +150,9 @@ export function AudioTrackVisualizer({
 
         if (beatSubdivisions) {
           for (
-            let t = beatData.offsetMs / 1000;
+            let t = beatMetadata.offsetMs / 1000;
             t < ws.getDuration();
-            t += (beatData.lengthMs / 1000 / beatSubdivisions)
+            t += (beatMetadata.lengthMs / 1000 / beatSubdivisions)
           ) {
             regions.addRegion({
               start: t,
@@ -156,7 +163,7 @@ export function AudioTrackVisualizer({
         }
       }
     }
-  }, [ws, regions, audioFile?.beatMetadata, beatSubdivisions]);
+  }, [ws, regions, beatMetadata, beatSubdivisions]);
 
   return (
     <div ref={containerRef} className={className}></div>

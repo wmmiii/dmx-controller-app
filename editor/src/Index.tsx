@@ -15,6 +15,7 @@ import styles from './Index.module.scss';
 import IconBxDownload from './icons/IconBxDownload';
 import { ProjectContext } from './contexts/ProjectContext';
 import IconBxUpload from './icons/IconBxUpload';
+import SequencePage from './pages/SequencePage';
 
 export default function Index(): JSX.Element {
   const { port, blackout, setBlackout, connect, disconnect, currentFps } = useContext(SerialContext);
@@ -40,6 +41,7 @@ export default function Index(): JSX.Element {
       <header>
         <Link to="/show">Show</Link>
         <Link to="/assets">Assets</Link>
+        <Link to="/sequence">Sequence</Link>
         <div className={styles.spacer}></div>
         <div>
           Fps: {currentFps}
@@ -71,6 +73,7 @@ export default function Index(): JSX.Element {
           <Route path="/" element={<ShowPage />} />
           <Route path="/show" element={<ShowPage />} />
           <Route path="/assets" element={<AssetBrowserPage />} />
+          <Route path="/sequence" element={<SequencePage />} />
         </Routes>
       </main>
     </div>

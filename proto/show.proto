@@ -3,6 +3,7 @@ syntax = "proto3";
 package dmx_controller;
 
 import "proto/effect.proto";
+import "proto/light_layer.proto";
 
 message Show {
   message AudioTrack {
@@ -30,10 +31,6 @@ message Show {
       uint32 physical_fixture_group_id = 3;
     }
     repeated Channel channels = 4;
-  }
-
-  message LightLayer {
-    repeated Effect effects = 1;
   }
 
   string name = 1;

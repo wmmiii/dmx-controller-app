@@ -1,10 +1,8 @@
-import { Show_LightLayer } from "@dmx-controller/proto/show_pb";
-
 import styles from './LightLayer.module.scss';
 import { Effect as EffectComponent } from "./Effect";
-import { useContext, useState } from "react";
-import { ProjectContext } from "../contexts/ProjectContext";
 import { Effect, Effect_StaticEffect } from "@dmx-controller/proto/effect_pb";
+import { LightLayer as LightLayerProto } from "@dmx-controller/proto/light_layer_pb";
+import { useState } from "react";
 
 interface NewEffect {
   firstMs: number;
@@ -15,7 +13,8 @@ interface NewEffect {
 }
 
 interface LightLayerProps {
-  layer: Show_LightLayer;
+  layer: LightLayerProto;
+  maxMs: number;
   msToPx: (ms: number) => number;
   pxToMs: (px: number) => number;
   snapToBeat: (t: number) => number;
@@ -24,12 +23,12 @@ interface LightLayerProps {
 
 export function LightLayer({
   layer,
+  maxMs,
   msToPx,
   pxToMs,
   snapToBeat,
   forceUpdate,
 }: LightLayerProps): JSX.Element {
-  const { save } = useContext(ProjectContext);
   const [newEffect, setNewEffect] = useState<NewEffect | null>(null);
 
   return (
@@ -88,7 +87,7 @@ export function LightLayer({
                   case: 'staticEffect',
                 },
               }));
-              save();
+              forceUpdate();
               setNewEffect(null);
             }}>
           </div>
@@ -104,13 +103,13 @@ export function LightLayer({
           }}
           effect={e}
           minMs={layer.effects[i - 1]?.endMs || 0}
-          maxMs={layer.effects[i + 1]?.startMs || Number.MAX_SAFE_INTEGER}
+          maxMs={layer.effects[i + 1]?.startMs || maxMs}
           pxToMs={pxToMs}
           snapToBeat={snapToBeat}
-          save={() => save()}
+          save={() => forceUpdate()}
           onDelete={() => {
             layer.effects.splice(i, 1);
-            save();
+            forceUpdate();
           }}
           forceUpdate={forceUpdate} />
       ))}
