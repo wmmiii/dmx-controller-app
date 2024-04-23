@@ -1,4 +1,4 @@
-import React, { JSX, createRef, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { JSX, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import IconBxPulse from '../icons/IconBxPulse';
 import IconBxZoomIn from '../icons/IconBxZoomin';
@@ -380,15 +380,17 @@ function Tracks(): JSX.Element {
           className={styles.cursor}
           style={{ left: mappingFunctions.msToPx(tState) + leftWidth }}>
         </div>
-        {
-          show?.lightTracks.map(t => (
-            <LightTrack
-              track={t}
-              leftWidth={leftWidth}
-              mappingFunctions={mappingFunctions}
-              forceUpdate={save} />
-          ))
-        }
+        <div className={styles.tracks}>
+          {
+            show?.lightTracks.map(t => (
+              <LightTrack
+                track={t}
+                leftWidth={leftWidth}
+                mappingFunctions={mappingFunctions}
+                forceUpdate={save} />
+            ))
+          }
+        </div>
       </div>
       {
         showDetailsModal &&

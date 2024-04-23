@@ -27,7 +27,6 @@
 
   .lightTracks {
     flex: 1;
-    overflow-y: auto;
   }
 }
 
@@ -45,8 +44,13 @@
 
 .lightTracks {
   position: relative;
-  overflow: hidden;
   min-width: 0;
+
+  .tracks {
+    @include fill;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
 }
 
 .cursor {
