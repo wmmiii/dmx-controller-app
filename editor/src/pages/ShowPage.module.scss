@@ -49,6 +49,17 @@
   min-width: 0;
 }
 
+.cursor {
+  border-left: 1px solid $col-text;
+  bottom: 0;
+  opacity: 0.5;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  width: 0;
+  z-index: 2;
+}
+
 .meta {
   box-sizing: border-box;
   display: flex;

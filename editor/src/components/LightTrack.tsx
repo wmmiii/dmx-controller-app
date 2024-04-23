@@ -9,19 +9,23 @@ import { OutputDescription, OutputSelector } from '../components/OutputSelector'
 import { ProjectContext } from "../contexts/ProjectContext";
 import { Show_LightLayer, Show_LightTrack } from '@dmx-controller/proto/show_pb';
 
+export interface MappingFunctions {
+  msToPx: (ms: number) => number;
+  pxToMs: (px: number) => number;
+  snapToBeat: (t: number) => number;
+} 
+
 interface LightTrackProps {
   track: Show_LightTrack;
   leftWidth: number;
-  visible: { startMs: number, endMs: number };
-  nearestBeat?: (ms: number) => number;
+  mappingFunctions: MappingFunctions;
   forceUpdate: () => void;
 }
 
 export function LightTrack({
   track,
   leftWidth,
-  visible,
-  nearestBeat,
+  mappingFunctions,
   forceUpdate,
 }: LightTrackProps):
   JSX.Element {
@@ -42,43 +46,6 @@ export function LightTrack({
         };
     }
   }, [project, track]);
-
-  const msToPx = useCallback((ms: number) => {
-    if (trackRef.current) {
-      const bounding = trackRef.current.getBoundingClientRect();
-      return ((ms - visible.startMs) * bounding.width) /
-        (visible.endMs - visible.startMs);
-    }
-    return 0;
-  }, [visible, trackRef.current]);
-
-  const beatSnapRangeMs = useMemo(() => {
-    if (trackRef.current) {
-      const bounding = trackRef.current.getBoundingClientRect();
-      return Math.floor(
-        10 * (visible.endMs - visible.startMs) / bounding.width);
-    }
-    return 0;
-  }, [visible, trackRef.current]);
-
-  const pxToMs = useCallback((px: number) => {
-    if (trackRef.current) {
-      const bounding = trackRef.current.getBoundingClientRect();
-      return Math.floor(((px - bounding.left) / bounding.width) *
-        (visible.endMs - visible.startMs) + visible.startMs);
-    }
-    return 0;
-  }, [visible, nearestBeat, beatSnapRangeMs, trackRef.current]);
-
-  const snapToBeat = useCallback((t: number) => {
-    if (nearestBeat) {
-      const beat = nearestBeat(t);
-      if (Math.abs(beat - t) < beatSnapRangeMs) {
-        return beat;
-      }
-    }
-    return t;
-  }, [nearestBeat, beatSnapRangeMs]);
 
   return (
     <div className={styles.lightTrack}>
@@ -113,9 +80,9 @@ export function LightTrack({
             <LightLayer
               key={i}
               layer={l}
-              msToPx={msToPx}
-              pxToMs={pxToMs}
-              snapToBeat={snapToBeat}
+              msToPx={mappingFunctions.msToPx}
+              pxToMs={mappingFunctions.pxToMs}
+              snapToBeat={mappingFunctions.snapToBeat}
               forceUpdate={forceUpdate} />
           ))
         }

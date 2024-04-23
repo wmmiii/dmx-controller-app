@@ -1,4 +1,4 @@
-import React, { JSX, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { JSX, createRef, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import IconBxPulse from '../icons/IconBxPulse';
 import IconBxZoomIn from '../icons/IconBxZoomin';
@@ -10,7 +10,7 @@ import { Show, Show_AudioTrack } from '@dmx-controller/proto/show_pb';
 import { Button } from '../components/Button';
 import { EffectDetails, EffectSelectContext, SelectedEffect } from '../components/Effect';
 import { HorizontalSplitPane } from '../components/SplitPane';
-import { LightTrack } from '../components/LightTrack';
+import { LightTrack, MappingFunctions } from '../components/LightTrack';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { SerialContext } from '../contexts/SerialContext';
 import { ShortcutContext } from '../contexts/ShortcutContext';
@@ -158,6 +158,7 @@ function Tracks(): JSX.Element {
   const { setShortcuts } = useContext(ShortcutContext);
   const { setRenderUniverse, clearRenderUniverse } = useContext(SerialContext);
 
+  const panelRef = useRef<HTMLDivElement>();
   const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   const [playing, setPlaying] = useState(false);
@@ -170,7 +171,7 @@ function Tracks(): JSX.Element {
   const setVisibleCallback = useCallback(
     (startMs: number, endMs: number) => setVisible({ startMs, endMs }),
     [setVisible]);
-  const [minPxPerSec, setMinPxPerSec] = useState(32);
+  const [minPxPerSec, setMinPxPerSec] = useState(16);
   const [snapToBeat, setSnapToBeat] = useState(true);
   const [beatSubdivisions, setBeatSubdivisions] = useState(1);
 
@@ -232,8 +233,49 @@ function Tracks(): JSX.Element {
     return undefined;
   }, [beatMetadata, beatSubdivisions]);
 
+  const mappingFunctions: MappingFunctions = useMemo(() => {
+    let msToPx = (_ms: number) => 0;
+    let pxToMs = (_px: number) => 0;
+    let snapToBeat = (_t: number) => 0;
+
+    if (panelRef.current) {
+      const bounding = panelRef.current.getBoundingClientRect();
+      const width = panelRef.current.getBoundingClientRect().width - leftWidth;
+      const left = bounding.left + leftWidth;
+
+      msToPx = (ms: number) => {
+        return ((ms - visible.startMs) * width) /
+          (visible.endMs - visible.startMs);
+      };
+
+      pxToMs = (px: number) => {
+        return Math.floor(((px - left) / width) *
+          (visible.endMs - visible.startMs) + visible.startMs);
+      };
+
+      const beatSnapRangeMs =
+        Math.floor(10 * (visible.endMs - visible.startMs) / width);
+
+      snapToBeat = (t: number) => {
+        const beat = nearestBeat(t);
+        if (Math.abs(beat - t) < beatSnapRangeMs) {
+          return beat;
+        }
+        return t;
+      };
+    }
+
+    return {
+      msToPx,
+      pxToMs,
+      snapToBeat,
+    };
+  }, [visible, panelRef, leftWidth]);
+
   return (
-    <div className={styles.trackContainer}>
+    <div
+      ref={panelRef}
+      className={styles.trackContainer}>
       <div className={styles.timelineOptions}>
         <div className={styles.meta} style={{ width: leftWidth }}>
           Show:
@@ -334,13 +376,16 @@ function Tracks(): JSX.Element {
           onProgress={setT} />
       </div>
       <div className={styles.lightTracks}>
+        <div
+          className={styles.cursor}
+          style={{ left: mappingFunctions.msToPx(tState) + leftWidth }}>
+        </div>
         {
           show?.lightTracks.map(t => (
             <LightTrack
               track={t}
               leftWidth={leftWidth}
-              visible={visible}
-              nearestBeat={snapToBeat ? nearestBeat : undefined}
+              mappingFunctions={mappingFunctions}
               forceUpdate={save} />
           ))
         }

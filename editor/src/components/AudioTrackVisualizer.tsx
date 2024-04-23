@@ -68,8 +68,7 @@ export function AudioTrackVisualizer({
         ],
       });
 
-      ws.on('audioprocess', (seconds: number) => onProgress(seconds * 1000));
-      ws.on('seeking', (seconds: number) => onProgress(seconds * 1000));
+      ws.on('timeupdate', (seconds: number) => onProgress(seconds * 1000));
       ws.on('play', () => setPlaying(true));
       ws.on('pause', () => setPlaying(false));
 
