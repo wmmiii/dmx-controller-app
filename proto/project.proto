@@ -29,5 +29,6 @@ message Project {
   repeated Show shows = 31;
   int32 selected_show = 32;
 
+  // Sequence 0 is reserved for the "unset" sequence.
   map<uint32, Sequence> sequences = 41;
 }

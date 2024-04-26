@@ -1,14 +1,15 @@
-import React, { createContext, useContext, useMemo, useState } from 'react';
-import { Effect as EffectProto, EffectTiming, Effect_RampEffect, Effect_RampEffect_EasingFunction, Effect_StaticEffect, FixtureState as FixtureStateProto } from "@dmx-controller/proto/effect_pb";
-import { CSSProperties } from "react";
-import FixtureState from './FixtureState';
-
-import styles from './Effect.module.scss';
-import IconRgb from '../icons/IconRgb';
+import React, { createContext, useContext, useState } from 'react';
+import EffectState from './EffectState';
+import IconBxRepeat from '../icons/IconBxRepeat';
 import IconBxsSun from '../icons/IconBxsSun';
 import IconPanTilt from '../icons/IconPanTilt';
-import { DEFAULT_EFFECT_COLOR } from '../util/styleUtils';
+import IconRgb from '../icons/IconRgb';
+import styles from './Effect.module.scss';
 import { Button } from './Button';
+import { CSSProperties } from "react";
+import { DEFAULT_EFFECT_COLOR } from '../util/styleUtils';
+import { Effect as EffectProto, EffectTiming, Effect_RampEffect, Effect_RampEffect_EasingFunction, Effect_StaticEffect, FixtureState, FixtureState as FixtureStateProto, SequenceMapping } from "@dmx-controller/proto/effect_pb";
+import { isFixtureState } from '../engine/effectUtils';
 
 export interface SelectedEffect {
   effect: EffectProto;
@@ -53,15 +54,15 @@ export function Effect({
 
   const icons: Set<(props: any) => JSX.Element> = new Set();
   if (effect.effect.case === 'staticEffect') {
-    style.background = stateColor(effect.effect.value.state);
-    stateIcons(effect.effect.value.state).forEach(i => icons.add(i));
+    style.background = effectColor(effect.effect.value.effect.value);
+    effectIcons(effect.effect.value.effect.value).forEach(i => icons.add(i));
   } else if (effect.effect.case === 'rampEffect') {
-    const start = stateColor(effect.effect.value.start);
-    const end = stateColor(effect.effect.value.end);
+    const start = effectColor(effect.effect.value.start.value);
+    const end = effectColor(effect.effect.value.end.value);
     style.background = `linear-gradient(90deg, ${start} 0%, ${end} 100%)`;
 
-    stateIcons(effect.effect.value.start).forEach(i => icons.add(i));
-    stateIcons(effect.effect.value.end).forEach(i => icons.add(i));
+    effectIcons(effect.effect.value.start.value).forEach(i => icons.add(i));
+    effectIcons(effect.effect.value.end.value).forEach(i => icons.add(i));
   }
 
   const containerClasses = [styles.effect, className];
@@ -99,17 +100,20 @@ export function Effect({
                 snapToBeat(ms), minMs), effect.endMs - 1);
             } else if (dragEnd) {
               effect.endMs = Math.max(Math.min(
-                snapToBeat(ms), maxMs), effect.startMs + 1);;
+                snapToBeat(ms), maxMs), effect.startMs + 1);
             } else if (drag != null) {
               const startMs = snapToBeat(ms - drag.offsetMs);
               const endMs = startMs + drag.widthMs;
               if (startMs < minMs) {
+                console.log('start min', startMs, minMs);
                 effect.startMs = minMs;
                 effect.endMs = minMs + drag.widthMs;
               } else if (endMs > maxMs) {
+                console.log('end max', endMs, maxMs);
                 effect.endMs = maxMs;
                 effect.startMs = maxMs - drag.widthMs;
               } else {
+                console.log('other');
                 effect.startMs = startMs;
                 effect.endMs = endMs;
               }
@@ -158,12 +162,14 @@ export function Effect({
 }
 
 interface EffectDetailsBaseProps<T> {
+  sequenceId?: number;
   className?: string;
   effect: T;
   onChange: (effect: T) => void;
 }
 
 export function EffectDetails({
+  sequenceId,
   className,
   effect,
   onChange,
@@ -177,6 +183,7 @@ export function EffectDetails({
     case 'staticEffect':
       details = (
         <StaticEffectDetails
+          sequenceId={sequenceId}
           effect={effect.effect.value}
           onChange={(e) => {
             effect.effect.value = e;
@@ -187,6 +194,7 @@ export function EffectDetails({
     case 'rampEffect':
       details = (
         <RampEffectDetails
+          sequenceId={sequenceId}
           effect={effect.effect.value}
           onChange={(e) => {
             effect.effect.value = e;
@@ -211,7 +219,10 @@ export function EffectDetails({
               case 'staticEffect':
                 effect.effect = {
                   value: new Effect_StaticEffect({
-                    state: {},
+                    effect: {
+                      case: 'state',
+                      value: {},
+                    }
                   }),
                   case: 'staticEffect',
                 };
@@ -219,8 +230,14 @@ export function EffectDetails({
               case 'rampEffect':
                 effect.effect = {
                   value: new Effect_RampEffect({
-                    start: {},
-                    end: {},
+                    start: {
+                      case: 'fixtureStateStart',
+                      value: {},
+                    },
+                    end: {
+                      case: 'fixtureStateEnd',
+                      value: {},
+                    },
                   }),
                   case: 'rampEffect',
                 };
@@ -279,8 +296,8 @@ export function EffectDetails({
   )
 }
 
-function stateColor(state: FixtureStateProto): string {
-  const color = state?.color?.value;
+function effectColor(effect: FixtureState | SequenceMapping): string {
+  const color = (effect as FixtureState)?.color?.value;
   if (color) {
     const white = Math.floor((color.white || 0) * 255);
     const r = Math.min(Math.floor(color.red * 255) + white, 255);
@@ -292,29 +309,48 @@ function stateColor(state: FixtureStateProto): string {
   }
 }
 
-function stateIcons(state: FixtureStateProto):
+function effectIcons(effect: FixtureStateProto | SequenceMapping):
   Array<(props: any) => JSX.Element> {
+  const fixtureEffect = effect as FixtureStateProto;
   const icons: Array<(props: any) => JSX.Element> = [];
-  if (state.color.case != null) {
+  if (fixtureEffect?.color?.case != null) {
     icons.push(IconRgb);
   }
-  if (state.brightness != null) {
+  if (fixtureEffect?.brightness != null) {
     icons.push(IconBxsSun);
   }
-  if (state.pan != null || state.tilt != null) {
+  if (fixtureEffect?.pan != null || fixtureEffect?.tilt != null) {
     icons.push(IconPanTilt);
+  }
+  if ((effect as SequenceMapping)?.sequenceId != null) {
+    icons.push(IconBxRepeat);
   }
   return icons;
 }
 
 function StaticEffectDetails({
+  sequenceId,
   effect,
   onChange,
 }: EffectDetailsBaseProps<Effect_StaticEffect>): JSX.Element {
   return (
-    <FixtureState
-      state={effect.state}
-      onChange={() => onChange(effect)} />
+    <EffectState
+      sequenceId={sequenceId}
+      effect={effect.effect.value}
+      onChange={(e) => {
+        if (isFixtureState(e)) {
+          effect.effect = {
+            case: 'state',
+            value: e,
+          };
+        } else {
+          effect.effect = {
+            case: 'sequence',
+            value: e,
+          };
+        }
+        onChange(effect);
+      }} />
   );
 }
 
@@ -348,13 +384,39 @@ function RampEffectDetails({
         </select>
       </label>
       <h2>Start</h2>
-      <FixtureState
-        state={effect.start}
-        onChange={() => onChange(effect)} />
+      <EffectState
+        effect={effect.start.value}
+        onChange={(e) => {
+          if (isFixtureState(e)) {
+            effect.start = {
+              case: 'fixtureStateStart',
+              value: e,
+            };
+          } else {
+            effect.start = {
+              case: 'sequenceMappingStart',
+              value: e,
+            };
+          }
+          onChange(effect);
+        }} />
       <h2>End</h2>
-      <FixtureState
-        state={effect.end}
-        onChange={() => onChange(effect)} />
+      <EffectState
+        effect={effect.end.value}
+        onChange={(e) => {
+          if (isFixtureState(e)) {
+            effect.end = {
+              case: 'fixtureStateEnd',
+              value: e,
+            };
+          } else {
+            effect.end = {
+              case: 'sequenceMappingEnd',
+              value: e,
+            };
+          }
+          onChange(effect);
+        }} />
     </>
   );
 }

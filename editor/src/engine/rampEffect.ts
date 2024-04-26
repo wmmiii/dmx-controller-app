@@ -1,8 +1,10 @@
-import { ChannelTypes, DmxUniverse, WritableDevice } from "./fixture";
+import { ChannelTypes, DmxUniverse } from "./fixture";
 import { Effect_RampEffect, Effect_RampEffect_EasingFunction } from "@dmx-controller/proto/effect_pb";
 import { Project } from "@dmx-controller/proto/project_pb";
 import { Show_LightTrack } from "@dmx-controller/proto/show_pb";
-import { applyState, getDevice } from "./effectUtils";
+import { applyState } from "./effectUtils";
+import { getDevice } from "./universe";
+import { applySequence } from "./sequenceUtils";
 
 export function rampEffect(
   effect: Effect_RampEffect,
@@ -32,8 +34,17 @@ export function rampEffect(
   const start = new Uint8Array(universe);
   const end = new Uint8Array(universe);
 
-  applyState(effect.start, getDevice(output, project, start));
-  applyState(effect.end, getDevice(output, project, end));
+  if (effect.start.case === 'fixtureStateStart') {
+    applyState(effect.start.value, getDevice(output, project, start));
+  } else {
+    applySequence(effect.start.value, getDevice(output, project, start));
+  }
+
+  if (effect.end.case === 'fixtureStateEnd') {
+    applyState(effect.end.value, getDevice(output, project, end));
+  } else {
+    applySequence(effect.end.value, getDevice(output, project, end));
+  }
 
   // First do a dumb interpolation of all the channels to set coarse values.
   for (let i = 0; i < universe.length; ++i) {

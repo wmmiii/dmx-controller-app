@@ -1,11 +1,12 @@
-import { DmxUniverse, } from "./fixture";
+import { DmxUniverse, WritableDevice, getPhysicalWritableDevice, getPhysicalWritableDeviceFromGroup } from "./fixture";
 import { Effect, Effect_RampEffect, Effect_StaticEffect, EffectTiming } from "@dmx-controller/proto/effect_pb";
 import { Project } from "@dmx-controller/proto/project_pb";
 import { Show_LightTrack } from "@dmx-controller/proto/show_pb";
-import { applyState, getDevice } from "./effectUtils";
+import { applyState } from "./effectUtils";
 import { rampEffect } from "./rampEffect";
 import { AudioFile_BeatMetadata } from "@dmx-controller/proto/audio_pb";
-import { OutputDescription } from "../components/OutputSelector";
+import { LightLayer } from "@dmx-controller/proto/light_layer_pb";
+import { applySequence } from "./sequenceUtils";
 
 interface RenderContext {
   t: number;
@@ -45,17 +46,7 @@ export function renderShowToUniverse(t: number, project: Project):
     };
 
     for (const track of show.lightTracks) {
-      for (const layer of track.layers) {
-        const effect = layer.effects.find((e) => e.startMs <= t && e.endMs > t);
-        if (effect) {
-          applyEffect(
-            Object.assign({
-              t: context.t + effect.offsetMs,
-              output: track.output,
-            }, context) as RenderContext,
-            effect);
-        }
-      }
+      renderLayersToUniverse(t, track.layers, context, track.output);
     }
   }
 
@@ -82,20 +73,29 @@ export function renderSequenceToUniverse(
       universe: universe,
     };
 
-    for (const layer of sequence.layers) {
-      const effect = layer.effects.find((e) => e.startMs <= t && e.endMs > t);
-      if (effect) {
-        applyEffect(
-          Object.assign({
-            t: context.t + effect.offsetMs,
-            output: output,
-          }, context) as RenderContext,
-          effect);
-      }
-    }
+    renderLayersToUniverse(t, sequence.layers, context, output);
   }
 
   return universe;
+}
+
+function renderLayersToUniverse(
+  t: number,
+  layers: LightLayer[],
+  context: Partial<RenderContext>,
+  output: Show_LightTrack['output'],
+): void {
+  for (const layer of layers) {
+    const effect = layer.effects.find((e) => e.startMs <= t && e.endMs > t);
+    if (effect) {
+      applyEffect(
+        Object.assign({
+          t: context.t + effect.offsetMs,
+          output: output,
+        }, context) as RenderContext,
+        effect);
+    }
+  }
 }
 
 function applyEffect(context: RenderContext, effect: Effect): void {
@@ -135,22 +135,44 @@ function applyEffect(context: RenderContext, effect: Effect): void {
 
   context.t = t;
 
-  const e = effect.effect.value;
-  switch (effect.effect.case) {
-    case 'staticEffect':
-      const device = getDevice(
-        context.output,
-        context.project,
-        context.universe);
-      applyState((e as Effect_StaticEffect).state, device);
-      break;
-    case 'rampEffect':
-      rampEffect(
-        e as Effect_RampEffect,
-        context.t,
-        context.output,
-        context.project,
-        context.universe);
-      break;
+  if (effect.effect.case === 'staticEffect') {
+    const device = getDevice(
+      context.output,
+      context.project,
+      context.universe);
+    if (effect.effect.value.effect.case === 'state') {
+      applyState(effect.effect.value.effect.value, device);
+    } else {
+      applySequence(effect.effect.value.effect.value, device);
+    }
+
+  } else if (effect.effect.case === 'rampEffect') {
+    rampEffect(
+      effect.effect.value,
+      context.t,
+      context.output,
+      context.project,
+      context.universe);
+  }
+}
+
+export function getDevice(
+  output: Show_LightTrack['output'],
+  project: Project,
+  universe: DmxUniverse): WritableDevice | undefined {
+
+  switch (output.case) {
+    case 'physicalFixtureId':
+      return getPhysicalWritableDevice(
+        project,
+        output.value,
+        universe);
+    case 'physicalFixtureGroupId':
+      return getPhysicalWritableDeviceFromGroup(
+        project,
+        output.value,
+        universe);
+    default:
+      throw Error('Unknown device!');
   }
 }

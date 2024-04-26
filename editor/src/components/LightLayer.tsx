@@ -1,6 +1,6 @@
 import styles from './LightLayer.module.scss';
 import { Effect as EffectComponent } from "./Effect";
-import { Effect, Effect_StaticEffect } from "@dmx-controller/proto/effect_pb";
+import { Effect, Effect_RampEffect, Effect_StaticEffect } from "@dmx-controller/proto/effect_pb";
 import { LightLayer as LightLayerProto } from "@dmx-controller/proto/light_layer_pb";
 import { useState } from "react";
 
@@ -69,7 +69,7 @@ export function LightLayer({
               const ms = pxToMs(e.clientX);
               setNewEffect(Object.assign({}, newEffect, {
                 secondMs: Math.min(Math.max(
-                  ms, newEffect.minMs), newEffect.maxMs),
+                  ms, newEffect.minMs), newEffect.maxMs, maxMs),
               }));
             }}
             onMouseUp={() => {
@@ -82,7 +82,10 @@ export function LightLayer({
                 endMs: Math.max(newEffect.firstMs, newEffect.secondMs),
                 effect: {
                   value: new Effect_StaticEffect({
-                    state: {},
+                    effect: {
+                      case: 'state',
+                      value: {},
+                    },
                   }),
                   case: 'staticEffect',
                 },

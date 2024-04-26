@@ -18,10 +18,11 @@ import { ShortcutContext } from '../contexts/ShortcutContext';
 import { renderSequenceToUniverse } from '../engine/universe';
 import { Modal } from '../components/Modal';
 import { Show_LightTrack } from '@dmx-controller/proto/show_pb';
-import { SEQUENCE_BEAT_RESOLUTION } from '../engine/sequenceUtils';
+import { SEQUENCE_BEAT_RESOLUTION, deleteSequence } from '../engine/sequenceUtils';
 
 export default function SequencePage(): JSX.Element {
   const { setShortcuts } = useContext(ShortcutContext);
+  const [sequenceId, setSequenceId] = useState(-1);
   const [selectedEffect, setSelectedEffect] = useState<SelectedEffect | null>(null);
 
   useEffect(() => setShortcuts([
@@ -52,13 +53,18 @@ export default function SequencePage(): JSX.Element {
       <HorizontalSplitPane
         className={styles.wrapper}
         defaultAmount={0.8}
-        left={<Tracks />}
-        right={<DetailsPane />} />
+        left={<Tracks sequenceId={sequenceId} setSequenceId={setSequenceId} />}
+        right={<DetailsPane sequenceId={sequenceId} />} />
     </EffectSelectContext.Provider>
   );
 }
 
-function Tracks(): JSX.Element {
+interface TracksProps {
+  sequenceId: number;
+  setSequenceId: (id: number) => void;
+}
+
+function Tracks({ sequenceId, setSequenceId }: TracksProps): JSX.Element {
   const { project, save } = useContext(ProjectContext);
   const { setShortcuts } = useContext(ShortcutContext);
   const { setRenderUniverse, clearRenderUniverse } = useContext(SerialContext);
@@ -81,7 +87,6 @@ function Tracks(): JSX.Element {
   const [beatSubdivisions, setBeatSubdivisions] = useState(4);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [audioDuration, setAudioDuration] = useState<number>(SEQUENCE_BEAT_RESOLUTION);
-  const [sequenceId, setSequenceId] = useState(-1);
 
   const sequence: Sequence = project?.sequences[sequenceId];
   const beats = sequence?.nativeBeats;
@@ -103,12 +108,13 @@ function Tracks(): JSX.Element {
 
   // Initialize default sequence.
   useEffect(() => {
-    if (project) {
+    if (sequenceId === -1 && project) {
       const firstKey = Object.keys(project?.sequences)[0];
       if (firstKey) {
         setSequenceId(parseInt(firstKey));
       } else {
-        project.sequences[0] = new Sequence({
+        // Sequence 0 is reserved for the "unset" sequence.
+        project.sequences[1] = new Sequence({
           name: 'Untitled Sequence',
           nativeBeats: 1,
           layers: [{
@@ -119,7 +125,7 @@ function Tracks(): JSX.Element {
         setSequenceId(0);
       }
     }
-  }, [project]);
+  }, [project, sequenceId]);
 
   const setVisibleCallback = useCallback(
     (startMs: number, endMs: number) => setVisible({
@@ -277,9 +283,15 @@ function Tracks(): JSX.Element {
             onChange={(e) => {
               if (e.target.value === '-1') {
                 const newId = Math.max(
-                  ...Object.keys(project.sequences).map(parseInt)) + 1;
+                  ...Object
+                    .keys(project.sequences)
+                    .map((k) => parseInt(k))) + 1;
                 project.sequences[newId] = new Sequence({
-                  name: 'Untitled Sequence'
+                  name: 'Untitled Sequence',
+                  nativeBeats: 1,
+                  layers: [{
+                    effects: [],
+                  }],
                 });
                 save();
                 setSequenceId(newId);
@@ -323,8 +335,8 @@ function Tracks(): JSX.Element {
               min="1"
               max="128"
               value={sequence?.nativeBeats || 1}
-              onChange={(e) =>  {
-                sequence.nativeBeats = parseInt(e.target.value);
+              onChange={(e) => {
+                sequence.nativeBeats = Math.max(parseInt(e.target.value), 1);
                 save();
               }} />
           </span>
@@ -335,7 +347,8 @@ function Tracks(): JSX.Element {
               min="1"
               max="16"
               value={beatSubdivisions}
-              onChange={(e) => setBeatSubdivisions(parseInt(e.target.value))} />
+              onChange={(e) =>
+                setBeatSubdivisions(Math.max(parseInt(e.target.value), 1))} />
           </span>
         </div>
       </div>
@@ -401,7 +414,7 @@ function Tracks(): JSX.Element {
               <Button
                 variant='warning'
                 onClick={() => {
-                  delete project.sequences[sequenceId];
+                  deleteSequence(sequenceId, project);
                   save();
                   setSequenceDetailsModal(false);
                 }}>
@@ -416,8 +429,11 @@ function Tracks(): JSX.Element {
   )
 }
 
+interface DetailsPaneProps {
+  sequenceId: number;
+}
 
-function DetailsPane(): JSX.Element {
+function DetailsPane({ sequenceId }: DetailsPaneProps): JSX.Element {
   const { save } = useContext(ProjectContext);
   const { selectedEffect } = useContext(EffectSelectContext);
 
@@ -431,6 +447,7 @@ function DetailsPane(): JSX.Element {
 
   return (
     <EffectDetails
+      sequenceId={sequenceId}
       className={styles.effectDetails}
       effect={selectedEffect}
       onChange={save} />

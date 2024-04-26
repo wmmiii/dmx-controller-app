@@ -32,6 +32,14 @@ message FixtureState {
   optional double tilt = 6;
 }
 
+message SequenceMapping {
+  uint32 sequence_id = 1;
+  reserved 2 to 10;
+  EffectTiming timing_mode = 11;
+  uint32 offset_ms = 12;
+  double timing_multiplier = 13;
+}
+
 enum EffectTiming {
   // The `t` value passed in corresponds to the [0, 1] value of where we are in
   // the effect itself.
@@ -45,7 +53,12 @@ enum EffectTiming {
 
 message Effect {
 
-  message StaticEffect { FixtureState state = 1; }
+  message StaticEffect {
+    oneof effect {
+      FixtureState state = 1;
+      SequenceMapping sequence = 2;
+    }
+  }
 
   message RampEffect {
     enum EasingFunction {
@@ -57,11 +70,15 @@ message Effect {
     }
 
     EasingFunction easing = 1;
-    FixtureState start = 2;
-    FixtureState end = 3;
+    oneof start {
+      FixtureState fixture_state_start = 2;
+      SequenceMapping sequence_mapping_start = 4;
+    }
+    oneof end {
+      FixtureState fixture_state_end = 3;
+      SequenceMapping sequence_mapping_end = 5;
+    }
   }
-
-  message SqeuenceEffect { uint32 sequence_id = 1; }
 
   uint32 start_ms = 1;
   uint32 end_ms = 2;
@@ -77,6 +94,5 @@ message Effect {
   oneof effect {
     StaticEffect static_effect = 101;
     RampEffect ramp_effect = 102;
-    SqeuenceEffect sequence_effect = 103;
   }
 }

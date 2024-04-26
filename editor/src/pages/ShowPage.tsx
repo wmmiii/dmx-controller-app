@@ -50,65 +50,7 @@ const DEFAULT_SHOW = new Show({
       },
       layers: [
         {
-          effects: [
-            {
-              startMs: 0,
-              endMs: 1000,
-              effect: {
-                value: {
-                  state: {
-                    color: {
-                      value: {
-                        red: 1,
-                        green: 0,
-                        blue: 0,
-                      },
-                      case: 'rgb',
-                    },
-                  },
-                },
-                case: 'staticEffect',
-              }
-            },
-            {
-              startMs: 1000,
-              endMs: 2000,
-              effect: {
-                value: {
-                  state: {
-                    color: {
-                      value: {
-                        red: 0,
-                        green: 1,
-                        blue: 0,
-                      },
-                      case: 'rgb',
-                    },
-                  }
-                },
-                case: 'staticEffect',
-              }
-            },
-            {
-              startMs: 2000,
-              endMs: 3000,
-              effect: {
-                value: {
-                  state: {
-                    color: {
-                      value: {
-                        red: 0,
-                        green: 0,
-                        blue: 1,
-                      },
-                      case: 'rgb',
-                    },
-                  },
-                },
-                case: 'staticEffect',
-              }
-            },
-          ]
+          effects: [],
         }
       ]
     },
@@ -174,6 +116,7 @@ function Tracks(): JSX.Element {
   const [minPxPerSec, setMinPxPerSec] = useState(16);
   const [snapToBeat, setSnapToBeat] = useState(true);
   const [beatSubdivisions, setBeatSubdivisions] = useState(1);
+  const [audioDuration, setAudioDuration] = useState(1);
 
   const setAudioController = useCallback(
     (c: AudioController) => audioController.current = c,
@@ -367,7 +310,7 @@ function Tracks(): JSX.Element {
             }}
             value={show?.audioTrack.audioFileId}>
             {
-              project?.assets.audioFiles.map((f: AudioFile, i: number) => (
+              project?.assets?.audioFiles.map((f: AudioFile, i: number) => (
                 <option value={i}>
                   {f.name}
                 </option>
@@ -382,6 +325,7 @@ function Tracks(): JSX.Element {
           setController={setAudioController}
           setPlaying={setPlaying}
           setVisible={setVisibleCallback}
+          setTotalDuration={setAudioDuration}
           minPxPerSec={minPxPerSec}
           beatSubdivisions={beatSubdivisions}
           onProgress={setT} />
@@ -396,6 +340,7 @@ function Tracks(): JSX.Element {
             show?.lightTracks.map((t: Show_LightTrack) => (
               <LightTrack
                 track={t}
+                maxMs={audioDuration}
                 leftWidth={leftWidth}
                 mappingFunctions={mappingFunctions}
                 forceUpdate={save} />

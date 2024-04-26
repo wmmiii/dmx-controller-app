@@ -3,6 +3,7 @@ load("@aspect_rules_ts//ts:defs.bzl", "ts_project")
 load("@bazel_skylib//rules:build_test.bzl", "build_test")
 
 TS_DEPS = [
+    "//:node_modules/@bufbuild/protobuf",
     "//:node_modules/@types/dom-serial",
     "//:node_modules/@types/react",
     "//:node_modules/@types/react-dom",

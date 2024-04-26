@@ -1,19 +1,65 @@
-import React, { useCallback } from 'react';
-import { FixtureState as FixtureStateProto, FixtureState_Channel, RGB, RGBW } from "@dmx-controller/proto/effect_pb";
+import React, { useCallback, useContext } from 'react';
 import ColorPicker from 'react-pick-color';
-import { Button, IconButton } from './Button';
+import IconBxPlus from '../icons/IconBxPlus';
 import IconBxX from '../icons/IconBxX';
 import RangeInput from './RangeInput';
-import IconBxPlus from '../icons/IconBxPlus';
+import styles from './EffectState.module.scss';
+import { Button, IconButton } from './Button';
+import { ProjectContext } from '../contexts/ProjectContext';
+import { SequenceMapping as SequenceMappingProto, FixtureState as FixtureStateProto, FixtureState_Channel, RGB, RGBW, EffectTiming } from "@dmx-controller/proto/effect_pb";
+import { isFixtureState } from '../engine/effectUtils';
+import { sequences } from '../engine/sequenceUtils';
 
-import styles from './FixtureState.module.scss';
+interface EffectStateProps {
+  // Only needs to be set if this effect is part of a sequence.
+  sequenceId?: number;
+  effect: FixtureStateProto | SequenceMappingProto;
+  onChange: (effect: FixtureStateProto | SequenceMappingProto) => void;
+}
+
+export default function EffectState({ sequenceId, effect, onChange }: EffectStateProps):
+  JSX.Element {
+  let details: JSX.Element;
+  if (isFixtureState(effect)) {
+    details = <FixtureState state={effect} onChange={onChange} />;
+  } else {
+    details = <SequenceMapping
+      sequenceId={sequenceId}
+      sequence={effect}
+      onChange={onChange} />;
+  }
+  return (
+    <>
+      <label>
+        <select
+          value={String(isFixtureState(effect))}
+          onChange={(e) => {
+            if (e.target.value === 'true') {
+              onChange(new FixtureStateProto({}));
+            } else {
+              onChange(new SequenceMappingProto({
+                sequenceId: 0,
+                timingMode: EffectTiming.BEAT,
+                offsetBeat: 0,
+                timingMultiplier: 1,
+              }));
+            }
+          }}>
+          <option value="true">Fixture State</option>
+          <option value="false">Sequence</option>
+        </select>
+      </label>
+      {details}
+    </>
+  );
+}
 
 interface FixtureStateProps {
   state: FixtureStateProto;
   onChange: (state: FixtureStateProto) => void;
 }
 
-export default function FixtureState(
+function FixtureState(
   { state, onChange }: FixtureStateProps):
   JSX.Element {
 
@@ -247,6 +293,38 @@ export default function FixtureState(
       }))}>
         Add custom channel
       </Button>
+    </>
+  );
+}
+
+interface SequenceMappingProps {
+  sequenceId?: number;
+  sequence: SequenceMappingProto;
+  onChange: (sequence: SequenceMappingProto) => void;
+}
+
+function SequenceMapping({ sequenceId, sequence, onChange }: SequenceMappingProps): JSX.Element {
+  const { project } = useContext(ProjectContext);
+
+  return (
+    <>
+      <label>
+        Sequence:&nbsp;
+        <select
+          value={sequence.sequenceId}
+          onChange={(e) => {
+            sequence.sequenceId = parseInt(e.target.value);
+            onChange(sequence);
+          }}>
+          <option value={0}>&lt;Unset&gt;</option>
+          {
+            Object.entries(sequences(project, sequenceId))
+              .map(([key, value]) => (
+                <option value={key}>{value.name}</option>
+              ))
+          }
+        </select>
+      </label>
     </>
   );
 }

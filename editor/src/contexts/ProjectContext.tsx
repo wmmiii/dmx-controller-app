@@ -72,10 +72,16 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
 
   const saveImpl = useCallback(async (project: Project) => {
     console.time('save');
-    const minProject = new Project(project);
-    minProject.assets = undefined;
-    await storeBlob(PROJECT_KEY, minProject.toBinary());
-    console.timeEnd('save');
+    try {
+      const minProject = new Project(project);
+      minProject.assets = undefined;
+      await storeBlob(PROJECT_KEY, minProject.toBinary());
+    } catch (t) {
+      console.log(project);
+      throw t;
+    } finally {
+      console.timeEnd('save');
+    }
   }, []);
 
   const save = useCallback(async () => {

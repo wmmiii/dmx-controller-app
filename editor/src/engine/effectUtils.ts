@@ -1,7 +1,9 @@
-import { FixtureState } from "@dmx-controller/proto/effect_pb";
-import { DmxUniverse, WritableDevice, getPhysicalWritableDevice, getPhysicalWritableDeviceFromGroup } from "./fixture";
-import { Show_LightTrack } from "@dmx-controller/proto/show_pb";
-import { Project } from "@dmx-controller/proto/project_pb";
+import { FixtureState, SequenceMapping } from "@dmx-controller/proto/effect_pb";
+import { WritableDevice} from "./fixture";
+
+export function isFixtureState(effect: FixtureState | SequenceMapping): effect is FixtureState {
+  return !('sequenceId' in effect);
+}
 
 export function applyState(state: FixtureState, device: WritableDevice): void {
   switch (state.color.case) {
@@ -33,26 +35,5 @@ export function applyState(state: FixtureState, device: WritableDevice): void {
 
   for (const channel of state.channels) {
     device.setChannel(channel.index, channel.value);
-  }
-}
-
-export function getDevice(
-  output: Show_LightTrack['output'],
-  project: Project,
-  universe: DmxUniverse): WritableDevice | undefined {
-
-  switch (output.case) {
-    case 'physicalFixtureId':
-      return getPhysicalWritableDevice(
-        project,
-        output.value,
-        universe);
-    case 'physicalFixtureGroupId':
-      return getPhysicalWritableDeviceFromGroup(
-        project,
-        output.value,
-        universe);
-    default:
-      throw Error('Unknown device!');
   }
 }
