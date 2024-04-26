@@ -1,5 +1,5 @@
 import { DmxUniverse, WritableDevice, getPhysicalWritableDevice, getPhysicalWritableDeviceFromGroup } from "./fixture";
-import { Effect, Effect_RampEffect, Effect_StaticEffect, EffectTiming } from "@dmx-controller/proto/effect_pb";
+import { Effect, EffectTiming } from "@dmx-controller/proto/effect_pb";
 import { Project } from "@dmx-controller/proto/project_pb";
 import { Show_LightTrack } from "@dmx-controller/proto/show_pb";
 import { applyState } from "./effectUtils";
@@ -23,15 +23,14 @@ export function renderShowToUniverse(t: number, project: Project):
   const show = project.shows[project.selectedShow || 0];
 
   if (show) {
-    for (const defaultValues of show.defaultChannelValues) {
+    for (const defaultValues of project.defaultChannelValues) {
       const device = getDevice(defaultValues.output, project, universe);
       if (!device) {
         continue;
       }
 
-      for (const channel of defaultValues.channels) {
-        device.setChannel(channel.index, channel.value);
-      }
+      Object.entries(defaultValues.channels)
+        .forEach(([index, value]) => device.setChannel(parseInt(index), value));
     }
 
 

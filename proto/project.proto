@@ -12,6 +12,15 @@ message Project {
     repeated AudioFile audio_files = 1;
   }
 
+  message DefaultChannelValues {
+    string name = 1;
+    oneof output {
+      uint32 physical_fixture_id = 2;
+      uint32 physical_fixture_group_id = 3;
+    }
+    map<uint32, uint32> channels = 4;
+  }
+
   string name = 1;
   uint32 version = 2;
   reserved 3 to 10;
@@ -22,7 +31,8 @@ message Project {
   map<uint32, FixtureDefinition> fixture_definitions = 13;
   map<uint32, PhysicalFixture> physical_fixtures = 14;
   map<uint32, PhysicalFixtureGroup> physical_fixture_groups = 15;
-  reserved 16 to 20;
+  repeated DefaultChannelValues default_channel_values = 16;
+  reserved 17 to 20;
 
   Assets assets = 21;
 

@@ -346,6 +346,16 @@ function Tracks(): JSX.Element {
                 forceUpdate={save} />
             ))
           }
+          <div>
+            <Button onClick={() => {
+              show?.lightTracks.push(new Show_LightTrack({
+                name: 'Layer ' + (show.lightTracks.length + 1),
+              }));
+              save();
+            }}>
+              + New Output
+            </Button>
+          </div>
         </div>
       </div>
       {
@@ -359,12 +369,10 @@ function Tracks(): JSX.Element {
               <input
                 type="text"
                 value={show?.name}
+                onKeyDown={(e) => e.stopPropagation()}
                 onChange={(e) => {
                   show.name = e.target.value;
                   save();
-                }}
-                onKeyDown={(e) => {
-                  e.stopPropagation();
                 }} />
             </div>
             <div>

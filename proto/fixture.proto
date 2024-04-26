@@ -17,6 +17,7 @@ message FixtureDefinition {
 
   string name = 1;
   string manufacturer = 2;
+  uint32 num_channels = 4;
   map<uint32, Channel> channels = 3;
 }
 

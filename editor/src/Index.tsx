@@ -2,20 +2,20 @@ import React, { JSX, createRef, useContext, useEffect } from 'react';
 
 import AssetBrowserPage from './pages/AssetBrowserPage';
 import IconBxBulb from './icons/IconBxBulb';
+import IconBxDownload from './icons/IconBxDownload';
 import IconBxLink from './icons/IconBxLink';
 import IconBxUnlink from './icons/IconBxUnlink';
+import IconBxUpload from './icons/IconBxUpload';
 import IconBxsBulb from './icons/IconBxsBulb';
+import SequencePage from './pages/SequencePage';
 import ShowPage from './pages/ShowPage';
+import UniversePage from './pages/UniversePage';
+import styles from './Index.module.scss';
 import { IconButton } from './components/Button';
 import { Link } from 'react-router-dom';
+import { ProjectContext } from './contexts/ProjectContext';
 import { Routes, Route } from 'react-router-dom';
 import { SerialContext } from './contexts/SerialContext';
-
-import styles from './Index.module.scss';
-import IconBxDownload from './icons/IconBxDownload';
-import { ProjectContext } from './contexts/ProjectContext';
-import IconBxUpload from './icons/IconBxUpload';
-import SequencePage from './pages/SequencePage';
 
 export default function Index(): JSX.Element {
   const { port, blackout, setBlackout, connect, disconnect, currentFps } = useContext(SerialContext);
@@ -42,6 +42,7 @@ export default function Index(): JSX.Element {
         <Link to="/show">Show</Link>
         <Link to="/assets">Assets</Link>
         <Link to="/sequence">Sequence</Link>
+        <Link to="/universe">Universe</Link>
         <div className={styles.spacer}></div>
         <div>
           Fps: {currentFps}
@@ -74,6 +75,7 @@ export default function Index(): JSX.Element {
           <Route path="/show" element={<ShowPage />} />
           <Route path="/assets" element={<AssetBrowserPage />} />
           <Route path="/sequence" element={<SequencePage />} />
+          <Route path="/universe" element={<UniversePage />} />
         </Routes>
       </main>
     </div>

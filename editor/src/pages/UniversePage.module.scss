@@ -1,0 +1,59 @@
+@import '../vars';
+
+.wrapper {
+  @include fill;
+}
+
+.splitPane {
+  @include fill;
+}
+
+.pane {
+  padding: spacing(2);
+
+  li {
+    color: $col-interactive;
+    cursor: pointer;
+
+    &:hover {
+      color: $col-interactive-hover;
+    }
+  }
+}
+
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: spacing(2);
+  min-width: 40em;
+  padding: spacing(2) 0;
+}
+
+.editorFooter {
+  display: flex;
+  flex-direction: row;
+  gap: spacing(2);
+  padding-top: spacing(2);
+}
+
+.channel {
+  align-items: center;
+  display: flex;
+  flex-direction: row;
+  gap: spacing(2);
+}
+
+.defaultPreset {
+  border: 1px solid $col-border;
+  display: flex;
+  flex-direction: column;
+  gap: spacing(1);
+  padding: spacing(2);
+
+  .header {
+    align-items: center;
+    display: flex;
+    flex-direction: row;
+    gap: spacing(2);
+  }
+}

@@ -40,7 +40,7 @@ export function OutputSelector({ value, setValue }: OutputSelectorProps):
 
   return (
     <select
-      value={value.id + ' ' + value.type}
+      value={value?.id + ' ' + value?.type}
       onChange={(e) => {
         const value = e.target.value;
         const parts = value.split(' ');

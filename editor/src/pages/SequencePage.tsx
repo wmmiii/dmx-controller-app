@@ -282,10 +282,7 @@ function Tracks({ sequenceId, setSequenceId }: TracksProps): JSX.Element {
           <select
             onChange={(e) => {
               if (e.target.value === '-1') {
-                const newId = Math.max(
-                  ...Object
-                    .keys(project.sequences)
-                    .map((k) => parseInt(k))) + 1;
+                const newId = nextId(project.sequences);
                 project.sequences[newId] = new Sequence({
                   name: 'Untitled Sequence',
                   nativeBeats: 1,

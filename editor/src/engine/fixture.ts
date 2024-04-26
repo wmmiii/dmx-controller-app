@@ -80,7 +80,7 @@ export function getPhysicalWritableDevice(
   for (const stringIndex in definition.channels) {
     const channel = definition.channels[stringIndex];
     const index = physicalFixture.channelOffset + parseInt(stringIndex) - 1;
-    channelTypes[index] = channel.type;
+    channelTypes[index] = channel.type as ChannelTypes;
     switch (channel.type as ChannelTypes) {
       case 'red':
         rgbFunctions.push((r, _g, _b) => {

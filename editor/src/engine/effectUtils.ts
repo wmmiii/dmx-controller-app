@@ -1,5 +1,5 @@
 import { FixtureState, SequenceMapping } from "@dmx-controller/proto/effect_pb";
-import { WritableDevice} from "./fixture";
+import { WritableDevice } from "./fixture";
 
 export function isFixtureState(effect: FixtureState | SequenceMapping): effect is FixtureState {
   return !('sequenceId' in effect);

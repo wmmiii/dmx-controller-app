@@ -9,6 +9,7 @@ interface ModalProps {
   title: string;
   onClose: () => void;
   children: React.ReactNode;
+  bodyClass?: string;
   footer?: React.ReactNode;
   fullScreen?: boolean;
 }
@@ -16,6 +17,7 @@ interface ModalProps {
 export function Modal({
   title,
   onClose,
+  bodyClass,
   children,
   footer,
   fullScreen,
@@ -35,7 +37,10 @@ export function Modal({
     classes.push(styles.fullScreen);
   }
 
-
+  const bodyClasses = [styles.main];
+  if (bodyClass) {
+    bodyClasses.push(bodyClass);
+  }
 
   return (
     <div className={styles.wrapper} onClick={() => onClose()}>
@@ -46,11 +51,11 @@ export function Modal({
         <div className={styles.header}>
           {title}
           <div className={styles.spacer}></div>
-          <IconButton onClick={onClose}>
+          <IconButton title="close" onClick={onClose}>
             <IconBxX />
           </IconButton>
         </div>
-        <div className={styles.main}>
+        <div className={bodyClasses.join(' ')}>
           {children}
         </div>
         {

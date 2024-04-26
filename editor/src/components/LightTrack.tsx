@@ -14,7 +14,7 @@ export interface MappingFunctions {
   msToPx: (ms: number) => number;
   pxToMs: (px: number) => number;
   snapToBeat: (t: number) => number;
-} 
+}
 
 interface LightTrackProps {
   track: Show_LightTrack;
@@ -56,8 +56,8 @@ export function LightTrack({
         {track.name}
         <OutputSelector
           value={device}
-          setValue={(device) => {
-            switch (device.type) {
+          setValue={(o) => {
+            switch (o.type) {
               case 'fixture':
                 track.output.case = 'physicalFixtureId';
                 break;
@@ -65,7 +65,7 @@ export function LightTrack({
                 track.output.case = 'physicalFixtureGroupId';
                 break;
             }
-            track.output.value = device.id;
+            track.output.value = o.id;
             forceUpdate();
           }} />
         <IconButton
