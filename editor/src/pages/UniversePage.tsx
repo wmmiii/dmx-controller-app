@@ -10,7 +10,7 @@ import { Modal } from '../components/Modal';
 import { OutputDescription, OutputSelector } from '../components/OutputSelector';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { Project_DefaultChannelValues } from '@dmx-controller/proto/project_pb';
-import { nextId } from '../util/mapUtils';
+import { idMapToArray, nextId } from '../util/mapUtils';
 import { getApplicableMembers } from '../engine/group';
 
 export default function UniversePage(): JSX.Element {
@@ -54,7 +54,7 @@ function FixtureList(): JSX.Element {
       <h2>Fixtures</h2>
       <ol>
         {
-          Object.entries(project.physicalFixtures)
+          idMapToArray(project.physicalFixtures)
             .sort((a, b) => a[1].channelOffset - b[1].channelOffset)
             .map(([id, fixture]) => {
               const definition =
@@ -62,7 +62,7 @@ function FixtureList(): JSX.Element {
 
               return (
                 <li onClick={() => {
-                  setSelectedFixtureId(parseInt(id));
+                  setSelectedFixtureId(id);
                 }}>
                   (
                   {fixture.channelOffset + 1}
@@ -87,9 +87,9 @@ function FixtureList(): JSX.Element {
       <h2>Groups</h2>
       <ul>
         {
-          Object.entries(project.physicalFixtureGroups)
+          idMapToArray(project.physicalFixtureGroups)
             .map(([id, group]) => (
-              <li onClick={() => setSelectedGroupId(parseInt(id))}>
+              <li onClick={() => setSelectedGroupId(id)}>
                 {group.name}
               </li>
             ))
@@ -185,7 +185,7 @@ function EditFixtureDialog({
             save();
           }}>
           {
-            Object.entries(project.fixtureDefinitions)
+            idMapToArray(project.fixtureDefinitions)
               .sort((a, b) => a[1].name.localeCompare(b[1].name))
               .map(([id, definition]) => (
                 <option value={id}>
@@ -363,9 +363,9 @@ function FixtureDefinitionList(): JSX.Element {
       <h2>Fixture Definitions</h2>
       <ul>
         {
-          Object.entries(project.fixtureDefinitions)
+          idMapToArray(project.fixtureDefinitions)
             .map(([id, definition]) => (
-              <li onClick={() => setSelectedDefinitionId(parseInt(id))}>
+              <li onClick={() => setSelectedDefinitionId(id)}>
                 {definition.name}
               </li>
             ))
@@ -469,8 +469,8 @@ function EditDefinitionDialog({
       </label>
       <div>Channel Mappings:</div>
       {
-        Object.entries(definition.channels)
-          .sort((a, b) => parseInt(a[0]) - parseInt(b[0]))
+        idMapToArray(definition.channels)
+          .sort((a, b) => a[0] - b[0])
           .map(([id, channel]) => (
             <div className={styles.row}>
               <input
@@ -480,7 +480,7 @@ function EditDefinitionDialog({
                 step={1}
                 value={id}
                 onChange={(e) => {
-                  delete definition.channels[parseInt(id)];
+                  delete definition.channels[id];
                   definition.channels[parseInt(e.target.value)] = channel;
                   save();
                 }} />
@@ -628,7 +628,7 @@ function EditDefaultChannelsDialog({ close }: EditDefaultChannelsDialogProps): J
               </div>
               <div>Channels:</div>
               {
-                Object.entries(d.channels)
+                idMapToArray(d.channels)
                   .map(([index, value]) => (
                     <div className={styles.row}>
                       Channel:&nbsp;
@@ -639,7 +639,7 @@ function EditDefaultChannelsDialog({ close }: EditDefaultChannelsDialogProps): J
                         step={1}
                         value={index}
                         onChange={(e) => {
-                          delete d.channels[parseInt(index)];
+                          delete d.channels[index];
                           d.channels[parseInt(e.target.value)] = value;
                           save();
                         }} />
@@ -651,14 +651,14 @@ function EditDefaultChannelsDialog({ close }: EditDefaultChannelsDialogProps): J
                         step={1}
                         value={value}
                         onChange={(e) => {
-                          d.channels[parseInt(index)] =
+                          d.channels[index] =
                             parseInt(e.target.value);
                           save();
                         }} />
                       <IconButton
                         title="Remove Channel"
                         onClick={() => {
-                          delete d.channels[parseInt(index)];
+                          delete d.channels[index];
                           save();
                         }}>
                         <IconBxX />

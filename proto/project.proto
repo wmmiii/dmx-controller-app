@@ -9,7 +9,8 @@ import "proto/show.proto";
 
 message Project {
   message Assets {
-    repeated AudioFile audio_files = 1;
+    repeated AudioFile deprecated_audio_files = 1;
+    map<uint32, AudioFile> audio_files = 2;
   }
 
   message DefaultChannelValues {

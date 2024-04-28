@@ -2,6 +2,7 @@ import React, { PropsWithChildren, createContext, useCallback, useEffect, useRef
 import { FixtureDefinition, PhysicalFixture } from '@dmx-controller/proto/fixture_pb';
 import { Project, Project_Assets } from '@dmx-controller/proto/project_pb';
 import { getBlob, storeBlob } from '../util/storageUtil';
+import upgradeProject from '../util/projectUpgrader';
 
 const PROJECT_KEY = "tmp-project-1";
 const ASSETS_KEY = "tmp-assets-1";
@@ -23,7 +24,7 @@ const miniLedMovingHead = new FixtureDefinition({
 
 const fixture = new PhysicalFixture({
   name: 'Moving Head 1',
-  fixtureDefinitionId: 0,
+  fixtureDefinitionId: 1,
   channelOffset: 0,
 });
 
@@ -61,6 +62,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
         } else {
           const p = Project.fromBinary(projectBlob);
           p.assets = Project_Assets.fromBinary(assetsBlob);
+          upgradeProject(p);
           setProject(p);
         }
       } catch (ex) {
@@ -77,7 +79,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
       minProject.assets = undefined;
       await storeBlob(PROJECT_KEY, minProject.toBinary());
     } catch (t) {
-      console.log(project);
+      console.error(project);
       throw t;
     } finally {
       console.timeEnd('save');

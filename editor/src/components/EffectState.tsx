@@ -9,6 +9,7 @@ import { ProjectContext } from '../contexts/ProjectContext';
 import { SequenceMapping as SequenceMappingProto, FixtureState as FixtureStateProto, FixtureState_Channel, RGB, RGBW, EffectTiming } from "@dmx-controller/proto/effect_pb";
 import { isFixtureState } from '../engine/effect';
 import { sequences } from '../engine/sequence';
+import { idMapToArray } from '../util/mapUtils';
 
 interface EffectStateProps {
   // Only needs to be set if this effect is part of a sequence.
@@ -318,9 +319,9 @@ function SequenceMapping({ sequenceId, sequence, onChange }: SequenceMappingProp
           }}>
           <option value={0}>&lt;Unset&gt;</option>
           {
-            Object.entries(sequences(project, sequenceId))
-              .map(([key, value]) => (
-                <option value={key}>{value.name}</option>
+            idMapToArray(sequences(project, sequenceId))
+              .map(([id, s]) => (
+                <option value={id}>{s.name}</option>
               ))
           }
         </select>

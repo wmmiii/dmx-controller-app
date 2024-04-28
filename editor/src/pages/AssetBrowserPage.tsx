@@ -7,6 +7,7 @@ import { HorizontalSplitPane } from '../components/SplitPane';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { Project_Assets } from '@dmx-controller/proto/project_pb';
 import { formatBytes } from '../util/numberUtils';
+import { idMapToArray, nextId } from '../util/mapUtils';
 
 export default function AssetBrowserPage(): JSX.Element {
   const [selectedAudio, setSelectedAudio] = useState<AudioFile | null>(null);
@@ -70,7 +71,9 @@ function AudioFileList({ selectAudioFile }: AudioFileListProps): JSX.Element {
                 if (!project.assets) {
                   project.assets = new Project_Assets();
                 }
-                project.assets.audioFiles.push(audioFile);
+
+                const newId = nextId(project.assets.audioFiles);
+                project.assets.audioFiles[newId] = audioFile;
               }
             }
           }
@@ -81,14 +84,15 @@ function AudioFileList({ selectAudioFile }: AudioFileListProps): JSX.Element {
         setHighlightDrop(false);
       }}>
       {
-        project.assets?.audioFiles.map((f, i) => (
-          <li key={i} onClick={() => selectAudioFile(f)}>
-            {f.name}
-          </li>
-        ))
+        idMapToArray(project.assets?.audioFiles)
+          .map(([id, f]) => (
+            <li key={id} onClick={() => selectAudioFile(f)}>
+              {f.name}
+            </li>
+          ))
       }
       {
-        (project.assets?.audioFiles.length || 0) < 1 &&
+        (Object.keys(project.assets?.audioFiles).length || 0) < 1 &&
         <li>No items</li>
       }
     </ol>

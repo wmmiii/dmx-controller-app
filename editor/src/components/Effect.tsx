@@ -105,15 +105,12 @@ export function Effect({
               const startMs = snapToBeat(ms - drag.offsetMs);
               const endMs = startMs + drag.widthMs;
               if (startMs < minMs) {
-                console.log('start min', startMs, minMs);
                 effect.startMs = minMs;
                 effect.endMs = minMs + drag.widthMs;
               } else if (endMs > maxMs) {
-                console.log('end max', endMs, maxMs);
                 effect.endMs = maxMs;
                 effect.startMs = maxMs - drag.widthMs;
               } else {
-                console.log('other');
                 effect.startMs = startMs;
                 effect.endMs = endMs;
               }

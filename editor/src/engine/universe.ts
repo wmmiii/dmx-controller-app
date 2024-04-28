@@ -7,6 +7,7 @@ import { rampEffect } from "./rampEffect";
 import { AudioFile_BeatMetadata } from "@dmx-controller/proto/audio_pb";
 import { LightLayer } from "@dmx-controller/proto/light_layer_pb";
 import { applySequence } from "./sequence";
+import { idMapToArray } from "../util/mapUtils";
 
 interface RenderContext {
   t: number;
@@ -29,10 +30,9 @@ export function renderShowToUniverse(t: number, project: Project):
         continue;
       }
 
-      Object.entries(defaultValues.channels)
-        .forEach(([index, value]) => device.setChannel(parseInt(index), value));
+      idMapToArray(defaultValues.channels)
+        .forEach(([i, c]) => device.setChannel(i, c));
     }
-
 
     const context: Partial<RenderContext> = {
       t: t,

@@ -5,7 +5,6 @@ import IconBxZoomIn from '../icons/IconBxZoomin';
 import IconBxZoomOut from '../icons/IconBxZoomOut';
 import styles from "./ShowPage.module.scss";
 import { AudioController, AudioTrackVisualizer } from '../components/AudioTrackVisualizer';
-import { AudioFile } from '@dmx-controller/proto/audio_pb';
 import { Button } from '../components/Button';
 import { EffectDetails, EffectSelectContext, SelectedEffect } from '../components/Effect';
 import { HorizontalSplitPane } from '../components/SplitPane';
@@ -16,11 +15,12 @@ import { SerialContext } from '../contexts/SerialContext';
 import { ShortcutContext } from '../contexts/ShortcutContext';
 import { Show, Show_AudioTrack, Show_LightTrack } from '@dmx-controller/proto/show_pb';
 import { renderShowToUniverse } from '../engine/universe';
+import { UNSET_INDEX, idMapToArray } from '../util/mapUtils';
 
 const DEFAULT_SHOW = new Show({
   name: 'Untitled Show',
   audioTrack: {
-    audioFileId: 0,
+    audioFileId: UNSET_INDEX + 1,
   },
   defaultChannelValues: [
     {
@@ -309,12 +309,16 @@ function Tracks(): JSX.Element {
               save();
             }}
             value={show?.audioTrack.audioFileId}>
+            <option value={UNSET_INDEX}>
+              &lt;Unset&gt;
+            </option>
             {
-              project?.assets?.audioFiles.map((f: AudioFile, i: number) => (
-                <option value={i}>
-                  {f.name}
-                </option>
-              ))
+              idMapToArray(project?.assets?.audioFiles)
+                .map(([id, f]) => (
+                  <option value={id}>
+                    {f.name}
+                  </option>
+                ))
             }
           </select>
         </div>
