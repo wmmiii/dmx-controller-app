@@ -2,9 +2,9 @@ import { ChannelTypes, DmxUniverse } from "./fixture";
 import { Effect_RampEffect, Effect_RampEffect_EasingFunction } from "@dmx-controller/proto/effect_pb";
 import { Project } from "@dmx-controller/proto/project_pb";
 import { Show_LightTrack } from "@dmx-controller/proto/show_pb";
-import { applyState } from "./effectUtils";
+import { applyState } from "./effect";
 import { getDevice } from "./universe";
-import { applySequence } from "./sequenceUtils";
+import { applySequence } from "./sequence";
 
 export function rampEffect(
   effect: Effect_RampEffect,

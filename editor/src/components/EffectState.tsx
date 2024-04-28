@@ -7,8 +7,8 @@ import styles from './EffectState.module.scss';
 import { Button, IconButton } from './Button';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { SequenceMapping as SequenceMappingProto, FixtureState as FixtureStateProto, FixtureState_Channel, RGB, RGBW, EffectTiming } from "@dmx-controller/proto/effect_pb";
-import { isFixtureState } from '../engine/effectUtils';
-import { sequences } from '../engine/sequenceUtils';
+import { isFixtureState } from '../engine/effect';
+import { sequences } from '../engine/sequence';
 
 interface EffectStateProps {
   // Only needs to be set if this effect is part of a sequence.

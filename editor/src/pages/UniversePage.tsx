@@ -11,7 +11,7 @@ import { OutputDescription, OutputSelector } from '../components/OutputSelector'
 import { ProjectContext } from '../contexts/ProjectContext';
 import { Project_DefaultChannelValues } from '@dmx-controller/proto/project_pb';
 import { nextId } from '../util/mapUtils';
-import { getApplicableMembers } from '../engine/groupUtils';
+import { getApplicableMembers } from '../engine/group';
 
 export default function UniversePage(): JSX.Element {
   return (

@@ -9,7 +9,7 @@ import { Button } from './Button';
 import { CSSProperties } from "react";
 import { DEFAULT_EFFECT_COLOR } from '../util/styleUtils';
 import { Effect as EffectProto, EffectTiming, Effect_RampEffect, Effect_RampEffect_EasingFunction, Effect_StaticEffect, FixtureState, FixtureState as FixtureStateProto, SequenceMapping } from "@dmx-controller/proto/effect_pb";
-import { isFixtureState } from '../engine/effectUtils';
+import { isFixtureState } from '../engine/effect';
 
 export interface SelectedEffect {
   effect: EffectProto;

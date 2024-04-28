@@ -2,11 +2,11 @@ import { DmxUniverse, WritableDevice, getPhysicalWritableDevice, getPhysicalWrit
 import { Effect, EffectTiming } from "@dmx-controller/proto/effect_pb";
 import { Project } from "@dmx-controller/proto/project_pb";
 import { Show_LightTrack } from "@dmx-controller/proto/show_pb";
-import { applyState } from "./effectUtils";
+import { applyState } from "./effect";
 import { rampEffect } from "./rampEffect";
 import { AudioFile_BeatMetadata } from "@dmx-controller/proto/audio_pb";
 import { LightLayer } from "@dmx-controller/proto/light_layer_pb";
-import { applySequence } from "./sequenceUtils";
+import { applySequence } from "./sequence";
 
 interface RenderContext {
   t: number;

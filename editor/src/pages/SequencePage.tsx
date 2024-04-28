@@ -18,7 +18,7 @@ import { ShortcutContext } from '../contexts/ShortcutContext';
 import { renderSequenceToUniverse } from '../engine/universe';
 import { Modal } from '../components/Modal';
 import { Show_LightTrack } from '@dmx-controller/proto/show_pb';
-import { SEQUENCE_BEAT_RESOLUTION, deleteSequence } from '../engine/sequenceUtils';
+import { SEQUENCE_BEAT_RESOLUTION, deleteSequence } from '../engine/sequence';
 
 export default function SequencePage(): JSX.Element {
   const { setShortcuts } = useContext(ShortcutContext);

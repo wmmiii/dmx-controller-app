@@ -1,5 +1,5 @@
 import { Project } from "@dmx-controller/proto/project_pb";
-import { getAllFixtures } from "./groupUtils";
+import { getAllFixtures } from "./group";
 
 export type DmxUniverse = Uint8Array;
 
