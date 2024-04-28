@@ -4,13 +4,14 @@ import IconBxError from '../icons/IconBxError';
 import IconBxX from '../icons/IconBxX';
 import styles from './UniversePage.module.scss';
 import { Button, IconButton } from '../components/Button';
-import { FixtureDefinition, FixtureDefinition_Channel, PhysicalFixture } from '@dmx-controller/proto/fixture_pb';
+import { FixtureDefinition, FixtureDefinition_Channel, PhysicalFixture, PhysicalFixtureGroup } from '@dmx-controller/proto/fixture_pb';
 import { HorizontalSplitPane } from '../components/SplitPane';
 import { Modal } from '../components/Modal';
 import { OutputDescription, OutputSelector } from '../components/OutputSelector';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { Project_DefaultChannelValues } from '@dmx-controller/proto/project_pb';
 import { nextId } from '../util/mapUtils';
+import { getApplicableMembers } from '../engine/groupUtils';
 
 export default function UniversePage(): JSX.Element {
   return (
@@ -29,10 +30,14 @@ function FixtureList(): JSX.Element {
   const [editDefaultChannels, setEditDefaultChannels] = useState(false);
   const [selectedFixtureId, setSelectedFixtureId] =
     useState<number | null>(null);
+  const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
 
   const selectedFixture = useMemo(
     () => project?.physicalFixtures[selectedFixtureId],
     [project, selectedFixtureId]);
+  const selectedGroup = useMemo(
+    () => project?.physicalFixtureGroups[selectedGroupId],
+    [project, selectedGroupId]);
 
   if (!project) {
     return null;
@@ -80,6 +85,26 @@ function FixtureList(): JSX.Element {
         + Add New Fixture
       </Button>
       <h2>Groups</h2>
+      <ul>
+        {
+          Object.entries(project.physicalFixtureGroups)
+            .map(([id, group]) => (
+              <li onClick={() => setSelectedGroupId(parseInt(id))}>
+                {group.name}
+              </li>
+            ))
+        }
+      </ul>
+      <Button onClick={() => {
+        const newId = nextId(project.physicalFixtureGroups);
+        project.physicalFixtureGroups[newId] = new PhysicalFixtureGroup({
+          name: 'New Group',
+        });
+        setSelectedGroupId(newId);
+        save();
+      }}>
+        + Add New Group
+      </Button>
       {
         editDefaultChannels &&
         <EditDefaultChannelsDialog
@@ -90,7 +115,17 @@ function FixtureList(): JSX.Element {
         <EditFixtureDialog
           fixture={selectedFixture}
           close={() => setSelectedFixtureId(null)}
-          save={save} />
+          save={save}
+          onDelete={() => alert('Not implemented!')} />
+      }
+      {
+        selectedGroup &&
+        <EditGroupDialog
+          groupId={selectedGroupId}
+          group={selectedGroup}
+          close={() => setSelectedGroupId(null)}
+          save={save}
+          onDelete={() => alert('Not implemented!')} />
       }
     </div>
   );
@@ -100,12 +135,14 @@ interface EditFixtureDialogProps {
   fixture: PhysicalFixture;
   close: () => void;
   save: () => void;
+  onDelete: () => void;
 }
 
 function EditFixtureDialog({
   fixture,
   close,
   save,
+  onDelete,
 }: EditFixtureDialogProps): JSX.Element {
   const { project } = useContext(ProjectContext);
 
@@ -121,6 +158,14 @@ function EditFixtureDialog({
           </Button>
         </div>
       }>
+      <div>
+        <Button
+          variant='warning'
+          onClick={onDelete}>
+          Delete Fixture
+        </Button>&nbsp;
+        Cannot be undone!
+      </div>
       <label>
         Name:&nbsp;
         <input
@@ -162,6 +207,139 @@ function EditFixtureDialog({
             fixture.channelOffset = parseInt(e.target.value);
             save();
           }} />
+      </label>
+    </Modal>
+  );
+}
+
+interface EditGroupDialogProps {
+  groupId: number;
+  group: PhysicalFixtureGroup;
+  close: () => void;
+  save: () => void;
+  onDelete: () => void;
+}
+
+function EditGroupDialog({
+  groupId,
+  group,
+  close,
+  save,
+  onDelete,
+}: EditGroupDialogProps): JSX.Element {
+  const { project } = useContext(ProjectContext);
+  const [newMember, setNewMember] =
+    useState<ReturnType<typeof getApplicableMembers>[0]>(null);
+
+  const applicableMembers = useMemo(
+    () => getApplicableMembers(project, groupId),
+    [project, group]);
+
+
+  return (
+    <Modal
+      title={"Edit " + group.name}
+      onClose={close}
+      bodyClass={styles.editor}
+      footer={
+        <div className={styles.dialogFooter}>
+          <Button onClick={close} variant="primary">
+            Done
+          </Button>
+        </div>
+      }>
+      <div>
+        <Button
+          variant='warning'
+          onClick={onDelete}>
+          Delete Group
+        </Button>&nbsp;
+        Cannot be undone!
+      </div>
+      <label>
+        Name:&nbsp;
+        <input
+          value={group.name}
+          onKeyDown={(e) => e.stopPropagation()}
+          onChange={(e) => {
+            group.name = e.target.value;
+            save();
+          }} />
+      </label>
+      <div>Members:</div>
+      {
+
+        (group.physicalFixtureIds.length +
+          group.physicalFixtureGroupIds.length === 0) &&
+        <div className='row'>No Members</div>
+      }
+      {
+        group.physicalFixtureGroupIds.map((id, i) => (
+          <div className={styles.row}>
+            {project.physicalFixtureGroups[id]?.name}
+            <IconButton
+              title="Remove Group"
+              onClick={() => {
+                group.physicalFixtureGroupIds.splice(i, 1);
+                save();
+              }}>
+              <IconBxX />
+            </IconButton>
+          </div>
+        ))
+      }
+      {
+        group.physicalFixtureIds.map((id, i) => (
+          <div className={styles.row}>
+            {project.physicalFixtures[id].name}
+            <IconButton
+              title="Remove Fixture"
+              onClick={() => {
+                group.physicalFixtureIds.splice(i, 1);
+                save();
+              }}>
+              <IconBxX />
+            </IconButton>
+          </div>
+        ))
+      }
+      <label className={styles.row}>
+        <select
+          value={JSON.stringify(newMember)}
+          onChange={(e) => {
+            setNewMember(JSON.parse(e.target.value));
+          }}>
+          <option value="null">
+            &lt;Select Member&gt;
+          </option>
+          {
+            applicableMembers.map((m) => (
+              <option value={JSON.stringify(m)}>
+                {m.name}
+              </option>
+            ))
+          }
+        </select>
+        <Button
+          onClick={() => {
+            if (!newMember) {
+              return;
+            }
+
+            if (newMember.type === 'fixture') {
+              group.physicalFixtureIds.push(newMember.id);
+            } else if (newMember.type === 'group') {
+              group.physicalFixtureGroupIds.push(newMember.id);
+            } else {
+              throw new Error(`Unrecognized member type: ${newMember.type}`);
+            }
+
+            setNewMember(null);
+
+            save();
+          }}>
+          + Add New Member
+        </Button>
       </label>
     </Modal>
   );
@@ -294,7 +472,7 @@ function EditDefinitionDialog({
         Object.entries(definition.channels)
           .sort((a, b) => parseInt(a[0]) - parseInt(b[0]))
           .map(([id, channel]) => (
-            <div className={styles.channel}>
+            <div className={styles.row}>
               <input
                 type="number"
                 min={0}
@@ -452,7 +630,7 @@ function EditDefaultChannelsDialog({ close }: EditDefaultChannelsDialogProps): J
               {
                 Object.entries(d.channels)
                   .map(([index, value]) => (
-                    <div className={styles.channel}>
+                    <div className={styles.row}>
                       Channel:&nbsp;
                       <input
                         type="number"

@@ -1,4 +1,5 @@
 import { Project } from "@dmx-controller/proto/project_pb";
+import { getAllFixtures } from "./groupUtils";
 
 export type DmxUniverse = Uint8Array;
 
@@ -206,16 +207,9 @@ export function getPhysicalWritableDeviceFromGroup(
     return undefined;
   }
 
-  const writableDevices: WritableDevice[] = [
-    ...group.physicalFixtureIds
-      .map((id) => getPhysicalWritableDevice(
-        project, id, universe))
-      .filter((device) => device != null),
-    ...group.physicalFixtureGroupIds
-      .map((id) => getPhysicalWritableDeviceFromGroup(
-        project, id, universe))
-      .filter((device) => device != null),
-  ];
+  const writableDevices = getAllFixtures(project, physicalFixtureGroupId)
+    .map((id) => getPhysicalWritableDevice(
+      project, id, universe));
 
   const channelTypes: ChannelTypes[] = [];
   writableDevices.forEach(d => d.channelTypes
