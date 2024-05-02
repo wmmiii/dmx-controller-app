@@ -208,7 +208,7 @@ export function EffectDetails({
   return (
     <div className={classes.join(' ')}>
       <label>
-        Effect type:&nbsp;
+        <span>Effect type</span>
         <select
           value={effect.effect.case}
           onChange={(e) => {
@@ -250,44 +250,48 @@ export function EffectDetails({
         </select>
       </label>
 
-      <label>
-        Timing mode:&nbsp;
-        <select
-          value={effect.timingMode}
-          onChange={(e) => {
-            effect.timingMode = parseInt(e.target.value)
-            onChange(effect);
-          }}>
-          <option value={EffectTiming.ONE_SHOT}>One Shot</option>
-          <option value={EffectTiming.BEAT}>Beat</option>
-        </select>
-      </label>
+      {
+        effect.effect.case !== 'staticEffect' &&
+        <>
+          <label>
+            <span>Timing mode</span>
+            <select
+              value={effect.timingMode}
+              onChange={(e) => {
+                effect.timingMode = parseInt(e.target.value)
+                onChange(effect);
+              }}>
+              <option value={EffectTiming.ONE_SHOT}>One Shot</option>
+              <option value={EffectTiming.BEAT}>Beat</option>
+            </select>
+          </label>
 
-      <label>
-        Timing multiplier:&nbsp;
-        <input
-          type="number"
-          max="128"
-          min="0"
-          value={effect.timingMultiplier || 1}
-          onChange={(e) => {
-            effect.timingMultiplier = parseFloat(e.target.value);
-            onChange(effect);
-          }} />
-      </label>
+          <label>
+            <span>Timing multiplier</span>
+            <input
+              type="number"
+              max="128"
+              min="0"
+              value={effect.timingMultiplier || 1}
+              onChange={(e) => {
+                effect.timingMultiplier = parseFloat(e.target.value);
+                onChange(effect);
+              }} />
+          </label>
 
-      <label>
-        Mirrored:&nbsp;
-        <Button
-          variant={effect.mirrored ? 'primary' : 'default'}
-          onClick={() => {
-            effect.mirrored = !effect.mirrored;
-            onChange(effect);
-          }}>
-          Mirrored
-        </Button>
-      </label>
-
+          <label>
+            <span>Mirrored</span>
+            <Button
+              variant={effect.mirrored ? 'primary' : 'default'}
+              onClick={() => {
+                effect.mirrored = !effect.mirrored;
+                onChange(effect);
+              }}>
+              Mirrored
+            </Button>
+          </label>
+        </>
+      }
       {details}
     </div>
   )
@@ -331,23 +335,26 @@ function StaticEffectDetails({
   onChange,
 }: EffectDetailsBaseProps<Effect_StaticEffect>): JSX.Element {
   return (
-    <EffectState
-      sequenceId={sequenceId}
-      effect={effect.effect.value}
-      onChange={(e) => {
-        if (isFixtureState(e)) {
-          effect.effect = {
-            case: 'state',
-            value: e,
-          };
-        } else {
-          effect.effect = {
-            case: 'sequence',
-            value: e,
-          };
-        }
-        onChange(effect);
-      }} />
+    <>
+      <hr />
+      <EffectState
+        sequenceId={sequenceId}
+        effect={effect.effect.value}
+        onChange={(e) => {
+          if (isFixtureState(e)) {
+            effect.effect = {
+              case: 'state',
+              value: e,
+            };
+          } else {
+            effect.effect = {
+              case: 'sequence',
+              value: e,
+            };
+          }
+          onChange(effect);
+        }} />
+    </>
   );
 }
 
@@ -358,7 +365,7 @@ function RampEffectDetails({
   return (
     <>
       <label>
-        Easing:&nbsp;
+        <span>Easing</span>
         <select
           value={effect.easing}
           onChange={(e) => {
@@ -380,6 +387,7 @@ function RampEffectDetails({
           </option>
         </select>
       </label>
+      <hr />
       <h2>Start</h2>
       <EffectState
         effect={effect.start.value}
@@ -397,6 +405,7 @@ function RampEffectDetails({
           }
           onChange(effect);
         }} />
+      <hr />
       <h2>End</h2>
       <EffectState
         effect={effect.end.value}

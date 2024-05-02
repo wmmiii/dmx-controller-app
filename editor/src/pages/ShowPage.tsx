@@ -22,25 +22,6 @@ const DEFAULT_SHOW = new Show({
   audioTrack: {
     audioFileId: UNSET_INDEX + 1,
   },
-  defaultChannelValues: [
-    {
-      name: 'Light mode',
-      output: {
-        value: 0,
-        case: 'physicalFixtureId',
-      },
-      channels: [
-        {
-          index: 5,
-          value: 0,
-        },
-        {
-          index: 6,
-          value: 255,
-        },
-      ]
-    },
-  ],
   lightTracks: [
     {
       name: 'Fixture',
@@ -74,7 +55,7 @@ export default function ShowPage(): JSX.Element {
         setSelectedEffect(null);
       },
       description: 'Delete the currently selected effect.',
-    }
+    },
   ]), [selectedEffect, setSelectedEffect]);
 
   return (
@@ -141,7 +122,7 @@ function Tracks(): JSX.Element {
       },
       description: 'Play/pause show.',
     },
-  ]), [audioController.current, playing]);
+  ]), [audioController.current, playing, project]);
 
   useEffect(() => {
     if (!project) {
@@ -373,7 +354,6 @@ function Tracks(): JSX.Element {
               <input
                 type="text"
                 value={show?.name}
-                onKeyDown={(e) => e.stopPropagation()}
                 onChange={(e) => {
                   show.name = e.target.value;
                   save();

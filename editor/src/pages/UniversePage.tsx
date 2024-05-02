@@ -167,17 +167,16 @@ function EditFixtureDialog({
         Cannot be undone!
       </div>
       <label>
-        Name:&nbsp;
+        <span>Name</span>
         <input
           value={fixture.name}
-          onKeyDown={(e) => e.stopPropagation()}
           onChange={(e) => {
             fixture.name = e.target.value;
             save();
           }} />
       </label>
       <label>
-        Definition:&nbsp;
+        <span>Definition</span>
         <select
           value={fixture.fixtureDefinitionId}
           onChange={(e) => {
@@ -196,7 +195,7 @@ function EditFixtureDialog({
         </select>
       </label>
       <label>
-        Channel:&nbsp;
+        <span>Channel</span>
         <input
           type="number"
           min={0}
@@ -257,10 +256,9 @@ function EditGroupDialog({
         Cannot be undone!
       </div>
       <label>
-        Name:&nbsp;
+        <span>Name</span>
         <input
           value={group.name}
-          onKeyDown={(e) => e.stopPropagation()}
           onChange={(e) => {
             group.name = e.target.value;
             save();
@@ -430,10 +428,9 @@ function EditDefinitionDialog({
         <IconBxCopyAlt />
       </IconButton>
       <label>
-        Name:&nbsp;
+        <span>Name</span>
         <input
           value={definition.name}
-          onKeyDown={(e) => e.stopPropagation()}
           onChange={(e) => {
             definition.name = e.target.value;
             save();
@@ -441,17 +438,16 @@ function EditDefinitionDialog({
           }} />
       </label>
       <label>
-        Manufacturer:&nbsp;
+        <span>Manufacturer</span>
         <input
           value={definition.manufacturer}
-          onKeyDown={(e) => e.stopPropagation()}
           onChange={(e) => {
             definition.manufacturer = e.target.value;
             save();
           }} />
       </label>
       <label>
-        Total channels:&nbsp;
+        <span>Total channels</span>
         <input
           type="number"
           min={0}
@@ -512,7 +508,7 @@ function EditDefinitionDialog({
                 ) &&
                 <>
                   <label>
-                    Min deg:&nbsp;
+                    <span>Min deg</span>
                     <input
                       type="number"
                       step={1}
@@ -523,7 +519,7 @@ function EditDefinitionDialog({
                       }} />
                   </label>
                   <label>
-                    Max deg:&nbsp;
+                    <span>Max deg</span>
                     <input
                       type="number"
                       step={1}

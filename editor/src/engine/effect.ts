@@ -1,11 +1,12 @@
 import { FixtureState, SequenceMapping } from "@dmx-controller/proto/effect_pb";
-import { WritableDevice } from "./fixture";
+import { RenderContext, getDevice } from "./universe";
 
 export function isFixtureState(effect: FixtureState | SequenceMapping): effect is FixtureState {
   return !('sequenceId' in effect);
 }
 
-export function applyState(state: FixtureState, device: WritableDevice): void {
+export function applyState(state: FixtureState, context: RenderContext): void {
+  const device = getDevice(context);
   switch (state.color.case) {
     case 'rgb':
       {

@@ -24,6 +24,10 @@ export function ShortcutProvider({ children }: PropsWithChildren): JSX.Element {
 
   useEffect(() => {
     const handler = (ev: KeyboardEvent) => {
+      if (ev.target instanceof HTMLInputElement) {
+        return;
+      }
+
       for (const b of [...shortcutBundles.current].reverse()) {
         if (b) {
           for (const s of b) {

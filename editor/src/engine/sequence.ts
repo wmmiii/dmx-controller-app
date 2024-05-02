@@ -1,14 +1,54 @@
 import { LightLayer } from "@dmx-controller/proto/light_layer_pb";
 import { Project } from "@dmx-controller/proto/project_pb"
-import { WritableDevice } from "./fixture";
-import { SequenceMapping } from "@dmx-controller/proto/effect_pb";
+import { EffectTiming, SequenceMapping } from "@dmx-controller/proto/effect_pb";
+import { RenderContext, renderLayersToUniverse } from "./universe";
+import { AudioFile_BeatMetadata } from "@dmx-controller/proto/audio_pb";
 
 // Good resolution, nice divisors (2, 3, 4, 5, 6, 12 etc.)
 export const SEQUENCE_BEAT_RESOLUTION = 36000;
 
-export function applySequence(sequence: SequenceMapping, device: WritableDevice):
-    void {
-  
+export function applySequence(
+  context: RenderContext,
+  mapping: SequenceMapping,
+  amountT: number,
+  beatIndex: number,
+  beatT: number):
+  void {
+
+  const sequence = context.project.sequences[mapping.sequenceId];
+  if (sequence == null) {
+    return;
+  }
+
+  const sequenceMs = sequence.nativeBeats * SEQUENCE_BEAT_RESOLUTION;
+
+  let t = 0;
+  switch (mapping.timingMode) {
+    case EffectTiming.ABSOLUTE:
+      console.error('Absolute timings for sequences are not implemented!');
+      return;
+    case EffectTiming.BEAT:
+      t = ((beatIndex + beatT) * mapping.timingMultiplier) % sequence.nativeBeats;
+      t *= SEQUENCE_BEAT_RESOLUTION;
+      break;
+    case EffectTiming.ONE_SHOT:
+      t = ((amountT * mapping.timingMultiplier) % 1) * sequenceMs;
+      break;
+    default:
+      console.error('Unrecognized timing type for sequence', mapping.timingMode);
+  }
+
+
+  // Re-time into sequence space.
+  const sequenceContext = Object.assign({}, context, {
+    beatMetadata: new AudioFile_BeatMetadata({
+      lengthMs: SEQUENCE_BEAT_RESOLUTION,
+      offsetMs: 0,
+    }),
+    t: t,
+  });
+
+  renderLayersToUniverse(t, sequence.layers, sequenceContext);
 }
 
 export function sequences(project: Project, forbidden?: number):
@@ -90,7 +130,7 @@ export function deleteSequence(sequenceId: number, project: Project): void {
 }
 
 function deleteSequenceFromLightLayer(
-    sequenceId: number, lightLayer: LightLayer): void {
+  sequenceId: number, lightLayer: LightLayer): void {
   lightLayer.effects.forEach(e => {
     if (e.effect.case === 'staticEffect') {
       if (e.effect.value.effect.case === 'sequence') {

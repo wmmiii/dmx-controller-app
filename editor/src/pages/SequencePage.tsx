@@ -19,7 +19,7 @@ import { renderSequenceToUniverse } from '../engine/universe';
 import { Modal } from '../components/Modal';
 import { Show_LightTrack } from '@dmx-controller/proto/show_pb';
 import { SEQUENCE_BEAT_RESOLUTION, deleteSequence } from '../engine/sequence';
-import { idMapToArray } from '../util/mapUtils';
+import { idMapToArray, nextId } from '../util/mapUtils';
 
 export default function SequencePage(): JSX.Element {
   const { setShortcuts } = useContext(ShortcutContext);
@@ -245,7 +245,7 @@ function Tracks({ sequenceId, setSequenceId }: TracksProps): JSX.Element {
       return new Show_LightTrack({
         name: 'Sequence',
         output: {
-          value: 0,
+          value: 1,
           case: 'physicalFixtureId',
         },
         layers: sequence.layers,
@@ -403,9 +403,6 @@ function Tracks({ sequenceId, setSequenceId }: TracksProps): JSX.Element {
                 onChange={(e) => {
                   sequence.name = e.target.value;
                   save();
-                }}
-                onKeyDown={(e) => {
-                  e.stopPropagation();
                 }} />
             </div>
             <div>

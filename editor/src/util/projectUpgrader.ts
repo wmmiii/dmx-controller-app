@@ -15,6 +15,8 @@ function upgradeIndices(project: Project): void {
     project.shows.forEach(s => {
       s.audioTrack.audioFileId += 1;
     });
+
+    project.assets.deprecatedAudioFiles = [];
   }
 
   // Fixture definitions

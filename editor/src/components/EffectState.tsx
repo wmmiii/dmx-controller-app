@@ -32,6 +32,7 @@ export default function EffectState({ sequenceId, effect, onChange }: EffectStat
   return (
     <>
       <label>
+        <span>Type</span>
         <select
           value={String(isFixtureState(effect))}
           onChange={(e) => {
@@ -41,7 +42,7 @@ export default function EffectState({ sequenceId, effect, onChange }: EffectStat
               onChange(new SequenceMappingProto({
                 sequenceId: 0,
                 timingMode: EffectTiming.BEAT,
-                offsetBeat: 0,
+                offsetMs: 0,
                 timingMultiplier: 1,
               }));
             }
@@ -103,7 +104,7 @@ function FixtureState(
   return (
     <>
       <label>
-        Color mode:&nbsp;
+        <span>Color mode</span>
         <select
           value={state.color.case}
           onChange={(e) => onColorTypeChange(e.target.value)}>
@@ -111,33 +112,33 @@ function FixtureState(
           <option value="rgb">RGB</option>
           <option value="rgbw">RGBW</option>
         </select>
-        {
-          state.color.case &&
-          <ColorPicker
-            hideAlpha={true}
-            color={{
-              r: state.color.value.red * 255,
-              g: state.color.value.green * 255,
-              b: state.color.value.blue * 255,
-              a: 1,
-            }}
-            onChange={({ rgb }) => {
-              state.color.value.red = rgb.r / 255;
-              state.color.value.green = rgb.g / 255;
-              state.color.value.blue = rgb.b / 255;
-              onChange(state);
-            }}
-            theme={{
-              background: 'transparent',
-              borderColor: 'none',
-              width: '100%',
-            }} />
-        }
       </label>
+      {
+        state.color.case &&
+        <ColorPicker
+          hideAlpha={true}
+          color={{
+            r: state.color.value.red * 255,
+            g: state.color.value.green * 255,
+            b: state.color.value.blue * 255,
+            a: 1,
+          }}
+          onChange={({ rgb }) => {
+            state.color.value.red = rgb.r / 255;
+            state.color.value.green = rgb.g / 255;
+            state.color.value.blue = rgb.b / 255;
+            onChange(state);
+          }}
+          theme={{
+            background: 'transparent',
+            borderColor: 'none',
+            width: '100%',
+          }} />
+      }
       {
         state.color.case === 'rgbw' &&
         <label className={styles.stateRow}>
-          White:&nbsp;
+          <span>White</span>
           <RangeInput
             className={styles.input}
             max="255"
@@ -151,7 +152,7 @@ function FixtureState(
       {
         state.brightness != null ?
           <label className={styles.stateRow}>
-            Brightness:&nbsp;
+            <span>Brightness</span>
             <RangeInput
               className={styles.input}
               max="1"
@@ -170,9 +171,9 @@ function FixtureState(
             </IconButton>
           </label> :
           <label className={styles.stateRow}>
-            Brightness&nbsp;
+            <span>Brightness</span>
             <IconButton
-              title="Remove Brightness"
+              title="Add Brightness"
               onClick={() => {
                 state.brightness = 1;
                 onChange(state);
@@ -184,7 +185,7 @@ function FixtureState(
       {
         state.pan != null ?
           <label className={styles.stateRow}>
-            Pan:&nbsp;
+            <span>Pan</span>
             <input
               type="number"
               max="720"
@@ -204,9 +205,9 @@ function FixtureState(
             </IconButton>
           </label> :
           <label className={styles.stateRow}>
-            Pan&nbsp;
+            <span>Pan</span>
             <IconButton
-              title="Remove Pan"
+              title="Add Pan"
               onClick={() => {
                 state.pan = 0;
                 onChange(state);
@@ -218,7 +219,7 @@ function FixtureState(
       {
         state.tilt != null ?
           <label className={styles.stateRow}>
-            Tilt:&nbsp;
+            <span>Tilt</span>
             <input
               type="number"
               max="720"
@@ -238,9 +239,9 @@ function FixtureState(
             </IconButton>
           </label> :
           <label className={styles.stateRow}>
-            Tilt&nbsp;
+            <span>Tilt</span>
             <IconButton
-              title="Remove Tilt"
+              title="Add Tilt"
               onClick={() => {
                 state.tilt = 0;
                 onChange(state);
@@ -310,7 +311,7 @@ function SequenceMapping({ sequenceId, sequence, onChange }: SequenceMappingProp
   return (
     <>
       <label>
-        Sequence:&nbsp;
+        <span>Sequence</span>
         <select
           value={sequence.sequenceId}
           onChange={(e) => {
@@ -325,6 +326,32 @@ function SequenceMapping({ sequenceId, sequence, onChange }: SequenceMappingProp
               ))
           }
         </select>
+      </label>
+
+      <label>
+        <span>Sequence Timing</span>
+        <select
+          value={sequence.timingMode}
+          onChange={(e) => {
+            sequence.timingMode = parseInt(e.target.value);
+            onChange(sequence);
+          }}>
+          <option value={EffectTiming.ONE_SHOT}>One Shot</option>
+          <option value={EffectTiming.BEAT}>Beat</option>
+        </select>
+      </label>
+
+      <label>
+        <span>Timing multiplier</span>
+        <input
+          type="number"
+          max="128"
+          min="0"
+          value={sequence.timingMultiplier || 1}
+          onChange={(e) => {
+            sequence.timingMultiplier = parseFloat(e.target.value);
+            onChange(sequence);
+          }} />
       </label>
     </>
   );

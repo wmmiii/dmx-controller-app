@@ -9,7 +9,7 @@ import { LightLayer } from "@dmx-controller/proto/light_layer_pb";
 import { applySequence } from "./sequence";
 import { idMapToArray } from "../util/mapUtils";
 
-interface RenderContext {
+export interface RenderContext {
   t: number;
   beatMetadata?: AudioFile_BeatMetadata;
   output: Show_LightTrack['output'];
@@ -21,19 +21,11 @@ export function renderShowToUniverse(t: number, project: Project):
   DmxUniverse {
   const universe = new Uint8Array(512);
 
+  applyDefaults(project, universe);
+
   const show = project.shows[project.selectedShow || 0];
 
   if (show) {
-    for (const defaultValues of project.defaultChannelValues) {
-      const device = getDevice(defaultValues.output, project, universe);
-      if (!device) {
-        continue;
-      }
-
-      idMapToArray(defaultValues.channels)
-        .forEach(([i, c]) => device.setChannel(i, c));
-    }
-
     const context: Partial<RenderContext> = {
       t: t,
       beatMetadata: project
@@ -45,7 +37,8 @@ export function renderShowToUniverse(t: number, project: Project):
     };
 
     for (const track of show.lightTracks) {
-      renderLayersToUniverse(t, track.layers, context, track.output);
+      const trackContext = Object.assign({}, context, { output: track.output });
+      renderLayersToUniverse(t, track.layers, trackContext);
     }
   }
 
@@ -62,42 +55,69 @@ export function renderSequenceToUniverse(
   DmxUniverse {
   const universe = new Uint8Array(512);
 
+  applyDefaults(project, universe);
+
   const sequence = project.sequences[sequenceId];
 
   if (sequence) {
-    const context: Partial<RenderContext> = {
+    const context: RenderContext = {
       t: t,
       beatMetadata: beatMetadata,
+      output: output,
       project: project,
       universe: universe,
     };
 
-    renderLayersToUniverse(t, sequence.layers, context, output);
+    renderLayersToUniverse(t, sequence.layers, context);
   }
 
   return universe;
 }
 
-function renderLayersToUniverse(
+export function renderLayersToUniverse(
   t: number,
   layers: LightLayer[],
   context: Partial<RenderContext>,
-  output: Show_LightTrack['output'],
 ): void {
   for (const layer of layers) {
     const effect = layer.effects.find((e) => e.startMs <= t && e.endMs > t);
     if (effect) {
       applyEffect(
         Object.assign({
-          t: context.t + effect.offsetMs,
-          output: output,
+          t: context.t + effect.offsetMs
         }, context) as RenderContext,
         effect);
     }
   }
 }
 
+function applyDefaults(project: Project, universe: DmxUniverse): void {
+
+  for (const defaultValues of project.defaultChannelValues) {
+    const device = getDevice({
+      output: defaultValues.output,
+      project: project,
+      universe: universe,
+    });
+    if (!device) {
+      continue;
+    }
+
+    idMapToArray(defaultValues.channels)
+      .forEach(([i, c]) => device.setChannel(i, c));
+  }
+}
+
 function applyEffect(context: RenderContext, effect: Effect): void {
+  const absoluteT = context.t;
+
+  // Calculate beat
+  const beat = context.beatMetadata;
+  const virtualBeat = (context.t - beat.offsetMs) *
+      (effect.timingMultiplier || 1);
+  const beatIndex = Math.floor(virtualBeat / beat.lengthMs);
+  const beatT = ((virtualBeat % beat.lengthMs) / beat.lengthMs) % 1;
+
   // Calculate timing
   let t: number;
   switch (effect.timingMode) {
@@ -116,10 +136,7 @@ function applyEffect(context: RenderContext, effect: Effect): void {
       break;
     case EffectTiming.BEAT:
       if (context.beatMetadata) {
-        const beat = context.beatMetadata;
-        const virtualBeat = (context.t - beat.offsetMs) * effect.timingMultiplier;
-        t = ((virtualBeat % beat.lengthMs) / beat.lengthMs) % 1;
-        const beatIndex = Math.floor(virtualBeat / beat.lengthMs);
+        t = beatT;
         if (effect.mirrored && beatIndex % 2) {
           t = 1 - t;
         }
@@ -135,30 +152,40 @@ function applyEffect(context: RenderContext, effect: Effect): void {
   context.t = t;
 
   if (effect.effect.case === 'staticEffect') {
-    const device = getDevice(
-      context.output,
-      context.project,
-      context.universe);
     if (effect.effect.value.effect.case === 'state') {
-      applyState(effect.effect.value.effect.value, device);
+      applyState(effect.effect.value.effect.value, context);
     } else {
-      applySequence(effect.effect.value.effect.value, device);
+      const amountT = (absoluteT - effect.startMs) /
+       (effect.endMs - effect.startMs);
+
+      applySequence(
+        context,
+        effect.effect.value.effect.value,
+        amountT,
+        beatIndex,
+        beatT);
     }
 
   } else if (effect.effect.case === 'rampEffect') {
+    const amountT = (absoluteT - effect.startMs) /
+    (effect.endMs - effect.startMs);
+
     rampEffect(
+      context,
       effect.effect.value,
-      context.t,
-      context.output,
-      context.project,
-      context.universe);
+      amountT,
+      beatIndex,
+      beatT);
   }
 }
 
 export function getDevice(
-  output: Show_LightTrack['output'],
-  project: Project,
-  universe: DmxUniverse): WritableDevice | undefined {
+  { output, project, universe }: {
+    output: Show_LightTrack['output'];
+    project: Project;
+    universe: DmxUniverse;
+  }
+): WritableDevice | undefined {
 
   switch (output.case) {
     case 'physicalFixtureId':

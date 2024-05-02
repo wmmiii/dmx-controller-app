@@ -1,17 +1,44 @@
-import { ChannelTypes, DmxUniverse } from "./fixture";
+import { ChannelTypes } from "./fixture";
 import { Effect_RampEffect, Effect_RampEffect_EasingFunction } from "@dmx-controller/proto/effect_pb";
-import { Project } from "@dmx-controller/proto/project_pb";
-import { Show_LightTrack } from "@dmx-controller/proto/show_pb";
 import { applyState } from "./effect";
-import { getDevice } from "./universe";
+import { RenderContext, getDevice } from "./universe";
 import { applySequence } from "./sequence";
 
 export function rampEffect(
+  context: RenderContext,
   effect: Effect_RampEffect,
-  t: number,
-  output: Show_LightTrack['output'],
-  project: Project,
-  universe: DmxUniverse): void {
+  amountT: number,
+  beatIndex: number,
+  beatT: number): void {
+
+  const start = new Uint8Array(context.universe);
+  const end = new Uint8Array(context.universe);
+
+  const startContext = Object.assign({}, context, { universe: start });
+  if (effect.start.case === 'fixtureStateStart') {
+    applyState(effect.start.value, startContext);
+  } else {
+    applySequence(
+      startContext,
+      effect.start.value,
+      amountT,
+      beatIndex,
+      beatT);
+  }
+
+  const endContext = Object.assign({}, context, { universe: end });
+  if (effect.end.case === 'fixtureStateEnd') {
+    applyState(effect.end.value, endContext);
+  } else {
+    applySequence(
+      endContext,
+      effect.end.value,
+      amountT,
+      beatIndex,
+      beatT);
+  }
+
+  const t = context.t;
   let effectT: number;
   switch (effect.easing) {
     case Effect_RampEffect_EasingFunction.EASE_IN:
@@ -31,27 +58,12 @@ export function rampEffect(
       effectT = t;
   }
 
-  const start = new Uint8Array(universe);
-  const end = new Uint8Array(universe);
-
-  if (effect.start.case === 'fixtureStateStart') {
-    applyState(effect.start.value, getDevice(output, project, start));
-  } else {
-    applySequence(effect.start.value, getDevice(output, project, start));
-  }
-
-  if (effect.end.case === 'fixtureStateEnd') {
-    applyState(effect.end.value, getDevice(output, project, end));
-  } else {
-    applySequence(effect.end.value, getDevice(output, project, end));
-  }
-
   // First do a dumb interpolation of all the channels to set coarse values.
-  for (let i = 0; i < universe.length; ++i) {
-    universe[i] = Math.floor(start[i] * (1 - effectT) + end[i] * effectT);
+  for (let i = 0; i < context.universe.length; ++i) {
+    context.universe[i] = Math.floor(start[i] * (1 - effectT) + end[i] * effectT);
   }
 
-  const outputDevice = getDevice(output, project, universe);
+  const outputDevice = getDevice(context);
 
   // Next fixup all the fine values.
   outputDevice.channelTypes.forEach((type, i) => {
@@ -60,7 +72,7 @@ export function rampEffect(
       const coarseIndex = outputDevice.channelTypes.indexOf(coarseType);
       const coarseValue = start[coarseIndex] * (1 - effectT) +
         end[coarseIndex] * effectT;
-      universe[i] = Math.floor(coarseValue * 255) % 255;
+      context.universe[i] = Math.floor(coarseValue * 255) % 255;
     }
   });
 }

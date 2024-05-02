@@ -279,7 +279,7 @@ export function BeatEditor({ file, onCancel, onSave }: BeatEditorProps):
       </div>
       <div className={styles.buttonRow}>
         <div>
-          Beats per segment:&nbsp;
+          <span>Beats per segment</span>
           <input
             type="number"
             step="1"
