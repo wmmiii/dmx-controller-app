@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { createRef, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import MinimapPlugin from "wavesurfer.js/dist/plugins/minimap.js";
 import RegionsPlugin, { Region } from "wavesurfer.js/dist/plugins/regions.js";
 import WaveSurfer from 'wavesurfer.js';
 import { BEAT_MARKER, WAVEFORM_COLOR, WAVEFORM_CURSOR_COLOR, WAVEFORM_PROGRESS_COLOR, WAVEFORM_SAMPLE_RATE } from '../util/styleUtils';
 import { AudioFile_BeatMetadata } from '@dmx-controller/proto/audio_pb';
+import { ShortcutContext } from '../contexts/ShortcutContext';
 
 export interface AudioController {
   play: () => void;
@@ -37,9 +38,11 @@ export function AudioTrackVisualizer({
   loop,
   className,
 }: AudioTrackVisualizerProps): JSX.Element {
+  const { setShortcuts } = useContext(ShortcutContext);
   const containerRef = useRef<HTMLDivElement>();
   const [ws, setWs] = useState<WaveSurfer | null>(null);
   const [regions, setRegions] = useState<RegionsPlugin | null>(null);
+  const visibleDuration = useRef<number>();
 
   useEffect(() => {
     if (containerRef.current != null && audioBlob != null) {
@@ -100,8 +103,10 @@ export function AudioTrackVisualizer({
   // Add visibility callback.
   useEffect(() => {
     if (ws && setVisible) {
-      const callback = (startTime: number, endTime: number) =>
+      const callback = (startTime: number, endTime: number) => {
+        visibleDuration.current = endTime - startTime;
         setVisible(startTime * 1000, endTime * 1000);
+      }
       ws.on('scroll', callback);
 
       () => ws.un('scroll', callback);
@@ -164,6 +169,47 @@ export function AudioTrackVisualizer({
       }
     }
   }, [ws, regions, beatMetadata, beatSubdivisions]);
+
+  useEffect(() => {
+    if (ws) {
+      return setShortcuts([
+        {
+          shortcut: { key: 'Home' },
+          action: () => {
+            ws.seekTo(0);
+          },
+          description: 'Jump to start of track.',
+        },
+        {
+          shortcut: { key: 'End' },
+          action: () => {
+            ws.seekTo(1);
+          },
+          description: 'Jump to end of track.',
+        },
+        {
+          shortcut: { key: 'PageUp' },
+          action: () => {
+            const t = ws.getCurrentTime();
+            ws.setTime(Math.max(
+              t - (visibleDuration.current || 0) / 2,
+              0));
+          },
+          description: 'Jump backwards in track.',
+        },
+        {
+          shortcut: { key: 'PageDown' },
+          action: () => {
+            const t = ws.getCurrentTime();
+            ws.setTime(Math.min(
+              t + (visibleDuration.current || 0) / 2,
+              ws.getDuration()));
+          },
+          description: 'Jump forwards in track',
+        },
+      ]);
+    }
+  }, [ws]);
 
   return (
     <div ref={containerRef} className={className}></div>
