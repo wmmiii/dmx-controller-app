@@ -1,18 +1,18 @@
+import { AudioFile_BeatMetadata } from "@dmx-controller/proto/audio_pb";
 import { DmxUniverse, WritableDevice, getPhysicalWritableDevice, getPhysicalWritableDeviceFromGroup } from "./fixture";
 import { Effect, EffectTiming } from "@dmx-controller/proto/effect_pb";
-import { Project } from "@dmx-controller/proto/project_pb";
-import { Show_LightTrack } from "@dmx-controller/proto/show_pb";
-import { applyState } from "./effect";
-import { rampEffect } from "./rampEffect";
-import { AudioFile_BeatMetadata } from "@dmx-controller/proto/audio_pb";
 import { LightLayer } from "@dmx-controller/proto/light_layer_pb";
+import { LightTrack } from "@dmx-controller/proto/light_track_pb";
+import { Project } from "@dmx-controller/proto/project_pb";
 import { applySequence } from "./sequence";
+import { applyState } from "./effect";
 import { idMapToArray } from "../util/mapUtils";
+import { rampEffect } from "./rampEffect";
 
 export interface RenderContext {
   t: number;
   beatMetadata?: AudioFile_BeatMetadata;
-  output: Show_LightTrack['output'];
+  output: LightTrack['output'];
   project: Project;
   universe: DmxUniverse;
 }
@@ -49,7 +49,7 @@ export function renderSequenceToUniverse(
   t: number,
   sequenceId: number,
   beatMetadata: AudioFile_BeatMetadata,
-  output: Show_LightTrack['output'],
+  output: LightTrack['output'],
   project: Project,
 ):
   DmxUniverse {
@@ -181,7 +181,7 @@ function applyEffect(context: RenderContext, effect: Effect): void {
 
 export function getDevice(
   { output, project, universe }: {
-    output: Show_LightTrack['output'];
+    output: LightTrack['output'];
     project: Project;
     universe: DmxUniverse;
   }

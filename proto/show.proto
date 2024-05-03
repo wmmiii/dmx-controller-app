@@ -3,20 +3,11 @@ syntax = "proto3";
 package dmx_controller;
 
 import "proto/effect.proto";
-import "proto/light_layer.proto";
+import "proto/light_track.proto";
 
 message Show {
   message AudioTrack {
     uint32 audio_file_id = 1;
-  }
-
-  message LightTrack {
-    string name = 1;
-    oneof output {
-      uint32 physical_fixture_id = 2;
-      uint32 physical_fixture_group_id = 3;
-    }
-    repeated LightLayer layers = 4;
   }
 
   string name = 1;

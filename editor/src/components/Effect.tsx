@@ -130,7 +130,9 @@ export function Effect({
         </div>
       }
       <div className={styles.inner}>
-        <div className={styles.icons}>
+        <div
+          className={styles.icons}
+          style={{ left: Math.max(0, -(style.left || 0)) }} >
           {Array.from(icons).map(I => (
             <div className={styles.icon}>
               <I />

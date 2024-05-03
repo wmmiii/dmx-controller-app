@@ -73,6 +73,13 @@
   padding: spacing(1);
 }
 
+.new-output {
+  align-items: center;
+  display: flex;
+  justify-content: row;
+  padding: spacing(2);
+}
+
 .detailsModal {
   display: flex;
   flex-direction: column;

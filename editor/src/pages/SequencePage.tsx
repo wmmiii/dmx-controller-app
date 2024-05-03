@@ -7,19 +7,19 @@ import IconBxZoomOut from '../icons/IconBxZoomOut';
 import styles from "./SequencePage.module.scss";
 import { AudioController, AudioTrackVisualizer } from '../components/AudioTrackVisualizer';
 import { AudioFile_BeatMetadata } from '@dmx-controller/proto/audio_pb';
-import { Sequence } from '@dmx-controller/proto/sequence_pb';
 import { Button } from '../components/Button';
 import { EffectDetails, EffectSelectContext, SelectedEffect } from '../components/Effect';
 import { HorizontalSplitPane } from '../components/SplitPane';
+import { LightTrack as LightTrackProto } from '@dmx-controller/proto/light_track_pb';
 import { LightTrack, MappingFunctions } from '../components/LightTrack';
+import { Modal } from '../components/Modal';
 import { ProjectContext } from '../contexts/ProjectContext';
+import { SEQUENCE_BEAT_RESOLUTION, deleteSequence } from '../engine/sequence';
+import { Sequence } from '@dmx-controller/proto/sequence_pb';
 import { SerialContext } from '../contexts/SerialContext';
 import { ShortcutContext } from '../contexts/ShortcutContext';
-import { renderSequenceToUniverse } from '../engine/universe';
-import { Modal } from '../components/Modal';
-import { Show_LightTrack } from '@dmx-controller/proto/show_pb';
-import { SEQUENCE_BEAT_RESOLUTION, deleteSequence } from '../engine/sequence';
 import { idMapToArray, nextId } from '../util/mapUtils';
+import { renderSequenceToUniverse } from '../engine/universe';
 
 export default function SequencePage(): JSX.Element {
   const { setShortcuts } = useContext(ShortcutContext);
@@ -242,7 +242,7 @@ function Tracks({ sequenceId, setSequenceId }: TracksProps): JSX.Element {
 
   const virtualTrack = useMemo(() => {
     if (sequence) {
-      return new Show_LightTrack({
+      return new LightTrackProto({
         name: 'Sequence',
         output: {
           value: 1,

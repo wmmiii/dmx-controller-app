@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package dmx_controller;
+
+import "proto/light_layer.proto";
+
+message LightTrack {
+  string name = 1;
+  bool collapsed = 5;
+  oneof output {
+    uint32 physical_fixture_id = 2;
+    uint32 physical_fixture_group_id = 3;
+  }
+  repeated LightLayer layers = 4;
+}

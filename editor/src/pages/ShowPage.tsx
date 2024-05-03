@@ -8,14 +8,15 @@ import { AudioController, AudioTrackVisualizer } from '../components/AudioTrackV
 import { Button } from '../components/Button';
 import { EffectDetails, EffectSelectContext, SelectedEffect } from '../components/Effect';
 import { HorizontalSplitPane } from '../components/SplitPane';
+import { LightTrack as LightTrackProto } from '@dmx-controller/proto/light_track_pb';
 import { LightTrack, MappingFunctions } from '../components/LightTrack';
 import { Modal } from '../components/Modal';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { SerialContext } from '../contexts/SerialContext';
 import { ShortcutContext } from '../contexts/ShortcutContext';
-import { Show, Show_AudioTrack, Show_LightTrack } from '@dmx-controller/proto/show_pb';
-import { renderShowToUniverse } from '../engine/universe';
+import { Show, Show_AudioTrack } from '@dmx-controller/proto/show_pb';
 import { UNSET_INDEX, idMapToArray } from '../util/mapUtils';
+import { renderShowToUniverse } from '../engine/universe';
 
 const DEFAULT_SHOW = new Show({
   name: 'Untitled Show',
@@ -322,7 +323,7 @@ function Tracks(): JSX.Element {
         </div>
         <div className={styles.tracks}>
           {
-            show?.lightTracks.map((t: Show_LightTrack) => (
+            show?.lightTracks.map((t: LightTrackProto) => (
               <LightTrack
                 track={t}
                 maxMs={audioDuration}
@@ -331,9 +332,9 @@ function Tracks(): JSX.Element {
                 forceUpdate={save} />
             ))
           }
-          <div>
+          <div className={styles.newOutput} style={{ width: leftWidth }}>
             <Button onClick={() => {
-              show?.lightTracks.push(new Show_LightTrack({
+              show?.lightTracks.push(new LightTrackProto({
                 name: 'Layer ' + (show.lightTracks.length + 1),
               }));
               save();

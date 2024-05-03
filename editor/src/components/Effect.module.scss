@@ -23,10 +23,10 @@ $handle-size: 30px;
     .icons {
       display: flex;
       flex-direction: column;
+      flex-wrap: wrap;
       gap: spacing(0.5);
       height: 100%;
-      position: sticky;
-      left: spacing(1);
+      position: relative;
       width: fit-content;
     }
   }

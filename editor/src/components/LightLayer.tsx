@@ -1,6 +1,6 @@
 import styles from './LightLayer.module.scss';
 import { Effect as EffectComponent } from "./Effect";
-import { Effect, Effect_RampEffect, Effect_StaticEffect } from "@dmx-controller/proto/effect_pb";
+import { Effect, Effect_StaticEffect } from "@dmx-controller/proto/effect_pb";
 import { LightLayer as LightLayerProto } from "@dmx-controller/proto/light_layer_pb";
 import { useState } from "react";
 
@@ -13,6 +13,7 @@ interface NewEffect {
 }
 
 interface LightLayerProps {
+  className?: string;
   layer: LightLayerProto;
   maxMs: number;
   msToPx: (ms: number) => number;
@@ -22,6 +23,7 @@ interface LightLayerProps {
 }
 
 export function LightLayer({
+  className,
   layer,
   maxMs,
   msToPx,
@@ -33,7 +35,7 @@ export function LightLayer({
 
   return (
     <div
-      className={styles.layer}
+      className={className || styles.layer}
       onMouseDown={(e) => {
         const ms = pxToMs(e.clientX);
         let index = layer.effects.findIndex(e => e.startMs > ms);
