@@ -1,6 +1,8 @@
 import React, { useContext, useMemo, useRef } from "react";
 
 import IconBxBrushAlt from '../icons/IconBxBrush';
+import IconBxChevronDown from "../icons/IconBxChevronDown";
+import IconBxChevronUp from "../icons/IconBxChevronUp";
 import IconBxPlus from '../icons/IconBxPlus';
 import styles from "./LightTrack.module.scss";
 import { Button, IconButton } from "./Button";
@@ -9,8 +11,7 @@ import { LightLayer } from '../components/LightLayer';
 import { LightTrack as LightTrackProto } from '@dmx-controller/proto/light_track_pb';
 import { OutputDescription, OutputSelector } from '../components/OutputSelector';
 import { ProjectContext } from "../contexts/ProjectContext";
-import IconBxChevronUp from "../icons/IconBxChevronUp";
-import IconBxChevronDown from "../icons/IconBxChevronDown";
+import { TextInput } from "./Input";
 
 export interface MappingFunctions {
   msToPx: (ms: number) => number;
@@ -56,7 +57,12 @@ export function LightTrack({
     <div className={styles.lightTrack}>
       <div className={styles.left} style={{ width: leftWidth }}>
         <div className={styles.header}>
-          <span>{track.name}</span>
+          <TextInput
+            value={track.name}
+            onChange={(v) => {
+              track.name = v;
+              forceUpdate();
+            }} />
           <IconButton
             title={track.collapsed ? 'Expand' : 'Collapse'}
             onClick={() => {

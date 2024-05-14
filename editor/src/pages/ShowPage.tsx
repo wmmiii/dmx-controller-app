@@ -17,6 +17,7 @@ import { ShortcutContext } from '../contexts/ShortcutContext';
 import { Show, Show_AudioTrack } from '@dmx-controller/proto/show_pb';
 import { UNSET_INDEX, idMapToArray } from '../util/mapUtils';
 import { renderShowToUniverse } from '../engine/universe';
+import { NumberInput, TextInput } from '../components/Input';
 
 const DEFAULT_SHOW = new Show({
   name: 'Untitled Show',
@@ -256,13 +257,12 @@ function Tracks(): JSX.Element {
           </Button>
           <span>
             Subdivide beat&nbsp;
-            <input
+            <NumberInput
               disabled={!snapToBeat}
-              type="number"
-              min="1"
-              max="16"
+              min={1}
+              max={16}
               value={beatSubdivisions}
-              onChange={(e) => setBeatSubdivisions(parseInt(e.target.value))} />
+              onChange={setBeatSubdivisions} />
           </span>
           <div className={styles.spacer}></div>
           <span>
@@ -352,11 +352,10 @@ function Tracks(): JSX.Element {
           <div className={styles.detailsModal}>
             <div>
               Title:&nbsp;
-              <input
-                type="text"
+              <TextInput
                 value={show?.name}
-                onChange={(e) => {
-                  show.name = e.target.value;
+                onChange={(v) => {
+                  show.name = v;
                   save();
                 }} />
             </div>

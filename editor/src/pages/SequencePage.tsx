@@ -20,6 +20,7 @@ import { SerialContext } from '../contexts/SerialContext';
 import { ShortcutContext } from '../contexts/ShortcutContext';
 import { idMapToArray, nextId } from '../util/mapUtils';
 import { renderSequenceToUniverse } from '../engine/universe';
+import { NumberInput, TextInput } from '../components/Input';
 
 export default function SequencePage(): JSX.Element {
   const { setShortcuts } = useContext(ShortcutContext);
@@ -328,25 +329,22 @@ function Tracks({ sequenceId, setSequenceId }: TracksProps): JSX.Element {
           </Button>
           <span>
             Beats&nbsp;
-            <input
-              type="number"
-              min="1"
-              max="128"
+            <NumberInput
+              min={1}
+              max={128}
               value={sequence?.nativeBeats || 1}
-              onChange={(e) => {
-                sequence.nativeBeats = Math.max(parseInt(e.target.value), 1);
+              onChange={(v) => {
+                sequence.nativeBeats = v;
                 save();
               }} />
           </span>
           <span>
             Subdivide beat&nbsp;
-            <input
-              type="number"
-              min="1"
-              max="16"
+            <NumberInput
+              min={1}
+              max={16}
               value={beatSubdivisions}
-              onChange={(e) =>
-                setBeatSubdivisions(Math.max(parseInt(e.target.value), 1))} />
+              onChange={setBeatSubdivisions} />
           </span>
         </div>
       </div>
@@ -397,11 +395,10 @@ function Tracks({ sequenceId, setSequenceId }: TracksProps): JSX.Element {
           <div className={styles.detailsModal}>
             <div>
               Title:&nbsp;
-              <input
-                type="text"
+              <TextInput
                 value={sequence?.name}
-                onChange={(e) => {
-                  sequence.name = e.target.value;
+                onChange={(v) => {
+                  sequence.name = v;
                   save();
                 }} />
             </div>

@@ -1,0 +1,25 @@
+@import '../vars';
+
+.input {
+  background-color: transparent;
+  border: none;
+  border-bottom: 1px solid $col-interactive;
+  border-radius: 0;
+  outline: none;
+
+  &:focus {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+.number-input {
+  max-width: 5em;
+}
+
+.modified {
+  border-bottom-color: $col-interactive-hover;
+}
+
+.parse-error {
+  border-bottom-color: $col-warning;
+}

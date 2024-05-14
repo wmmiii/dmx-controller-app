@@ -26,9 +26,12 @@
     align-items: center;
     display: flex;
     flex-direction: row;
+    gap: spacing(1);
 
     :first-child {
       flex: 1;
+      font-size: 14pt;
+      min-width: 0;
     }
 
     :last-child {

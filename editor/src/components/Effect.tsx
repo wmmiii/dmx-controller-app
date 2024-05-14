@@ -10,6 +10,7 @@ import { CSSProperties } from "react";
 import { DEFAULT_EFFECT_COLOR } from '../util/styleUtils';
 import { Effect as EffectProto, EffectTiming, Effect_RampEffect, Effect_RampEffect_EasingFunction, Effect_StaticEffect, FixtureState, FixtureState as FixtureStateProto, SequenceMapping } from "@dmx-controller/proto/effect_pb";
 import { isFixtureState } from '../engine/effect';
+import { NumberInput } from './Input';
 
 export interface SelectedEffect {
   effect: EffectProto;
@@ -270,13 +271,13 @@ export function EffectDetails({
 
           <label>
             <span>Timing multiplier</span>
-            <input
-              type="number"
-              max="128"
-              min="0"
+            <NumberInput
+              type="float"
+              max={128}
+              min={0}
               value={effect.timingMultiplier || 1}
-              onChange={(e) => {
-                effect.timingMultiplier = parseFloat(e.target.value);
+              onChange={(v) => {
+                effect.timingMultiplier = v;
                 onChange(effect);
               }} />
           </label>

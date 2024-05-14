@@ -16,6 +16,7 @@ import { Modal } from "./Modal";
 import { ShortcutContext } from "../contexts/ShortcutContext";
 import { WAVEFORM_COLOR, WAVEFORM_CURSOR_COLOR, WAVEFORM_PROGRESS_COLOR, WAVEFORM_SAMPLE_RATE } from "../util/styleUtils";
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { NumberInput } from "./Input";
 
 interface BeatEditorProps {
   file: AudioFile;
@@ -280,12 +281,12 @@ export function BeatEditor({ file, onCancel, onSave }: BeatEditorProps):
       <div className={styles.buttonRow}>
         <div>
           <span>Beats per segment</span>
-          <input
-            type="number"
-            step="1"
+          <NumberInput
+            type="integer"
             value={beatsPerDuration}
-            onChange={(e) =>
-              setBeatsPerDuration(Math.max(parseInt(e.target.value), 1))} />
+            onChange={setBeatsPerDuration}
+            min={1}
+            max={128} />
         </div>
       </div>
       <h2>Instructions</h2>

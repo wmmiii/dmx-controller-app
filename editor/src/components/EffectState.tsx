@@ -10,6 +10,7 @@ import { SequenceMapping as SequenceMappingProto, FixtureState as FixtureStatePr
 import { isFixtureState } from '../engine/effect';
 import { sequences } from '../engine/sequence';
 import { idMapToArray } from '../util/mapUtils';
+import { NumberInput } from './Input';
 
 interface EffectStateProps {
   // Only needs to be set if this effect is part of a sequence.
@@ -186,13 +187,13 @@ function FixtureState(
         state.pan != null ?
           <label className={styles.stateRow}>
             <span>Pan</span>
-            <input
-              type="number"
-              max="720"
-              min="-720"
+            <NumberInput
+              type="float"
+              max={720}
+              min={-720}
               value={state.pan}
-              onChange={(e) => {
-                state.pan = parseFloat(e.target.value);
+              onChange={(v) => {
+                state.pan = v;
                 onChange(state);
               }} />&nbsp;
             <IconButton
@@ -220,13 +221,13 @@ function FixtureState(
         state.tilt != null ?
           <label className={styles.stateRow}>
             <span>Tilt</span>
-            <input
-              type="number"
-              max="720"
-              min="-720"
+            <NumberInput
+              type="float"
+              max={720}
+              min={-720}
               value={state.tilt}
-              onChange={(e) => {
-                state.tilt = parseFloat(e.target.value);
+              onChange={(v) => {
+                state.tilt = v;
                 onChange(state);
               }} />&nbsp;
             <IconButton
@@ -254,30 +255,26 @@ function FixtureState(
       {
         state.channels.map((c: FixtureState_Channel, i: number) => (
           <div className={styles.stateRow}>
-            <input
+            <NumberInput
               className={styles.input}
               title="index"
-              type="number"
               value={c.index}
-              onChange={(e) => {
-                c.index = parseInt(e.target.value);
+              onChange={(v) => {
+                c.index = v;
                 onChange(state);
               }}
-              min="0"
-              max="512"
-              step="1" />
-            <input
+              min={0}
+              max={512} />
+            <NumberInput
               className={styles.input}
               title="value"
-              type="number"
               value={c.value}
-              onChange={(e) => {
-                c.value = parseInt(e.target.value);
+              onChange={(v) => {
+                c.value = v;
                 onChange(state);
               }}
-              min="0"
-              max="512"
-              step="1" />
+              min={0}
+              max={512} />
             <IconButton
               title="Remove Channel"
               onClick={() => {
@@ -346,13 +343,13 @@ function SequenceMapping({ sequenceId, sequence, onChange }: SequenceMappingProp
 
       <label>
         <span>Timing multiplier</span>
-        <input
-          type="number"
-          max="128"
-          min="0"
+        <NumberInput
+          type="float"
+          min={0}
+          max={128}
           value={sequence.timingMultiplier || 1}
-          onChange={(e) => {
-            sequence.timingMultiplier = parseFloat(e.target.value);
+          onChange={(v) => {
+            sequence.timingMultiplier = v;
             onChange(sequence);
           }} />
       </label>

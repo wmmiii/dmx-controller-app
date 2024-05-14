@@ -12,6 +12,7 @@ import { ProjectContext } from '../contexts/ProjectContext';
 import { Project_DefaultChannelValues } from '@dmx-controller/proto/project_pb';
 import { idMapToArray, nextId } from '../util/mapUtils';
 import { getApplicableMembers } from '../engine/group';
+import { NumberInput, TextInput } from '../components/Input';
 
 export default function UniversePage(): JSX.Element {
   return (
@@ -168,10 +169,10 @@ function EditFixtureDialog({
       </div>
       <label>
         <span>Name</span>
-        <input
+        <TextInput
           value={fixture.name}
-          onChange={(e) => {
-            fixture.name = e.target.value;
+          onChange={(v) => {
+            fixture.name = v;
             save();
           }} />
       </label>
@@ -196,14 +197,12 @@ function EditFixtureDialog({
       </label>
       <label>
         <span>Channel</span>
-        <input
-          type="number"
+        <NumberInput
           min={0}
           max={512}
-          step={1}
           value={fixture.channelOffset}
-          onChange={(e) => {
-            fixture.channelOffset = parseInt(e.target.value);
+          onChange={(v) => {
+            fixture.channelOffset = v;
             save();
           }} />
       </label>
@@ -257,10 +256,10 @@ function EditGroupDialog({
       </div>
       <label>
         <span>Name</span>
-        <input
+        <TextInput
           value={group.name}
-          onChange={(e) => {
-            group.name = e.target.value;
+          onChange={(v) => {
+            group.name = v;
             save();
           }} />
       </label>
@@ -429,33 +428,30 @@ function EditDefinitionDialog({
       </IconButton>
       <label>
         <span>Name</span>
-        <input
+        <TextInput
           value={definition.name}
-          onChange={(e) => {
-            definition.name = e.target.value;
+          onChange={(v) => {
+            definition.name = v;
             save();
-            e.stopPropagation();
           }} />
       </label>
       <label>
         <span>Manufacturer</span>
-        <input
+        <TextInput
           value={definition.manufacturer}
-          onChange={(e) => {
-            definition.manufacturer = e.target.value;
+          onChange={(v) => {
+            definition.manufacturer = v;
             save();
           }} />
       </label>
       <label>
         <span>Total channels</span>
-        <input
-          type="number"
+        <NumberInput
           min={0}
           max={512}
-          step={1}
           value={definition.numChannels}
-          onChange={(e) => {
-            definition.numChannels = parseInt(e.target.value);
+          onChange={(v) => {
+            definition.numChannels = v;
             save();
           }} />
         {
@@ -469,15 +465,13 @@ function EditDefinitionDialog({
           .sort((a, b) => a[0] - b[0])
           .map(([id, channel]) => (
             <div className={styles.row}>
-              <input
-                type="number"
+              <NumberInput
                 min={0}
                 max={512}
-                step={1}
                 value={id}
-                onChange={(e) => {
+                onChange={(v) => {
                   delete definition.channels[id];
-                  definition.channels[parseInt(e.target.value)] = channel;
+                  definition.channels[v] = channel;
                   save();
                 }} />
               <select
@@ -509,23 +503,23 @@ function EditDefinitionDialog({
                 <>
                   <label>
                     <span>Min deg</span>
-                    <input
-                      type="number"
-                      step={1}
+                    <NumberInput
+                      min={-720}
+                      max={720}
                       value={channel.minDegrees}
-                      onChange={(e) => {
-                        channel.minDegrees = parseInt(e.target.value);
+                      onChange={(v) => {
+                        channel.minDegrees = v;
                         save();
                       }} />
                   </label>
                   <label>
                     <span>Max deg</span>
-                    <input
-                      type="number"
-                      step={1}
+                    <NumberInput
+                      min={-720}
+                      max={720}
                       value={channel.maxDegrees}
-                      onChange={(e) => {
-                        channel.maxDegrees = parseInt(e.target.value);
+                      onChange={(v) => {
+                        channel.maxDegrees = v;
                         save();
                       }} />
                   </label>
@@ -593,10 +587,10 @@ function EditDefaultChannelsDialog({ close }: EditDefaultChannelsDialogProps): J
           return (
             <div className={styles.defaultPreset}>
               <div className={styles.header}>
-                <input
+                <TextInput
                   value={d.name}
-                  onChange={(e) => {
-                    d.name = e.target.value;
+                  onChange={(v) => {
+                    d.name = v;
                     save();
                   }} />
                 <OutputSelector
@@ -628,27 +622,22 @@ function EditDefaultChannelsDialog({ close }: EditDefaultChannelsDialogProps): J
                   .map(([index, value]) => (
                     <div className={styles.row}>
                       Channel:&nbsp;
-                      <input
-                        type="number"
+                      <NumberInput
                         min={0}
                         max={255}
-                        step={1}
                         value={index}
-                        onChange={(e) => {
+                        onChange={(v) => {
                           delete d.channels[index];
-                          d.channels[parseInt(e.target.value)] = value;
+                          d.channels[v] = value;
                           save();
                         }} />
                       Value:&nbsp;
-                      <input
-                        type="number"
+                      <NumberInput
                         min={0}
                         max={255}
-                        step={1}
                         value={value}
-                        onChange={(e) => {
-                          d.channels[index] =
-                            parseInt(e.target.value);
+                        onChange={(v) => {
+                          d.channels[index] = v;
                           save();
                         }} />
                       <IconButton

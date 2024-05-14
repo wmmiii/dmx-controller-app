@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo } from "react";
+import { NumberInput } from "./Input";
 
 interface RangeInputProps {
   className?: string;
@@ -28,10 +29,12 @@ export default function RangeInput(
 
   return (
     <span className={className}>
-      <input
-        type="number"
+      <NumberInput
+        type={max === "1" ? "float" : "integer"}
         value={value}
-        onChange={(e) => set(parseFloat(e.target.value))} />
+        min={0}
+        max={parseInt(max)}
+        onChange={set} />
       <input
         type="range"
         min="0"
