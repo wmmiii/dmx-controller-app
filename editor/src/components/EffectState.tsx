@@ -289,10 +289,13 @@ function FixtureState(
           </div>
         ))
       }
-      <Button onClick={() => state.channels.push(new FixtureState_Channel({
-        index: 0,
-        value: 0,
-      }))}>
+      <Button onClick={() => {
+        state.channels.push(new FixtureState_Channel({
+          index: 0,
+          value: 0,
+        }));
+        onChange(state);
+      }}>
         Add custom channel
       </Button>
     </>
