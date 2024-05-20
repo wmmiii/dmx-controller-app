@@ -80,9 +80,7 @@ export function NumberInput({
 
   const flushValue = useCallback(() => {
     const parsed = Math.max(Math.min(parseValue(input), max), min);
-    console.log('flush', parsed, input);
     if (!isNaN(parsed)) {
-      console.log('on change');
       onChange(parsed);
       setInput(String(parsed));
     } else {

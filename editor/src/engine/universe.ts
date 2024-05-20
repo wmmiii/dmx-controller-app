@@ -19,6 +19,8 @@ export interface RenderContext {
 
 export function renderShowToUniverse(t: number, project: Project):
   DmxUniverse {
+  t += project.timingOffsetMs;
+
   const universe = new Uint8Array(512);
 
   applyDefaults(project, universe);
@@ -53,6 +55,8 @@ export function renderSequenceToUniverse(
   project: Project,
 ):
   DmxUniverse {
+  t += project.timingOffsetMs;
+
   const universe = new Uint8Array(512);
 
   applyDefaults(project, universe);
@@ -114,7 +118,7 @@ function applyEffect(context: RenderContext, effect: Effect): void {
   // Calculate beat
   const beat = context.beatMetadata;
   const virtualBeat = (context.t - beat.offsetMs) *
-      (effect.timingMultiplier || 1);
+    (effect.timingMultiplier || 1);
   const beatIndex = Math.floor(virtualBeat / beat.lengthMs);
   const beatT = ((virtualBeat % beat.lengthMs) / beat.lengthMs) % 1;
 
@@ -156,7 +160,7 @@ function applyEffect(context: RenderContext, effect: Effect): void {
       applyState(effect.effect.value.effect.value, context);
     } else {
       const amountT = (absoluteT - effect.startMs) /
-       (effect.endMs - effect.startMs);
+        (effect.endMs - effect.startMs);
 
       applySequence(
         context,
@@ -168,7 +172,7 @@ function applyEffect(context: RenderContext, effect: Effect): void {
 
   } else if (effect.effect.case === 'rampEffect') {
     const amountT = (absoluteT - effect.startMs) /
-    (effect.endMs - effect.startMs);
+      (effect.endMs - effect.startMs);
 
     rampEffect(
       context,

@@ -18,6 +18,8 @@ import { WAVEFORM_COLOR, WAVEFORM_CURSOR_COLOR, WAVEFORM_PROGRESS_COLOR, WAVEFOR
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { NumberInput } from "./Input";
 
+const MS_PER_MINUTE = 1000 * 60;
+
 interface BeatEditorProps {
   file: AudioFile;
   onCancel: () => void;

@@ -28,7 +28,7 @@ message Project {
 
   // Universe descriptions
   uint32 update_frequency_ms = 11;
-  int32 update_offset_ms = 12;
+  int32 timing_offset_ms = 12;
   map<uint32, FixtureDefinition> fixture_definitions = 13;
   map<uint32, PhysicalFixture> physical_fixtures = 14;
   map<uint32, PhysicalFixtureGroup> physical_fixture_groups = 15;

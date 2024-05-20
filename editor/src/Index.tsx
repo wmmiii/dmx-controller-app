@@ -16,10 +16,11 @@ import { Link } from 'react-router-dom';
 import { ProjectContext } from './contexts/ProjectContext';
 import { Routes, Route } from 'react-router-dom';
 import { SerialContext } from './contexts/SerialContext';
+import { NumberInput } from './components/Input';
 
 export default function Index(): JSX.Element {
   const { port, blackout, setBlackout, connect, disconnect, currentFps } = useContext(SerialContext);
-  const { downloadProject, openProject } = useContext(ProjectContext);
+  const { downloadProject, openProject, project, save } = useContext(ProjectContext);
 
   const uploadButtonRef = createRef<HTMLInputElement>();
 
@@ -46,6 +47,19 @@ export default function Index(): JSX.Element {
         <div className={styles.spacer}></div>
         <div>
           Fps: {currentFps}
+        </div>
+        <div>
+          Offset MS:
+          <NumberInput
+            min={-1000}
+            max={1000}
+            value={project?.timingOffsetMs || 0}
+            onChange={(v) => {
+              if (project) {
+                project.timingOffsetMs = v;
+                save();
+              }
+            }} />
         </div>
         <IconButton title="Blackout" onClick={() => setBlackout(!blackout)}>
           {blackout ? <IconBxBulb /> : <IconBxsBulb />}

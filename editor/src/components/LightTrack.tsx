@@ -25,6 +25,8 @@ interface LightTrackProps {
   leftWidth: number;
   mappingFunctions: MappingFunctions;
   forceUpdate: () => void;
+  swapUp?: () => void;
+  swapDown?: () => void;
 }
 
 export function LightTrack({
@@ -33,6 +35,8 @@ export function LightTrack({
   leftWidth,
   mappingFunctions,
   forceUpdate,
+  swapUp,
+  swapDown,
 }: LightTrackProps):
   JSX.Element {
   const { project } = useContext(ProjectContext);
@@ -101,6 +105,20 @@ export function LightTrack({
               }}>
               <IconBxBrushAlt />
             </IconButton>
+            {
+              swapUp && <IconButton
+                title="Move Up"
+                onClick={swapUp}>
+                <IconBxChevronUp />
+              </IconButton>
+            }
+            {
+              swapDown && <IconButton
+                title="Move Down"
+                onClick={swapDown}>
+                <IconBxChevronUp />
+              </IconButton>
+            }
           </>
         }
       </div>

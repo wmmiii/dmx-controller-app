@@ -323,13 +323,23 @@ function Tracks(): JSX.Element {
         </div>
         <div className={styles.tracks}>
           {
-            show?.lightTracks.map((t: LightTrackProto) => (
+            show?.lightTracks.map((t: LightTrackProto, i) => (
               <LightTrack
                 track={t}
                 maxMs={audioDuration}
                 leftWidth={leftWidth}
                 mappingFunctions={mappingFunctions}
-                forceUpdate={save} />
+                forceUpdate={save}
+                swapUp={
+                  i == 0 ?
+                    undefined :
+                    () => {
+                      const temp = show.lightTracks[i];
+                      show.lightTracks[i] = show.lightTracks[i - 1];
+                      show.lightTracks[i - 1] = temp;
+                      save();
+                    }
+                } />
             ))
           }
           <div className={styles.newOutput} style={{ width: leftWidth }}>
