@@ -17,6 +17,7 @@ import { ProjectContext } from './contexts/ProjectContext';
 import { Routes, Route } from 'react-router-dom';
 import { SerialContext } from './contexts/SerialContext';
 import { NumberInput } from './components/Input';
+import { LivePage } from './pages/LivePage';
 
 export default function Index(): JSX.Element {
   const { port, blackout, setBlackout, connect, disconnect, currentFps } = useContext(SerialContext);
@@ -41,6 +42,7 @@ export default function Index(): JSX.Element {
     <div className={styles.wrapper}>
       <header>
         <Link to="/show">Show</Link>
+        <Link to="/live">Live</Link>
         <Link to="/assets">Assets</Link>
         <Link to="/sequence">Sequence</Link>
         <Link to="/universe">Universe</Link>
@@ -87,6 +89,7 @@ export default function Index(): JSX.Element {
         <Routes>
           <Route path="/" element={<ShowPage />} />
           <Route path="/show" element={<ShowPage />} />
+          <Route path="/live" element={<LivePage />} />
           <Route path="/assets" element={<AssetBrowserPage />} />
           <Route path="/sequence" element={<SequencePage />} />
           <Route path="/universe" element={<UniversePage />} />

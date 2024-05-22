@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package dmx_controller;
+
+import "proto/light_track.proto";
+
+// A scene is a part of a live show that composes components together to form
+// the final output of the universe.
+message Scene {
+
+  // A component is a part of a scene that can be enabled or disabled and
+  // applies state to the universe.
+  message Component {
+
+    enum Timing {
+      UNKNOWN = 0;
+
+      // The component will loop continuously when enabled.
+      LOOP = 1;
+
+      // The component will play once when enabled then will become disabled
+      // again.
+      ONE_SHOT = 2;
+
+      // The component will loop continuously when enabled and will immediatly
+      // disable itself once the user is no longer activating it.
+      HOLD = 3;
+    }
+
+    string name = 1;
+    uint32 num_beats = 2;
+    Timing timing = 3;
+    reserved 4 to 10;
+
+    repeated LightTrack light_tracks = 11;
+  }
+
+  string name = 1;
+  reserved 2 to 10;
+
+  repeated Component components = 11;
+}

@@ -1,0 +1,24 @@
+@import '../vars';
+
+.wrapper {
+  @include fill;
+}
+
+.no-scene-selected {
+  @include fill;
+
+  align-items: center;
+  display: flex;
+  justify-content: center;
+}
+
+.scene-pane {
+  @include fill;
+
+  display: flex;
+  flex-direction: column;
+
+  .header {
+    flex-shrink: 0;
+  }
+}

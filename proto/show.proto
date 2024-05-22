@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package dmx_controller;
 
-import "proto/effect.proto";
 import "proto/light_track.proto";
 
 message Show {
