@@ -17,6 +17,8 @@ import { NumberInput } from './Input';
 import { AudioFile_BeatMetadata } from '@dmx-controller/proto/audio_pb';
 
 
+export const LEFT_WIDTH = 180;
+
 export default function LightTimeline(props: TracksProps): JSX.Element {
   const { setShortcuts } = useContext(ShortcutContext);
   const [selectedEffect, setSelectedEffect] = useState<SelectedEffect | null>(null);
@@ -57,52 +59,114 @@ export default function LightTimeline(props: TracksProps): JSX.Element {
 
 interface TracksProps {
   audioBlob: Blob;
+  audioDuration: number;
+  setAudioDuration: (duration: number) => void;
   beatMetadata: AudioFile_BeatMetadata;
+  beatSubdivisions: number;
+  setBeatSubdivisions: (subdivisions: number) => void;
   headerOptions: JSX.Element;
+  headerControls?: JSX.Element;
   leftOptions: JSX.Element;
   lightTracks: LightTrackProto[];
   save: () => void;
   swap?: (a: number, b: number) => void;
   addLayer?: () => void;
+  panelRef: React.MutableRefObject<HTMLDivElement>;
+  audioToTrack?: (t: number) => number;
   t: React.MutableRefObject<number>;
 }
 
 function Tracks({
   audioBlob,
+  audioDuration,
+  setAudioDuration,
   beatMetadata,
+  beatSubdivisions,
+  setBeatSubdivisions,
   headerOptions,
+  headerControls,
   leftOptions,
   lightTracks,
   save,
   swap,
   addLayer,
+  panelRef,
+  audioToTrack,
   t,
 }: TracksProps): JSX.Element {
   const { setShortcuts } = useContext(ShortcutContext);
 
-  const panelRef = useRef<HTMLDivElement>();
-
+  const [visible, setVisible] = useState({ startMs: 0, endMs: 1000 });
   const [playing, setPlaying] = useState(false);
   const audioController = useRef<AudioController>();
   const [tState, setTState] = useState(0);
 
-  const [leftWidth, _setLeftWidth] = useState(180);
-  const [visible, setVisible] = useState({ startMs: 0, endMs: 1000 });
   const setVisibleCallback = useCallback(
     (startMs: number, endMs: number) => setVisible({ startMs, endMs }),
     [setVisible]);
   const [minPxPerSec, setMinPxPerSec] = useState(16);
   const [snapToBeat, setSnapToBeat] = useState(true);
-  const [beatSubdivisions, setBeatSubdivisions] = useState(1);
-  const [audioDuration, setAudioDuration] = useState(1);
 
   const setAudioController = useCallback(
     (c: AudioController) => audioController.current = c,
     [audioController]);
   const setT = useCallback((ts: number) => {
+    if (audioToTrack) {
+      ts = audioToTrack(ts);
+    }
     t.current = ts;
     setTState(ts);
-  }, [t]);
+  }, [t, audioToTrack]);
+
+
+  const nearestBeat = useCallback((t: number) => {
+    if (beatMetadata) {
+      const lengthMs = beatMetadata.lengthMs / beatSubdivisions;
+      const beatNumber = Math.round((t - beatMetadata.offsetMs) / lengthMs);
+      return Math.floor(beatMetadata.offsetMs + beatNumber * lengthMs);
+    }
+    return undefined;
+  }, [beatMetadata, beatSubdivisions]);
+
+  const mappingFunctions: MappingFunctions = useMemo(() => {
+    let msToPx = (_ms: number) => 0;
+    let pxToMs = (_px: number) => 0;
+    let snapToBeat = (_t: number) => 0;
+
+    if (panelRef.current) {
+      const startT = audioToTrack ? audioToTrack(visible.startMs) : visible.startMs;
+      const endT = audioToTrack ? audioToTrack(visible.endMs) : visible.endMs;
+      const bounding = panelRef.current.getBoundingClientRect();
+      const width = panelRef.current.getBoundingClientRect().width - LEFT_WIDTH;
+      const left = bounding.left + LEFT_WIDTH;
+
+      msToPx = (ms: number) => {
+        return ((ms - startT) * width) /
+          (endT - startT);
+      };
+
+      pxToMs = (px: number) => {
+        return Math.floor(((px - left) / width) *
+          (endT - startT) + startT);
+      };
+
+      const beatSnapRangeMs = Math.floor(10 * (endT - startT) / width);
+
+      snapToBeat = (t: number) => {
+        const beat = nearestBeat(t);
+        if (Math.abs(beat - t) < beatSnapRangeMs) {
+          return beat;
+        }
+        return t;
+      };
+    }
+
+    return {
+      msToPx,
+      pxToMs,
+      snapToBeat,
+    };
+  }, [visible, panelRef, nearestBeat, audioToTrack]);
 
   useEffect(() => setShortcuts([
     {
@@ -127,60 +191,12 @@ function Tracks({
     beatNumber = undefined;
   }
 
-  const nearestBeat = useCallback((t: number) => {
-    if (beatMetadata) {
-      const lengthMs = beatMetadata.lengthMs / beatSubdivisions;
-      const beatNumber = Math.round((t - beatMetadata.offsetMs) / lengthMs);
-      return Math.floor(beatMetadata.offsetMs + beatNumber * lengthMs);
-    }
-    return undefined;
-  }, [beatMetadata, beatSubdivisions]);
-
-  const mappingFunctions: MappingFunctions = useMemo(() => {
-    let msToPx = (_ms: number) => 0;
-    let pxToMs = (_px: number) => 0;
-    let snapToBeat = (_t: number) => 0;
-
-    if (panelRef.current) {
-      const bounding = panelRef.current.getBoundingClientRect();
-      const width = panelRef.current.getBoundingClientRect().width - leftWidth;
-      const left = bounding.left + leftWidth;
-
-      msToPx = (ms: number) => {
-        return ((ms - visible.startMs) * width) /
-          (visible.endMs - visible.startMs);
-      };
-
-      pxToMs = (px: number) => {
-        return Math.floor(((px - left) / width) *
-          (visible.endMs - visible.startMs) + visible.startMs);
-      };
-
-      const beatSnapRangeMs =
-        Math.floor(10 * (visible.endMs - visible.startMs) / width);
-
-      snapToBeat = (t: number) => {
-        const beat = nearestBeat(t);
-        if (Math.abs(beat - t) < beatSnapRangeMs) {
-          return beat;
-        }
-        return t;
-      };
-    }
-
-    return {
-      msToPx,
-      pxToMs,
-      snapToBeat,
-    };
-  }, [visible, panelRef, leftWidth, nearestBeat]);
-
   return (
     <div
       ref={panelRef}
       className={styles.trackContainer}>
       <div className={styles.timelineOptions}>
-        <div className={styles.meta} style={{ width: leftWidth }}>
+        <div className={styles.meta} style={{ width: LEFT_WIDTH }}>
           {headerOptions}
         </div>
         <div className={styles.right}>
@@ -200,6 +216,7 @@ function Tracks({
             onClick={() => setSnapToBeat(!snapToBeat)}>
             Snap to Beat
           </Button>
+          {headerControls}
           <span>
             Subdivide beat&nbsp;
             <NumberInput
@@ -222,7 +239,7 @@ function Tracks({
         </div>
       </div>
       <div className={styles.audioVisualizer}>
-        <div className={styles.meta} style={{ width: leftWidth }}>
+        <div className={styles.meta} style={{ width: LEFT_WIDTH }}>
           {leftOptions}
         </div>
         <AudioTrackVisualizer
@@ -240,7 +257,7 @@ function Tracks({
       <div className={styles.lightTracks}>
         <div
           className={styles.cursor}
-          style={{ left: mappingFunctions.msToPx(tState) + leftWidth }}>
+          style={{ left: mappingFunctions.msToPx(tState) + LEFT_WIDTH }}>
         </div>
         <div className={styles.tracks}>
           {
@@ -248,7 +265,7 @@ function Tracks({
               <LightTrack
                 track={t}
                 maxMs={audioDuration}
-                leftWidth={leftWidth}
+                leftWidth={LEFT_WIDTH}
                 mappingFunctions={mappingFunctions}
                 forceUpdate={save}
                 swapUp={
@@ -261,7 +278,7 @@ function Tracks({
                 } />
             ))
           }
-          <div className={styles.newOutput} style={{ width: leftWidth }}>
+          <div className={styles.newOutput} style={{ width: LEFT_WIDTH }}>
             {
               addLayer &&
               <Button onClick={addLayer}>

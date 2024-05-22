@@ -1,5 +1,6 @@
-import React, { JSX, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { JSX, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
+import LightTimeline from '../components/LightTimeline';
 import styles from "./ShowPage.module.scss";
 import { Button } from '../components/Button';
 import { LightTrack as LightTrackProto } from '@dmx-controller/proto/light_track_pb';
@@ -7,10 +8,9 @@ import { Modal } from '../components/Modal';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { SerialContext } from '../contexts/SerialContext';
 import { Show, Show_AudioTrack } from '@dmx-controller/proto/show_pb';
+import { TextInput } from '../components/Input';
 import { UNSET_INDEX, idMapToArray } from '../util/mapUtils';
 import { renderShowToUniverse } from '../engine/universe';
-import { TextInput } from '../components/Input';
-import LightTimeline from '../components/LightTimeline';
 
 const DEFAULT_SHOW = new Show({
   name: 'Untitled Show',
@@ -33,11 +33,15 @@ const DEFAULT_SHOW = new Show({
   ],
 });
 
-export default function showPage(): JSX.Element {
+export default function ShowPage(): JSX.Element {
   const { project, save } = useContext(ProjectContext);
   const { setRenderUniverse, clearRenderUniverse } = useContext(SerialContext);
 
+  const panelRef = useRef<HTMLDivElement>();
+
   let t = useRef<number>(0);
+  const [audioDuration, setAudioDuration] = useState(1);
+  const [beatSubdivisions, setBeatSubdivisions] = useState(1);
 
   const [showDetailsModal, setShowDetailsModal] = useState(false);
 
@@ -69,17 +73,19 @@ export default function showPage(): JSX.Element {
 
   const beatMetadata = audioFile?.beatMetadata;
 
-  if (show == null) {
-    return (
-      <>Loading...</>
-    );
+  if (!show) {
+    return <>Loading...</>;
   }
 
   return (
     <>
       <LightTimeline
         audioBlob={audioBlob}
+        audioDuration={audioDuration}
+        setAudioDuration={setAudioDuration}
         beatMetadata={beatMetadata}
+        beatSubdivisions={beatSubdivisions}
+        setBeatSubdivisions={setBeatSubdivisions}
         headerOptions={
           <>
             Show:
@@ -149,6 +155,7 @@ export default function showPage(): JSX.Element {
           }));
           save();
         }}
+        panelRef={panelRef}
         t={t} />
       {
         showDetailsModal &&

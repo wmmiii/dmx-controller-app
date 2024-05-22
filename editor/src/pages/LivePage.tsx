@@ -60,6 +60,7 @@ function ScenePane(): JSX.Element {
 
   return (
     <div className={styles.scenePane}>
+      
     </div>
   );
 }
