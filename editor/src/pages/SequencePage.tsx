@@ -1,6 +1,5 @@
 import React, { JSX, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
-import Crunker from 'crunker';
 import LightTimeline from '../components/LightTimeline';
 import styles from "./SequencePage.module.scss";
 import { AudioFile_BeatMetadata } from '@dmx-controller/proto/audio_pb';
@@ -14,6 +13,7 @@ import { Sequence } from '@dmx-controller/proto/sequence_pb';
 import { SerialContext } from '../contexts/SerialContext';
 import { idMapToArray, nextId } from '../util/mapUtils';
 import { renderSequenceToUniverse } from '../engine/universe';
+import { getAudioBlob } from '../util/metronome';
 
 export default function newSequencePage(): JSX.Element {
   const { project, save } = useContext(ProjectContext);
@@ -40,31 +40,12 @@ export default function newSequencePage(): JSX.Element {
       (audioDuration || 1),
       [beats, audioDuration]);
 
-  const audioSegments = useMemo(() => {
-    return new Crunker().fetchAudio('/static/tick.mp3', '/static/tock.mp3')
-  }, []);
-
   useEffect(() => {
     if (beats) {
-      (async () => {
-        const crunker = new Crunker();
-        const [tickBuffer, tockBuffer] = await audioSegments;
-
-        const segments = [];
-        for (let b = 0; b < beats; ++b) {
-          segments.push(tickBuffer);
-          for (let s = 1; s < beatSubdivisions; ++s) {
-            segments.push(tockBuffer);
-          }
-        }
-
-        const concatenated = await crunker.concatAudio(segments);
-        const exported = await crunker.export(concatenated, 'audio/mpeg');
-
-        setAudioBlob(exported.blob);
-      })();
+      getAudioBlob(beats, beatSubdivisions)
+        .then(setAudioBlob);
     }
-  }, [audioSegments, beats, beatSubdivisions]);
+  }, [beats, beatSubdivisions]);
 
   const beatMetadata = useMemo(() => {
     return new AudioFile_BeatMetadata({
@@ -134,6 +115,7 @@ export default function newSequencePage(): JSX.Element {
         audioBlob={audioBlob}
         audioDuration={audioDuration}
         setAudioDuration={setAudioDuration}
+        loop={true}
         beatMetadata={beatMetadata}
         beatSubdivisions={beatSubdivisions}
         setBeatSubdivisions={setBeatSubdivisions}

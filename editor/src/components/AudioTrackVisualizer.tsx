@@ -116,10 +116,14 @@ export function AudioTrackVisualizer({
   // Add loop callback.
   useEffect(() => {
     if (ws && loop) {
-      const callback = () => ws.play();
-      ws.on('finish', callback);
+      const callback = (t: number) => {
+        if (ws.getDuration() - t < 0.1) {
+          ws.setTime(0);
+        }
+      }
+      ws.on('timeupdate', callback);
 
-      () => ws.un('finish', callback);
+      () => ws.un('timeupdate', callback);
     }
   }, [ws, loop]);
 

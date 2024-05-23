@@ -61,6 +61,7 @@ interface TracksProps {
   audioBlob: Blob;
   audioDuration: number;
   setAudioDuration: (duration: number) => void;
+  loop?: boolean;
   beatMetadata: AudioFile_BeatMetadata;
   beatSubdivisions: number;
   setBeatSubdivisions: (subdivisions: number) => void;
@@ -80,6 +81,7 @@ function Tracks({
   audioBlob,
   audioDuration,
   setAudioDuration,
+  loop,
   beatMetadata,
   beatSubdivisions,
   setBeatSubdivisions,
@@ -252,7 +254,8 @@ function Tracks({
           setTotalDuration={setAudioDuration}
           minPxPerSec={minPxPerSec}
           beatSubdivisions={beatSubdivisions}
-          onProgress={setT} />
+          onProgress={setT}
+          loop={loop} />
       </div>
       <div className={styles.lightTracks}>
         <div
