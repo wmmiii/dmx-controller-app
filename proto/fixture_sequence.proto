@@ -4,7 +4,7 @@ package dmx_controller;
 
 import "proto/light_layer.proto";
 
-message Sequence {
+message FixtureSequence {
   string name = 1;
   uint32 native_beats = 2;
 

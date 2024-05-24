@@ -6,28 +6,28 @@ import RangeInput from './RangeInput';
 import styles from './EffectState.module.scss';
 import { Button, IconButton } from './Button';
 import { ProjectContext } from '../contexts/ProjectContext';
-import { SequenceMapping as SequenceMappingProto, FixtureState as FixtureStateProto, FixtureState_Channel, RGB, RGBW, EffectTiming } from "@dmx-controller/proto/effect_pb";
+import { FixtureSequenceMapping as FixtureSequenceMappingProto, FixtureState as FixtureStateProto, FixtureState_Channel, RGB, RGBW, EffectTiming } from "@dmx-controller/proto/effect_pb";
 import { isFixtureState } from '../engine/effect';
-import { sequences } from '../engine/sequence';
+import { fixtureSequences } from '../engine/fixtureSequence';
 import { idMapToArray } from '../util/mapUtils';
 import { NumberInput } from './Input';
 
 interface EffectStateProps {
-  // Only needs to be set if this effect is part of a sequence.
-  sequenceId?: number;
-  effect: FixtureStateProto | SequenceMappingProto;
-  onChange: (effect: FixtureStateProto | SequenceMappingProto) => void;
+  // Only needs to be set if this effect is part of a fixtureSequence.
+  fixtureSequenceId?: number;
+  effect: FixtureStateProto | FixtureSequenceMappingProto;
+  onChange: (effect: FixtureStateProto | FixtureSequenceMappingProto) => void;
 }
 
-export default function EffectState({ sequenceId, effect, onChange }: EffectStateProps):
+export default function EffectState({ fixtureSequenceId, effect, onChange }: EffectStateProps):
   JSX.Element {
   let details: JSX.Element;
   if (isFixtureState(effect)) {
     details = <FixtureState state={effect} onChange={onChange} />;
   } else {
-    details = <SequenceMapping
-      sequenceId={sequenceId}
-      sequence={effect}
+    details = <FixtureSequenceMapping
+      fixtureSequenceId={fixtureSequenceId}
+      fixtureSequence={effect}
       onChange={onChange} />;
   }
   return (
@@ -40,8 +40,8 @@ export default function EffectState({ sequenceId, effect, onChange }: EffectStat
             if (e.target.value === 'true') {
               onChange(new FixtureStateProto({}));
             } else {
-              onChange(new SequenceMappingProto({
-                sequenceId: 0,
+              onChange(new FixtureSequenceMappingProto({
+                fixtureSequenceId: 0,
                 timingMode: EffectTiming.BEAT,
                 offsetMs: 0,
                 timingMultiplier: 1,
@@ -300,12 +300,12 @@ function FixtureState(
 }
 
 interface SequenceMappingProps {
-  sequenceId?: number;
-  sequence: SequenceMappingProto;
-  onChange: (sequence: SequenceMappingProto) => void;
+  fixtureSequenceId?: number;
+  fixtureSequence: FixtureSequenceMappingProto;
+  onChange: (fixtureSequence: FixtureSequenceMappingProto) => void;
 }
 
-function SequenceMapping({ sequenceId, sequence, onChange }: SequenceMappingProps): JSX.Element {
+function FixtureSequenceMapping({ fixtureSequenceId, fixtureSequence, onChange }: SequenceMappingProps): JSX.Element {
   const { project } = useContext(ProjectContext);
 
   return (
@@ -313,14 +313,14 @@ function SequenceMapping({ sequenceId, sequence, onChange }: SequenceMappingProp
       <label>
         <span>Sequence</span>
         <select
-          value={sequence.sequenceId}
+          value={fixtureSequence.fixtureSequenceId}
           onChange={(e) => {
-            sequence.sequenceId = parseInt(e.target.value);
-            onChange(sequence);
+            fixtureSequence.fixtureSequenceId = parseInt(e.target.value);
+            onChange(fixtureSequence);
           }}>
           <option value={0}>&lt;Unset&gt;</option>
           {
-            idMapToArray(sequences(project, sequenceId))
+            idMapToArray(fixtureSequences(project, fixtureSequenceId))
               .map(([id, s]) => (
                 <option value={id}>{s.name}</option>
               ))
@@ -331,10 +331,10 @@ function SequenceMapping({ sequenceId, sequence, onChange }: SequenceMappingProp
       <label>
         <span>Sequence Timing</span>
         <select
-          value={sequence.timingMode}
+          value={fixtureSequence.timingMode}
           onChange={(e) => {
-            sequence.timingMode = parseInt(e.target.value);
-            onChange(sequence);
+            fixtureSequence.timingMode = parseInt(e.target.value);
+            onChange(fixtureSequence);
           }}>
           <option value={EffectTiming.ONE_SHOT}>One Shot</option>
           <option value={EffectTiming.BEAT}>Beat</option>
@@ -347,10 +347,10 @@ function SequenceMapping({ sequenceId, sequence, onChange }: SequenceMappingProp
           type="float"
           min={0}
           max={128}
-          value={sequence.timingMultiplier || 1}
+          value={fixtureSequence.timingMultiplier || 1}
           onChange={(v) => {
-            sequence.timingMultiplier = v;
-            onChange(sequence);
+            fixtureSequence.timingMultiplier = v;
+            onChange(fixtureSequence);
           }} />
       </label>
     </>

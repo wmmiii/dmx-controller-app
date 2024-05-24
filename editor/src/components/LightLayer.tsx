@@ -19,7 +19,7 @@ interface LightLayerProps {
   msToPx: (ms: number) => number;
   pxToMs: (px: number) => number;
   snapToBeat: (t: number) => number;
-  forceUpdate: () => void;
+  save: () => void;
 }
 
 export function LightLayer({
@@ -29,7 +29,7 @@ export function LightLayer({
   msToPx,
   pxToMs,
   snapToBeat,
-  forceUpdate,
+  save,
 }: LightLayerProps): JSX.Element {
   const [newEffect, setNewEffect] = useState<NewEffect | null>(null);
 
@@ -92,7 +92,7 @@ export function LightLayer({
                   case: 'staticEffect',
                 },
               }));
-              forceUpdate();
+              save();
               setNewEffect(null);
             }}>
           </div>
@@ -111,12 +111,11 @@ export function LightLayer({
           maxMs={layer.effects[i + 1]?.startMs || maxMs}
           pxToMs={pxToMs}
           snapToBeat={snapToBeat}
-          save={() => forceUpdate()}
+          save={() => save()}
           onDelete={() => {
             layer.effects.splice(i, 1);
-            forceUpdate();
-          }}
-          forceUpdate={forceUpdate} />
+            save();
+          }} />
       ))}
     </div>
   );

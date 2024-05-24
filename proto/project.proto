@@ -4,7 +4,7 @@ package dmx_controller;
 
 import "proto/audio.proto";
 import "proto/fixture.proto";
-import "proto/sequence.proto";
+import "proto/fixture_sequence.proto";
 import "proto/scene.proto";
 import "proto/show.proto";
 
@@ -41,10 +41,10 @@ message Project {
   repeated Show shows = 31;
   int32 selected_show = 32;
 
-  // Sequence 0 is reserved for the "unset" sequence.
-  map<uint32, Sequence> sequences = 41;
+  // Fixture sequence 0 is reserved for the "unset" sequence.
+  map<uint32, FixtureSequence> fixture_sequences = 41;
 
-  // Sequence 0 is reserved for the "unset" sequence.
+  // Scene 0 is reserved for the "unset" scene.
   repeated Scene scenes = 51;
   uint32 active_scene = 52;
 }

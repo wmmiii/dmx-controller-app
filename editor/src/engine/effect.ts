@@ -1,8 +1,8 @@
-import { FixtureState, SequenceMapping } from "@dmx-controller/proto/effect_pb";
+import { FixtureState, FixtureSequenceMapping } from "@dmx-controller/proto/effect_pb";
 import { RenderContext, getDevice } from "./universe";
 
-export function isFixtureState(effect: FixtureState | SequenceMapping): effect is FixtureState {
-  return !('sequenceId' in effect);
+export function isFixtureState(effect: FixtureState | FixtureSequenceMapping): effect is FixtureState {
+  return !('fixtureSequenceId' in effect);
 }
 
 export function applyState(state: FixtureState, context: RenderContext): void {

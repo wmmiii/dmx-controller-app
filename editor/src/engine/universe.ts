@@ -4,7 +4,7 @@ import { Effect, EffectTiming } from "@dmx-controller/proto/effect_pb";
 import { LightLayer } from "@dmx-controller/proto/light_layer_pb";
 import { LightTrack } from "@dmx-controller/proto/light_track_pb";
 import { Project } from "@dmx-controller/proto/project_pb";
-import { applySequence } from "./sequence";
+import { applyFixtureSequence } from "./fixtureSequence";
 import { applyState } from "./effect";
 import { idMapToArray } from "../util/mapUtils";
 import { rampEffect } from "./rampEffect";
@@ -49,7 +49,7 @@ export function renderShowToUniverse(t: number, project: Project):
 
 export function renderSequenceToUniverse(
   t: number,
-  sequenceId: number,
+  fixtureSequenceId: number,
   beatMetadata: AudioFile_BeatMetadata,
   output: LightTrack['output'],
   project: Project,
@@ -61,9 +61,9 @@ export function renderSequenceToUniverse(
 
   applyDefaults(project, universe);
 
-  const sequence = project.sequences[sequenceId];
+  const fixtureSequence = project.fixtureSequences[fixtureSequenceId];
 
-  if (sequence) {
+  if (fixtureSequence) {
     const context: RenderContext = {
       t: t,
       beatMetadata: beatMetadata,
@@ -72,7 +72,7 @@ export function renderSequenceToUniverse(
       universe: universe,
     };
 
-    renderLayersToUniverse(t, sequence.layers, context);
+    renderLayersToUniverse(t, fixtureSequence.layers, context);
   }
 
   return universe;
@@ -162,7 +162,7 @@ function applyEffect(context: RenderContext, effect: Effect): void {
       const amountT = (absoluteT - effect.startMs) /
         (effect.endMs - effect.startMs);
 
-      applySequence(
+      applyFixtureSequence(
         context,
         effect.effect.value.effect.value,
         amountT,

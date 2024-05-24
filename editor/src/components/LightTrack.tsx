@@ -24,7 +24,7 @@ interface LightTrackProps {
   maxMs: number;
   leftWidth: number;
   mappingFunctions: MappingFunctions;
-  forceUpdate: () => void;
+  save: () => void;
   swapUp?: () => void;
   swapDown?: () => void;
 }
@@ -34,7 +34,7 @@ export function LightTrack({
   maxMs,
   leftWidth,
   mappingFunctions,
-  forceUpdate,
+  save,
   swapUp,
   swapDown,
 }: LightTrackProps):
@@ -65,13 +65,13 @@ export function LightTrack({
             value={track.name}
             onChange={(v) => {
               track.name = v;
-              forceUpdate();
+              save();
             }} />
           <IconButton
             title={track.collapsed ? 'Expand' : 'Collapse'}
             onClick={() => {
               track.collapsed = !track.collapsed;
-              forceUpdate();
+              save();
             }}>
             {
               track.collapsed ?
@@ -95,13 +95,13 @@ export function LightTrack({
                     break;
                 }
                 track.output.value = o.id;
-                forceUpdate();
+                save();
               }} />
             <IconButton
               title="Cleanup Empty Layers"
               onClick={() => {
                 track.layers = track.layers.filter((l) => l.effects.length > 0);
-                forceUpdate();
+                save();
               }}>
               <IconBxBrushAlt />
             </IconButton>
@@ -127,7 +127,7 @@ export function LightTrack({
         className={styles.right}
         onClick={() => {
           track.collapsed = false;
-          forceUpdate();
+          save();
         }}>
         {
           track.layers.map((l, i) => (
@@ -139,7 +139,7 @@ export function LightTrack({
               msToPx={mappingFunctions.msToPx}
               pxToMs={mappingFunctions.pxToMs}
               snapToBeat={mappingFunctions.snapToBeat}
-              forceUpdate={forceUpdate} />
+              save={save} />
           ))
         }
         {
@@ -149,7 +149,7 @@ export function LightTrack({
               icon={<IconBxPlus />}
               onClick={() => {
                 track.layers.push(new LightLayerProto());
-                forceUpdate();
+                save();
               }}>
               New Layer
             </Button>

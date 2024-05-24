@@ -117,7 +117,7 @@ export function AudioTrackVisualizer({
   useEffect(() => {
     if (ws && loop) {
       const callback = (t: number) => {
-        if (ws.getDuration() - t < 0.1) {
+        if (ws.getDuration() - t < 0.14) {
           ws.setTime(0);
         }
       }

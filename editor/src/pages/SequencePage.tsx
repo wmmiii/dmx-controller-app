@@ -8,8 +8,8 @@ import { LightTrack as LightTrackProto } from '@dmx-controller/proto/light_track
 import { Modal } from '../components/Modal';
 import { NumberInput, TextInput } from '../components/Input';
 import { ProjectContext } from '../contexts/ProjectContext';
-import { SEQUENCE_BEAT_RESOLUTION, deleteSequence } from '../engine/sequence';
-import { Sequence } from '@dmx-controller/proto/sequence_pb';
+import { SEQUENCE_BEAT_RESOLUTION, deleteSequence } from '../engine/fixtureSequence';
+import { FixtureSequence } from '@dmx-controller/proto/fixture_sequence_pb';
 import { SerialContext } from '../contexts/SerialContext';
 import { idMapToArray, nextId } from '../util/mapUtils';
 import { renderSequenceToUniverse } from '../engine/universe';
@@ -21,7 +21,7 @@ export default function newSequencePage(): JSX.Element {
 
   const panelRef = useRef<HTMLDivElement>();
 
-  const [sequenceId, setSequenceId] = useState(-1);
+  const [fixtureSequenceId, setSequenceId] = useState(-1);
   const [sequenceDetailsModal, setSequenceDetailsModal] = useState(false);
 
   const t = useRef<number>(0);
@@ -30,8 +30,8 @@ export default function newSequencePage(): JSX.Element {
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [audioDuration, setAudioDuration] = useState<number>(SEQUENCE_BEAT_RESOLUTION);
 
-  const sequence: Sequence = project?.sequences[sequenceId];
-  const beats = sequence?.nativeBeats;
+  const fixtureSequence: FixtureSequence = project?.fixtureSequences[fixtureSequenceId];
+  const beats = fixtureSequence?.nativeBeats;
 
   const wsMsToSequenceMs = useCallback
     ((ms: number) => ms *
@@ -49,27 +49,27 @@ export default function newSequencePage(): JSX.Element {
 
   const beatMetadata = useMemo(() => {
     return new AudioFile_BeatMetadata({
-      lengthMs: (audioDuration || 600) / (sequence?.nativeBeats || 1),
+      lengthMs: (audioDuration || 600) / (fixtureSequence?.nativeBeats || 1),
       offsetMs: 0,
     });
-  }, [sequence, beatSubdivisions, audioDuration]);
+  }, [fixtureSequence, beatSubdivisions, audioDuration]);
 
   const virtualTracks = useMemo(() => {
-    if (sequence) {
-      return [
-        new LightTrackProto({
-          name: 'Sequence',
-          output: {
-            value: 1,
-            case: 'physicalFixtureId',
-          },
-          layers: sequence.layers,
-        })
-      ];
+    if (fixtureSequence?.layers) {
+      const virtualTrack = new LightTrackProto({
+        name: 'Sqeuence',
+        output: {
+          value: 1,
+          case: 'physicalFixtureId',
+        },
+      });
+      // We need a shallow copy of the array so it can be modified.
+      virtualTrack.layers = fixtureSequence.layers;
+      return [virtualTrack];
     } else {
       return [];
     }
-  }, [sequence]);
+  }, [fixtureSequence?.layers]);
 
   useEffect(() => {
     if (!project) {
@@ -78,7 +78,7 @@ export default function newSequencePage(): JSX.Element {
 
     const render = () => renderSequenceToUniverse(
       t.current,
-      sequenceId,
+      fixtureSequenceId,
       beatMetadata,
       virtualTracks[0].output,
       project,
@@ -86,18 +86,18 @@ export default function newSequencePage(): JSX.Element {
     setRenderUniverse(render);
 
     return () => clearRenderUniverse(render);
-  }, [project, t, sequenceId, beatMetadata, virtualTracks]);
+  }, [project, t, fixtureSequenceId, beatMetadata, virtualTracks]);
 
-  // Initialize default sequence.
+  // Initialize default fixtureSequence.
   useEffect(() => {
-    if (sequenceId === -1 && project) {
-      const firstKey = Object.keys(project?.sequences)[0];
+    if (fixtureSequenceId === -1 && project) {
+      const firstKey = Object.keys(project?.fixtureSequences)[0];
       if (firstKey) {
         setSequenceId(parseInt(firstKey));
       } else {
-        // Sequence 0 is reserved for the "unset" sequence.
-        project.sequences[1] = new Sequence({
-          name: 'Untitled Sequence',
+        // FixtureSequence 0 is reserved for the "unset" fixtureSequence.
+        project.fixtureSequences[1] = new FixtureSequence({
+          name: 'Untitled FixtureSequence',
           nativeBeats: 1,
           layers: [{
             effects: [],
@@ -107,7 +107,7 @@ export default function newSequencePage(): JSX.Element {
         setSequenceId(0);
       }
     }
-  }, [project, sequenceId]);
+  }, [project, fixtureSequenceId]);
 
   return (
     <>
@@ -121,14 +121,14 @@ export default function newSequencePage(): JSX.Element {
         setBeatSubdivisions={setBeatSubdivisions}
         headerOptions={
           <>
-            Sequence:
+            FixtureSequence:
             <br />
             <select
               onChange={(e) => {
                 if (e.target.value === '-1') {
-                  const newId = nextId(project.sequences);
-                  project.sequences[newId] = new Sequence({
-                    name: 'Untitled Sequence',
+                  const newId = nextId(project.fixtureSequences);
+                  project.fixtureSequences[newId] = new FixtureSequence({
+                    name: 'Untitled FixtureSequence',
                     nativeBeats: 1,
                     layers: [{
                       effects: [],
@@ -140,15 +140,15 @@ export default function newSequencePage(): JSX.Element {
                   setSequenceId(parseInt(e.target.value));
                 }
               }}
-              value={sequenceId}>
+              value={fixtureSequenceId}>
               {
                 project != null &&
-                idMapToArray(project.sequences).map(([id, s]) => (
+                idMapToArray(project.fixtureSequences).map(([id, s]) => (
                   <option value={id}>{s.name}</option>
                 ))
               }
               <option value={-1}>
-                + Create New Sequence
+                + Create New FixtureSequence
               </option>
             </select>
           </>
@@ -159,9 +159,9 @@ export default function newSequencePage(): JSX.Element {
             <NumberInput
               min={1}
               max={128}
-              value={sequence?.nativeBeats || 1}
+              value={fixtureSequence?.nativeBeats || 1}
               onChange={(v) => {
-                sequence.nativeBeats = v;
+                fixtureSequence.nativeBeats = v;
                 save();
               }} />
           </span>
@@ -169,11 +169,12 @@ export default function newSequencePage(): JSX.Element {
         leftOptions={
           <>
             <Button onClick={() => setSequenceDetailsModal(true)}>
-              Sequence Details
+              FixtureSequence Details
             </Button>
           </>
         }
         lightTracks={virtualTracks}
+        fixtureSequenceId={fixtureSequenceId}
         save={save}
         panelRef={panelRef}
         audioToTrack={wsMsToSequenceMs}
@@ -182,15 +183,15 @@ export default function newSequencePage(): JSX.Element {
       {
         sequenceDetailsModal &&
         <Modal
-          title={sequence?.name + ' Metadata'}
+          title={fixtureSequence?.name + ' Metadata'}
           onClose={() => setSequenceDetailsModal(false)}>
           <div className={styles.detailsModal}>
             <div>
               Title:&nbsp;
               <TextInput
-                value={sequence?.name}
+                value={fixtureSequence?.name}
                 onChange={(v) => {
-                  sequence.name = v;
+                  fixtureSequence.name = v;
                   save();
                 }} />
             </div>
@@ -198,11 +199,11 @@ export default function newSequencePage(): JSX.Element {
               <Button
                 variant='warning'
                 onClick={() => {
-                  deleteSequence(sequenceId, project);
+                  deleteSequence(fixtureSequenceId, project);
                   save();
                   setSequenceDetailsModal(false);
                 }}>
-                Delete Sequence
+                Delete FixtureSequence
               </Button>&nbsp;
               Cannot be undone!
             </div>

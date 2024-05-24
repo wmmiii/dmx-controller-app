@@ -19,7 +19,9 @@ import { AudioFile_BeatMetadata } from '@dmx-controller/proto/audio_pb';
 
 export const LEFT_WIDTH = 180;
 
-export default function LightTimeline(props: TracksProps): JSX.Element {
+type LightTimelineProps = TracksProps | DetailsPaneProps;
+
+export default function LightTimeline(props: LightTimelineProps): JSX.Element {
   const { setShortcuts } = useContext(ShortcutContext);
   const [selectedEffect, setSelectedEffect] = useState<SelectedEffect | null>(null);
 
@@ -52,7 +54,7 @@ export default function LightTimeline(props: TracksProps): JSX.Element {
         className={styles.wrapper}
         defaultAmount={0.8}
         left={<Tracks {...props} />}
-        right={<DetailsPane />} />
+        right={<DetailsPane {...props} />} />
     </EffectSelectContext.Provider>
   );
 }
@@ -270,7 +272,7 @@ function Tracks({
                 maxMs={audioDuration}
                 leftWidth={LEFT_WIDTH}
                 mappingFunctions={mappingFunctions}
-                forceUpdate={save}
+                save={save}
                 swapUp={
                   i == 0 || swap === undefined ?
                     undefined :
@@ -295,8 +297,11 @@ function Tracks({
   )
 }
 
+interface DetailsPaneProps {
+  fixtureSequenceId?: number;
+}
 
-function DetailsPane(): JSX.Element {
+function DetailsPane({ fixtureSequenceId }: DetailsPaneProps): JSX.Element {
   const { save } = useContext(ProjectContext);
   const { selectedEffect } = useContext(EffectSelectContext);
 
@@ -310,6 +315,7 @@ function DetailsPane(): JSX.Element {
 
   return (
     <EffectDetails
+      fixtureSequenceId={fixtureSequenceId}
       className={styles.effectDetails}
       effect={selectedEffect}
       onChange={save} />

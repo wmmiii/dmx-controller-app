@@ -2,7 +2,7 @@ import { ChannelTypes } from "./fixture";
 import { Effect_RampEffect, Effect_RampEffect_EasingFunction } from "@dmx-controller/proto/effect_pb";
 import { applyState } from "./effect";
 import { RenderContext, getDevice } from "./universe";
-import { applySequence } from "./sequence";
+import { applyFixtureSequence } from "./fixtureSequence";
 
 export function rampEffect(
   context: RenderContext,
@@ -18,7 +18,7 @@ export function rampEffect(
   if (effect.start.case === 'fixtureStateStart') {
     applyState(effect.start.value, startContext);
   } else {
-    applySequence(
+    applyFixtureSequence(
       startContext,
       effect.start.value,
       amountT,
@@ -30,7 +30,7 @@ export function rampEffect(
   if (effect.end.case === 'fixtureStateEnd') {
     applyState(effect.end.value, endContext);
   } else {
-    applySequence(
+    applyFixtureSequence(
       endContext,
       effect.end.value,
       amountT,
