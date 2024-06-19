@@ -3,7 +3,7 @@ import MinimapPlugin from "wavesurfer.js/dist/plugins/minimap.js";
 import RegionsPlugin, { Region } from "wavesurfer.js/dist/plugins/regions.js";
 import WaveSurfer from 'wavesurfer.js';
 import { BEAT_MARKER, WAVEFORM_COLOR, WAVEFORM_CURSOR_COLOR, WAVEFORM_PROGRESS_COLOR, WAVEFORM_SAMPLE_RATE } from '../util/styleUtils';
-import { AudioFile_BeatMetadata } from '@dmx-controller/proto/audio_pb';
+import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
 import { ShortcutContext } from '../contexts/ShortcutContext';
 
 export interface AudioController {
@@ -13,7 +13,7 @@ export interface AudioController {
 
 interface AudioTrackVisualizerProps {
   audioBlob: Blob;
-  beatMetadata: AudioFile_BeatMetadata;
+  beatMetadata: BeatMetadata;
   setController: (controller: AudioController) => void;
   setPlaying: (playing: boolean) => void;
   onProgress: (t: number) => void;

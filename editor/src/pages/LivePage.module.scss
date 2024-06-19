@@ -4,21 +4,13 @@
   @include fill;
 }
 
-.no-scene-selected {
-  @include fill;
-
-  align-items: center;
-  display: flex;
-  justify-content: center;
-}
-
-.scene-pane {
+.editor-pane {
   @include fill;
 
   display: flex;
   flex-direction: column;
 
-  .header {
+  .beat {
     flex-shrink: 0;
   }
 }

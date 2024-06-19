@@ -2,8 +2,6 @@ import { PropsWithChildren, createContext, useCallback, useContext, useEffect, u
 import { SerialContext } from "./SerialContext";
 import { Modal } from "../components/Modal";
 
-import styles from './ShortcutContext.module.scss';
-
 type ShortcutBundle = Array<{
   shortcut: {
     key: string;

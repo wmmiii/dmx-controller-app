@@ -2,7 +2,7 @@ import React, { JSX, useCallback, useContext, useEffect, useMemo, useRef, useSta
 
 import LightTimeline from '../components/LightTimeline';
 import styles from "./SequencePage.module.scss";
-import { AudioFile_BeatMetadata } from '@dmx-controller/proto/audio_pb';
+import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
 import { Button } from '../components/Button';
 import { LightTrack as LightTrackProto } from '@dmx-controller/proto/light_track_pb';
 import { Modal } from '../components/Modal';
@@ -48,7 +48,7 @@ export default function newSequencePage(): JSX.Element {
   }, [beats, beatSubdivisions]);
 
   const beatMetadata = useMemo(() => {
-    return new AudioFile_BeatMetadata({
+    return new BeatMetadata({
       lengthMs: (audioDuration || 600) / (fixtureSequence?.nativeBeats || 1),
       offsetMs: 0,
     });

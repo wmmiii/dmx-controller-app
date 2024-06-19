@@ -3,7 +3,7 @@
     "jsx": "react-jsx",
     "jsxImportSource": "react",
     "module": "esNext",
-    "target": "ES6",
+    "target": "ESNext",
     "lib": [
       "DOM",
       "ESNext",

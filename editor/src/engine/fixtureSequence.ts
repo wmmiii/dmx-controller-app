@@ -2,7 +2,7 @@ import { LightLayer } from "@dmx-controller/proto/light_layer_pb";
 import { Project } from "@dmx-controller/proto/project_pb"
 import { EffectTiming, FixtureSequenceMapping } from "@dmx-controller/proto/effect_pb";
 import { RenderContext, renderLayersToUniverse } from "./universe";
-import { AudioFile_BeatMetadata } from "@dmx-controller/proto/audio_pb";
+import { BeatMetadata } from "@dmx-controller/proto/beat_pb";
 
 // Good resolution, nice divisors (2, 3, 4, 5, 6, 12 etc.)
 export const SEQUENCE_BEAT_RESOLUTION = 36000;
@@ -41,7 +41,7 @@ export function applyFixtureSequence(
 
   // Re-time into fixtureSequence space.
   const sequenceContext = Object.assign({}, context, {
-    beatMetadata: new AudioFile_BeatMetadata({
+    beatMetadata: new BeatMetadata({
       lengthMs: SEQUENCE_BEAT_RESOLUTION,
       offsetMs: 0,
     }),

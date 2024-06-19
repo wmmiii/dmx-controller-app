@@ -14,7 +14,7 @@ import { LightTrack, MappingFunctions } from './LightTrack';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { ShortcutContext } from '../contexts/ShortcutContext';
 import { NumberInput } from './Input';
-import { AudioFile_BeatMetadata } from '@dmx-controller/proto/audio_pb';
+import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
 
 
 export const LEFT_WIDTH = 180;
@@ -64,7 +64,7 @@ interface TracksProps {
   audioDuration: number;
   setAudioDuration: (duration: number) => void;
   loop?: boolean;
-  beatMetadata: AudioFile_BeatMetadata;
+  beatMetadata: BeatMetadata;
   beatSubdivisions: number;
   setBeatSubdivisions: (subdivisions: number) => void;
   headerOptions: JSX.Element;

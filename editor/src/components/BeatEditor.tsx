@@ -10,7 +10,8 @@ import RegionsPlugin from "wavesurfer.js/dist/plugins/regions.js";
 import SpectrogramPlugin from "wavesurfer.js/dist/plugins/spectrogram.js";
 import WaveSurfer from "wavesurfer.js";
 import styles from './BeatEditor.module.scss';
-import { AudioFile, AudioFile_BeatMetadata } from "@dmx-controller/proto/audio_pb";
+import { AudioFile } from "@dmx-controller/proto/audio_pb";
+import { BeatMetadata } from "@dmx-controller/proto/beat_pb";
 import { Button } from "./Button";
 import { Modal } from "./Modal";
 import { ShortcutContext } from "../contexts/ShortcutContext";
@@ -222,7 +223,7 @@ export function BeatEditor({ file, onCancel, onSave }: BeatEditorProps):
   const beat = ((t - firstBeat) % beatDuration) / beatDuration;
 
   const save = useCallback(() => {
-    file.beatMetadata = new AudioFile_BeatMetadata({
+    file.beatMetadata = new BeatMetadata({
       lengthMs: beatDuration,
       offsetMs: Math.floor(firstBeat),
     });

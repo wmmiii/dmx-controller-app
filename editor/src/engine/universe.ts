@@ -1,4 +1,4 @@
-import { AudioFile_BeatMetadata } from "@dmx-controller/proto/audio_pb";
+import { BeatMetadata } from "@dmx-controller/proto/beat_pb";
 import { DmxUniverse, WritableDevice, getPhysicalWritableDevice, getPhysicalWritableDeviceFromGroup } from "./fixture";
 import { Effect, EffectTiming } from "@dmx-controller/proto/effect_pb";
 import { LightLayer } from "@dmx-controller/proto/light_layer_pb";
@@ -11,7 +11,7 @@ import { rampEffect } from "./rampEffect";
 
 export interface RenderContext {
   t: number;
-  beatMetadata?: AudioFile_BeatMetadata;
+  beatMetadata?: BeatMetadata;
   output: LightTrack['output'];
   project: Project;
   universe: DmxUniverse;
@@ -50,7 +50,7 @@ export function renderShowToUniverse(t: number, project: Project):
 export function renderSequenceToUniverse(
   t: number,
   fixtureSequenceId: number,
-  beatMetadata: AudioFile_BeatMetadata,
+  beatMetadata: BeatMetadata,
   output: LightTrack['output'],
   project: Project,
 ):

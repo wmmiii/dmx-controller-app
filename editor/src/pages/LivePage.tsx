@@ -1,21 +1,39 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { HorizontalSplitPane } from '../components/SplitPane';
 import { Scene } from '@dmx-controller/proto/scene_pb';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { Button } from '../components/Button';
 import styles from "./LivePage.module.scss";
+import { UniverseSequence } from '@dmx-controller/proto/universe_sequence_pb';
+import { nextId } from '../util/mapUtils';
+import { BeatContext, BeatProvider } from '../contexts/BeatContext';
+import { ShortcutContext } from '../contexts/ShortcutContext';
+
+interface Selected {
+  type: 'scene' | 'sequence'
+  index: number;
+}
 
 export function LivePage(): JSX.Element {
+  const [selected, setSelected] = useState<Selected | null>(null);
+
   return (
-    <HorizontalSplitPane
-      className={styles.wrapper}
-      defaultAmount={0.2}
-      left={<SceneList />}
-      right={<ScenePane />} />
+    <BeatProvider>
+      <HorizontalSplitPane
+        className={styles.wrapper}
+        defaultAmount={0.2}
+        left={<List selected={selected} setSelected={setSelected} />}
+        right={<EditorPane selected={selected} />} />
+    </BeatProvider>
   );
 }
 
-function SceneList(): JSX.Element {
+interface SceneListProps {
+  selected: Selected;
+  setSelected: (elected: Selected) => void;
+}
+
+function List({ selected, setSelected }: SceneListProps): JSX.Element {
   const { project, save } = useContext(ProjectContext);
 
   if (!project) {
@@ -23,44 +41,106 @@ function SceneList(): JSX.Element {
   }
 
   return (
-    <ul>
-      {
-        project.scenes.map((s: Scene) => (
-          <li>
-            {s.name}
-          </li>
-        ))
-      }
-      <li>
-        <Button onClick={() => {
-          project.scenes.push(new Scene({
-            name: 'Untitled Scene',
-            components: [],
-          }));
-          project.activeScene = project.scenes.length - 1;
-          save();
-        }}>
-          + Create New Scene
-        </Button>
-      </li>
-    </ul>
+    <>
+      <h2>Scenes</h2>
+      <ul>
+        {
+          project.scenes.map((s, i) => (
+            <li
+              key={i}
+              onMouseDown={() => setSelected({ type: 'scene', index: i })}>
+              {
+                selected?.index === i && selected?.type === 'scene' ?
+                  <strong>{s.name}</strong> :
+                  s.name
+              }
+            </li>
+          ))
+        }
+        <li>
+          <Button onClick={() => {
+            project.scenes.push(new Scene({
+              name: 'Untitled Scene',
+              components: [],
+            }));
+            project.activeScene = project.scenes.length - 1;
+            save();
+          }}>
+            + Create New Scene
+          </Button>
+        </li>
+      </ul>
+      <h2>Sequences</h2>
+      <ul>
+        {
+          Object.keys(project.universeSequences)
+            .map(parseInt)
+            .map((id: number) => {
+              const sequence = project.universeSequences[id];
+              return (
+                <li
+                  key={id}
+                  onMouseDown={() => setSelected({ type: 'sequence', index: id })}>
+                  {
+                    selected?.index === id && selected?.type === 'sequence' ?
+                      <strong>{sequence.name}</strong> :
+                      sequence.name
+                  }
+                </li>
+              );
+            })
+        }
+        <li>
+          <Button onClick={() => {
+            const id = nextId(project.universeSequences);
+            project.universeSequences[id] = new UniverseSequence({
+              name: 'Untitled Sequence',
+              nativeBeats: 1,
+              lightTracks: [],
+            });
+            save();
+          }}>
+            + Create New Sequence
+          </Button>
+        </li>
+      </ul>
+    </>
   );
 }
 
-function ScenePane(): JSX.Element {
+interface EditorPaneProps {
+  selected: Selected;
+}
+
+function EditorPane({ selected }: EditorPaneProps): JSX.Element {
   const { project, save } = useContext(ProjectContext);
 
-  if (!project || !project.scenes[project.activeScene]) {
-    return (
-      <div className={styles.noSceneSelected}>
-        Create a new scene to get started.
-      </div>
-    );
-  }
+  return (
+    <div className={styles.editorPane}>
+      <Beat />
+
+    </div>
+  );
+}
+
+function Beat(): JSX.Element {
+  const { beat, sampleQuality, addBeatSample } = useContext(BeatContext);
+  const { setShortcuts } = useContext(ShortcutContext);
+
+  useEffect(() => setShortcuts([
+      {
+        shortcut: {
+          key: 'Space',
+        },
+        action: () => addBeatSample(new Date().getTime()),
+        description: 'Sample beat',
+      }
+    ]), [addBeatSample, setShortcuts]);
 
   return (
-    <div className={styles.scenePane}>
-      
+    <div className={styles.beat}>
+      Sample quality: {sampleQuality}&nbsp;BPM: {Math.floor(60_000 / (beat?.lengthMs || NaN))}
+      <button onClick={() => addBeatSample(new Date().getTime())}>This</button>
     </div>
   );
 }

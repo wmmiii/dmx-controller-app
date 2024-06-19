@@ -2,15 +2,12 @@ syntax = "proto3";
 
 package dmx_controller;
 
+import "proto/beat.proto";
+
 message AudioFile {
   message AudioMetadata {
     string artist = 2;
     string file_name = 3;
-  }
-
-  message BeatMetadata {
-    double length_ms = 1;
-    int32 offset_ms = 2;
   }
 
   string name = 1;

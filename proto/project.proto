@@ -3,10 +3,12 @@ syntax = "proto3";
 package dmx_controller;
 
 import "proto/audio.proto";
+import "proto/beat.proto";
 import "proto/fixture.proto";
 import "proto/fixture_sequence.proto";
 import "proto/scene.proto";
 import "proto/show.proto";
+import "proto/universe_sequence.proto";
 
 message Project {
   message Assets {
@@ -43,8 +45,10 @@ message Project {
 
   // Fixture sequence 0 is reserved for the "unset" sequence.
   map<uint32, FixtureSequence> fixture_sequences = 41;
+  map<uint32, UniverseSequence> universe_sequences = 42;
 
   // Scene 0 is reserved for the "unset" scene.
   repeated Scene scenes = 51;
   uint32 active_scene = 52;
+  BeatMetadata live_beat = 53;
 }
