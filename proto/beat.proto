@@ -4,5 +4,6 @@ package dmx_controller;
 
 message BeatMetadata {
   double length_ms = 1;
-  uint32 offset_ms = 2;
+  uint32 deprecated_offset_ms = 2;
+  uint64 offset_ms = 3;
 }

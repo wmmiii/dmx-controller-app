@@ -7,8 +7,8 @@ const DEVIATION_THRESHOLD = 75;
 type SampleQuality = 'idle' | 'not enough samples' | 'poor' | 'fair' | 'excellent';
 
 export const BeatContext = createContext({
-  beat: new BeatMetadata({lengthMs: Number.MAX_SAFE_INTEGER, offsetMs: 0}),
-  addBeatSample: (t: number) => {},
+  beat: new BeatMetadata({lengthMs: Number.MAX_SAFE_INTEGER, offsetMs: BigInt(0)}),
+  addBeatSample: (_t: number) => {},
   sampleQuality: 'idle' as SampleQuality,
 });
 
@@ -18,8 +18,6 @@ export function BeatProvider({ children }: PropsWithChildren): JSX.Element {
   const [beatTimeout, setBeatTimeout] = useState<any>(null);
 
   const beat = useMemo(() => project?.liveBeat, [project]);
-
-  useEffect(() => console.log(beatSamples), [beatSamples]);
 
   const addBeatSample = useCallback((t: number) => {
     setBeatSamples([...beatSamples, t]);
@@ -58,7 +56,7 @@ export function BeatProvider({ children }: PropsWithChildren): JSX.Element {
       console.log('saving', sum / durations.length, beatSamples[beatSamples.length - 1]);
       project.liveBeat = new BeatMetadata({
         lengthMs: sum / durations.length,
-        offsetMs: beatSamples[beatSamples.length - 1],
+        offsetMs: BigInt(beatSamples[beatSamples.length - 1]),
       });
 
       save();

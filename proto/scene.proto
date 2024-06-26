@@ -12,9 +12,8 @@ message Scene {
   // applies state to the universe.
   message Component {
     string name = 1;
-    reserved 2 to 10;
-
-    int32 universe_sequence_id = 11;
+    int32 universe_sequence_id = 2;
+    bool active = 3;
   }
 
   string name = 1;

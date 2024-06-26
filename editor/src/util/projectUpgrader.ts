@@ -107,6 +107,18 @@ function upgradeIndices(project: Project): void {
       }
     }
   }
+
+  // Beat metadata
+  for (const a of Object.values(project.assets?.audioFiles)) {
+    if ((a.beatMetadata?.deprecatedOffsetMs || 0) != 0) {
+      a.beatMetadata.offsetMs = BigInt(a.beatMetadata.deprecatedOffsetMs);
+      a.beatMetadata.deprecatedOffsetMs = 0;
+    }
+  }
+  if ((project.liveBeat?.deprecatedOffsetMs || 0) != 0) {
+    project.liveBeat.offsetMs = BigInt(project.liveBeat.deprecatedOffsetMs);
+    project.liveBeat.deprecatedOffsetMs = 0;
+  }
 }
 
 function shiftMapping(map: { [id: number]: any }): boolean {

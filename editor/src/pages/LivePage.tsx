@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { HorizontalSplitPane } from '../components/SplitPane';
 import { Scene } from '@dmx-controller/proto/scene_pb';
 import { ProjectContext } from '../contexts/ProjectContext';
@@ -8,6 +8,7 @@ import { UniverseSequence } from '@dmx-controller/proto/universe_sequence_pb';
 import { nextId } from '../util/mapUtils';
 import { BeatContext, BeatProvider } from '../contexts/BeatContext';
 import { ShortcutContext } from '../contexts/ShortcutContext';
+import { UniverseSequenceEditor } from '../components/UniverseSequenceEditor';
 
 interface Selected {
   type: 'scene' | 'sequence'
@@ -118,6 +119,13 @@ function EditorPane({ selected }: EditorPaneProps): JSX.Element {
   return (
     <div className={styles.editorPane}>
       <Beat />
+      {
+        selected?.type === 'sequence' ?
+          <UniverseSequenceEditor
+            className={styles.universeSequenceEditor}
+            universalSceneId={selected.index} /> :
+          <>Not implemented yet...</>
+      }
 
     </div>
   );
@@ -128,19 +136,29 @@ function Beat(): JSX.Element {
   const { setShortcuts } = useContext(ShortcutContext);
 
   useEffect(() => setShortcuts([
-      {
-        shortcut: {
-          key: 'Space',
-        },
-        action: () => addBeatSample(new Date().getTime()),
-        description: 'Sample beat',
-      }
-    ]), [addBeatSample, setShortcuts]);
+    {
+      shortcut: {
+        key: 'Space',
+      },
+      action: () => addBeatSample(new Date().getTime()),
+      description: 'Sample beat',
+    },
+  ]), [addBeatSample, setShortcuts]);
+
+  const beatEmoji = useMemo(() => {
+    switch (sampleQuality) {
+      case 'excellent': return '🤩';
+      case 'fair': return '🙂';
+      case 'idle': return '😎';
+      case 'not enough samples': return '😄';
+      case 'poor': return '😵‍💫';
+    }
+  }, [sampleQuality]);
 
   return (
     <div className={styles.beat}>
-      Sample quality: {sampleQuality}&nbsp;BPM: {Math.floor(60_000 / (beat?.lengthMs || NaN))}
-      <button onClick={() => addBeatSample(new Date().getTime())}>This</button>
+      {beatEmoji}
+      &nbsp;BPM: {Math.floor(60_000 / (beat?.lengthMs || NaN))}
     </div>
   );
 }

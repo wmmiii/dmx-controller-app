@@ -134,8 +134,9 @@ function Tracks({
   const nearestBeat = useCallback((t: number) => {
     if (beatMetadata) {
       const lengthMs = beatMetadata.lengthMs / beatSubdivisions;
-      const beatNumber = Math.round((t - beatMetadata.offsetMs) / lengthMs);
-      return Math.floor(beatMetadata.offsetMs + beatNumber * lengthMs);
+      // WARNING: Converting BigInt to Number looses 7 bits of precision!
+      const beatNumber = Math.round((t - Number(beatMetadata.offsetMs)) / lengthMs);
+      return Math.floor(Number(beatMetadata.offsetMs) + beatNumber * lengthMs);
     }
     return undefined;
   }, [beatMetadata, beatSubdivisions]);
@@ -197,7 +198,8 @@ function Tracks({
   let beatNumber: number | undefined;
   if (beatMetadata) {
     beatNumber = Math.floor(
-      (tState - beatMetadata.offsetMs) /
+      // WARNING: Converting BigInt to Number looses 7 bits of precision!
+      (tState - Number(beatMetadata.offsetMs)) /
       beatMetadata.lengthMs) + 1;
   } else {
     beatNumber = undefined;

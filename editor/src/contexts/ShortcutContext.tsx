@@ -17,7 +17,7 @@ export const ShortcutContext = createContext({
 
 export function ShortcutProvider({ children }: PropsWithChildren): JSX.Element {
   const serialContext = useContext(SerialContext);
-  const shortcutBundles = useRef<Array<ShortcutBundle>>([]);
+  const shortcutBundles = useRef<Array<ShortcutBundle>>([[]]);
   const [showHelp, setShowHelp] = useState(false);
 
   useEffect(() => {

@@ -146,7 +146,7 @@ export function AudioTrackVisualizer({
 
       if (beatMetadata) {
         for (
-          let t = beatMetadata.offsetMs / 1000;
+          let t = Number(beatMetadata.offsetMs) / 1000;
           t < ws.getDuration();
           t += (beatMetadata.lengthMs / 1000)
         ) {
@@ -159,7 +159,7 @@ export function AudioTrackVisualizer({
 
         if (beatSubdivisions) {
           for (
-            let t = beatMetadata.offsetMs / 1000;
+            let t = Number(beatMetadata.offsetMs) / 1000;
             t < ws.getDuration();
             t += (beatMetadata.lengthMs / 1000 / beatSubdivisions)
           ) {

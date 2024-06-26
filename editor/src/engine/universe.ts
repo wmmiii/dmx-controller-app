@@ -47,14 +47,22 @@ export function renderShowToUniverse(t: number, project: Project):
   return universe;
 }
 
+export function renderSceneToUniverse(
+  universeSceneId: number,
+  t: number,
+): DmxUniverse {
+  const universe = new Uint8Array(512);
+
+  return universe;
+}
+
 export function renderSequenceToUniverse(
   t: number,
   fixtureSequenceId: number,
   beatMetadata: BeatMetadata,
   output: LightTrack['output'],
   project: Project,
-):
-  DmxUniverse {
+): DmxUniverse {
   t += project.timingOffsetMs;
 
   const universe = new Uint8Array(512);
