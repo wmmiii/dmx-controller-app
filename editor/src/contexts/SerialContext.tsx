@@ -1,7 +1,7 @@
-import { PropsWithChildren, createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
-import { ProjectContext } from "./ProjectContext";
+import { PropsWithChildren, createContext, useCallback, useEffect, useRef, useState } from "react";
 
 const BLACKOUT_UNIVERSE = new Uint8Array(512).fill(0);
+const FPS_BUFFER_SIZE = 100;
 
 type RenderUniverse = () => Uint8Array;
 
@@ -18,12 +18,12 @@ export const SerialContext = createContext({
 });
 
 export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
-  const { project } = useContext(ProjectContext);
   const [port, setPort] = useState<SerialPort | null>(null);
   const renderUniverse = useRef<RenderUniverse>(() => BLACKOUT_UNIVERSE);
   const blackout = useRef(false);
   const [blackoutState, setBlackoutState] = useState(false);
-  const [updateFrequencyMs, setUpdateFrequencyMs] = useState(20);
+  const fpsBuffer = useRef([0]);
+  const [currentFps, setCurrentFps] = useState(0);
   const [maxFps, setMaxFps] = useState(0);
 
   const connect = useCallback(async () => {
@@ -60,10 +60,6 @@ export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
     navigator.serial.ondisconnect = disconnect;
   }, []);
 
-  // useEffect(
-  //   () => setUpdateFrequencyMs(project?.updateFrequencyMs || 50),
-  //   [project?.updateFrequencyMs]);
-
   useEffect(() => {
     if (!port) {
       return;
@@ -71,39 +67,44 @@ export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
 
     const writer = port.writable.getWriter();
 
-    let lock = false;
+    let closed = false;
+    let lastFrame = new Date().getTime();
+    (async () => {
+      while(!closed) {
+        const start = new Date().getTime();
 
-    const handle = setInterval(async () => {
-      const start = new Date().getTime();
-      if (lock) {
-        const newFreq = updateFrequencyMs + 1;
-        console.error('Dropped frame! Increasing update interval to', newFreq);
-        setUpdateFrequencyMs(newFreq);
-        return;
-      }
+        let universe;
+        if (blackout.current) {
+          universe = BLACKOUT_UNIVERSE;
+        } else {
+          universe = renderUniverse.current();
+        }
+  
+        try {
+          await writer.ready;
+          await writer.write(universe);
+        } catch (e) {
+          console.error(e);
+          disconnect();
+        } finally {
+          setMaxFps(Math.floor(1000 / (new Date().getTime() - start)));
+        }
 
-      lock = true;
-      let universe;
-      if (blackout.current) {
-        universe = BLACKOUT_UNIVERSE;
-      } else {
-        universe = renderUniverse.current();
+        const now = new Date().getTime();
+        fpsBuffer.current.push(now - lastFrame);
+        fpsBuffer.current = fpsBuffer.current.slice(fpsBuffer.current.length - FPS_BUFFER_SIZE, fpsBuffer.current.length);
+        let average = 0;
+        for (const fps of fpsBuffer.current) {
+          average += fps;
+        }
+        average /= fpsBuffer.current.length;
+        setCurrentFps(Math.floor(1000 / (average)));
+        lastFrame = now;
       }
-
-      try {
-        await writer.ready;
-        await writer.write(universe);
-      } catch (e) {
-        console.error(e);
-        disconnect();
-      } finally {
-        lock = false;
-        setMaxFps(Math.floor(1000 / (new Date().getTime() - start)));
-      }
-    }, updateFrequencyMs);
+    })();
 
     return () => {
-      clearInterval(handle);
+      closed = true;
       writer.releaseLock();
     }
 
@@ -111,8 +112,6 @@ export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
     blackout,
     disconnect,
     port,
-    updateFrequencyMs,
-    project,
     renderUniverse,
   ]);
 
@@ -132,7 +131,7 @@ export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
           renderUniverse.current = () => BLACKOUT_UNIVERSE;
         }
       },
-      currentFps: Math.floor(1000 / updateFrequencyMs),
+      currentFps: currentFps,
       maxFps: maxFps,
     }}>
       {children}

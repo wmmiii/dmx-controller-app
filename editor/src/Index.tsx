@@ -48,7 +48,13 @@ export default function Index(): JSX.Element {
         <Link to="/universe">Universe</Link>
         <div className={styles.spacer}></div>
         <div>
-          Fps: {currentFps}
+          Fps: {
+            currentFps < 30 ?
+              <span className={styles.warning}>
+                {currentFps}
+              </span> :
+              <>{currentFps}</>
+          }
         </div>
         <div>
           Offset MS:

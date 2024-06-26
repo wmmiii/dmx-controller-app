@@ -61,6 +61,11 @@ function FixtureList(): JSX.Element {
               const definition =
                 project.fixtureDefinitions[fixture.fixtureDefinitionId];
 
+              // TODO: Figure out why this is null.
+              if (!definition) {
+                return null;
+              }
+
               return (
                 <li onClick={() => {
                   setSelectedFixtureId(id);
