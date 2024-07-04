@@ -50,9 +50,9 @@ export default function newSequencePage(): JSX.Element {
   const beatMetadata = useMemo(() => {
     return new BeatMetadata({
       lengthMs: (audioDuration || 600) / (fixtureSequence?.nativeBeats || 1),
-      offsetMs: 0,
+      offsetMs: BigInt(0),
     });
-  }, [fixtureSequence, beatSubdivisions, audioDuration]);
+  }, [fixtureSequence, audioDuration]);
 
   const virtualTracks = useMemo(() => {
     if (fixtureSequence?.layers) {
@@ -97,7 +97,7 @@ export default function newSequencePage(): JSX.Element {
       } else {
         // FixtureSequence 0 is reserved for the "unset" fixtureSequence.
         project.fixtureSequences[1] = new FixtureSequence({
-          name: 'Untitled FixtureSequence',
+          name: 'Untitled Sequence',
           nativeBeats: 1,
           layers: [{
             effects: [],
@@ -121,14 +121,14 @@ export default function newSequencePage(): JSX.Element {
         setBeatSubdivisions={setBeatSubdivisions}
         headerOptions={
           <>
-            FixtureSequence:
+            Sequence:
             <br />
             <select
               onChange={(e) => {
                 if (e.target.value === '-1') {
                   const newId = nextId(project.fixtureSequences);
                   project.fixtureSequences[newId] = new FixtureSequence({
-                    name: 'Untitled FixtureSequence',
+                    name: 'Untitled Sequence',
                     nativeBeats: 1,
                     layers: [{
                       effects: [],
@@ -148,7 +148,7 @@ export default function newSequencePage(): JSX.Element {
                 ))
               }
               <option value={-1}>
-                + Create New FixtureSequence
+                + Create New Sequence
               </option>
             </select>
           </>
@@ -169,7 +169,7 @@ export default function newSequencePage(): JSX.Element {
         leftOptions={
           <>
             <Button onClick={() => setSequenceDetailsModal(true)}>
-              FixtureSequence Details
+              Sequence Details
             </Button>
           </>
         }
@@ -184,6 +184,11 @@ export default function newSequencePage(): JSX.Element {
         sequenceDetailsModal &&
         <Modal
           title={fixtureSequence?.name + ' Metadata'}
+          footer={
+            <Button onClick={() => setSequenceDetailsModal(false)}>
+              Done
+            </Button>
+          }
           onClose={() => setSequenceDetailsModal(false)}>
           <div className={styles.detailsModal}>
             <div>
@@ -203,7 +208,7 @@ export default function newSequencePage(): JSX.Element {
                   save();
                   setSequenceDetailsModal(false);
                 }}>
-                Delete FixtureSequence
+                Delete Sequence
               </Button>&nbsp;
               Cannot be undone!
             </div>

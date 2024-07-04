@@ -56,6 +56,37 @@ export function renderSceneToUniverse(
   return universe;
 }
 
+export function renderUniverseSequenceToUniverse(
+  t: number,
+  universeSequenceId: number,
+  beatMetadata: BeatMetadata,
+  project: Project,
+) {
+  t += project.timingOffsetMs;
+
+  const universe = new Uint8Array(512);
+
+  applyDefaults(project, universe);
+
+  const universeSequence = project.universeSequences[universeSequenceId];
+
+  if (universeSequence) {
+    const context: Partial<RenderContext> = {
+      t: t,
+      beatMetadata: beatMetadata,
+      project: project,
+      universe: universe,
+    };
+
+    for (const track of universeSequence.lightTracks) {
+      const trackContext = Object.assign({}, context, { output: track.output });
+      renderLayersToUniverse(t, track.layers, trackContext);
+    }
+  }
+
+  return universe;
+}
+
 export function renderSequenceToUniverse(
   t: number,
   fixtureSequenceId: number,
@@ -125,7 +156,7 @@ function applyEffect(context: RenderContext, effect: Effect): void {
 
   // Calculate beat
   const beat = context.beatMetadata;
-  const virtualBeat = (context.t - beat.offsetMs) *
+  const virtualBeat = (context.t - Number(beat.offsetMs)) *
     (effect.timingMultiplier || 1);
   const beatIndex = Math.floor(virtualBeat / beat.lengthMs);
   const beatT = ((virtualBeat % beat.lengthMs) / beat.lengthMs) % 1;

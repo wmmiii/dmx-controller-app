@@ -123,7 +123,7 @@ function EditorPane({ selected }: EditorPaneProps): JSX.Element {
         selected?.type === 'sequence' ?
           <UniverseSequenceEditor
             className={styles.universeSequenceEditor}
-            universalSceneId={selected.index} /> :
+            universeSequenceId={selected.index} /> :
           <>Not implemented yet...</>
       }
 
