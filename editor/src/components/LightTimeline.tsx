@@ -269,7 +269,7 @@ function Tracks({
             lightTracks.map((t: LightTrackProto, i) => (
               <LightTrack
                 track={t}
-                maxMs={audioDuration}
+                maxMs={audioToTrack(audioDuration)}
                 leftWidth={LEFT_WIDTH}
                 mappingFunctions={mappingFunctions}
                 save={save}

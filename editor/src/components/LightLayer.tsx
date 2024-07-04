@@ -1,8 +1,8 @@
 import styles from './LightLayer.module.scss';
-import { Effect as EffectComponent } from "./Effect";
-import { Effect, Effect_StaticEffect } from "@dmx-controller/proto/effect_pb";
+import { Effect as EffectComponent, EffectSelectContext } from "./Effect";
+import { Effect, Effect_RampEffect, Effect_StaticEffect } from "@dmx-controller/proto/effect_pb";
 import { LightLayer as LightLayerProto } from "@dmx-controller/proto/light_layer_pb";
-import { useState } from "react";
+import { useContext, useState } from "react";
 
 interface NewEffect {
   firstMs: number;
@@ -31,6 +31,7 @@ export function LightLayer({
   snapToBeat,
   save,
 }: LightLayerProps): JSX.Element {
+  const { selectEffect } = useContext(EffectSelectContext);
   const [newEffect, setNewEffect] = useState<NewEffect | null>(null);
 
   return (
@@ -79,21 +80,34 @@ export function LightLayer({
                 setNewEffect(null);
                 return;
               }
-              layer.effects.splice(newEffect.effectIndex, 0, new Effect({
+
+              const e = new Effect({
                 startMs: Math.min(newEffect.firstMs, newEffect.secondMs),
                 endMs: Math.max(newEffect.firstMs, newEffect.secondMs),
                 effect: {
-                  value: new Effect_StaticEffect({
-                    effect: {
-                      case: 'state',
+                  value: new Effect_RampEffect({
+                    start: {
+                      case: 'fixtureStateStart',
+                      value: {},
+                    },
+                    end: {
+                      case: 'fixtureStateEnd',
                       value: {},
                     },
                   }),
-                  case: 'staticEffect',
+                  case: 'rampEffect',
                 },
-              }));
+              });
+              layer.effects.splice(newEffect.effectIndex, 0, e);
               save();
               setNewEffect(null);
+              selectEffect({
+                effect: e,
+                delete: () => {
+                  layer.effects.splice(newEffect.effectIndex, 1);
+                  save();
+                }
+              })
             }}>
           </div>
         </>

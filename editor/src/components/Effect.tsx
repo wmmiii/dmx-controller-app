@@ -51,10 +51,6 @@ export function Effect({
   const [dragEnd, setDragEnd] = useState(false);
   const [drag, setDrag] = useState<{ offsetMs: number, widthMs: number } | null>(null);
 
-  if (selectedEffect === effect) {
-    console.log(minMs, maxMs);
-  }
-
   const icons: Set<(props: any) => JSX.Element> = new Set();
   if (effect.effect.case === 'staticEffect') {
     style.background = effectColor(effect.effect.value.effect.value);
