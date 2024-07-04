@@ -26,6 +26,7 @@ export function ShortcutProvider({ children }: PropsWithChildren): JSX.Element {
         return;
       }
 
+      outerLoop:
       for (const b of [...shortcutBundles.current].reverse()) {
         if (b) {
           for (const s of b) {
@@ -33,7 +34,7 @@ export function ShortcutProvider({ children }: PropsWithChildren): JSX.Element {
               s.action();
               ev.stopPropagation();
               ev.preventDefault();
-              break;
+              break outerLoop;
             }
           }
         }

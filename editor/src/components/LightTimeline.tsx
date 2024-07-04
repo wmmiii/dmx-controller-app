@@ -15,6 +15,7 @@ import { ProjectContext } from '../contexts/ProjectContext';
 import { ShortcutContext } from '../contexts/ShortcutContext';
 import { NumberInput } from './Input';
 import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
+import { Effect as EffectProto } from '@dmx-controller/proto/effect_pb';
 
 
 export const LEFT_WIDTH = 180;
@@ -24,6 +25,7 @@ type LightTimelineProps = TracksProps | DetailsPaneProps;
 export default function LightTimeline(props: LightTimelineProps): JSX.Element {
   const { setShortcuts } = useContext(ShortcutContext);
   const [selectedEffect, setSelectedEffect] = useState<SelectedEffect | null>(null);
+  const [copyEffect, setCopyEffect] = useState<EffectProto | null>(null);
 
   useEffect(() => setShortcuts([
     {
@@ -39,6 +41,11 @@ export default function LightTimeline(props: LightTimelineProps): JSX.Element {
       },
       description: 'Delete the currently selected effect.',
     },
+    {
+      shortcut: { key: 'KeyC', modifiers: ['ctrl'] },
+      action: () => setCopyEffect(selectedEffect.effect),
+      description: 'Copy currently selected effect to clipboard.'
+    },
   ]), [selectedEffect, setSelectedEffect]);
 
   return (
@@ -49,6 +56,7 @@ export default function LightTimeline(props: LightTimelineProps): JSX.Element {
         setSelectedEffect(null);
       },
       selectEffect: (effect) => setSelectedEffect(effect),
+      copyEffect: copyEffect,
     }}>
       <HorizontalSplitPane
         className={styles.wrapper}
@@ -269,7 +277,9 @@ function Tracks({
             lightTracks.map((t: LightTrackProto, i) => (
               <LightTrack
                 track={t}
-                maxMs={audioToTrack(audioDuration)}
+                maxMs={audioToTrack ?
+                  audioToTrack(audioDuration) :
+                  audioDuration}
                 leftWidth={LEFT_WIDTH}
                 mappingFunctions={mappingFunctions}
                 save={save}

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import EffectState from './EffectState';
 import IconBxRepeat from '../icons/IconBxRepeat';
 import IconBxsSun from '../icons/IconBxsSun';
@@ -11,6 +11,7 @@ import { DEFAULT_EFFECT_COLOR } from '../util/styleUtils';
 import { Effect as EffectProto, EffectTiming, Effect_RampEffect, Effect_RampEffect_EasingFunction, Effect_StaticEffect, FixtureState, FixtureState as FixtureStateProto, FixtureSequenceMapping } from "@dmx-controller/proto/effect_pb";
 import { isFixtureState } from '../engine/effect';
 import { NumberInput } from './Input';
+import { ShortcutContext } from '../contexts/ShortcutContext';
 
 export interface SelectedEffect {
   effect: EffectProto;
@@ -21,6 +22,7 @@ export const EffectSelectContext = createContext({
   selectedEffect: null as EffectProto | null,
   deleteSelectedEffect: () => { },
   selectEffect: (_selected: SelectedEffect) => { },
+  copyEffect: null as EffectProto | null,
 });
 
 interface EffectProps {
@@ -46,10 +48,31 @@ export function Effect({
   save,
   onDelete,
 }: EffectProps): JSX.Element {
-  const { selectedEffect, selectEffect } = useContext(EffectSelectContext);
+  const { copyEffect, selectedEffect, selectEffect } = useContext(EffectSelectContext);
+  const { setShortcuts } = useContext(ShortcutContext);
   const [dragStart, setDragStart] = useState(false);
   const [dragEnd, setDragEnd] = useState(false);
   const [drag, setDrag] = useState<{ offsetMs: number, widthMs: number } | null>(null);
+
+  useEffect(() => {
+    if (copyEffect && effect === selectedEffect) {
+      return setShortcuts([
+        {
+          shortcut: { key: 'KeyV', modifiers: ['ctrl'] },
+          action: () => {
+            const newEffect = copyEffect.clone();
+            effect.timingMode = newEffect.timingMode;
+            effect.offsetMs = newEffect.offsetMs;
+            effect.timingMultiplier = newEffect.timingMultiplier;
+            effect.mirrored = newEffect.mirrored;
+            effect.effect = copyEffect.effect;
+            save();
+          },
+          description: 'Paste effect from clipboard onto selected effect.'
+        },
+      ]);
+    }
+  }, [copyEffect, effect, selectEffect, save]);
 
   const icons: Set<(props: any) => JSX.Element> = new Set();
   if (effect.effect.case === 'staticEffect') {

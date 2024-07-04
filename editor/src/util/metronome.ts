@@ -9,7 +9,6 @@ export async function getAudioBlob(beats: number, subdivisions: number):
   Promise<Blob> {
   const key = `${beats}x${subdivisions}`;
   if (blobCache[key]) {
-    console.log('returning from cache')
     return blobCache[key];
   }
 
