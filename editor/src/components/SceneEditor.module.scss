@@ -1,0 +1,25 @@
+@import '../vars';
+
+.scene-editor {
+  position: relative;
+}
+
+.component-list {
+  display: flex;
+  flex-direction: row;
+  gap: spacing(2);
+  justify-content: start;
+  list-style: none;
+  padding: spacing(2);
+}
+
+.component {
+  background-color: $col-bg-higher;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: spacing(1);
+  max-width: 320px;
+  min-width: 240px;
+  padding: spacing(1);
+}

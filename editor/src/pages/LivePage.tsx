@@ -9,6 +9,7 @@ import { nextId } from '../util/mapUtils';
 import { BeatContext, BeatProvider } from '../contexts/BeatContext';
 import { ShortcutContext } from '../contexts/ShortcutContext';
 import { UniverseSequenceEditor } from '../components/UniverseSequenceEditor';
+import { SceneEditor } from '../components/SceneEditor';
 
 interface Selected {
   type: 'scene' | 'sequence'
@@ -75,9 +76,13 @@ function List({ selected, setSelected }: SceneListProps): JSX.Element {
       <ul>
         {
           Object.keys(project.universeSequences)
-            .map(parseInt)
+            .map((id) => parseInt(id, 10))
             .map((id: number) => {
               const sequence = project.universeSequences[id];
+              if (!sequence) {
+                return;
+              }
+
               return (
                 <li
                   key={id}
@@ -120,13 +125,17 @@ function EditorPane({ selected }: EditorPaneProps): JSX.Element {
     <div className={styles.editorPane}>
       <Beat />
       {
-        selected?.type === 'sequence' ?
-          <UniverseSequenceEditor
-            className={styles.universeSequenceEditor}
-            universeSequenceId={selected.index} /> :
-          <>Not implemented yet...</>
+        selected?.type === 'sequence' &&
+        <UniverseSequenceEditor
+          className={styles.universeSequenceEditor}
+          universeSequenceId={selected.index} />
       }
-
+      {
+        selected?.type === 'scene' &&
+        <SceneEditor
+          className={styles.sceneEditor}
+          sceneId={selected.index} />
+      }
     </div>
   );
 }

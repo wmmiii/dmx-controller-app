@@ -4,7 +4,7 @@ import { Effect, EffectTiming } from "@dmx-controller/proto/effect_pb";
 import { LightLayer } from "@dmx-controller/proto/light_layer_pb";
 import { LightTrack } from "@dmx-controller/proto/light_track_pb";
 import { Project } from "@dmx-controller/proto/project_pb";
-import { applyFixtureSequence } from "./fixtureSequence";
+import { SEQUENCE_BEAT_RESOLUTION, applyFixtureSequence } from "./fixtureSequence";
 import { applyState } from "./effect";
 import { idMapToArray } from "../util/mapUtils";
 import { rampEffect } from "./rampEffect";
@@ -48,10 +48,41 @@ export function renderShowToUniverse(t: number, project: Project):
 }
 
 export function renderSceneToUniverse(
-  universeSceneId: number,
   t: number,
+  sceneId: number,
+  beatMetadata: BeatMetadata,
+  project: Project,
 ): DmxUniverse {
+  t = t + project.timingOffsetMs - Number(beatMetadata.offsetMs);
+
   const universe = new Uint8Array(512);
+
+  applyDefaults(project, universe);
+
+  const scene = project.scenes[sceneId];
+
+  for (const component of scene.components) {
+    if (!component.active || component.universeSequenceId === 0) {
+      continue;
+    }
+
+    const sequence = project.universeSequences[component.universeSequenceId];
+
+    // Beat mapping.
+    const sequenceBeat = new BeatMetadata({
+      offsetMs: BigInt(0),
+      lengthMs: SEQUENCE_BEAT_RESOLUTION,
+    });
+
+    const sequenceT = (t % (beatMetadata.lengthMs * sequence.nativeBeats)) * SEQUENCE_BEAT_RESOLUTION / beatMetadata.lengthMs;
+
+    renderUniverseSequence(
+      sequenceT,
+      component.universeSequenceId,
+      sequenceBeat,
+      project,
+      universe);
+  }
 
   return universe;
 }
@@ -68,6 +99,23 @@ export function renderUniverseSequenceToUniverse(
 
   applyDefaults(project, universe);
 
+  renderUniverseSequence(
+    t,
+    universeSequenceId,
+    beatMetadata,
+    project,
+    universe);
+
+  return universe;
+}
+
+function renderUniverseSequence(
+  t: number,
+  universeSequenceId: number,
+  beatMetadata: BeatMetadata,
+  project: Project,
+  universe: DmxUniverse,
+) {
   const universeSequence = project.universeSequences[universeSequenceId];
 
   if (universeSequence) {
@@ -83,8 +131,6 @@ export function renderUniverseSequenceToUniverse(
       renderLayersToUniverse(t, track.layers, trackContext);
     }
   }
-
-  return universe;
 }
 
 export function renderSequenceToUniverse(

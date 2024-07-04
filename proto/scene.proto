@@ -14,6 +14,7 @@ message Scene {
     string name = 1;
     int32 universe_sequence_id = 2;
     bool active = 3;
+    string shortcut = 4;
   }
 
   string name = 1;

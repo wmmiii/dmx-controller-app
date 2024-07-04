@@ -7,13 +7,13 @@ const DEVIATION_THRESHOLD = 75;
 type SampleQuality = 'idle' | 'not enough samples' | 'poor' | 'fair' | 'excellent';
 
 export const BeatContext = createContext({
-  beat: new BeatMetadata({lengthMs: Number.MAX_SAFE_INTEGER, offsetMs: BigInt(0)}),
-  addBeatSample: (_t: number) => {},
+  beat: new BeatMetadata({ lengthMs: Number.MAX_SAFE_INTEGER, offsetMs: BigInt(0) }),
+  addBeatSample: (_t: number) => { },
   sampleQuality: 'idle' as SampleQuality,
 });
 
 export function BeatProvider({ children }: PropsWithChildren): JSX.Element {
-  const {project, save} = useContext(ProjectContext);
+  const { project, save } = useContext(ProjectContext);
   const [beatSamples, setBeatSamples] = useState<number[]>([]);
   const [beatTimeout, setBeatTimeout] = useState<any>(null);
 
@@ -28,7 +28,7 @@ export function BeatProvider({ children }: PropsWithChildren): JSX.Element {
     clearTimeout(beatTimeout);
     setBeatTimeout(handle);
   }, [beatSamples, beatTimeout]);
-  
+
   const sampleQuality: SampleQuality = useMemo(() => {
     const deviance = maxDevianceMs(beatSamples);
 
@@ -53,12 +53,26 @@ export function BeatProvider({ children }: PropsWithChildren): JSX.Element {
       for (let d of sampleDurations(beatSamples)) {
         sum += d;
       }
-      console.log('saving', sum / durations.length, beatSamples[beatSamples.length - 1]);
-      project.liveBeat = new BeatMetadata({
-        lengthMs: sum / durations.length,
-        offsetMs: BigInt(beatSamples[beatSamples.length - 1]),
-      });
 
+      let length = sum / durations.length;
+
+      // Try to snap to whole nearest BPM.
+      if (sampleQuality === 'excellent') {
+        const bpm = 60_000 / length;
+        const nearestWholeBpm = Math.round(bpm);
+        if (Math.abs(nearestWholeBpm - bpm) < 0.1) {
+          console.log('Using whole BPM of', nearestWholeBpm);
+          length = 60_000 / nearestWholeBpm;
+        }
+      }
+
+      const firstBeat = beatSamples[beatSamples.length - 1] -
+        beatSamples.length * length;
+
+      project.liveBeat = new BeatMetadata({
+        lengthMs: length,
+        offsetMs: BigInt(Math.round(firstBeat)),
+      });
       save();
     }
   }, [beatSamples]);
