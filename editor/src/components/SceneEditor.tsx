@@ -1,29 +1,31 @@
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import IconBxPlus from '../icons/IconBxPlus';
-import { BeatContext } from '../contexts/BeatContext';
-import { Button } from './Button';
+import { Button, IconButton } from './Button';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { Scene_Component } from '@dmx-controller/proto/scene_pb';
-import { SerialContext } from '../contexts/SerialContext';
 import { TextInput } from './Input';
-import { renderSceneToUniverse } from '../engine/universe';
 
 import styles from './SceneEditor.module.scss';
 import { ShortcutContext } from '../contexts/ShortcutContext';
+import { LiveBeat } from './LiveBeat';
+import IconBxsCog from '../icons/IconBxsCog';
+import { Modal } from './Modal';
 
 interface SceneEditorProps {
   className?: string;
   sceneId: number;
+  onDelete: () => void;
 }
 
 export function SceneEditor({
   className,
-  sceneId
+  sceneId,
+  onDelete,
 }: SceneEditorProps): JSX.Element {
   const { project, save } = useContext(ProjectContext);
   const { setShortcuts } = useContext(ShortcutContext);
-  const { beat: beatMetadata } = useContext(BeatContext);
-  const { setRenderUniverse, clearRenderUniverse } = useContext(SerialContext);
+
+  const [sceneDetailsModal, setSceneDetailsModal] = useState(false);
 
   const scene = useMemo(() => project?.scenes[sceneId], [sceneId]);
 
@@ -46,38 +48,39 @@ export function SceneEditor({
         .map(s => ({
           shortcut: { key: 'Digit' + s },
           action: () => toggleComponents(s),
-          description: `Group toggle all components with a "${s}" shortcut.`,
+          description: `Group toggle all components with the "${s}" shortcut.`,
         })));
-  }, [scene]);
-
-  useEffect(() => {
-    if (!project) {
-      return;
-    }
-
-    const render = () => renderSceneToUniverse(
-      new Date().getTime(),
-      sceneId,
-      beatMetadata,
-      project,
-    );
-    setRenderUniverse(render);
-
-    return () => clearRenderUniverse(render);
-  }, [sceneId, beatMetadata, project]);
+  }, [scene.components.map(c => c.shortcut)]);
 
   const classes = [styles.sceneEditor, className];
 
   return (
     <div className={classes.join(' ')}>
-      <div>
-
+      <div className={styles.header}>
+        <Button
+          className={styles.activateButton}
+          disabled={project.activeScene === sceneId}
+          onClick={() => {
+            project.activeScene = sceneId;
+            save();
+          }}>
+          {project.activeScene === sceneId ? 'Active' : 'Activate'}
+        </Button>
+        <Button onClick={() => setSceneDetailsModal(true)}>
+          Scene Details
+        </Button>
+        <LiveBeat />
       </div>
       <ol className={styles.componentList}>
         {
           scene.components.map((c, i) => (
             <li key={i}>
-              <Component component={c} />
+              <Component
+                component={c}
+                onDelete={() => {
+                  scene.components.splice(i, 1);
+                  save();
+                }} />
             </li>
           ))
         }
@@ -96,45 +99,77 @@ export function SceneEditor({
           </Button>
         </li>
       </ol>
+      {
+        sceneDetailsModal &&
+        <Modal
+          title={`${scene.name} Details`}
+          footer={
+            <Button
+              variant="primary"
+              onClick={() => setSceneDetailsModal(false)}>
+              Done
+            </Button>
+          }
+          onClose={() => setSceneDetailsModal(false)}>
+          <TextInput
+            value={scene.name}
+            onChange={(v) => {
+              scene.name = v;
+              save();
+            }} />
+          <Button
+            variant="warning"
+            onClick={onDelete}>
+            Delete Scene
+          </Button>&nbsp;
+          Cannot be undone!
+        </Modal>
+      }
     </div>
   );
 }
 
 interface ComponentProps {
   component: Scene_Component;
+  onDelete: () => void;
 }
 
-function Component({ component }: ComponentProps) {
+function Component({ component, onDelete }: ComponentProps) {
   const { save, project } = useContext(ProjectContext);
+
+  const [componentDetailsModal, setComponentDetailsModal] = useState(false);
 
   return (
     <div className={styles.component}>
-      <TextInput value={component.name} onChange={(v) => {
-        component.name = v;
-        save();
-      }} />
+      <div className={styles.row}>
+        <select
+          value={component.universeSequenceId}
+          onChange={(e) => {
+            component.universeSequenceId = parseInt(e.target.value);
+            save();
+          }}>
+          <option value={0}>&lt;Unset&gt;</option>
+          {
+            Object.keys(project.universeSequences)
+              .map(id => {
+                const sequence = project.universeSequences[parseInt(id)];
+                return (
+                  <option value={id}>{sequence.name}</option>
+                );
+              })
+          }
+        </select>
+        <IconButton
+          title="Component Settings"
+          onClick={() => setComponentDetailsModal(true)}>
+          <IconBxsCog />
+        </IconButton>
+      </div>
 
-      <select
-        value={component.universeSequenceId}
-        onChange={(e) => {
-          component.universeSequenceId = parseInt(e.target.value);
-          save();
-        }}>
-        <option value={0}>&lt;Unset&gt;</option>
-        {
-          Object.keys(project.universeSequences)
-            .map(id => {
-              const sequence = project.universeSequences[parseInt(id)];
-              return (
-                <option value={id}>{sequence.name}</option>
-              );
-            })
-        }
-      </select>
-
-      <div>
+      <div className={styles.row}>
         Shortcut:&nbsp;
         <input
+          className={styles.shortcut}
           onKeyDown={(e) => {
             if (e.code.startsWith('Digit')) {
               component.shortcut = e.code.substring(5);
@@ -155,6 +190,28 @@ function Component({ component }: ComponentProps) {
         }}>
         {component.active ? 'Active' : 'Disabled'}
       </Button>
+      {
+        componentDetailsModal &&
+        <Modal
+          title="Component Settings"
+          footer={
+            <Button
+              variant="primary"
+              onClick={() => setComponentDetailsModal(false)}>
+              Done
+            </Button>
+          }
+          onClose={() => setComponentDetailsModal(false)}>
+          <div>
+            <Button
+              variant="warning"
+              onClick={onDelete}>
+              Delete Component
+            </Button>&nbsp;
+            Cannot be undone!
+          </div>
+        </Modal>
+      }
     </div>
   );
 }

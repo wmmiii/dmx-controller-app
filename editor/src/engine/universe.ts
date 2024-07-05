@@ -49,7 +49,6 @@ export function renderShowToUniverse(t: number, project: Project):
 
 export function renderSceneToUniverse(
   t: number,
-  sceneId: number,
   beatMetadata: BeatMetadata,
   project: Project,
 ): DmxUniverse {
@@ -59,7 +58,10 @@ export function renderSceneToUniverse(
 
   applyDefaults(project, universe);
 
-  const scene = project.scenes[sceneId];
+  const scene = project.scenes[project.activeScene];
+  if (!scene) {
+    return;
+  }
 
   for (const component of scene.components) {
     if (!component.active || component.universeSequenceId === 0) {

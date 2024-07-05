@@ -5,6 +5,7 @@ import styles from './Button.module.scss';
 interface BaseButtonProps {
   className?: string;
   onClick: () => void;
+  disabled?: boolean;
   variant?: 'default' | 'primary' | 'warning';
 }
 
@@ -14,7 +15,7 @@ interface ButtonProps extends BaseButtonProps {
 }
 
 export function Button(
-  { className, onClick, variant, icon, children }: ButtonProps):
+  { className, onClick, disabled, variant, icon, children }: ButtonProps):
   JSX.Element {
   const classes = [
     styles.baseButton,
@@ -28,7 +29,8 @@ export function Button(
   return (
     <button
       className={classes.join(' ')}
-      onClick={onClick}>
+      onClick={onClick}
+      disabled={disabled}>
       {icon && <div className={styles.icon}>{icon}</div>}
       {children}
     </button>

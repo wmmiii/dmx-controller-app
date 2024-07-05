@@ -125,7 +125,7 @@ export function UniverseSequenceEditor({
         <Modal
           title={sequence.name + ' Metadata'}
           footer={
-            <Button onClick={() => setSequenceDetailsModal(false)}>
+            <Button variant="primary" onClick={() => setSequenceDetailsModal(false)}>
               Done
             </Button>
           }

@@ -10,6 +10,8 @@ import { BeatContext, BeatProvider } from '../contexts/BeatContext';
 import { ShortcutContext } from '../contexts/ShortcutContext';
 import { UniverseSequenceEditor } from '../components/UniverseSequenceEditor';
 import { SceneEditor } from '../components/SceneEditor';
+import { SerialContext } from '../contexts/SerialContext';
+import { renderSceneToUniverse } from '../engine/universe';
 
 interface Selected {
   type: 'scene' | 'sequence'
@@ -17,7 +19,35 @@ interface Selected {
 }
 
 export function LivePage(): JSX.Element {
+  const { project } = useContext(ProjectContext);
+  const { beat: beatMetadata } = useContext(BeatContext);
+  const { setRenderUniverse, clearRenderUniverse } = useContext(SerialContext);
+
   const [selected, setSelected] = useState<Selected | null>(null);
+
+  useEffect(() => {
+    if (selected == null && project?.activeScene != null) {
+      setSelected({
+        type: 'scene',
+        index: project.activeScene,
+      });
+    }
+  }, [project?.activeScene, selected]);
+
+  useEffect(() => {
+    if (!project || selected?.type !== 'scene') {
+      return;
+    }
+
+    const render = () => renderSceneToUniverse(
+      new Date().getTime(),
+      beatMetadata,
+      project,
+    );
+    setRenderUniverse(render);
+
+    return () => clearRenderUniverse(render);
+  }, [selected, beatMetadata, project]);
 
   return (
     <BeatProvider>
@@ -65,8 +95,11 @@ function List({ selected, setSelected }: SceneListProps): JSX.Element {
               name: 'Untitled Scene',
               components: [],
             }));
-            project.activeScene = project.scenes.length - 1;
             save();
+            setSelected({
+              type: 'scene',
+              index: project.scenes.length - 1,
+            });
           }}>
             + Create New Scene
           </Button>
@@ -123,7 +156,6 @@ function EditorPane({ selected }: EditorPaneProps): JSX.Element {
 
   return (
     <div className={styles.editorPane}>
-      <Beat />
       {
         selected?.type === 'sequence' &&
         <UniverseSequenceEditor
@@ -131,43 +163,18 @@ function EditorPane({ selected }: EditorPaneProps): JSX.Element {
           universeSequenceId={selected.index} />
       }
       {
-        selected?.type === 'scene' &&
+        selected?.type === 'scene' && project.scenes[selected.index] &&
         <SceneEditor
           className={styles.sceneEditor}
-          sceneId={selected.index} />
+          sceneId={selected.index}
+          onDelete={() => {
+            project.scenes.splice(selected.index, 1);
+            if (project.activeScene === selected.index) {
+              project.activeScene = 0;
+            }
+            save();
+          }} />
       }
-    </div>
-  );
-}
-
-function Beat(): JSX.Element {
-  const { beat, sampleQuality, addBeatSample } = useContext(BeatContext);
-  const { setShortcuts } = useContext(ShortcutContext);
-
-  useEffect(() => setShortcuts([
-    {
-      shortcut: {
-        key: 'Space',
-      },
-      action: () => addBeatSample(new Date().getTime()),
-      description: 'Sample beat',
-    },
-  ]), [addBeatSample, setShortcuts]);
-
-  const beatEmoji = useMemo(() => {
-    switch (sampleQuality) {
-      case 'excellent': return '🤩';
-      case 'fair': return '🙂';
-      case 'idle': return '😎';
-      case 'not enough samples': return '😄';
-      case 'poor': return '😵‍💫';
-    }
-  }, [sampleQuality]);
-
-  return (
-    <div className={styles.beat}>
-      {beatEmoji}
-      &nbsp;BPM: {Math.floor(60_000 / (beat?.lengthMs || NaN))}
     </div>
   );
 }

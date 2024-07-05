@@ -4,13 +4,26 @@
   position: relative;
 }
 
+.header {
+  align-items: center;
+  display: flex;
+  flex-direction: row;
+  gap: spacing(1);
+  margin: spacing(1);
+}
+
+.activate-button {
+  width: 6em;
+}
+
 .component-list {
   display: flex;
   flex-direction: row;
   gap: spacing(2);
   justify-content: start;
   list-style: none;
-  padding: spacing(2);
+  margin: spacing(1);
+  padding: 0;
 }
 
 .component {
@@ -19,7 +32,21 @@
   flex-direction: column;
   flex: 1;
   gap: spacing(1);
-  max-width: 320px;
-  min-width: 240px;
+  max-width: 240px;
+  min-width: 120px;
   padding: spacing(1);
+
+  .row {
+    align-items: center;
+    display: flex;
+    flex-direction: row;
+    gap: spacing(1);
+    justify-content: space-between;
+  }
+
+  .shortcut {
+    box-sizing: border-box;
+    height: 40px;
+    width: 40px;
+  }
 }
