@@ -10,6 +10,7 @@ import { ShortcutContext } from '../contexts/ShortcutContext';
 import { LiveBeat } from './LiveBeat';
 import IconBxsCog from '../icons/IconBxsCog';
 import { Modal } from './Modal';
+import IconBxMinus from '../icons/IconBxMinus';
 
 interface SceneEditorProps {
   className?: string;
@@ -80,6 +81,18 @@ export function SceneEditor({
                 onDelete={() => {
                   scene.components.splice(i, 1);
                   save();
+                }}
+                swapDown={i === 0 ? undefined : () => {
+                  const temp = scene.components[i];
+                  scene.components[i] = scene.components[i - 1];
+                  scene.components[i - 1] = temp;
+                  save();
+                }}
+                swapUp={i === scene.components.length - 1 ? undefined : () => {
+                  const temp = scene.components[i];
+                  scene.components[i] = scene.components[i + 1];
+                  scene.components[i + 1] = temp;
+                  save();
                 }} />
             </li>
           ))
@@ -132,9 +145,11 @@ export function SceneEditor({
 interface ComponentProps {
   component: Scene_Component;
   onDelete: () => void;
+  swapUp?: () => void;
+  swapDown?: () => void;
 }
 
-function Component({ component, onDelete }: ComponentProps) {
+function Component({ component, onDelete, swapUp, swapDown }: ComponentProps) {
   const { save, project } = useContext(ProjectContext);
 
   const [componentDetailsModal, setComponentDetailsModal] = useState(false);
@@ -154,7 +169,7 @@ function Component({ component, onDelete }: ComponentProps) {
               .map(id => {
                 const sequence = project.universeSequences[parseInt(id)];
                 return (
-                  <option value={id}>{sequence.name}</option>
+                  <option key={id} value={id}>{sequence.name}</option>
                 );
               })
           }
@@ -167,9 +182,22 @@ function Component({ component, onDelete }: ComponentProps) {
       </div>
 
       <div className={styles.row}>
+        {
+          swapDown &&
+          <IconButton title="Decrease Priority" onClick={swapDown}>
+            <IconBxMinus />
+          </IconButton>
+        }
+        {
+          swapUp &&
+          <IconButton title="Increase Priority" onClick={swapUp}>
+            <IconBxPlus />
+          </IconButton>
+        }
         Shortcut:&nbsp;
         <input
           className={styles.shortcut}
+          onChange={() => {}}
           onKeyDown={(e) => {
             if (e.code.startsWith('Digit')) {
               component.shortcut = e.code.substring(5);

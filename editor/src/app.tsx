@@ -1,5 +1,5 @@
 import React from 'react';
-import * as ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import Index from './Index';
 import { ProjectProvider } from './contexts/ProjectContext';
 import { BrowserRouter } from 'react-router-dom';
@@ -12,7 +12,8 @@ import { ShortcutProvider } from './contexts/ShortcutContext';
 //   console.log(hello_world());
 // });
 
-ReactDOM.render(
+const root = createRoot(document.getElementById('root'));
+root.render(
   <BrowserRouter basename="/">
     <ProjectProvider>
       <SerialProvider>
@@ -21,6 +22,5 @@ ReactDOM.render(
         </ShortcutProvider>
       </SerialProvider>
     </ProjectProvider>
-  </BrowserRouter>,
-  document.getElementById('root')
+  </BrowserRouter>
 );

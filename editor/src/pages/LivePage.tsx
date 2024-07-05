@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { HorizontalSplitPane } from '../components/SplitPane';
 import { Scene } from '@dmx-controller/proto/scene_pb';
 import { ProjectContext } from '../contexts/ProjectContext';
@@ -7,18 +7,25 @@ import styles from "./LivePage.module.scss";
 import { UniverseSequence } from '@dmx-controller/proto/universe_sequence_pb';
 import { nextId } from '../util/mapUtils';
 import { BeatContext, BeatProvider } from '../contexts/BeatContext';
-import { ShortcutContext } from '../contexts/ShortcutContext';
 import { UniverseSequenceEditor } from '../components/UniverseSequenceEditor';
 import { SceneEditor } from '../components/SceneEditor';
 import { SerialContext } from '../contexts/SerialContext';
 import { renderSceneToUniverse } from '../engine/universe';
+
+export function LivePage(): JSX.Element {
+  return (
+    <BeatProvider>
+      <LivePageImpl />
+    </BeatProvider>
+  );
+}
 
 interface Selected {
   type: 'scene' | 'sequence'
   index: number;
 }
 
-export function LivePage(): JSX.Element {
+function LivePageImpl(): JSX.Element {
   const { project } = useContext(ProjectContext);
   const { beat: beatMetadata } = useContext(BeatContext);
   const { setRenderUniverse, clearRenderUniverse } = useContext(SerialContext);
