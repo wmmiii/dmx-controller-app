@@ -1,0 +1,51 @@
+name: Deploy App
+
+on:
+  push:
+    branches:
+      - main
+  workflow_call:
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    outputs:
+      build-checksum: ${{ steps.build-checksum.outputs.build-checksum }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Build
+        run: bazel build //editor:static_tar
+
+      - name: Extract tar
+        run: |
+          mkdir dist
+          tar -xvf bazel-bin/editor/static_tar.tar -C dist
+
+      - name: Upload pages
+        uses: actions/upload-pages-artifact@master
+        with:
+          path: dist
+
+  deploy:
+    name: Deploy
+
+    needs: build
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v1
