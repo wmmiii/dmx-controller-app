@@ -85,6 +85,7 @@ export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
           await writer.write(universe);
         } catch (e) {
           console.error(e);
+          closed = true;
           disconnect();
         } finally {
           setMaxFps(Math.floor(1000 / (new Date().getTime() - start)));
