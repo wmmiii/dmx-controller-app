@@ -36,6 +36,10 @@ a {
   &:hover {
     color: $col-interactive-hover;
   }
+
+  &.active {
+    color: $col-text;
+  }
 }
 
 input,

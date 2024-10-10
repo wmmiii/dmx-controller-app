@@ -12,12 +12,13 @@ import ShowPage from './pages/ShowPage';
 import UniversePage from './pages/UniversePage';
 import styles from './Index.module.scss';
 import { IconButton } from './components/Button';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { ProjectContext } from './contexts/ProjectContext';
 import { Routes, Route } from 'react-router-dom';
 import { SerialContext } from './contexts/SerialContext';
 import { NumberInput } from './components/Input';
 import { LivePage } from './pages/LivePage';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 export default function Index(): JSX.Element {
   const { port, blackout, setBlackout, connect, disconnect, currentFps } = useContext(SerialContext);
@@ -41,11 +42,11 @@ export default function Index(): JSX.Element {
   return (
     <div className={styles.wrapper}>
       <header>
-        <Link to="/show">Show</Link>
-        <Link to="/live">Live</Link>
-        <Link to="/assets">Assets</Link>
-        <Link to="/sequence">Sequence</Link>
-        <Link to="/universe">Universe</Link>
+        <PageLink to="/show" default={true}>Show</PageLink>
+        <PageLink to="/live">Live</PageLink>
+        <PageLink to="/assets">Assets</PageLink>
+        <PageLink to="/sequence">Sequence</PageLink>
+        <PageLink to="/universe">Universe</PageLink>
         <div className={styles.spacer}></div>
         <div>
           Fps: {
@@ -92,15 +93,37 @@ export default function Index(): JSX.Element {
         </IconButton>
       </header>
       <main>
-        <Routes>
-          <Route path="/" element={<ShowPage />} />
-          <Route path="/show" element={<ShowPage />} />
-          <Route path="/live" element={<LivePage />} />
-          <Route path="/assets" element={<AssetBrowserPage />} />
-          <Route path="/sequence" element={<SequencePage />} />
-          <Route path="/universe" element={<UniversePage />} />
-        </Routes>
+        <ErrorBoundary>
+          <Routes>
+            <Route path="/" element={<ShowPage />} />
+            <Route path="/show" element={<ShowPage />} />
+            <Route path="/live" element={<LivePage />} />
+            <Route path="/assets" element={<AssetBrowserPage />} />
+            <Route path="/sequence" element={<SequencePage />} />
+            <Route path="/universe" element={<UniversePage />} />
+          </Routes>
+        </ErrorBoundary>
       </main>
     </div>
+  );
+}
+
+interface PageLinkProps {
+  to: string;
+  default?: true;
+  children: string;
+}
+
+function PageLink(props: PageLinkProps) {
+  const location = useLocation();
+  let className: string | undefined;
+  if (location.pathname === props.to ||
+      (location.pathname === '/' && props.default)) {
+    className = styles.active;
+  }
+  return (
+    <Link to={props.to} className={className}>
+      {props.children}
+    </Link>
   );
 }

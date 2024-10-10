@@ -73,6 +73,29 @@ export default function ShowPage(): JSX.Element {
 
   const beatMetadata = audioFile?.beatMetadata;
 
+  console.log('project.shows', project?.shows);
+  if (project?.shows == null || (project.shows?.length || 0) === 0) {
+    if (Object.keys(project?.assets || {}).length === 0) {
+      return (
+        <p>
+          Please <a href="/assets">upload an audio asset</a> before creating a
+          show!
+        </p>
+      )
+    } else {
+      return (
+        <>
+          <Button onClick={() => {
+            project.shows = [DEFAULT_SHOW];
+            save();
+          }}>
+            Create a show!
+          </Button>       
+        </>
+      );
+    }
+  }
+
   if (!show) {
     return <>Loading...</>;
   }
