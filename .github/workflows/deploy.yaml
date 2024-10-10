@@ -11,9 +11,6 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
 
-    outputs:
-      build-checksum: ${{ steps.build-checksum.outputs.build-checksum }}
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -48,4 +45,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v1
+        uses: actions/deploy-pages@v4
