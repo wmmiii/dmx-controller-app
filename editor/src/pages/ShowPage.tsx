@@ -73,7 +73,6 @@ export default function ShowPage(): JSX.Element {
 
   const beatMetadata = audioFile?.beatMetadata;
 
-  console.log('project.shows', project?.shows);
   if (project?.shows == null || (project.shows?.length || 0) === 0) {
     if (Object.keys(project?.assets || {}).length === 0) {
       return (

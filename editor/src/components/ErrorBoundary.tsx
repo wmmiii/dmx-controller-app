@@ -17,13 +17,12 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   static getDerivedStateFromError(error: unknown) {
-    console.log('getDerivedStateFromError', error);
     // Update state so the next render will show the fallback UI.
     return { error };
   }
 
   componentDidCatch(error: unknown, _errorInfo: unknown) {
-    console.log('componentDidCatch', error);
+    console.error('ErrorBoundary caught error', error);
     this.setState({
       error,
     });

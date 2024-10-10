@@ -93,3 +93,12 @@ li {
 .warning {
   color: $col-warning;
 }
+
+.button-row {
+  align-items: center;
+  display: flex;
+  flex-direction: row;
+  gap: spacing(2);
+  justify-content: space-between;
+  margin: spacing(1) 0;
+}
