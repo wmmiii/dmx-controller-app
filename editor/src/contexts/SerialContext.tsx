@@ -1,11 +1,14 @@
-import { PropsWithChildren, createContext, useCallback, useEffect, useRef, useState } from "react";
+import { PropsWithChildren, createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { Modal } from "../components/Modal";
+import { DialogContext } from "./DialogContext";
+import IconBxErrorAlt from "../icons/IconBxErrorAlt";
 
 const BLACKOUT_UNIVERSE = new Uint8Array(512).fill(0);
 const FPS_BUFFER_SIZE = 100;
 
 type RenderUniverse = () => Uint8Array;
 
-export const SerialContext = createContext({
+const EMPTY_CONTEXT = {
   port: null as (SerialPort | null),
   connect: () => { },
   disconnect: () => { },
@@ -15,9 +18,50 @@ export const SerialContext = createContext({
   clearRenderUniverse: (_render: RenderUniverse) => { },
   currentFps: 0,
   maxFps: 0,
-});
+};
+
+export const SerialContext = createContext(EMPTY_CONTEXT);
+const SERIAL_MISSING_KEY = 'serial-missing';
 
 export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
+  const dialogContext = useContext(DialogContext);
+  const [open, setOpen] =
+    useState(!dialogContext.isDismissed(SERIAL_MISSING_KEY));
+
+  if (!navigator.serial) {
+    return (
+      <SerialContext.Provider value={EMPTY_CONTEXT}>
+        {children}
+        {
+          open &&
+          <Modal
+            title="Unsupported Browser"
+            icon={<IconBxErrorAlt />}
+            onClose={() => setOpen(false)}>
+            <p>
+              This browser does not support the <code>navigator.serial</code>
+              &nbsp;api required for this app to function.
+            </p>
+            <p>
+              You can modify project data but you will be unable to link this
+              software to any DMX universe and visualize any output.
+            </p>
+            <p>
+              Please download&nbsp;
+              <a href="https://www.google.com/chrome/" target="_blank">Google 
+              Chrome</a> or another Chromium based browser that supports the
+              &nbsp;<code>navigator.serial</code> api.
+            </p>
+          </Modal>
+        }
+      </SerialContext.Provider>
+    );
+  } else {
+    return <SerialProviderImpl>{children}</SerialProviderImpl>;
+  }
+}
+
+function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
   const [port, setPort] = useState<SerialPort | null>(null);
   const renderUniverse = useRef<RenderUniverse>(() => BLACKOUT_UNIVERSE);
   const blackout = useRef(false);
@@ -70,7 +114,7 @@ export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
     let closed = false;
     let lastFrame = new Date().getTime();
     (async () => {
-      while(!closed) {
+      while (!closed) {
         const start = new Date().getTime();
 
         let universe;
@@ -79,7 +123,7 @@ export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
         } else {
           universe = renderUniverse.current();
         }
-  
+
         try {
           await writer.ready;
           await writer.write(universe);

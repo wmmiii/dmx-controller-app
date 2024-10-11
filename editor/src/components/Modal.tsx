@@ -7,6 +7,7 @@ import { ShortcutContext } from '../contexts/ShortcutContext';
 
 interface ModalProps {
   title: string;
+  icon?: JSX.Element;
   onClose: () => void;
   children: React.ReactNode;
   bodyClass?: string;
@@ -16,6 +17,7 @@ interface ModalProps {
 
 export function Modal({
   title,
+  icon,
   onClose,
   bodyClass,
   children,
@@ -46,9 +48,14 @@ export function Modal({
     <div className={styles.wrapper} onClick={() => onClose()}>
       <div className={classes.join(' ')} onClick={(e) => {
         e.stopPropagation();
-        e.preventDefault();
       }}>
         <div className={styles.header}>
+          {
+            icon &&
+            <div className={styles.icon}>
+              {icon}
+            </div>
+          }
           {title}
           <div className={styles.spacer}></div>
           <IconButton title="close" onClick={onClose}>
