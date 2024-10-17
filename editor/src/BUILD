@@ -27,7 +27,8 @@ esbuild(
     ]),
     config = "esbuild.config.mjs",
     entry_point = "app.tsx",
-    minify = True,
+    minify = select({ "//:opt_mode": True, "//conditions:default": False })
+,
     tsconfig = "//:tsconfig",
     visibility = ["//editor:__pkg__"],
     deps = TS_DEPS,

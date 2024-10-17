@@ -24,3 +24,9 @@ ts_config(
     src = "tsconfig.json",
     visibility = [":__subpackages__"],
 )
+
+config_setting(
+    name = "opt_mode",
+    values = {"compilation_mode": "opt"},
+    visibility = ["//visibility:public"],
+)
