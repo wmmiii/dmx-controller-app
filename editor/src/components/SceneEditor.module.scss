@@ -17,31 +17,19 @@
 }
 
 .component-list {
-  display: flex;
-  flex-direction: row;
-  gap: spacing(2);
-  justify-content: start;
-  list-style: none;
-  margin: spacing(1);
-  padding: 0;
-}
+  border-collapse: collapse;
+  user-select: none;
 
-.component {
-  background-color: $col-bg-higher;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  gap: spacing(1);
-  max-width: 240px;
-  min-width: 120px;
-  padding: spacing(1);
+  td {
+    padding: spacing(0.5) spacing(1);
+  }
 
-  .row {
+  .drag-handle {
     align-items: center;
+    color: $col-text-dim;
+    cursor: ns-resize;
     display: flex;
-    flex-direction: row;
-    gap: spacing(1);
-    justify-content: space-between;
+    justify-content: center;
   }
 
   .shortcut {

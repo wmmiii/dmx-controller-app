@@ -1,5 +1,7 @@
 @import '../vars';
 
 .universe-sequence-editor {
-  position: relative;
+  @include fill;
+
+  background-color: $col-bg;
 }

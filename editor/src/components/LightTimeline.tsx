@@ -20,7 +20,7 @@ import { Effect as EffectProto } from '@dmx-controller/proto/effect_pb';
 
 export const LEFT_WIDTH = 180;
 
-type LightTimelineProps = TracksProps | DetailsPaneProps;
+type LightTimelineProps = TracksProps & DetailsPaneProps;
 
 export default function LightTimeline(props: LightTimelineProps): JSX.Element {
   const { setShortcuts } = useContext(ShortcutContext);

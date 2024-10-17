@@ -11,6 +11,12 @@ import { LiveBeat } from './LiveBeat';
 import IconBxsCog from '../icons/IconBxsCog';
 import { Modal } from './Modal';
 import IconBxMinus from '../icons/IconBxMinus';
+import IconBxPause from '../icons/IconBxPause';
+import IconBxPlay from '../icons/IconBxPlay';
+import IconBxGridVertical from '../icons/IconBxGridVertical';
+import IconBxX from '../icons/IconBxX';
+import IconBxWrench from '../icons/IconBxWrench';
+import { UniverseSequenceEditor } from './UniverseSequenceEditor';
 
 interface SceneEditorProps {
   className?: string;
@@ -27,6 +33,7 @@ export function SceneEditor({
   const { setShortcuts } = useContext(ShortcutContext);
 
   const [sceneDetailsModal, setSceneDetailsModal] = useState(false);
+  const [draggingComponent, setDraggingComponent] = useState<Scene_Component | null>(null);
 
   const scene = useMemo(() => project?.scenes[sceneId], [sceneId]);
 
@@ -53,6 +60,15 @@ export function SceneEditor({
         })));
   }, [scene.components.map(c => c.shortcut)]);
 
+  const onDragOver = (newIndex: number) => {
+    const originalIndex = scene.components.indexOf(draggingComponent);
+    if (originalIndex !== newIndex) {
+      scene.components.splice(originalIndex, 1);
+      scene.components.splice(newIndex, 0, draggingComponent);
+      save();
+    }
+  }
+
   const classes = [styles.sceneEditor, className];
 
   return (
@@ -72,46 +88,43 @@ export function SceneEditor({
         </Button>
         <LiveBeat />
       </div>
-      <ol className={styles.componentList}>
-        {
-          scene.components.map((c, i) => (
-            <li key={i}>
-              <Component
-                component={c}
-                onDelete={() => {
-                  scene.components.splice(i, 1);
+      <table className={styles.componentList}>
+        <tbody>
+          {
+            scene.components.map((c, i) => (
+              <tr
+                key={i}
+                draggable={draggingComponent === c}
+                onDragOver={() => onDragOver(i)}>
+                <Component
+                  component={c}
+                  onDelete={() => {
+                    scene.components.splice(i, 1);
+                    save();
+                  }}
+                  onDragStart={() => setDraggingComponent(c)} />
+              </tr>
+            ))
+          }
+          <tr>
+            <td></td>
+            <td colSpan={2}>
+              <Button
+                icon={<IconBxPlus />}
+                onClick={() => {
+                  scene.components.push(new Scene_Component({
+                    name: "New Component",
+                    universeSequenceId: 0,
+                    active: false,
+                  }));
                   save();
-                }}
-                swapDown={i === 0 ? undefined : () => {
-                  const temp = scene.components[i];
-                  scene.components[i] = scene.components[i - 1];
-                  scene.components[i - 1] = temp;
-                  save();
-                }}
-                swapUp={i === scene.components.length - 1 ? undefined : () => {
-                  const temp = scene.components[i];
-                  scene.components[i] = scene.components[i + 1];
-                  scene.components[i + 1] = temp;
-                  save();
-                }} />
-            </li>
-          ))
-        }
-        <li>
-          <Button
-            icon={<IconBxPlus />}
-            onClick={() => {
-              scene.components.push(new Scene_Component({
-                name: "New Component",
-                universeSequenceId: 0,
-                active: false,
-              }));
-              save();
-            }}>
-            Add Component
-          </Button>
-        </li>
-      </ol>
+                }}>
+                Add Component
+              </Button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
       {
         sceneDetailsModal &&
         <Modal
@@ -145,18 +158,42 @@ export function SceneEditor({
 interface ComponentProps {
   component: Scene_Component;
   onDelete: () => void;
-  swapUp?: () => void;
-  swapDown?: () => void;
+  onDragStart: () => void;
 }
 
-function Component({ component, onDelete, swapUp, swapDown }: ComponentProps) {
+function Component({ component, onDelete, onDragStart }: ComponentProps) {
   const { save, project } = useContext(ProjectContext);
 
-  const [componentDetailsModal, setComponentDetailsModal] = useState(false);
+  const [showSequenceEditor, setShowSequenceEditor] = useState(false);
 
   return (
-    <div className={styles.component}>
-      <div className={styles.row}>
+    <>
+      <td className={styles.rearrange}>
+        <div
+          className={styles.dragHandle}
+          onMouseDown={onDragStart}>
+          <IconBxGridVertical />
+        </div>
+      </td>
+      <td>
+        <IconButton
+          title={component.active ?
+            `Disable ${project.universeSequences[component.universeSequenceId]?.name}` :
+            `Enable ${project.universeSequences[component.universeSequenceId]?.name}`
+          }
+          variant={component.active ? 'primary' : 'default'}
+          onClick={() => {
+            component.active = !component.active;
+            save();
+          }}>
+          {
+            component.active ?
+              <IconBxPause /> :
+              <IconBxPlay />
+          }
+        </IconButton>
+      </td>
+      <td>
         <select
           value={component.universeSequenceId}
           onChange={(e) => {
@@ -174,30 +211,28 @@ function Component({ component, onDelete, swapUp, swapDown }: ComponentProps) {
               })
           }
         </select>
+      </td>
+      <td>
         <IconButton
-          title="Component Settings"
-          onClick={() => setComponentDetailsModal(true)}>
-          <IconBxsCog />
+          title="Show editor"
+          onClick={() => setShowSequenceEditor(true)}>
+          <IconBxWrench />
         </IconButton>
-      </div>
-
-      <div className={styles.row}>
         {
-          swapDown &&
-          <IconButton title="Decrease Priority" onClick={swapDown}>
-            <IconBxMinus />
-          </IconButton>
+          showSequenceEditor &&
+          <Modal
+            bodyClass={styles.universeSequenceEditor}
+            title={`Edit ${project.universeSequences[component.universeSequenceId].name}`}
+            onClose={() => setShowSequenceEditor(false)}
+            fullScreen={true}>
+            <UniverseSequenceEditor universeSequenceId={component.universeSequenceId} />
+          </Modal>
         }
-        {
-          swapUp &&
-          <IconButton title="Increase Priority" onClick={swapUp}>
-            <IconBxPlus />
-          </IconButton>
-        }
-        Shortcut:&nbsp;
+      </td>
+      <td>
         <input
           className={styles.shortcut}
-          onChange={() => {}}
+          onChange={() => { }}
           onKeyDown={(e) => {
             if (e.code.startsWith('Digit')) {
               component.shortcut = e.code.substring(5);
@@ -208,38 +243,14 @@ function Component({ component, onDelete, swapUp, swapDown }: ComponentProps) {
             }
           }}
           value={component.shortcut} />
-      </div>
-
-      <Button
-        variant={component.active ? 'primary' : 'default'}
-        onClick={() => {
-          component.active = !component.active;
-          save();
-        }}>
-        {component.active ? 'Active' : 'Disabled'}
-      </Button>
-      {
-        componentDetailsModal &&
-        <Modal
-          title="Component Settings"
-          footer={
-            <Button
-              variant="primary"
-              onClick={() => setComponentDetailsModal(false)}>
-              Done
-            </Button>
-          }
-          onClose={() => setComponentDetailsModal(false)}>
-          <div>
-            <Button
-              variant="warning"
-              onClick={onDelete}>
-              Delete Component
-            </Button>&nbsp;
-            Cannot be undone!
-          </div>
-        </Modal>
-      }
-    </div>
+      </td>
+      <td>
+        <IconButton
+          title="Delete Component"
+          onClick={onDelete}>
+          <IconBxX />
+        </IconButton>
+      </td>
+    </>
   );
 }
