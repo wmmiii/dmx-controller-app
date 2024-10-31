@@ -278,6 +278,7 @@ function Tracks({
           {
             lightTracks.map((t: LightTrackProto, i) => (
               <LightTrack
+                key={i}
                 track={t}
                 maxMs={audioToTrack ?
                   audioToTrack(audioDuration) :

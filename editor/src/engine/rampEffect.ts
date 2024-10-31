@@ -38,7 +38,7 @@ export function rampEffect(
       beatT);
   }
 
-  const t = context.t;
+  const t = amountT;
   let effectT: number;
   switch (effect.easing) {
     case Effect_RampEffect_EasingFunction.EASE_IN:

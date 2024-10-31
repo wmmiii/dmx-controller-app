@@ -173,11 +173,7 @@ export function renderLayersToUniverse(
   for (const layer of layers) {
     const effect = layer.effects.find((e) => e.startMs <= t && e.endMs > t);
     if (effect) {
-      applyEffect(
-        Object.assign({
-          t: context.t + effect.offsetMs
-        }, context) as RenderContext,
-        effect);
+      applyEffect(context as RenderContext, effect);
     }
   }
 }
@@ -202,9 +198,21 @@ function applyDefaults(project: Project, universe: DmxUniverse): void {
 function applyEffect(context: RenderContext, effect: Effect): void {
   const absoluteT = context.t;
 
+  let offsetMs: number;
+  switch (effect.offset.case) {
+    case 'offsetBeat':
+      offsetMs = effect.offset.value * context.beatMetadata.lengthMs;
+      break;
+    case 'offsetMs':
+      offsetMs = effect.offset.value;
+      break;
+    default:
+      offsetMs = 0;
+  }
+
   // Calculate beat
   const beat = context.beatMetadata;
-  const virtualBeat = (context.t - Number(beat.offsetMs)) *
+  const virtualBeat = (context.t + offsetMs - Number(beat.offsetMs)) *
     (effect.timingMultiplier || 1);
   const beatIndex = Math.floor(virtualBeat / beat.lengthMs);
   const beatT = ((virtualBeat % beat.lengthMs) / beat.lengthMs) % 1;
@@ -258,8 +266,8 @@ function applyEffect(context: RenderContext, effect: Effect): void {
     }
 
   } else if (effect.effect.case === 'rampEffect') {
-    const amountT = (absoluteT - effect.startMs) /
-      (effect.endMs - effect.startMs);
+    const amountT = ((absoluteT + offsetMs - effect.startMs) /
+      (effect.endMs - effect.startMs)) % 1;
 
     rampEffect(
       context,

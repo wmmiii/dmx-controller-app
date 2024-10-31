@@ -1,5 +1,7 @@
 @import '../vars';
 
+$toggle-height: 24px;
+
 .input {
   background-color: transparent;
   border: none;
@@ -22,4 +24,70 @@
 
 .parse-error {
   border-bottom-color: $col-warning;
+}
+
+.toggle-input {
+  cursor: pointer;
+  display: flex;
+  flex-direction: row;
+
+  label {
+    cursor: pointer;
+    flex: 1;
+    min-width: 0;
+
+    &:first-child {
+      color: $col-interactive;
+      justify-content: left;
+    }
+
+    &:last-child {
+      justify-content: right;
+    }
+  }
+
+  .toggle-slide {
+    flex-shrink: 0;
+  }
+
+  &.enabled {
+    .toggle-switch {
+      left: $toggle-height;
+    }
+
+    label {
+      &:first-child {
+        color: unset;
+      }
+
+      &:last-child {
+        color: $col-interactive;
+      }
+    }
+  }
+}
+
+.toggle-slide {
+  @include inset-shadow;
+
+  background-color: #404040;
+  border-radius: $toggle-height / 2;
+  height: $toggle-height;
+  position: relative;
+  width: $toggle-height * 2;
+}
+
+.toggle-switch {
+  border-radius: $toggle-height / 2;
+  bottom: 0;
+  height: $toggle-height;
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: $toggle-height;
+  background-color: $col-interactive;
+
+  &:hover {
+    background-color: $col-interactive-hover;
+  }
 }

@@ -86,10 +86,15 @@ message Effect {
 
   // Timing details
   EffectTiming timing_mode = 11;
-  int32 offset_ms = 12;
+  reserved 12; // Deprecated offset_ms
   double timing_multiplier = 13;
   bool mirrored = 14;
-  reserved 15 to 100;
+  reserved 15; // Deprecated
+  oneof offset {
+    int32 offset_ms = 16;
+    double offset_beat = 17;
+  }
+  reserved 18 to 100;
 
   oneof effect {
     StaticEffect static_effect = 101;

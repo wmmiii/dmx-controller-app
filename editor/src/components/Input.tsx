@@ -129,3 +129,73 @@ export function NumberInput({
       onBlur={flushValue} />
   )
 }
+
+
+interface ToggleInputProps {
+  className?: string;
+  title?: string;
+  disabled?: boolean;
+  value: boolean;
+  labels?: {
+    left: string,
+    right: string,
+  },
+  onChange: (value: boolean) => void;
+}
+
+export function ToggleInput({
+  className,
+  title,
+  disabled,
+  value,
+  labels,
+  onChange,
+}: ToggleInputProps): JSX.Element {
+
+  const toggle = useCallback(() => {
+    if (!disabled) {
+      onChange(!value);
+    }
+  }, [disabled, onChange, value]);
+
+  const classes = [styles.toggleInput];
+  if (value) {
+    classes.push(styles.enabled);
+  }
+  if (className) {
+    classes.push(className);
+  }
+
+  return (
+    <div
+      className={classes.join(' ')}
+      title={title}
+      onClick={toggle}>
+      {
+        labels &&
+        <label onClick={(ev) => {
+          if (!disabled) {
+            onChange(false);
+          }
+          ev.stopPropagation();
+        }}>
+          {labels.left}
+        </label>
+      }
+      <div className={styles.toggleSlide}>
+        <div className={styles.toggleSwitch}></div>
+      </div>
+      {
+        labels &&
+        <label onClick={(ev) => {
+          if (!disabled) {
+            onChange(true);
+          }
+          ev.stopPropagation();
+        }}>
+          {labels.right}
+        </label>
+      }
+    </div>
+  );
+}

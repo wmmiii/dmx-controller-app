@@ -10,7 +10,7 @@ import { CSSProperties } from "react";
 import { DEFAULT_EFFECT_COLOR } from '../util/styleUtils';
 import { Effect as EffectProto, EffectTiming, Effect_RampEffect, Effect_RampEffect_EasingFunction, Effect_StaticEffect, FixtureState, FixtureState as FixtureStateProto, FixtureSequenceMapping } from "@dmx-controller/proto/effect_pb";
 import { isFixtureState } from '../engine/effect';
-import { NumberInput } from './Input';
+import { NumberInput, ToggleInput } from './Input';
 import { ShortcutContext } from '../contexts/ShortcutContext';
 
 export interface SelectedEffect {
@@ -302,6 +302,54 @@ export function EffectDetails({
                 onChange(effect);
               }} />
           </label>
+
+          <hr />
+
+          <label>
+            <span>Offset</span>
+            <NumberInput
+              type="float"
+              max={128}
+              min={-128}
+              value={
+                effect.offset.case === 'offsetMs' ?
+                  effect.offset.value / 1000 :
+                  effect.offset.value || 0
+              }
+              onChange={(v) => {
+                if (effect.offset.case === 'offsetMs') {
+                  v = Math.floor(v * 1000);
+                }
+                effect.offset.case = effect.offset.case || 'offsetBeat';
+                effect.offset.value = v;
+                onChange(effect);
+              }} />
+          </label>
+
+          {
+            effect.offset.value ?
+            <ToggleInput
+              className={styles.toggle}
+              value={effect.offset.case !== 'offsetBeat'}
+              onChange={(value) => {
+                if (value && effect.offset.case === 'offsetBeat') {
+                  effect.offset = {
+                    case: 'offsetMs',
+                    value: effect.offset.value * 1000,
+                  };
+                } else if (!value && effect.offset.case === 'offsetMs') {
+                  effect.offset = {
+                    case: 'offsetBeat',
+                    value: effect.offset.value / 1000,
+                  };
+                }
+                onChange(effect);
+              }}
+              labels={{ left: 'Beat', right: 'Seconds' }} /> :
+              <></>
+          }
+
+          <hr />
 
           <label>
             <span>Mirrored</span>
