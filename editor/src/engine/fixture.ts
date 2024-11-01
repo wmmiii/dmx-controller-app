@@ -4,6 +4,7 @@ import { getAllFixtures } from "./group";
 export type DmxUniverse = Uint8Array;
 
 export type ChannelTypes =
+  'other' |
   'red' |
   'red-fine' |
   'green' |

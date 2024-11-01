@@ -56,12 +56,14 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
       try {
         const projectBlob = await getBlob(PROJECT_KEY);
         const assetsBlob = await getBlob(ASSETS_KEY);
-        if (projectBlob == null || assetsBlob == null) {
+        if (projectBlob == null) {
           setProject(DEFAULT_PROJECT);
           return;
         } else {
           const p = Project.fromBinary(projectBlob);
-          p.assets = Project_Assets.fromBinary(assetsBlob);
+          if (assetsBlob != null) {
+            p.assets = Project_Assets.fromBinary(assetsBlob);
+          }
           upgradeProject(p);
           setProject(p);
         }

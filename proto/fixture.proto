@@ -13,6 +13,9 @@ message FixtureDefinition {
     /* Maximm number of degrees that a "pan" or "tilt" channel can move.
      * Also applicable for "fine" variants. */
     int32 max_degrees = 3;
+
+    /* Default value to output for this channel. */
+    uint32 default_value = 4;
   }
 
   string name = 1;

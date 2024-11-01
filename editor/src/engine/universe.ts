@@ -155,6 +155,12 @@ export function renderLayersToUniverse(
 }
 
 function applyDefaults(project: Project, universe: DmxUniverse): void {
+  for (const fixture of Object.values(project.physicalFixtures)) {
+    const fixtureDefinition = project.fixtureDefinitions[fixture.fixtureDefinitionId];
+    for (const channel of Object.entries(fixtureDefinition.channels)) {
+      universe[parseInt(channel[0]) + fixture.channelOffset] = channel[1].defaultValue;
+    }
+  }
 
   for (const defaultValues of project.defaultChannelValues) {
     const device = getDevice({

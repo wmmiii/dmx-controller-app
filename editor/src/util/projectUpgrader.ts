@@ -109,7 +109,7 @@ function upgradeIndices(project: Project): void {
   }
 
   // Beat metadata
-  for (const a of Object.values(project.assets?.audioFiles)) {
+  for (const a of Object.values(project.assets?.audioFiles || {})) {
     if ((a.beatMetadata?.deprecatedOffsetMs || 0) != 0) {
       a.beatMetadata.offsetMs = BigInt(a.beatMetadata.deprecatedOffsetMs);
       a.beatMetadata.deprecatedOffsetMs = 0;

@@ -485,6 +485,7 @@ function EditDefinitionDialog({
                   channel.type = e.target.value;
                   save();
                 }}>
+                <option value="other">other</option>
                 <option value="red">Red</option>
                 <option value="red-fine">Red Fine</option>
                 <option value="green">Green</option>
@@ -501,6 +502,17 @@ function EditDefinitionDialog({
                 <option value="tilt-fine">Tilt Fine</option>
                 <option value="zoom">Zoom</option>
               </select>
+              <label>
+                <span>Default Value</span>
+                <NumberInput
+                  min={0}
+                  max={255}
+                  value={channel.defaultValue}
+                  onChange={(v) => {
+                    channel.defaultValue = v;
+                    save();
+                  }} />
+              </label>
               {
                 (
                   channel.type === 'pan' || channel.type === 'pan-fine' ||
@@ -545,7 +557,7 @@ function EditDefinitionDialog({
       <Button onClick={() => {
         const newChannel = nextId(definition.channels);
         definition.channels[newChannel] =
-          new FixtureDefinition_Channel({ type: 'red' });
+          new FixtureDefinition_Channel({ type: 'other' });
         save();
       }}>
         + Add New Channel Mapping
