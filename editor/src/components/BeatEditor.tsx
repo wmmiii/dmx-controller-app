@@ -36,12 +36,12 @@ export function BeatEditor({ file, onCancel, onSave }: BeatEditorProps):
   const [waveSurferRegions, setWaveSurferRegions] =
     useState<RegionsPlugin | null>(null);
   const [firstMarker, setFirstMarker] =
-    useState<number>(file.beatMetadata?.offsetMs || 1000);
+    useState<number>(Number(file.beatMetadata?.offsetMs) || 1000);
   const [secondMarker, setSecondMarker] = useState<number>(
-    (file.beatMetadata?.offsetMs || 1000) +
+    Number(file.beatMetadata?.offsetMs || 1000n) +
     (file.beatMetadata?.lengthMs || 1000));
   const [lastMarker, setLastMarker] = useState<number>(
-    (file.beatMetadata?.offsetMs || 1000) +
+    Number(file.beatMetadata?.offsetMs || 1000n) +
     (file.beatMetadata?.lengthMs || 1000) * 2);
   const [beatsPerDuration, setBeatsPerDuration] = useState(1);
   const [t, setT] = useState(0);
@@ -111,9 +111,9 @@ export function BeatEditor({ file, onCancel, onSave }: BeatEditorProps):
       ws.loadBlob(fileBlob)
         .then(() => {
           const first =
-            (file.beatMetadata?.offsetMs || 1000);
+            Number(file.beatMetadata?.offsetMs || 1000);
           const second =
-            (file.beatMetadata?.offsetMs || 1000) +
+            Number(file.beatMetadata?.offsetMs || 1000) +
             (file.beatMetadata?.lengthMs || 1000);
           const beatLength = second - first;
           const duration = ws.getDuration() * 1000;
@@ -225,7 +225,7 @@ export function BeatEditor({ file, onCancel, onSave }: BeatEditorProps):
   const save = useCallback(() => {
     file.beatMetadata = new BeatMetadata({
       lengthMs: beatDuration,
-      offsetMs: Math.floor(firstBeat),
+      offsetMs: BigInt(Math.floor(firstBeat)),
     });
     onSave();
   }, [file, beatDuration, firstBeat]);

@@ -2,11 +2,11 @@
   "compilerOptions": {
     "jsx": "react-jsx",
     "jsxImportSource": "react",
-    "module": "esNext",
+    "module": "ESNext",
     "target": "ESNext",
     "lib": [
       "DOM",
-      "ESNext",
+      "ESNext"
     ],
     "moduleResolution": "node",
     "noImplicitAny": true,

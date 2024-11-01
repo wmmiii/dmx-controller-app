@@ -40,7 +40,7 @@ export function applyFixtureSequence(
   const sequenceContext = Object.assign({}, context, {t: t});
   const beatMetadata = new BeatMetadata({
     lengthMs: SEQUENCE_BEAT_RESOLUTION,
-    offsetMs: 0,
+    offsetMs: 0n,
   });
 
   renderLayersToUniverse(t, fixtureSequence.layers, sequenceContext, beatMetadata);

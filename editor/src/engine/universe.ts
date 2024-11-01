@@ -237,7 +237,6 @@ function applyEffect(context: RenderContext, beat: BeatMetadata, effect: Effect)
         effectT = 0;
       }
       break;
-    case EffectTiming.ABSOLUTE:
     default:
       throw Error('Unknown effect timing!');
   }
