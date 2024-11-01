@@ -533,7 +533,7 @@ function EditDefinitionDialog({
               <IconButton
                 title="Delete Channel Mapping"
                 onClick={() => {
-                  delete definition.channels[parseInt(id)];
+                  delete definition.channels[id];
                   save();
                 }}>
                 <IconBxX />

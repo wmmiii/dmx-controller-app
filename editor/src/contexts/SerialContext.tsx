@@ -48,8 +48,8 @@ export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
             </p>
             <p>
               Please download&nbsp;
-              <a href="https://www.google.com/chrome/" target="_blank">Google 
-              Chrome</a> or another Chromium based browser that supports the
+              <a href="https://www.google.com/chrome/" target="_blank">Google
+                Chrome</a> or another Chromium based browser that supports the
               &nbsp;<code>navigator.serial</code> api.
             </p>
           </Modal>
@@ -71,6 +71,7 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
   const [maxFps, setMaxFps] = useState(0);
 
   const connect = useCallback(async () => {
+    console.log('connect');
     const forceReconnect = port != null;
     try {
       let port: SerialPort;
@@ -145,6 +146,10 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
         average /= fpsBuffer.current.length;
         setCurrentFps(Math.floor(1000 / (average)));
         lastFrame = now;
+
+        // This is needed because sometimes the micro-controller gets
+        // overwhelmed. I don't know why and don't have time to debug.
+        await new Promise((r) => setTimeout(r, 10));
       }
     })();
 

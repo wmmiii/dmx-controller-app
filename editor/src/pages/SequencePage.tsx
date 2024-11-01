@@ -72,7 +72,7 @@ export default function newSequencePage(): JSX.Element {
   }, [fixtureSequence?.layers]);
 
   useEffect(() => {
-    if (!project) {
+    if (!project || virtualTracks.length < 1) {
       return;
     }
 
