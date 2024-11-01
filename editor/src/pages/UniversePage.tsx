@@ -499,6 +499,7 @@ function EditDefinitionDialog({
                 <option value="pan-fine">Pan Fine</option>
                 <option value="tilt">Tilt</option>
                 <option value="tilt-fine">Tilt Fine</option>
+                <option value="zoom">Zoom</option>
               </select>
               {
                 (

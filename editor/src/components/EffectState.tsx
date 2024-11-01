@@ -251,6 +251,40 @@ function FixtureState(
             </IconButton>
           </label>
       }
+      {
+        state.zoom != null ?
+          <label className={styles.stateRow}>
+            <span>Zoom</span>
+            <NumberInput
+              type="float"
+              max={1}
+              min={0}
+              value={state.zoom}
+              onChange={(v) => {
+                state.zoom = v;
+                onChange(state);
+              }} />&nbsp;
+            <IconButton
+              title="Remove Zoom"
+              onClick={() => {
+                state.zoom = undefined;
+                onChange(state);
+              }}>
+              <IconBxX />
+            </IconButton>
+          </label> :
+          <label className={styles.stateRow}>
+            <span>Zoom</span>
+            <IconButton
+              title="Add Zoom"
+              onClick={() => {
+                state.zoom = 0;
+                onChange(state);
+              }}>
+              <IconBxPlus />
+            </IconButton>
+          </label>
+      }
       <label>Channels:</label>
       {
         state.channels.map((c: FixtureState_Channel, i: number) => (

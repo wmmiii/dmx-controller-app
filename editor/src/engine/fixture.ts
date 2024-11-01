@@ -17,7 +17,8 @@ export type ChannelTypes =
   'pan' |
   'pan-fine' |
   'tilt' |
-  'tilt-fine';
+  'tilt-fine' |
+  'zoom';
 
 export interface WritableDevice {
   /**
@@ -75,6 +76,7 @@ export function getPhysicalWritableDevice(
   const brightnessFunctions: Array<(b: number) => void> = [];
   const panFunctions: Array<(d: number) => void> = [];
   const tiltFunctions: Array<(d: number) => void> = [];
+  const zoomFunctions: Array<(z: number) => void> = [];
 
   const channelTypes: ChannelTypes[] = [];
 
@@ -153,7 +155,11 @@ export function getPhysicalWritableDevice(
         tiltFunctions.push((d) => {
           const m = mapDegrees(d, channel.minDegrees, channel.maxDegrees);
           universe[index] =
-            (mapDegrees(d, channel.minDegrees, channel.maxDegrees) * 255) % 255;
+            (m * 255) % 255;
+        });
+      case 'zoom':
+        zoomFunctions.push((z) => {
+          universe[index] = (z * 255) % 255;
         });
       default:
         continue;
