@@ -126,7 +126,7 @@ export default function ShowPage(): JSX.Element {
               value={project?.selectedShow || 0}>
               {
                 project?.shows.map((s: Show, i: number) => (
-                  <option value={i}>{s.name}</option>
+                  <option key={i} value={i}>{s.name}</option>
                 ))
               }
               <option value={-1}>
@@ -156,7 +156,7 @@ export default function ShowPage(): JSX.Element {
               {
                 idMapToArray(project?.assets?.audioFiles)
                   .map(([id, f]) => (
-                    <option value={id}>
+                    <option key={id} value={id}>
                       {f.name}
                     </option>
                   ))

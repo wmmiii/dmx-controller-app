@@ -155,8 +155,8 @@ export function Effect({
         <div
           className={styles.icons}
           style={{ left: Math.max(0, -(style.left || 0)) }} >
-          {Array.from(icons).map(I => (
-            <div className={styles.icon}>
+          {Array.from(icons).map((I, i) => (
+            <div key={i} className={styles.icon}>
               <I />
             </div>
           ))}

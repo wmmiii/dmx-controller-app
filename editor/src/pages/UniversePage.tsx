@@ -67,7 +67,7 @@ function FixtureList(): JSX.Element {
               }
 
               return (
-                <li onClick={() => {
+                <li key={id} onClick={() => {
                   setSelectedFixtureId(id);
                 }}>
                   (
@@ -95,7 +95,7 @@ function FixtureList(): JSX.Element {
         {
           idMapToArray(project.physicalFixtureGroups)
             .map(([id, group]) => (
-              <li onClick={() => setSelectedGroupId(id)}>
+              <li key={id} onClick={() => setSelectedGroupId(id)}>
                 {group.name}
               </li>
             ))
@@ -193,7 +193,7 @@ function EditFixtureDialog({
             idMapToArray(project.fixtureDefinitions)
               .sort((a, b) => a[1].name.localeCompare(b[1].name))
               .map(([id, definition]) => (
-                <option value={id}>
+                <option key={id} value={id}>
                   {definition.name}
                 </option>
               ))
@@ -277,7 +277,7 @@ function EditGroupDialog({
       }
       {
         group.physicalFixtureGroupIds.map((id, i) => (
-          <div className={styles.row}>
+          <div key={id} className={styles.row}>
             {project.physicalFixtureGroups[id]?.name}
             <IconButton
               title="Remove Group"
@@ -292,7 +292,7 @@ function EditGroupDialog({
       }
       {
         group.physicalFixtureIds.map((id, i) => (
-          <div className={styles.row}>
+          <div key={id} className={styles.row}>
             {project.physicalFixtures[id].name}
             <IconButton
               title="Remove Fixture"
@@ -315,8 +315,8 @@ function EditGroupDialog({
             &lt;Select Member&gt;
           </option>
           {
-            applicableMembers.map((m) => (
-              <option value={JSON.stringify(m)}>
+            applicableMembers.map((m, i) => (
+              <option key={i} value={JSON.stringify(m)}>
                 {m.name}
               </option>
             ))
@@ -367,7 +367,7 @@ function FixtureDefinitionList(): JSX.Element {
         {
           idMapToArray(project.fixtureDefinitions)
             .map(([id, definition]) => (
-              <li onClick={() => setSelectedDefinitionId(id)}>
+              <li key={id} onClick={() => setSelectedDefinitionId(id)}>
                 {definition.name}
               </li>
             ))
@@ -469,7 +469,7 @@ function EditDefinitionDialog({
         idMapToArray(definition.channels)
           .sort((a, b) => a[0] - b[0])
           .map(([id, channel]) => (
-            <div className={styles.row}>
+            <div key={id} className={styles.row}>
               <NumberInput
                 min={0}
                 max={512}
@@ -625,7 +625,7 @@ function EditDefaultChannelsDialog({ close }: EditDefaultChannelsDialogProps): J
               {
                 idMapToArray(d.channels)
                   .map(([index, value]) => (
-                    <div className={styles.row}>
+                    <div key={index} className={styles.row}>
                       Channel:&nbsp;
                       <NumberInput
                         min={0}

@@ -24,9 +24,6 @@ export function applyFixtureSequence(
 
   let t = 0;
   switch (mapping.timingMode) {
-    case EffectTiming.ABSOLUTE:
-      console.error('Absolute timings for fixtureSequences are not implemented!');
-      return;
     case EffectTiming.BEAT:
       t = ((beatIndex + beatT) * mapping.timingMultiplier) % fixtureSequence.nativeBeats;
       t *= SEQUENCE_BEAT_RESOLUTION;
@@ -40,15 +37,13 @@ export function applyFixtureSequence(
 
 
   // Re-time into fixtureSequence space.
-  const sequenceContext = Object.assign({}, context, {
-    beatMetadata: new BeatMetadata({
-      lengthMs: SEQUENCE_BEAT_RESOLUTION,
-      offsetMs: 0,
-    }),
-    t: t,
+  const sequenceContext = Object.assign({}, context, {t: t});
+  const beatMetadata = new BeatMetadata({
+    lengthMs: SEQUENCE_BEAT_RESOLUTION,
+    offsetMs: 0,
   });
 
-  renderLayersToUniverse(t, fixtureSequence.layers, sequenceContext);
+  renderLayersToUniverse(t, fixtureSequence.layers, sequenceContext, beatMetadata);
 }
 
 export function fixtureSequences(project: Project, forbidden?: number):

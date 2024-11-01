@@ -71,14 +71,14 @@ $toggle-height: 24px;
   @include inset-shadow;
 
   background-color: #404040;
-  border-radius: $toggle-height / 2;
+  border-radius: calc($toggle-height / 2);
   height: $toggle-height;
   position: relative;
-  width: $toggle-height * 2;
+  width: calc($toggle-height * 2);
 }
 
 .toggle-switch {
-  border-radius: $toggle-height / 2;
+  border-radius: calc($toggle-height / 2);
   bottom: 0;
   height: $toggle-height;
   left: 0;

@@ -10,11 +10,10 @@ import { idMapToArray } from "../util/mapUtils";
 import { rampEffect } from "./rampEffect";
 
 export interface RenderContext {
-  t: number;
-  beatMetadata?: BeatMetadata;
-  output: LightTrack['output'];
-  project: Project;
-  universe: DmxUniverse;
+  readonly t: number;
+  readonly output: LightTrack['output'];
+  readonly project: Project;
+  readonly universe: DmxUniverse;
 }
 
 export function renderShowToUniverse(t: number, project: Project):
@@ -28,19 +27,19 @@ export function renderShowToUniverse(t: number, project: Project):
   const show = project.shows[project.selectedShow || 0];
 
   if (show) {
+    const beatMetadata = project
+      .assets
+      ?.audioFiles[show.audioTrack?.audioFileId]
+      ?.beatMetadata;
     const context: Partial<RenderContext> = {
       t: t,
-      beatMetadata: project
-        .assets
-        ?.audioFiles[show.audioTrack?.audioFileId]
-        ?.beatMetadata,
       project: project,
       universe: universe,
     };
 
     for (const track of show.lightTracks) {
       const trackContext = Object.assign({}, context, { output: track.output });
-      renderLayersToUniverse(t, track.layers, trackContext);
+      renderLayersToUniverse(t, track.layers, trackContext, beatMetadata);
     }
   }
 
@@ -123,14 +122,13 @@ function renderUniverseSequence(
   if (universeSequence) {
     const context: Partial<RenderContext> = {
       t: t,
-      beatMetadata: beatMetadata,
       project: project,
       universe: universe,
     };
 
     for (const track of universeSequence.lightTracks) {
       const trackContext = Object.assign({}, context, { output: track.output });
-      renderLayersToUniverse(t, track.layers, trackContext);
+      renderLayersToUniverse(t, track.layers, trackContext, beatMetadata);
     }
   }
 }
@@ -153,13 +151,12 @@ export function renderSequenceToUniverse(
   if (fixtureSequence) {
     const context: RenderContext = {
       t: t,
-      beatMetadata: beatMetadata,
       output: output,
       project: project,
       universe: universe,
     };
 
-    renderLayersToUniverse(t, fixtureSequence.layers, context);
+    renderLayersToUniverse(t, fixtureSequence.layers, context, beatMetadata);
   }
 
   return universe;
@@ -169,11 +166,12 @@ export function renderLayersToUniverse(
   t: number,
   layers: LightLayer[],
   context: Partial<RenderContext>,
+  beatMetadata: BeatMetadata,
 ): void {
   for (const layer of layers) {
     const effect = layer.effects.find((e) => e.startMs <= t && e.endMs > t);
     if (effect) {
-      applyEffect(context as RenderContext, effect);
+      applyEffect(context as RenderContext, beatMetadata, effect);
     }
   }
 }
@@ -195,13 +193,11 @@ function applyDefaults(project: Project, universe: DmxUniverse): void {
   }
 }
 
-function applyEffect(context: RenderContext, effect: Effect): void {
-  const absoluteT = context.t;
-
+function applyEffect(context: RenderContext, beat: BeatMetadata, effect: Effect): void {
   let offsetMs: number;
   switch (effect.offset.case) {
     case 'offsetBeat':
-      offsetMs = effect.offset.value * context.beatMetadata.lengthMs;
+      offsetMs = effect.offset.value * beat.lengthMs;
       break;
     case 'offsetMs':
       offsetMs = effect.offset.value;
@@ -211,68 +207,58 @@ function applyEffect(context: RenderContext, effect: Effect): void {
   }
 
   // Calculate beat
-  const beat = context.beatMetadata;
   const virtualBeat = (context.t + offsetMs - Number(beat.offsetMs)) *
     (effect.timingMultiplier || 1);
   const beatIndex = Math.floor(virtualBeat / beat.lengthMs);
   const beatT = ((virtualBeat % beat.lengthMs) / beat.lengthMs) % 1;
 
   // Calculate timing
-  let t: number;
+  /** The [0, 1] value of how far in the effect we are. */
+  let effectT: number;
   switch (effect.timingMode) {
     case EffectTiming.ONE_SHOT:
       // TODO: Implement mirrored for one-shots.
       const relativeT =
-        (context.t - effect.startMs) /
+        (context.t + offsetMs - effect.startMs) /
         (effect.endMs - effect.startMs) *
         (effect.timingMultiplier || 1);
-      t = relativeT % 1;
-      if (effect.mirrored) {
-        if (Math.floor(relativeT) % 2) {
-          t = 1 - t;
-        }
+      effectT = relativeT % 1;
+      if (effect.mirrored && Math.floor(relativeT) % 2) {
+        effectT = 1 - effectT;
       }
       break;
     case EffectTiming.BEAT:
-      if (context.beatMetadata) {
-        t = beatT;
+      if (beat) {
+        effectT = beatT;
         if (effect.mirrored && beatIndex % 2) {
-          t = 1 - t;
+          effectT = 1 - effectT;
         }
       } else {
-        t = 0;
+        effectT = 0;
       }
       break;
     case EffectTiming.ABSOLUTE:
     default:
-      t = context.t;
+      throw Error('Unknown effect timing!');
   }
-
-  context.t = t;
 
   if (effect.effect.case === 'staticEffect') {
     if (effect.effect.value.effect.case === 'state') {
       applyState(effect.effect.value.effect.value, context);
     } else {
-      const amountT = (absoluteT - effect.startMs) /
-        (effect.endMs - effect.startMs);
-
       applyFixtureSequence(
         context,
         effect.effect.value.effect.value,
-        amountT,
+        effectT,
         beatIndex,
         beatT);
     }
 
   } else if (effect.effect.case === 'rampEffect') {
-    const amountT = ((absoluteT + offsetMs - effect.startMs) /
-      (effect.endMs - effect.startMs)) % 1;
-
     rampEffect(
       context,
       effect.effect.value,
-      amountT,
+      effectT,
       beatIndex,
       beatT);
   }

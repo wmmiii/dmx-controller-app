@@ -7,7 +7,7 @@ import { applyFixtureSequence } from "./fixtureSequence";
 export function rampEffect(
   context: RenderContext,
   effect: Effect_RampEffect,
-  amountT: number,
+  t: number,
   beatIndex: number,
   beatT: number): void {
 
@@ -21,7 +21,7 @@ export function rampEffect(
     applyFixtureSequence(
       startContext,
       effect.start.value,
-      amountT,
+      t,
       beatIndex,
       beatT);
   }
@@ -33,34 +33,33 @@ export function rampEffect(
     applyFixtureSequence(
       endContext,
       effect.end.value,
-      amountT,
+      t,
       beatIndex,
       beatT);
   }
 
-  const t = amountT;
-  let effectT: number;
+  let easedT: number;
   switch (effect.easing) {
     case Effect_RampEffect_EasingFunction.EASE_IN:
-      effectT = t * t * t;
+      easedT = t * t * t;
       break;
     case Effect_RampEffect_EasingFunction.EASE_OUT:
-      effectT = 1 - Math.pow(1 - t, 3);
+      easedT = 1 - Math.pow(1 - t, 3);
       break;
     case Effect_RampEffect_EasingFunction.EASE_IN_OUT:
-      effectT = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      easedT = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
       break;
     case Effect_RampEffect_EasingFunction.SINE:
-      effectT = -(Math.cos(Math.PI * t) - 1) / 2;
+      easedT = -(Math.cos(Math.PI * t) - 1) / 2;
       break;
     case Effect_RampEffect_EasingFunction.LINEAR: // Fall-through
     default:
-      effectT = t;
+      easedT = t;
   }
 
   // First do a dumb interpolation of all the channels to set coarse values.
   for (let i = 0; i < context.universe.length; ++i) {
-    context.universe[i] = Math.floor(start[i] * (1 - effectT) + end[i] * effectT);
+    context.universe[i] = Math.floor(start[i] * (1 - t) + end[i] * t);
   }
 
   const outputDevice = getDevice(context);
@@ -70,8 +69,8 @@ export function rampEffect(
     if (type.indexOf('-fine') >= 0) {
       const coarseType = type.substring(0, type.length - 5) as ChannelTypes;
       const coarseIndex = outputDevice.channelTypes.indexOf(coarseType);
-      const coarseValue = start[coarseIndex] * (1 - effectT) +
-        end[coarseIndex] * effectT;
+      const coarseValue = start[coarseIndex] * (1 - t) +
+        end[coarseIndex] * t;
       context.universe[i] = Math.floor(coarseValue * 255) % 255;
     }
   });

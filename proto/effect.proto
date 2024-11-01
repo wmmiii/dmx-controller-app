@@ -47,8 +47,7 @@ enum EffectTiming {
   // The `t` value passed in corresponds to the relative timing of the beat
   // between [0, 1].
   BEAT = 1;
-  // The `t` value passed in corresponds to the actual `t` value of the show.
-  ABSOLUTE = 2;
+  reserved 2; // ABSOLUTE
 }
 
 message Effect {

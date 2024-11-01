@@ -144,7 +144,7 @@ export default function newSequencePage(): JSX.Element {
               {
                 project != null &&
                 idMapToArray(project.fixtureSequences).map(([id, s]) => (
-                  <option value={id}>{s.name}</option>
+                  <option key={id} value={id}>{s.name}</option>
                 ))
               }
               <option value={-1}>
