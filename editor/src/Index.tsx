@@ -55,11 +55,13 @@ export default function Index(): JSX.Element {
         <div className={styles.spacer}></div>
         <div>
           Fps: {
-            currentFps < 30 ?
-              <span className={styles.warning}>
-                {currentFps}
-              </span> :
-              <>{currentFps}</>
+            Number.isNaN(currentFps) ?
+              <>N/A</> :
+              currentFps < 30 ?
+                <span className={styles.warning}>
+                  {currentFps}
+                </span> :
+                <>{currentFps}</>
           }
         </div>
         <div>
@@ -99,7 +101,7 @@ export default function Index(): JSX.Element {
         <IconButton
           title="GitHub Page"
           onClick={() =>
-              window.open('https://github.com/wmmiii/dmx-controller-app/', '_blank')}>
+            window.open('https://github.com/wmmiii/dmx-controller-app/', '_blank')}>
           <IconBxlGithub />
         </IconButton>
       </header>

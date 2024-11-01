@@ -67,7 +67,7 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
   const blackout = useRef(false);
   const [blackoutState, setBlackoutState] = useState(false);
   const fpsBuffer = useRef([0]);
-  const [currentFps, setCurrentFps] = useState(0);
+  const [currentFps, setCurrentFps] = useState(NaN);
   const [maxFps, setMaxFps] = useState(0);
 
   const connect = useCallback(async () => {
@@ -104,6 +104,11 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
     navigator.serial.ondisconnect = disconnect;
   }, []);
 
+  const resetFps = useCallback(() => {
+    setCurrentFps(NaN);
+    fpsBuffer.current = [0];
+  }, [setCurrentFps, fpsBuffer]);
+
   useEffect(() => {
     if (!port) {
       return;
@@ -130,6 +135,7 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
         } catch (e) {
           console.error(e);
           closed = true;
+          resetFps();
           disconnect();
         } finally {
           setMaxFps(Math.floor(1000 / (new Date().getTime() - start)));
@@ -154,6 +160,7 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
 
     return () => {
       closed = true;
+      resetFps();
       writer.releaseLock();
     }
 
@@ -162,6 +169,7 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
     disconnect,
     port,
     renderUniverse,
+    resetFps,
   ]);
 
   return (
