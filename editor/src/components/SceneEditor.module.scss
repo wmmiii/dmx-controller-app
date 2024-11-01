@@ -22,6 +22,10 @@
 
   td {
     padding: spacing(0.5) spacing(1);
+
+    .switch {
+      display: inline-flex;
+    }
   }
 
   .drag-handle {

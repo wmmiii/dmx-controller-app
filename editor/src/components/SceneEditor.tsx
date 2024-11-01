@@ -3,7 +3,7 @@ import IconBxPlus from '../icons/IconBxPlus';
 import { Button, IconButton } from './Button';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { Scene_Component } from '@dmx-controller/proto/scene_pb';
-import { TextInput } from './Input';
+import { NumberInput, TextInput, ToggleInput } from './Input';
 
 import styles from './SceneEditor.module.scss';
 import { ShortcutContext } from '../contexts/ShortcutContext';
@@ -243,6 +243,34 @@ function Component({ component, onDelete, onDragStart }: ComponentProps) {
             }
           }}
           value={component.shortcut} />
+      </td>
+      <td>
+        <ToggleInput
+          className={styles.switch}
+          value={component.duration?.case === 'durationMs'}
+          onChange={(value) => {
+            if (value) {
+              component.duration = {
+                case: 'durationMs',
+                value: 1000,
+              }
+            } else {
+              component.duration.case = undefined;
+              component.duration.value = undefined;
+            }
+            save();
+          }}
+          labels={{ left: 'Beat', right: 'Seconds' }} />
+        <NumberInput
+          type='float'
+          min={0.001}
+          max={300}
+          value={component.duration?.value / 1000 || NaN}
+          onChange={(value) => {
+            component.duration.value = Math.floor(value * 1000);
+            save();
+          }}
+          disabled={component.duration?.case !== 'durationMs'} />
       </td>
       <td>
         <IconButton

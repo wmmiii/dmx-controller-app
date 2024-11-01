@@ -71,7 +71,6 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
   const [maxFps, setMaxFps] = useState(0);
 
   const connect = useCallback(async () => {
-    console.log('connect');
     const forceReconnect = port != null;
     try {
       let port: SerialPort;

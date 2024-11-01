@@ -15,6 +15,10 @@ message Scene {
     int32 universe_sequence_id = 2;
     bool active = 3;
     string shortcut = 4;
+    oneof duration {
+      int32 duration_ms = 5;
+      double duration_beat = 6;
+    }
   }
 
   string name = 1;

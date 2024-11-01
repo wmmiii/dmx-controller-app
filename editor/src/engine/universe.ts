@@ -69,18 +69,16 @@ export function renderSceneToUniverse(
 
     const sequence = project.universeSequences[component.universeSequenceId];
 
-    // Beat mapping.
-    const sequenceBeat = new BeatMetadata({
-      offsetMs: BigInt(0),
-      lengthMs: SEQUENCE_BEAT_RESOLUTION,
-    });
-
-    const sequenceT = (t % (beatMetadata.lengthMs * sequence.nativeBeats)) * SEQUENCE_BEAT_RESOLUTION / beatMetadata.lengthMs;
+    let sequenceT: number
+    if (component.duration?.case === 'durationMs') {
+      sequenceT = (t * SEQUENCE_BEAT_RESOLUTION / component.duration.value) % (sequence.nativeBeats * SEQUENCE_BEAT_RESOLUTION);
+    } else {
+      sequenceT = (t % (beatMetadata.lengthMs * sequence.nativeBeats)) * SEQUENCE_BEAT_RESOLUTION / beatMetadata.lengthMs;
+    }
 
     renderUniverseSequence(
       sequenceT,
       component.universeSequenceId,
-      sequenceBeat,
       project,
       universe);
   }
@@ -88,32 +86,9 @@ export function renderSceneToUniverse(
   return universe;
 }
 
-export function renderUniverseSequenceToUniverse(
-  t: number,
-  universeSequenceId: number,
-  beatMetadata: BeatMetadata,
-  project: Project,
-) {
-  t += project.timingOffsetMs;
-
-  const universe = new Uint8Array(512);
-
-  applyDefaults(project, universe);
-
-  renderUniverseSequence(
-    t,
-    universeSequenceId,
-    beatMetadata,
-    project,
-    universe);
-
-  return universe;
-}
-
 function renderUniverseSequence(
   t: number,
   universeSequenceId: number,
-  beatMetadata: BeatMetadata,
   project: Project,
   universe: DmxUniverse,
 ) {
@@ -128,7 +103,10 @@ function renderUniverseSequence(
 
     for (const track of universeSequence.lightTracks) {
       const trackContext = Object.assign({}, context, { output: track.output });
-      renderLayersToUniverse(t, track.layers, trackContext, beatMetadata);
+      renderLayersToUniverse(t, track.layers, trackContext, new BeatMetadata({
+        lengthMs: SEQUENCE_BEAT_RESOLUTION,
+        offsetMs: 0n,
+      }));
     }
   }
 }

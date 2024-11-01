@@ -4,9 +4,7 @@ import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
 import { LightTrack as LightTrackProto } from '@dmx-controller/proto/light_track_pb';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { SEQUENCE_BEAT_RESOLUTION } from '../engine/fixtureSequence';
-import { SerialContext } from '../contexts/SerialContext';
 import { getAudioBlob } from '../util/metronome';
-import { renderUniverseSequenceToUniverse } from '../engine/universe';
 
 import styles from './UniverseSequenceEditor.module.scss';
 import { NumberInput, TextInput } from './Input';
@@ -24,7 +22,6 @@ export function UniverseSequenceEditor({
   universeSequenceId
 }: UniverseSequenceEditorProps): JSX.Element {
   const { project, save } = useContext(ProjectContext);
-  const { setRenderUniverse, clearRenderUniverse } = useContext(SerialContext);
 
   const panelRef = useRef<HTMLDivElement>();
 
@@ -59,22 +56,6 @@ export function UniverseSequenceEditor({
       offsetMs: BigInt(0),
     });
   }, [audioDuration, beats]);
-
-  useEffect(() => {
-    if (!project) {
-      return;
-    }
-
-    const render = () => renderUniverseSequenceToUniverse(
-      t.current,
-      universeSequenceId,
-      beatMetadata,
-      project,
-    );
-    setRenderUniverse(render);
-
-    return () => clearRenderUniverse(render);
-  }, [project, t, beatMetadata, universeSequenceId]);
 
   const classes = [styles.universeSequenceEditor, className];
 
