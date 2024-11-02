@@ -13,6 +13,7 @@ import { Project_DefaultChannelValues } from '@dmx-controller/proto/project_pb';
 import { idMapToArray, nextId } from '../util/mapUtils';
 import { getApplicableMembers } from '../engine/group';
 import { NumberInput, TextInput } from '../components/Input';
+import { deleteFixture, deleteFixtureGroup } from '../engine/fixture';
 
 export default function UniversePage(): JSX.Element {
   return (
@@ -28,7 +29,6 @@ export default function UniversePage(): JSX.Element {
 
 function FixtureList(): JSX.Element {
   const { project, save } = useContext(ProjectContext);
-  const [editDefaultChannels, setEditDefaultChannels] = useState(false);
   const [selectedFixtureId, setSelectedFixtureId] =
     useState<number | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
@@ -46,12 +46,6 @@ function FixtureList(): JSX.Element {
 
   return (
     <div className={styles.pane}>
-      {
-        Object.keys(project.physicalFixtures).length > 0 &&
-        <Button onClick={() => setEditDefaultChannels(true)}>
-          Edit Default Channels
-        </Button>
-      }
       <h2>Fixtures</h2>
       <ol>
         {
@@ -61,11 +55,6 @@ function FixtureList(): JSX.Element {
               const definition =
                 project.fixtureDefinitions[fixture.fixtureDefinitionId];
 
-              // TODO: Figure out why this is null.
-              if (!definition) {
-                return null;
-              }
-
               return (
                 <li key={id} onClick={() => {
                   setSelectedFixtureId(id);
@@ -73,7 +62,7 @@ function FixtureList(): JSX.Element {
                   (
                   {fixture.channelOffset + 1}
                   &nbsp;—&nbsp;
-                  {fixture.channelOffset + definition.numChannels}
+                  {fixture.channelOffset + definition?.numChannels}
                   ) {fixture.name}
                 </li>
               );
@@ -112,17 +101,15 @@ function FixtureList(): JSX.Element {
         + Add New Group
       </Button>
       {
-        editDefaultChannels &&
-        <EditDefaultChannelsDialog
-          close={() => setEditDefaultChannels(false)} />
-      }
-      {
         selectedFixture &&
         <EditFixtureDialog
           fixture={selectedFixture}
           close={() => setSelectedFixtureId(null)}
           save={save}
-          onDelete={() => alert('Not implemented!')} />
+          onDelete={() => {
+            deleteFixture(project, selectedFixtureId);
+            save();
+          }} />
       }
       {
         selectedGroup &&
@@ -131,7 +118,10 @@ function FixtureList(): JSX.Element {
           group={selectedGroup}
           close={() => setSelectedGroupId(null)}
           save={save}
-          onDelete={() => alert('Not implemented!')} />
+          onDelete={() => {
+            deleteFixtureGroup(project, selectedGroupId);
+            save();
+          }} />
       }
     </div>
   );
@@ -561,136 +551,6 @@ function EditDefinitionDialog({
         save();
       }}>
         + Add New Channel Mapping
-      </Button>
-    </Modal>
-  );
-}
-
-interface EditDefaultChannelsDialogProps {
-  close: () => void;
-}
-
-function EditDefaultChannelsDialog({ close }: EditDefaultChannelsDialogProps): JSX.Element {
-  const { project, save } = useContext(ProjectContext);
-  return (
-    <Modal
-      title={"Edit Default Channels"}
-      onClose={close}
-      bodyClass={styles.editor}
-      footer={
-        <div className={styles.dialogFooter}>
-          <Button onClick={close} variant="primary">
-            Done
-          </Button>
-        </div>
-      }>
-      {
-        project.defaultChannelValues.map((d, i) => {
-          let device: OutputDescription;
-          switch (d.output.case) {
-            case 'physicalFixtureId':
-              device = {
-                id: d.output.value,
-                type: 'fixture',
-              };
-              break;
-            case 'physicalFixtureGroupId':
-              device = {
-                id: d.output.value,
-                type: 'group',
-              };
-              break;
-          }
-
-          return (
-            <div className={styles.defaultPreset}>
-              <div className={styles.header}>
-                <TextInput
-                  value={d.name}
-                  onChange={(v) => {
-                    d.name = v;
-                    save();
-                  }} />
-                <OutputSelector
-                  value={device}
-                  setValue={(o) => {
-                    switch (o.type) {
-                      case 'fixture':
-                        d.output.case = 'physicalFixtureId';
-                        break;
-                      case 'group':
-                        d.output.case = 'physicalFixtureGroupId';
-                        break;
-                    }
-                    d.output.value = o.id;
-                    save();
-                  }} />
-                <IconButton
-                  title="Remove Preset"
-                  onClick={() => {
-                    project.defaultChannelValues.splice(i, 1);
-                    save();
-                  }}>
-                  <IconBxX />
-                </IconButton>
-              </div>
-              <div>Channels:</div>
-              {
-                idMapToArray(d.channels)
-                  .map(([index, value]) => (
-                    <div key={index} className={styles.row}>
-                      Channel:&nbsp;
-                      <NumberInput
-                        min={0}
-                        max={255}
-                        value={index}
-                        onChange={(v) => {
-                          delete d.channels[index];
-                          d.channels[v] = value;
-                          save();
-                        }} />
-                      Value:&nbsp;
-                      <NumberInput
-                        min={0}
-                        max={255}
-                        value={value}
-                        onChange={(v) => {
-                          d.channels[index] = v;
-                          save();
-                        }} />
-                      <IconButton
-                        title="Remove Channel"
-                        onClick={() => {
-                          delete d.channels[index];
-                          save();
-                        }}>
-                        <IconBxX />
-                      </IconButton>
-                    </div>
-                  ))
-              }
-              <Button onClick={() => {
-                const channel = nextId(d.channels);
-                d.channels[channel] = 0;
-                save();
-              }}>
-                + Add Channel Default
-              </Button>
-            </div>
-          );
-        })
-      }
-      <Button onClick={() => {
-        project.defaultChannelValues.push(new Project_DefaultChannelValues({
-          name: 'New Default Channels',
-          output: {
-            case: "physicalFixtureId",
-            value: 0,
-          }
-        }));
-        save();
-      }}>
-        + Add New Preset
       </Button>
     </Modal>
   );

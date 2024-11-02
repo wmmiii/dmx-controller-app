@@ -249,3 +249,57 @@ export function getPhysicalWritableDeviceFromGroup(
     channelTypes,
   };
 }
+
+export function deleteFixture(project: Project, fixtureId: number) {
+  for (const group of Object.values(project.physicalFixtureGroups)) {
+    group.physicalFixtureIds =
+        group.physicalFixtureIds.filter(f => f !== fixtureId);
+  }
+
+  for (const show of project.shows) {
+    for (const track of show.lightTracks) {
+      if (track.output.case === 'physicalFixtureId' && track.output.value === fixtureId) {
+        track.output.case = undefined;
+        track.output.value = undefined;
+      }
+    }
+  }
+
+  for (const sequence of Object.values(project.universeSequences)) {
+    for (const track of sequence.lightTracks) {
+      if (track.output.case === 'physicalFixtureId' && track.output.value === fixtureId) {
+        track.output.case = undefined;
+        track.output.value = undefined;
+      }
+    }
+  }
+
+  delete project.physicalFixtures[fixtureId];
+}
+
+export function deleteFixtureGroup(project: Project, fixtureGroupId: number) {
+  for (const group of Object.values(project.physicalFixtureGroups)) {
+    group.physicalFixtureGroupIds =
+        group.physicalFixtureGroupIds.filter(g => g !== fixtureGroupId);
+  }
+
+  for (const show of project.shows) {
+    for (const track of show.lightTracks) {
+      if (track.output.case === 'physicalFixtureGroupId' && track.output.value === fixtureGroupId) {
+        track.output.case = undefined;
+        track.output.value = undefined;
+      }
+    }
+  }
+
+  for (const sequence of Object.values(project.universeSequences)) {
+    for (const track of sequence.lightTracks) {
+      if (track.output.case === 'physicalFixtureGroupId' && track.output.value === fixtureGroupId) {
+        track.output.case = undefined;
+        track.output.value = undefined;
+      }
+    }
+  }
+
+  delete project.physicalFixtureGroups[fixtureGroupId];
+}

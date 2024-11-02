@@ -70,6 +70,12 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
   const [currentFps, setCurrentFps] = useState(NaN);
   const [maxFps, setMaxFps] = useState(0);
 
+  // Expose render function for debugging purposes.
+  useEffect(() => {
+    const global = (window || globalThis) as any;
+    global['debugRender'] = () => renderUniverse.current();
+  }, [renderUniverse]);
+
   const connect = useCallback(async () => {
     const forceReconnect = port != null;
     try {
@@ -102,7 +108,7 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
   useEffect(() => {
     navigator.serial.onconnect = connect;
     navigator.serial.ondisconnect = disconnect;
-  }, []);
+  }, [connect, disconnect]);
 
   const resetFps = useCallback(() => {
     setCurrentFps(NaN);

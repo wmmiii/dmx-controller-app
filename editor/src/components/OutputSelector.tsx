@@ -8,7 +8,7 @@ export interface OutputDescription {
 
 interface OutputSelectorProps {
   value: OutputDescription;
-  setValue: (value: OutputDescription) => void;
+  setValue: (value: OutputDescription|undefined) => void;
 }
 
 export function OutputSelector({ value, setValue }: OutputSelectorProps):
@@ -43,12 +43,16 @@ export function OutputSelector({ value, setValue }: OutputSelectorProps):
       value={value?.id + ' ' + value?.type}
       onChange={(e) => {
         const value = e.target.value;
+        if (value === ' ') {
+          setValue(undefined);
+        }
         const parts = value.split(' ');
         setValue({
           id: parseInt(parts[0]),
           type: parts[1] as OutputDescription['type'],
         });
       }}>
+      <option value={' '}>&lt;Unset&gt;</option>
       {devices.map((d, i) => (
         <option key={i} value={d.id + ' ' + d.type}>
           {d.name}

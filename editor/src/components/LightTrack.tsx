@@ -57,6 +57,8 @@ export function LightTrack({
     }
   }, [project, track]);
 
+  console.log(device);
+
   return (
     <div className={styles.lightTrack}>
       <div className={styles.left} style={{ width: leftWidth }}>
@@ -86,15 +88,20 @@ export function LightTrack({
             <OutputSelector
               value={device}
               setValue={(o) => {
-                switch (o.type) {
-                  case 'fixture':
-                    track.output.case = 'physicalFixtureId';
-                    break;
-                  case 'group':
-                    track.output.case = 'physicalFixtureGroupId';
-                    break;
+                if (o == null) {
+                  track.output.case = undefined;
+                  track.output.value = undefined;
+                } else {
+                  switch (o.type) {
+                    case 'fixture':
+                      track.output.case = 'physicalFixtureId';
+                      break;
+                    case 'group':
+                      track.output.case = 'physicalFixtureGroupId';
+                      break;
+                  }
+                  track.output.value = o.id;
                 }
-                track.output.value = o.id;
                 save();
               }} />
             <IconButton
