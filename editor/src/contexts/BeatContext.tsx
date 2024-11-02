@@ -55,13 +55,12 @@ export function BeatProvider({ children }: PropsWithChildren): JSX.Element {
       }
 
       let length = sum / durations.length;
+      const bpm = 60_000 / length;
 
       // Try to snap to whole nearest BPM.
       if (sampleQuality === 'excellent') {
-        const bpm = 60_000 / length;
         const nearestWholeBpm = Math.round(bpm);
         if (Math.abs(nearestWholeBpm - bpm) < 0.1) {
-          console.log('Using whole BPM of', nearestWholeBpm);
           length = 60_000 / nearestWholeBpm;
         }
       }
@@ -73,7 +72,7 @@ export function BeatProvider({ children }: PropsWithChildren): JSX.Element {
         lengthMs: length,
         offsetMs: BigInt(Math.round(firstBeat)),
       });
-      save();
+      save(`Set beat to ${Math.round(bpm)} BPM.`);
     }
   }, [beatSamples]);
 

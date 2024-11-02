@@ -12,6 +12,7 @@ import { Effect as EffectProto, EffectTiming, Effect_RampEffect, Effect_RampEffe
 import { isFixtureState } from '../engine/effect';
 import { NumberInput, ToggleInput } from './Input';
 import { ShortcutContext } from '../contexts/ShortcutContext';
+import { ProjectContext } from '../contexts/ProjectContext';
 
 export interface SelectedEffect {
   effect: EffectProto;
@@ -33,7 +34,6 @@ interface EffectProps {
   maxMs: number;
   pxToMs: (px: number) => number;
   snapToBeat: (t: number) => number;
-  save: () => void;
   onDelete: () => void;
 }
 
@@ -45,10 +45,10 @@ export function Effect({
   maxMs,
   pxToMs,
   snapToBeat,
-  save,
   onDelete,
 }: EffectProps): JSX.Element {
   const { copyEffect, selectedEffect, selectEffect } = useContext(EffectSelectContext);
+  const { save, update } = useContext(ProjectContext);
   const { setShortcuts } = useContext(ShortcutContext);
   const [dragStart, setDragStart] = useState(false);
   const [dragEnd, setDragEnd] = useState(false);
@@ -61,12 +61,8 @@ export function Effect({
           shortcut: { key: 'KeyV', modifiers: ['ctrl'] },
           action: () => {
             const newEffect = copyEffect.clone();
-            effect.timingMode = newEffect.timingMode;
-            effect.offsetMs = newEffect.offsetMs;
-            effect.timingMultiplier = newEffect.timingMultiplier;
-            effect.mirrored = newEffect.mirrored;
-            effect.effect = copyEffect.effect;
-            save();
+            Object.assign(effect, copyEffect);
+            save('Paste effect.');
           },
           description: 'Paste effect from clipboard onto selected effect.'
         },
@@ -137,7 +133,7 @@ export function Effect({
                 effect.endMs = endMs;
               }
             }
-            save();
+            update();
             e.preventDefault();
             e.stopPropagation();
           }}
@@ -145,7 +141,7 @@ export function Effect({
             setDragStart(false);
             setDragEnd(false);
             setDrag(null);
-            save();
+            save('Change effect timing.')
             e.preventDefault();
             e.stopPropagation();
           }}>
@@ -328,24 +324,24 @@ export function EffectDetails({
 
           {
             effect.offset.value ?
-            <ToggleInput
-              className={styles.toggle}
-              value={effect.offset.case !== 'offsetBeat'}
-              onChange={(value) => {
-                if (value && effect.offset.case === 'offsetBeat') {
-                  effect.offset = {
-                    case: 'offsetMs',
-                    value: effect.offset.value * 1000,
-                  };
-                } else if (!value && effect.offset.case === 'offsetMs') {
-                  effect.offset = {
-                    case: 'offsetBeat',
-                    value: effect.offset.value / 1000,
-                  };
-                }
-                onChange(effect);
-              }}
-              labels={{ left: 'Beat', right: 'Seconds' }} /> :
+              <ToggleInput
+                className={styles.toggle}
+                value={effect.offset.case !== 'offsetBeat'}
+                onChange={(value) => {
+                  if (value && effect.offset.case === 'offsetBeat') {
+                    effect.offset = {
+                      case: 'offsetMs',
+                      value: effect.offset.value * 1000,
+                    };
+                  } else if (!value && effect.offset.case === 'offsetMs') {
+                    effect.offset = {
+                      case: 'offsetBeat',
+                      value: effect.offset.value / 1000,
+                    };
+                  }
+                  onChange(effect);
+                }}
+                labels={{ left: 'Beat', right: 'Seconds' }} /> :
               <></>
           }
 

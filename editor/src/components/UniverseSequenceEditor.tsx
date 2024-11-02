@@ -79,7 +79,7 @@ export function UniverseSequenceEditor({
               value={sequence?.nativeBeats || 1}
               onChange={(v) => {
                 sequence.nativeBeats = v;
-                save();
+                save(`Set number of beats for sequence ${sequence.name}.`);
               }} />
           </span>
         }
@@ -91,12 +91,9 @@ export function UniverseSequenceEditor({
           </>
         }
         lightTracks={sequence.lightTracks}
-        save={save}
         addLayer={() => {
-          sequence?.lightTracks.push(new LightTrackProto({
-            name: 'Layer ' + (sequence.lightTracks.length + 1),
-          }));
-          save();
+          sequence?.lightTracks.push(new LightTrackProto());
+          save(`Add new light track to sequence ${sequence.name}.`);
         }}
         panelRef={panelRef}
         audioToTrack={wsMsToSceneMs}
@@ -118,7 +115,7 @@ export function UniverseSequenceEditor({
                 value={sequence.name}
                 onChange={(v) => {
                   sequence.name = v;
-                  save();
+                  save(`Update sequence name to ${sequence.name}.`);
                 }} />
             </div>
             <div>
@@ -126,7 +123,7 @@ export function UniverseSequenceEditor({
                 variant='warning'
                 onClick={() => {
                   deleteSequence(universeSequenceId, project);
-                  save();
+                  save(`Delete sequence ${sequence.name}`);
                   setSequenceDetailsModal(false);
                 }}>
                 Delete Sequence

@@ -57,7 +57,6 @@ export default function newSequencePage(): JSX.Element {
   const virtualTracks = useMemo(() => {
     if (fixtureSequence?.layers) {
       const virtualTrack = new LightTrackProto({
-        name: 'Sqeuence',
         output: {
           value: 1,
           case: 'physicalFixtureId',
@@ -103,7 +102,7 @@ export default function newSequencePage(): JSX.Element {
             effects: [],
           }],
         });
-        save();
+        save('Create sequence.');
         setSequenceId(0);
       }
     }
@@ -134,7 +133,7 @@ export default function newSequencePage(): JSX.Element {
                       effects: [],
                     }],
                   });
-                  save();
+                  save('Create new sequence.');
                   setSequenceId(newId);
                 } else {
                   setSequenceId(parseInt(e.target.value));
@@ -162,7 +161,7 @@ export default function newSequencePage(): JSX.Element {
               value={fixtureSequence?.nativeBeats || 1}
               onChange={(v) => {
                 fixtureSequence.nativeBeats = v;
-                save();
+                save(`Set native beats of sequence ${fixtureSequence.name} to ${v}.`);
               }} />
           </span>
         }
@@ -175,7 +174,6 @@ export default function newSequencePage(): JSX.Element {
         }
         lightTracks={virtualTracks}
         fixtureSequenceId={fixtureSequenceId}
-        save={save}
         panelRef={panelRef}
         audioToTrack={wsMsToSequenceMs}
         t={t}
@@ -197,7 +195,7 @@ export default function newSequencePage(): JSX.Element {
                 value={fixtureSequence?.name}
                 onChange={(v) => {
                   fixtureSequence.name = v;
-                  save();
+                  save(`Set sequence name to ${v}.`);
                 }} />
             </div>
             <div>
@@ -205,7 +203,7 @@ export default function newSequencePage(): JSX.Element {
                 variant='warning'
                 onClick={() => {
                   deleteSequence(fixtureSequenceId, project);
-                  save();
+                  save(`Delete sequence ${fixtureSequence.name}.`);
                   setSequenceDetailsModal(false);
                 }}>
                 Delete Sequence

@@ -11,7 +11,8 @@ import { LightLayer } from '../components/LightLayer';
 import { LightTrack as LightTrackProto } from '@dmx-controller/proto/light_track_pb';
 import { OutputDescription, OutputSelector } from '../components/OutputSelector';
 import { ProjectContext } from "../contexts/ProjectContext";
-import { TextInput } from "./Input";
+import IconBxX from "../icons/IconBxX";
+import { Project } from "@dmx-controller/proto/project_pb";
 
 export interface MappingFunctions {
   msToPx: (ms: number) => number;
@@ -24,7 +25,7 @@ interface LightTrackProps {
   maxMs: number;
   leftWidth: number;
   mappingFunctions: MappingFunctions;
-  save: () => void;
+  deleteTrack: () => void;
   swapUp?: () => void;
   swapDown?: () => void;
 }
@@ -34,12 +35,12 @@ export function LightTrack({
   maxMs,
   leftWidth,
   mappingFunctions,
-  save,
+  deleteTrack,
   swapUp,
   swapDown,
 }: LightTrackProps):
   JSX.Element {
-  const { project } = useContext(ProjectContext);
+  const { project, save } = useContext(ProjectContext);
   const trackRef = useRef<HTMLDivElement>();
 
   const device: OutputDescription = useMemo(() => {
@@ -57,23 +58,34 @@ export function LightTrack({
     }
   }, [project, track]);
 
-  console.log(device);
-
   return (
     <div className={styles.lightTrack}>
       <div className={styles.left} style={{ width: leftWidth }}>
         <div className={styles.header}>
-          <TextInput
-            value={track.name}
-            onChange={(v) => {
-              track.name = v;
-              save();
+          <OutputSelector
+            value={device}
+            setValue={(o) => {
+              if (o == null) {
+                track.output.case = undefined;
+                track.output.value = undefined;
+              } else {
+                switch (o.type) {
+                  case 'fixture':
+                    track.output.case = 'physicalFixtureId';
+                    break;
+                  case 'group':
+                    track.output.case = 'physicalFixtureGroupId';
+                    break;
+                }
+                track.output.value = o.id;
+              }
+              save(`Set track output to ${getOutputName(project, track.output)}.`);
             }} />
           <IconButton
             title={track.collapsed ? 'Expand' : 'Collapse'}
             onClick={() => {
               track.collapsed = !track.collapsed;
-              save();
+              save(`${track.collapsed ? 'Collapse' : 'Expand'} track ${getOutputName(project, track.output)}.`);
             }}>
             {
               track.collapsed ?
@@ -85,47 +97,35 @@ export function LightTrack({
         {
           !track.collapsed &&
           <>
-            <OutputSelector
-              value={device}
-              setValue={(o) => {
-                if (o == null) {
-                  track.output.case = undefined;
-                  track.output.value = undefined;
-                } else {
-                  switch (o.type) {
-                    case 'fixture':
-                      track.output.case = 'physicalFixtureId';
-                      break;
-                    case 'group':
-                      track.output.case = 'physicalFixtureGroupId';
-                      break;
-                  }
-                  track.output.value = o.id;
-                }
-                save();
-              }} />
-            <IconButton
-              title="Cleanup Empty Layers"
-              onClick={() => {
-                track.layers = track.layers.filter((l) => l.effects.length > 0);
-                save();
-              }}>
-              <IconBxBrushAlt />
-            </IconButton>
-            {
-              swapUp && <IconButton
-                title="Move Up"
-                onClick={swapUp}>
-                <IconBxChevronUp />
+            <div className={styles.buttons}>
+              <IconButton
+                title="Cleanup Empty Layers"
+                onClick={() => {
+                  track.layers = track.layers.filter((l) => l.effects.length > 0);
+                  save(`Cleanup empty layers for track ${getOutputName(project, track.output)}`);
+                }}>
+                <IconBxBrushAlt />
               </IconButton>
-            }
-            {
-              swapDown && <IconButton
-                title="Move Down"
-                onClick={swapDown}>
-                <IconBxChevronUp />
+              <IconButton
+                title="Delete Track"
+                onClick={deleteTrack}>
+                <IconBxX />
               </IconButton>
-            }
+              {
+                swapUp && <IconButton
+                  title="Move Up"
+                  onClick={swapUp}>
+                  <IconBxChevronUp />
+                </IconButton>
+              }
+              {
+                swapDown && <IconButton
+                  title="Move Down"
+                  onClick={swapDown}>
+                  <IconBxChevronUp />
+                </IconButton>
+              }
+            </div>
           </>
         }
       </div>
@@ -134,7 +134,7 @@ export function LightTrack({
         className={styles.right}
         onClick={() => {
           track.collapsed = false;
-          save();
+          save(`Expand track ${getOutputName(project, track.output)}`);
         }}>
         {
           track.layers.map((l, i) => (
@@ -145,8 +145,7 @@ export function LightTrack({
               maxMs={maxMs}
               msToPx={mappingFunctions.msToPx}
               pxToMs={mappingFunctions.pxToMs}
-              snapToBeat={mappingFunctions.snapToBeat}
-              save={save} />
+              snapToBeat={mappingFunctions.snapToBeat} />
           ))
         }
         {
@@ -156,7 +155,7 @@ export function LightTrack({
               icon={<IconBxPlus />}
               onClick={() => {
                 track.layers.push(new LightLayerProto());
-                save();
+                save('Create new track.');
               }}>
               New Layer
             </Button>
@@ -165,4 +164,15 @@ export function LightTrack({
       </div>
     </div>
   );
+}
+
+function getOutputName(project: Project, output: LightTrackProto['output']) {
+  switch (output?.case) {
+    case 'physicalFixtureId':
+      return project.physicalFixtures[output.value].name;
+    case 'physicalFixtureGroupId':
+      return project.physicalFixtureGroups[output.value].name;
+    default:
+      return '<Unset>';
+  }
 }

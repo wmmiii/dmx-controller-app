@@ -75,7 +75,7 @@ function FixtureList(): JSX.Element {
           name: 'New Fixture',
         });
         setSelectedFixtureId(newId);
-        save();
+        save(`Create new fixture.`);
       }}>
         + Add New Fixture
       </Button>
@@ -96,7 +96,7 @@ function FixtureList(): JSX.Element {
           name: 'New Group',
         });
         setSelectedGroupId(newId);
-        save();
+        save('Create new group.');
       }}>
         + Add New Group
       </Button>
@@ -105,10 +105,10 @@ function FixtureList(): JSX.Element {
         <EditFixtureDialog
           fixture={selectedFixture}
           close={() => setSelectedFixtureId(null)}
-          save={save}
           onDelete={() => {
+            const name = project.physicalFixtures[selectedFixtureId].name;
             deleteFixture(project, selectedFixtureId);
-            save();
+            save(`Delete fixture ${name}.`);
           }} />
       }
       {
@@ -117,10 +117,10 @@ function FixtureList(): JSX.Element {
           groupId={selectedGroupId}
           group={selectedGroup}
           close={() => setSelectedGroupId(null)}
-          save={save}
           onDelete={() => {
+            const name = project.physicalFixtureGroups[selectedGroupId].name;
             deleteFixtureGroup(project, selectedGroupId);
-            save();
+            save(`Delete fixture group ${name}.`);
           }} />
       }
     </div>
@@ -130,17 +130,15 @@ function FixtureList(): JSX.Element {
 interface EditFixtureDialogProps {
   fixture: PhysicalFixture;
   close: () => void;
-  save: () => void;
   onDelete: () => void;
 }
 
 function EditFixtureDialog({
   fixture,
   close,
-  save,
   onDelete,
 }: EditFixtureDialogProps): JSX.Element {
-  const { project } = useContext(ProjectContext);
+  const { project, save } = useContext(ProjectContext);
 
   return (
     <Modal
@@ -168,7 +166,7 @@ function EditFixtureDialog({
           value={fixture.name}
           onChange={(v) => {
             fixture.name = v;
-            save();
+            save(`Change fixture name to ${v}.`);
           }} />
       </label>
       <label>
@@ -177,7 +175,8 @@ function EditFixtureDialog({
           value={fixture.fixtureDefinitionId}
           onChange={(e) => {
             fixture.fixtureDefinitionId = parseInt(e.target.value);
-            save();
+            const definitionName = project.fixtureDefinitions[fixture.fixtureDefinitionId].name;
+            save(`Change fixture definition for ${fixture.name} to ${definitionName}`);
           }}>
           {
             idMapToArray(project.fixtureDefinitions)
@@ -198,7 +197,7 @@ function EditFixtureDialog({
           value={fixture.channelOffset}
           onChange={(v) => {
             fixture.channelOffset = v;
-            save();
+            save(`Change channel offset of ${fixture.name} to ${v}.`);
           }} />
       </label>
     </Modal>
@@ -209,7 +208,6 @@ interface EditGroupDialogProps {
   groupId: number;
   group: PhysicalFixtureGroup;
   close: () => void;
-  save: () => void;
   onDelete: () => void;
 }
 
@@ -217,10 +215,9 @@ function EditGroupDialog({
   groupId,
   group,
   close,
-  save,
   onDelete,
 }: EditGroupDialogProps): JSX.Element {
-  const { project } = useContext(ProjectContext);
+  const { project, save } = useContext(ProjectContext);
   const [newMember, setNewMember] =
     useState<ReturnType<typeof getApplicableMembers>[0]>(null);
 
@@ -255,7 +252,7 @@ function EditGroupDialog({
           value={group.name}
           onChange={(v) => {
             group.name = v;
-            save();
+            save(`Change group name to ${v}.`);
           }} />
       </label>
       <div>Members:</div>
@@ -272,8 +269,9 @@ function EditGroupDialog({
             <IconButton
               title="Remove Group"
               onClick={() => {
+                const name = project.physicalFixtureGroups[group.physicalFixtureGroupIds[i]].name;
                 group.physicalFixtureGroupIds.splice(i, 1);
-                save();
+                save(`Remove group ${name} from group ${group.name}.`);
               }}>
               <IconBxX />
             </IconButton>
@@ -287,8 +285,9 @@ function EditGroupDialog({
             <IconButton
               title="Remove Fixture"
               onClick={() => {
+                const name = project.physicalFixtures[group.physicalFixtureIds[i]].name;
                 group.physicalFixtureIds.splice(i, 1);
-                save();
+                save(`Remove fixture ${name} from group ${group.name}.`);
               }}>
               <IconBxX />
             </IconButton>
@@ -318,17 +317,20 @@ function EditGroupDialog({
               return;
             }
 
+            let name: string;
             if (newMember.type === 'fixture') {
               group.physicalFixtureIds.push(newMember.id);
+              name = project.physicalFixtures[newMember.id].name;
             } else if (newMember.type === 'group') {
               group.physicalFixtureGroupIds.push(newMember.id);
+              name = project.physicalFixtureGroups[newMember.id].name;
             } else {
               throw new Error(`Unrecognized member type: ${newMember.type}`);
             }
 
             setNewMember(null);
 
-            save();
+            save(`Add ${newMember.type} ${name} to group ${group.name}.`);
           }}>
           + Add New Member
         </Button>
@@ -369,7 +371,7 @@ function FixtureDefinitionList(): JSX.Element {
           name: 'New Fixture Definition',
         });
         setSelectedDefinitionId(newId);
-        save();
+        save('Create new fixture definition.');
       }}>
         + Add New Fixture Definition
       </Button>
@@ -377,14 +379,13 @@ function FixtureDefinitionList(): JSX.Element {
         selectedDefinition &&
         <EditDefinitionDialog definition={selectedDefinition}
           close={() => setSelectedDefinitionId(null)}
-          save={save}
           copy={() => {
             const newId = nextId(project.fixtureDefinitions);
             project.fixtureDefinitions[newId] =
               new FixtureDefinition(selectedDefinition);
             project.fixtureDefinitions[newId].name = "Copy of " + selectedDefinition.name;
             setSelectedDefinitionId(newId);
-            save();
+            save(`Copy fixture definition ${selectedDefinition.name}.`);
           }} />
       }
     </div>
@@ -394,16 +395,16 @@ function FixtureDefinitionList(): JSX.Element {
 interface EditDefinitionDialogProps {
   definition: FixtureDefinition;
   close: () => void;
-  save: () => void;
   copy: () => void;
 }
 
 function EditDefinitionDialog({
   definition,
   close,
-  save,
   copy,
 }: EditDefinitionDialogProps): JSX.Element {
+  const { save } = useContext(ProjectContext);
+
   return (
     <Modal
       title={"Edit " + definition.name}
@@ -427,7 +428,7 @@ function EditDefinitionDialog({
           value={definition.name}
           onChange={(v) => {
             definition.name = v;
-            save();
+            save(`Change fixture definition name to ${v}.`);
           }} />
       </label>
       <label>
@@ -436,7 +437,7 @@ function EditDefinitionDialog({
           value={definition.manufacturer}
           onChange={(v) => {
             definition.manufacturer = v;
-            save();
+            save(`Set manufacturer of fixture definition ${definition.name} to ${v}.`);
           }} />
       </label>
       <label>
@@ -447,7 +448,7 @@ function EditDefinitionDialog({
           value={definition.numChannels}
           onChange={(v) => {
             definition.numChannels = v;
-            save();
+            save(`Set number of channels of ${definition.name} to ${v}.`);
           }} />
         {
           (nextId(definition.channels) > definition.numChannels) &&
@@ -467,13 +468,13 @@ function EditDefinitionDialog({
                 onChange={(v) => {
                   delete definition.channels[id];
                   definition.channels[v] = channel;
-                  save();
+                  save(`Set channel mapping to index ${channel}.`);
                 }} />
               <select
                 value={channel.type}
                 onChange={(e) => {
                   channel.type = e.target.value;
-                  save();
+                  save(`Set channel mapping to type ${channel.type}.`);
                 }}>
                 <option value="other">other</option>
                 <option value="red">Red</option>
@@ -500,7 +501,7 @@ function EditDefinitionDialog({
                   value={channel.defaultValue}
                   onChange={(v) => {
                     channel.defaultValue = v;
-                    save();
+                    save(`Set default value of channel mapping to ${v}.`);
                   }} />
               </label>
               {
@@ -517,7 +518,7 @@ function EditDefinitionDialog({
                       value={channel.minDegrees}
                       onChange={(v) => {
                         channel.minDegrees = v;
-                        save();
+                        save(`Set channel min degrees to ${v}.`);
                       }} />
                   </label>
                   <label>
@@ -528,7 +529,7 @@ function EditDefinitionDialog({
                       value={channel.maxDegrees}
                       onChange={(v) => {
                         channel.maxDegrees = v;
-                        save();
+                        save(`Set channel max degrees to ${v}.`);
                       }} />
                   </label>
                 </>
@@ -537,7 +538,7 @@ function EditDefinitionDialog({
                 title="Delete Channel Mapping"
                 onClick={() => {
                   delete definition.channels[id];
-                  save();
+                  save(`Delete channel mapping for index ${id}.`);
                 }}>
                 <IconBxX />
               </IconButton>
@@ -548,7 +549,7 @@ function EditDefinitionDialog({
         const newChannel = nextId(definition.channels);
         definition.channels[newChannel] =
           new FixtureDefinition_Channel({ type: 'other' });
-        save();
+        save(`Create new channel mapping.`);
       }}>
         + Add New Channel Mapping
       </Button>

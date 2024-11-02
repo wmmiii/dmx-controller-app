@@ -73,7 +73,7 @@ export default function Index(): JSX.Element {
             onChange={(v) => {
               if (project) {
                 project.timingOffsetMs = v;
-                save();
+                save('Update project timing offset.');
               }
             }} />
         </div>

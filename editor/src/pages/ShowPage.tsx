@@ -86,7 +86,7 @@ export default function ShowPage(): JSX.Element {
         <>
           <Button onClick={() => {
             project.shows = [DEFAULT_SHOW];
-            save();
+            save('Create default show.');
           }}>
             Create a show!
           </Button>       
@@ -117,11 +117,10 @@ export default function ShowPage(): JSX.Element {
                 if (e.target.value === '-1') {
                   project.shows.push(DEFAULT_SHOW);
                   project.selectedShow = project.shows.length - 1;
-                  save();
                 } else {
                   project.selectedShow = parseInt(e.target.value);
-                  save();
                 }
+                save(`Set selected show to ${project.shows[project.selectedShow].name}.`);
               }}
               value={project?.selectedShow || 0}>
               {
@@ -147,7 +146,7 @@ export default function ShowPage(): JSX.Element {
                 show.audioTrack = new Show_AudioTrack({
                   audioFileId: parseInt(e.target.value),
                 });
-                save();
+                save(`Set audio track for show ${show.name}.`);
               }}
               value={show?.audioTrack.audioFileId}>
               <option value={UNSET_INDEX}>
@@ -165,17 +164,14 @@ export default function ShowPage(): JSX.Element {
           </>
         }
         lightTracks={show.lightTracks}
-        save={save}
         swap={(a, b) => {
           const temp = show.lightTracks[a];
           show.lightTracks[a] = show.lightTracks[b];
           show.lightTracks[b] = temp;
         }}
         addLayer={() => {
-          show?.lightTracks.push(new LightTrackProto({
-            name: 'Layer ' + (show.lightTracks.length + 1),
-          }));
-          save();
+          show?.lightTracks.push(new LightTrackProto());
+          save(`Add layer to show ${show.name}.`);
         }}
         panelRef={panelRef}
         t={t} />
@@ -191,7 +187,7 @@ export default function ShowPage(): JSX.Element {
                 value={show?.name}
                 onChange={(v) => {
                   show.name = v;
-                  save();
+                  save(`Change show name to ${show.name}.`);
                 }} />
             </div>
             <div>
@@ -200,7 +196,7 @@ export default function ShowPage(): JSX.Element {
                 onClick={() => {
                   project.shows.splice(project.selectedShow, 1);
                   project.selectedShow = 0;
-                  save();
+                  save(`Delete show ${show.name}.`);
                   setShowDetailsModal(false);
                 }}>
                 Delete Show

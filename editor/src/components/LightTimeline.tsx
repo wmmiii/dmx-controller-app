@@ -79,7 +79,6 @@ interface TracksProps {
   headerControls?: JSX.Element;
   leftOptions: JSX.Element;
   lightTracks: LightTrackProto[];
-  save: () => void;
   swap?: (a: number, b: number) => void;
   addLayer?: () => void;
   panelRef: React.MutableRefObject<HTMLDivElement>;
@@ -99,13 +98,13 @@ function Tracks({
   headerControls,
   leftOptions,
   lightTracks,
-  save,
   swap,
   addLayer,
   panelRef,
   audioToTrack,
   t,
 }: TracksProps): JSX.Element {
+  const { project, save } = useContext(ProjectContext);
   const { setShortcuts } = useContext(ShortcutContext);
 
   const [visible, setVisible] = useState({ startMs: 0, endMs: 1000 });
@@ -285,13 +284,27 @@ function Tracks({
                   audioDuration}
                 leftWidth={LEFT_WIDTH}
                 mappingFunctions={mappingFunctions}
-                save={save}
+                deleteTrack={() => {
+                  let name: string;
+                  switch (t.output.case) {
+                    case 'physicalFixtureId':
+                      name = project.physicalFixtures[t.output.value]?.name || '<Unset>';
+                      break;
+                    case 'physicalFixtureGroupId':
+                      name = project.physicalFixtureGroups[t.output.value]?.name || '<Unset>';
+                      break;
+                    default:
+                      name = '<Unset>';
+                  }
+                  lightTracks.splice(i, 1);
+                  save(`Delete track for ${name}.`);
+                }}
                 swapUp={
                   i == 0 || swap === undefined ?
                     undefined :
                     () => {
                       swap(i, i - 1);
-                      save();
+                      save('Rearrange track order.');
                     }
                 } />
             ))

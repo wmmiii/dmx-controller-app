@@ -17,6 +17,7 @@ import IconBxGridVertical from '../icons/IconBxGridVertical';
 import IconBxX from '../icons/IconBxX';
 import IconBxWrench from '../icons/IconBxWrench';
 import { UniverseSequenceEditor } from './UniverseSequenceEditor';
+import { Project } from '@dmx-controller/proto/project_pb';
 
 interface SceneEditorProps {
   className?: string;
@@ -44,7 +45,7 @@ export function SceneEditor({
     } else {
       components.forEach(c => c.active = false);
     }
-    save();
+    save(`Toggle components with shortcut "${shortcut}".`);
   }, [scene]);
 
   useEffect(() => {
@@ -65,7 +66,7 @@ export function SceneEditor({
     if (originalIndex !== newIndex) {
       scene.components.splice(originalIndex, 1);
       scene.components.splice(newIndex, 0, draggingComponent);
-      save();
+      save('Rearrange components.');
     }
   }
 
@@ -79,7 +80,7 @@ export function SceneEditor({
           disabled={project.activeScene === sceneId}
           onClick={() => {
             project.activeScene = sceneId;
-            save();
+            save(`Activate scene ${project.scenes[sceneId].name}.`);
           }}>
           {project.activeScene === sceneId ? 'Active' : 'Activate'}
         </Button>
@@ -99,8 +100,9 @@ export function SceneEditor({
                 <Component
                   component={c}
                   onDelete={() => {
+                    const name = project.universeSequences[scene.components[i].universeSequenceId].name;
                     scene.components.splice(i, 1);
-                    save();
+                    save(`Delete component for ${name}.`);
                   }}
                   onDragStart={() => setDraggingComponent(c)} />
               </tr>
@@ -113,11 +115,10 @@ export function SceneEditor({
                 icon={<IconBxPlus />}
                 onClick={() => {
                   scene.components.push(new Scene_Component({
-                    name: "New Component",
                     universeSequenceId: 0,
                     active: false,
                   }));
-                  save();
+                  save('Create new component.');
                 }}>
                 Add Component
               </Button>
@@ -141,7 +142,7 @@ export function SceneEditor({
             value={scene.name}
             onChange={(v) => {
               scene.name = v;
-              save();
+              save(`Update scene name to "${v}".`);
             }} />
           <Button
             variant="warning"
@@ -183,8 +184,9 @@ function Component({ component, onDelete, onDragStart }: ComponentProps) {
           }
           variant={component.active ? 'primary' : 'default'}
           onClick={() => {
+            const name = project.universeSequences[component.universeSequenceId].name;
             component.active = !component.active;
-            save();
+            save(`${component.active ? 'Enable' : 'Disable'} component ${name}.`);
           }}>
           {
             component.active ?
@@ -198,7 +200,8 @@ function Component({ component, onDelete, onDragStart }: ComponentProps) {
           value={component.universeSequenceId}
           onChange={(e) => {
             component.universeSequenceId = parseInt(e.target.value);
-            save();
+            const name = project.universeSequences[component.universeSequenceId].name;
+            save(`Set component to ${name}.`);
           }}>
           <option value={0}>&lt;Unset&gt;</option>
           {
@@ -234,12 +237,12 @@ function Component({ component, onDelete, onDragStart }: ComponentProps) {
           className={styles.shortcut}
           onChange={() => { }}
           onKeyDown={(e) => {
+            const name = project.universeSequences[component.universeSequenceId].name;
             if (e.code.startsWith('Digit')) {
               component.shortcut = e.code.substring(5);
-              save();
+              save(`Add shortcut ${component.shortcut} for component ${name}.`);
             } else if (e.code === 'Backspace' || e.code === 'Delete') {
-              component.shortcut = '';
-              save();
+              save(`Remove shortcut for component ${name}.`);
             }
           }}
           value={component.shortcut} />
@@ -258,7 +261,8 @@ function Component({ component, onDelete, onDragStart }: ComponentProps) {
               component.duration.case = undefined;
               component.duration.value = undefined;
             }
-            save();
+            const name = project.universeSequences[component.universeSequenceId].name;
+            save(`Set timing type for component ${name} to ${value ? 'seconds' : 'beats'}.`);
           }}
           labels={{ left: 'Beat', right: 'Seconds' }} />
         <NumberInput
@@ -268,7 +272,8 @@ function Component({ component, onDelete, onDragStart }: ComponentProps) {
           value={component.duration?.value / 1000 || NaN}
           onChange={(value) => {
             component.duration.value = Math.floor(value * 1000);
-            save();
+            const name = project.universeSequences[component.universeSequenceId].name;
+            save(`Set duration for component ${name}.`);
           }}
           disabled={component.duration?.case !== 'durationMs'} />
       </td>

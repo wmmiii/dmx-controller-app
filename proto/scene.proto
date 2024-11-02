@@ -11,7 +11,7 @@ message Scene {
   // A component is a part of a scene that can be enabled or disabled and
   // applies state to the universe.
   message Component {
-    string name = 1;
+    reserved 1; // name
     int32 universe_sequence_id = 2;
     bool active = 3;
     string shortcut = 4;

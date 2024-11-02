@@ -102,7 +102,7 @@ function List({ selected, setSelected }: SceneListProps): JSX.Element {
               name: 'Untitled Scene',
               components: [],
             }));
-            save();
+            save('Create new scene.');
             setSelected({
               type: 'scene',
               index: project.scenes.length - 1,
@@ -144,7 +144,7 @@ function List({ selected, setSelected }: SceneListProps): JSX.Element {
               nativeBeats: 1,
               lightTracks: [],
             });
-            save();
+            save('Create new sequence.');
           }}>
             + Create New Sequence
           </Button>
@@ -175,11 +175,12 @@ function EditorPane({ selected }: EditorPaneProps): JSX.Element {
           className={styles.sceneEditor}
           sceneId={selected.index}
           onDelete={() => {
+            const name = project.scenes[selected.index].name;
             project.scenes.splice(selected.index, 1);
             if (project.activeScene === selected.index) {
               project.activeScene = 0;
             }
-            save();
+            save(`Delete scene ${name}.`);
           }} />
       }
     </div>

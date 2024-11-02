@@ -5,7 +5,7 @@ package dmx_controller;
 import "proto/light_layer.proto";
 
 message LightTrack {
-  string name = 1;
+  reserved 1; // name
   bool collapsed = 5;
   oneof output {
     uint32 physical_fixture_id = 2;

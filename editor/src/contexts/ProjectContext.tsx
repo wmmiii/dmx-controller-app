@@ -42,7 +42,8 @@ const DEFAULT_PROJECT = new Project({
 
 export const ProjectContext = createContext({
   project: null as (Project | null),
-  save: () => { },
+  save: (_changeDescription: string) => { },
+  update: () => { },
   saveAssets: () => { },
   downloadProject: () => { },
   openProject: (_project: Uint8Array) => { },
@@ -74,22 +75,25 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
     })();
   }, []);
 
-  const saveImpl = useCallback(async (project: Project) => {
-    console.time('save');
+  const saveImpl = useCallback(async (project: Project, changeDescription: string) => {
+    console.time(changeDescription);
     try {
       const minProject = new Project(project);
       minProject.assets = undefined;
       await storeBlob(PROJECT_KEY, minProject.toBinary());
     } catch (t) {
-      console.error(project);
       throw t;
     } finally {
-      console.timeEnd('save');
+      console.timeEnd(changeDescription);
     }
   }, []);
 
-  const save = useCallback(async () => {
-    saveImpl(project);
+  const update = useCallback(
+    () => setProject(new Project(project)),
+    [project, setProject]);
+
+  const save = useCallback(async (changeDescription: string) => {
+    await saveImpl(project, changeDescription);
     setProject(new Project(project));
   }, [project, setProject]);
 
@@ -102,7 +106,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
 
   const saveAssets = useCallback(async () => {
     saveAssetsImpl(project);
-    await saveImpl(project);
+    await saveImpl(project, 'Updating assets.');
   }, [project, save]);
 
   const downloadProject = useCallback(() => {
@@ -128,7 +132,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
   const openProject = useCallback(async (projectBlob: Uint8Array) => {
     const p = Project.fromBinary(projectBlob);
     await saveAssetsImpl(p);
-    await saveImpl(p);
+    await saveImpl(p, 'Open project.');
     setProject(p);
   }, []);
 
@@ -136,6 +140,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
     <ProjectContext.Provider value={{
       project: project,
       save: save,
+      update: update,
       saveAssets: saveAssets,
       downloadProject: downloadProject,
       openProject: openProject,

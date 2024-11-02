@@ -18,17 +18,18 @@ import { ShortcutContext } from "../contexts/ShortcutContext";
 import { WAVEFORM_COLOR, WAVEFORM_CURSOR_COLOR, WAVEFORM_PROGRESS_COLOR, WAVEFORM_SAMPLE_RATE } from "../util/styleUtils";
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { NumberInput } from "./Input";
+import { ProjectContext } from "../contexts/ProjectContext";
 
 const MS_PER_MINUTE = 1000 * 60;
 
 interface BeatEditorProps {
   file: AudioFile;
   onCancel: () => void;
-  onSave: () => void;
 }
 
-export function BeatEditor({ file, onCancel, onSave }: BeatEditorProps):
+export function BeatEditor({ file, onCancel }: BeatEditorProps):
   JSX.Element {
+  const { save } = useContext(ProjectContext);
   const { setShortcuts } = useContext(ShortcutContext);
   const waveRef = useRef<HTMLDivElement>();
   const [zoomLevel, setZoomLevel] = useState(64);
@@ -222,12 +223,12 @@ export function BeatEditor({ file, onCancel, onSave }: BeatEditorProps):
 
   const beat = ((t - firstBeat) % beatDuration) / beatDuration;
 
-  const save = useCallback(() => {
+  const onSave = useCallback(() => {
     file.beatMetadata = new BeatMetadata({
       lengthMs: beatDuration,
       offsetMs: BigInt(Math.floor(firstBeat)),
     });
-    onSave();
+    save(`Update beat for ${file.name}.`);
   }, [file, beatDuration, firstBeat]);
 
   return (
@@ -238,7 +239,7 @@ export function BeatEditor({ file, onCancel, onSave }: BeatEditorProps):
       footer={
         <div className={styles.buttonRow}>
           <Button variant="default" onClick={onCancel}>Close</Button>
-          <Button variant="primary" onClick={save}>Save</Button>
+          <Button variant="primary" onClick={onSave}>Save</Button>
         </div>
       }>
       <div className={styles.buttonRow}>

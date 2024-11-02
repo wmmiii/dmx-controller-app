@@ -3,6 +3,7 @@ import { Effect as EffectComponent, EffectSelectContext } from "./Effect";
 import { Effect, Effect_RampEffect, Effect_StaticEffect } from "@dmx-controller/proto/effect_pb";
 import { LightLayer as LightLayerProto } from "@dmx-controller/proto/light_layer_pb";
 import { useContext, useState } from "react";
+import { ProjectContext } from '../contexts/ProjectContext';
 
 interface NewEffect {
   firstMs: number;
@@ -19,7 +20,6 @@ interface LightLayerProps {
   msToPx: (ms: number) => number;
   pxToMs: (px: number) => number;
   snapToBeat: (t: number) => number;
-  save: () => void;
 }
 
 export function LightLayer({
@@ -29,9 +29,9 @@ export function LightLayer({
   msToPx,
   pxToMs,
   snapToBeat,
-  save,
 }: LightLayerProps): JSX.Element {
   const { selectEffect } = useContext(EffectSelectContext);
+  const { save } = useContext(ProjectContext);
   const [newEffect, setNewEffect] = useState<NewEffect | null>(null);
 
   return (
@@ -99,13 +99,13 @@ export function LightLayer({
                 },
               });
               layer.effects.splice(newEffect.effectIndex, 0, e);
-              save();
+              save('Add new effect.');
               setNewEffect(null);
               selectEffect({
                 effect: e,
                 delete: () => {
                   layer.effects.splice(newEffect.effectIndex, 1);
-                  save();
+                  save('Delete effect.');
                 }
               })
             }}>
@@ -125,10 +125,9 @@ export function LightLayer({
           maxMs={layer.effects[i + 1]?.startMs || maxMs}
           pxToMs={pxToMs}
           snapToBeat={snapToBeat}
-          save={() => save()}
           onDelete={() => {
             layer.effects.splice(i, 1);
-            save();
+            save('Delete effect.');
           }} />
       ))}
     </div>
