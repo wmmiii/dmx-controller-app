@@ -34,6 +34,10 @@ export function applyState(state: FixtureState, context: RenderContext): void {
     device.setTilt(state.tilt);
   }
 
+  if (state.zoom != null) {
+    device.setZoom(state.zoom);
+  }
+
   for (const channel of state.channels) {
     device.setChannel(channel.index, channel.value);
   }

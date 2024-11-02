@@ -53,6 +53,11 @@ export interface WritableDevice {
   setTilt(degrees: number): void;
 
   /**
+   * Sets the zoom amount based on a [0, 1] value.
+   */
+  setZoom(amount: number): void;
+
+  /**
    * Returns the type of all the channels according to this device.
    */
   readonly channelTypes: ChannelTypes[];
@@ -160,7 +165,7 @@ export function getPhysicalWritableDevice(
         });
       case 'zoom':
         zoomFunctions.push((z) => {
-          universe[index] = (z * 255) % 255;
+          universe[index] = (z * 255) % 256;
         });
       default:
         continue;
@@ -191,6 +196,10 @@ export function getPhysicalWritableDevice(
 
     setTilt: (degrees: number) => {
       tiltFunctions.forEach(f => f(degrees));
+    },
+
+    setZoom: (amount: number) => {
+      zoomFunctions.forEach(f => f(amount));
     },
 
     channelTypes,
@@ -235,6 +244,8 @@ export function getPhysicalWritableDeviceFromGroup(
       writableDevices.forEach(d => d.setPan(degrees)),
     setTilt: (degrees: number) =>
       writableDevices.forEach(d => d.setTilt(degrees)),
+    setZoom: (amount: number) =>
+      writableDevices.forEach(d => d.setZoom(amount)),
     channelTypes,
   };
 }
