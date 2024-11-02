@@ -7,6 +7,10 @@ export function isFixtureState(effect: FixtureState | FixtureSequenceMapping): e
 
 export function applyState(state: FixtureState, context: RenderContext): void {
   const device = getDevice(context);
+  if (device == null) {
+    return;
+  }
+
   switch (state.color.case) {
     case 'rgb':
       {
@@ -32,6 +36,10 @@ export function applyState(state: FixtureState, context: RenderContext): void {
 
   if (state.tilt != null) {
     device.setTilt(state.tilt);
+  }
+
+  if (state.zoom != null) {
+    device.setZoom(state.zoom);
   }
 
   for (const channel of state.channels) {
