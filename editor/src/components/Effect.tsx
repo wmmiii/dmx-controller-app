@@ -54,6 +54,7 @@ export function Effect({
   const [dragStart, setDragStart] = useState(false);
   const [dragEnd, setDragEnd] = useState(false);
   const [drag, setDrag] = useState<{ offsetMs: number, widthMs: number } | null>(null);
+  const [changed, setChanged] = useState(false);
 
   useEffect(() => {
     if (copyEffect && effect === selectedEffect) {
@@ -101,6 +102,7 @@ export function Effect({
       className={containerClasses.join(' ')}
       style={style}
       onMouseDown={(e) => {
+        setChanged(false);
         selectEffect(address);
         setDrag({
           offsetMs: pxToMs(e.clientX) - effect.startMs,
@@ -136,6 +138,7 @@ export function Effect({
                 effect.endMs = endMs;
               }
             }
+            setChanged(true);
             update();
             e.preventDefault();
             e.stopPropagation();
@@ -144,7 +147,9 @@ export function Effect({
             setDragStart(false);
             setDragEnd(false);
             setDrag(null);
-            save('Change effect timing.')
+            if (changed) {
+              save('Change effect timing.')
+            }
             e.preventDefault();
             e.stopPropagation();
           }}>

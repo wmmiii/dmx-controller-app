@@ -23,6 +23,7 @@ type LightTimelineProps = TracksProps & DetailsPaneProps;
 
 export default function LightTimeline(props: LightTimelineProps): JSX.Element {
   const { setShortcuts } = useContext(ShortcutContext);
+  const { save } = useContext(ProjectContext);
   const [selectedAddress, setSelectedAddress] = useState<EffectAddress | null>(null);
   const [copyEffect, setCopyEffect] = useState<EffectProto | null>(null);
 
@@ -31,7 +32,7 @@ export default function LightTimeline(props: LightTimelineProps): JSX.Element {
       return null;
     }
     const s = selectedAddress;
-    return props.lightTracks[s.track].layers[s.layer].effects[s.effect]
+    return props.lightTracks[s.track]?.layers[s.layer]?.effects[s.effect] || null;
   }, [props.lightTracks, selectedAddress]);
 
   const deleteSelected = useCallback(() => {
@@ -40,6 +41,8 @@ export default function LightTimeline(props: LightTimelineProps): JSX.Element {
     }
     const s = selectedAddress;
     props.lightTracks[s.track].layers[s.layer].effects.splice(s.effect, 1);
+    save('Delete effect.');
+    setSelectedAddress(null);
   }, [selectedAddress, props.lightTracks])
 
   useEffect(() => setShortcuts([
@@ -50,11 +53,7 @@ export default function LightTimeline(props: LightTimelineProps): JSX.Element {
     },
     {
       shortcut: { key: 'Delete' },
-      action: () => {
-        const s = selectedAddress;
-        props.lightTracks[s.track].layers[s.layer].effects.splice(s.effect, 1);
-        setSelectedAddress(null);
-      },
+      action: deleteSelected,
       description: 'Delete the currently selected effect.',
     },
     {
@@ -62,7 +61,7 @@ export default function LightTimeline(props: LightTimelineProps): JSX.Element {
       action: () => setCopyEffect(selectedEffect),
       description: 'Copy currently selected effect to clipboard.'
     },
-  ]), [setSelectedAddress, selectedAddress, setCopyEffect, selectedEffect]);
+  ]), [setSelectedAddress, selectedAddress, deleteSelected, setCopyEffect, selectedEffect]);
 
   return (
     <EffectSelectContext.Provider

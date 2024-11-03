@@ -24,6 +24,7 @@ import { Modal } from './components/Modal';
 import IconBxError from './icons/IconBxError';
 import IconBxlGithub from './icons/IconBxlGithub';
 import { UniverseVisualizer } from './components/UniverseVisualizer';
+import IconBxlWindows from './icons/IconBxlWindows';
 
 export default function Index(): JSX.Element {
   const { port, blackout, setBlackout, connect, disconnect, currentFps } = useContext(SerialContext);
@@ -203,6 +204,21 @@ function WarningDialog() {
         <br />
         Use at your own risk!
       </p>
+      {
+        navigator.userAgent.toLowerCase().indexOf('win') > -1 &&
+        <>
+          <h3><IconBxlWindows /> Windows Users</h3>
+          <p>
+            You may need to install <a
+              href="https://www.silabs.com/developer-tools/usb-to-uart-bridge-vcp-drivers?tab=downloads"
+              target="_blank">
+              additional drivers
+            </a> such that serial UART devices can be recognized by your
+            operating system.
+          </p>
+        </>
+      }
+      <p></p>
     </Modal>
   );
 }
