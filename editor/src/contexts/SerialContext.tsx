@@ -77,11 +77,10 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
   }, [renderUniverse]);
 
   const connect = useCallback(async () => {
-    const forceReconnect = port != null;
     try {
       let port: SerialPort;
       const ports = await navigator.serial.getPorts();
-      if (ports.length === 0 || forceReconnect) {
+      if (ports.length === 0 || port != null) {
         port = await navigator.serial.requestPort();
       } else {
         port = ports[0];
@@ -96,7 +95,7 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
 
       setPort(port);
     } catch (e) {
-      console.error(e);
+      console.error('Could not open serial port!', e);
     }
   }, [port]);
 
@@ -139,7 +138,7 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
           await writer.ready;
           await writer.write(universe);
         } catch (e) {
-          console.error(e);
+          console.error('Could not write to serial port!', e);
           closed = true;
           resetFps();
           disconnect();

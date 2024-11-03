@@ -87,7 +87,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
           setOperationIndex(0);
         }
       } catch (ex) {
-        console.error(ex);
+        console.error('Could not open project!', ex);
         setProject(DEFAULT_PROJECT);
       }
     })();

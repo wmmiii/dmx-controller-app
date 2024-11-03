@@ -19,7 +19,6 @@ const DEFAULT_SHOW = new Show({
   },
   lightTracks: [
     {
-      name: 'Fixture',
       output: {
         value: 0,
         case: 'physicalFixtureId',
