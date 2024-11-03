@@ -3,8 +3,17 @@ syntax = "proto3";
 package dmx_controller;
 
 message FixtureDefinition {
+  message StrobeMapping {
+    int32 no_strobe = 1;
+    int32 slow_strobe = 2;
+    int32 fast_strobe = 3;
+  }
+
   message Channel {
     string type = 1;
+
+    /* Default value to output for this channel. */
+    uint32 default_value = 4;
 
     /* Minimum number of degrees that a "pan" or "tilt" channel can move.
      * Also applicable for "fine" variants. */
@@ -14,8 +23,9 @@ message FixtureDefinition {
      * Also applicable for "fine" variants. */
     int32 max_degrees = 3;
 
-    /* Default value to output for this channel. */
-    uint32 default_value = 4;
+    /* If this channel type is "strobe" this mapping is set to configure fixture
+     * strobe settings. */
+    StrobeMapping strobe = 5;
   }
 
   string name = 1;

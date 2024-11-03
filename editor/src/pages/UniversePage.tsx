@@ -4,7 +4,7 @@ import IconBxError from '../icons/IconBxError';
 import IconBxX from '../icons/IconBxX';
 import styles from './UniversePage.module.scss';
 import { Button, IconButton } from '../components/Button';
-import { FixtureDefinition, FixtureDefinition_Channel, PhysicalFixture, PhysicalFixtureGroup } from '@dmx-controller/proto/fixture_pb';
+import { FixtureDefinition, FixtureDefinition_Channel, FixtureDefinition_StrobeMapping, PhysicalFixture, PhysicalFixtureGroup } from '@dmx-controller/proto/fixture_pb';
 import { HorizontalSplitPane } from '../components/SplitPane';
 import { Modal } from '../components/Modal';
 import { OutputDescription, OutputSelector } from '../components/OutputSelector';
@@ -459,6 +459,7 @@ function EditDefinitionDialog({
             <th>Default</th>
             <th>Min Deg</th>
             <th>Max Deg</th>
+            <th>Strobe</th>
           </tr>
         </thead>
         <tbody>
@@ -477,12 +478,18 @@ function EditDefinitionDialog({
                           definition.channels[index] = new FixtureDefinition_Channel({
                             type: e.target.value
                           });
+                          if (e.target.value === 'strobe') {
+                            definition.channels[index].strobe = new FixtureDefinition_StrobeMapping();
+                          }
                           save(`Add mapping for channel ${index}.`);
                         } else if (e.target.value === 'unset') {
                           delete definition.channels[index];
                           save(`Delete mapping for channel ${index}.`);
                         } else {
                           channel.type = e.target.value;
+                          if (e.target.value === 'strobe') {
+                            definition.channels[index].strobe = new FixtureDefinition_StrobeMapping();
+                          }
                           save(`Change type of mapping for channel ${index}.`);
                         }
                       }}>
@@ -498,6 +505,7 @@ function EditDefinitionDialog({
                       <option value="white-fine">White Fine</option>
                       <option value="brightness">Brightness</option>
                       <option value="brightness-fine">Brightness Fine</option>
+                      <option value="strobe">Strobe</option>
                       <option value="pan">Pan</option>
                       <option value="pan-fine">Pan Fine</option>
                       <option value="tilt">Tilt</option>
@@ -549,6 +557,41 @@ function EditDefinitionDialog({
                         <td></td>
                         <td></td>
                       </>
+                  }
+                  {
+                    channel?.type === 'strobe' ?
+                      <td>
+                        <NumberInput
+                          title='No Strobe'
+                          type='integer'
+                          min={0}
+                          max={255}
+                          value={channel.strobe.noStrobe}
+                          onChange={(value) => {
+                            channel.strobe.noStrobe = value;
+                          }} />
+
+                        <NumberInput
+                          title='Slow Strobe'
+                          type='integer'
+                          min={0}
+                          max={255}
+                          value={channel.strobe.slowStrobe}
+                          onChange={(value) => {
+                            channel.strobe.slowStrobe = value;
+                          }} />
+
+                        <NumberInput
+                          title='Fast Strobe'
+                          type='integer'
+                          min={0}
+                          max={255}
+                          value={channel.strobe.fastStrobe}
+                          onChange={(value) => {
+                            channel.strobe.fastStrobe = value;
+                          }} />
+                      </td> :
+                      <td></td>
                   }
                 </tr>
               );

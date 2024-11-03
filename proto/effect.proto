@@ -16,6 +16,11 @@ message RGBW {
 }
 
 message FixtureState {
+  enum StrobeSpeed {
+    NONE = 0;
+    SLOW = 1;
+    FAST = 2;
+  }
 
   message Channel {
     uint32 index = 1;
@@ -27,10 +32,12 @@ message FixtureState {
     RGB rgb = 2;
     RGBW rgbw = 3;
   }
+
   optional double brightness = 4;
   optional double pan = 5;
   optional double tilt = 6;
   optional double zoom = 7;
+  optional StrobeSpeed strobe = 8;
 }
 
 message FixtureSequenceMapping {

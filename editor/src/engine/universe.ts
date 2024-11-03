@@ -6,7 +6,6 @@ import { LightTrack } from "@dmx-controller/proto/light_track_pb";
 import { Project } from "@dmx-controller/proto/project_pb";
 import { SEQUENCE_BEAT_RESOLUTION, applyFixtureSequence } from "./fixtureSequence";
 import { applyState } from "./effect";
-import { idMapToArray } from "../util/mapUtils";
 import { rampEffect } from "./rampEffect";
 import { interpolateUniverses } from "./utils";
 

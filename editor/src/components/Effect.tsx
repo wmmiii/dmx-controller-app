@@ -8,11 +8,13 @@ import styles from './Effect.module.scss';
 import { Button } from './Button';
 import { CSSProperties } from "react";
 import { DEFAULT_EFFECT_COLOR } from '../util/styleUtils';
-import { Effect as EffectProto, EffectTiming, Effect_RampEffect, Effect_RampEffect_EasingFunction, Effect_StaticEffect, FixtureState, FixtureState as FixtureStateProto, FixtureSequenceMapping } from "@dmx-controller/proto/effect_pb";
+import { Effect as EffectProto, EffectTiming, Effect_RampEffect, Effect_RampEffect_EasingFunction, Effect_StaticEffect, FixtureState, FixtureState as FixtureStateProto, FixtureSequenceMapping, FixtureState_StrobeSpeed } from "@dmx-controller/proto/effect_pb";
 import { isFixtureState } from '../engine/effect';
 import { NumberInput, ToggleInput } from './Input';
 import { ShortcutContext } from '../contexts/ShortcutContext';
 import { ProjectContext } from '../contexts/ProjectContext';
+import IconBxsBinoculars from '../icons/IconBxsBinoculars';
+import IconBxsBolt from '../icons/IconBxsBolt';
 
 export interface EffectAddress {
   track: number;
@@ -395,6 +397,12 @@ function effectIcons(effect: FixtureStateProto | FixtureSequenceMapping):
   }
   if ((effect as FixtureSequenceMapping)?.fixtureSequenceId != null) {
     icons.push(IconBxRepeat);
+  }
+  if (fixtureEffect?.zoom != null) {
+    icons.push(IconBxsBinoculars);
+  }
+  if (fixtureEffect?.strobe) {
+    icons.push(IconBxsBolt);
   }
   return icons;
 }

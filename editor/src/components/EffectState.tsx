@@ -6,7 +6,7 @@ import RangeInput from './RangeInput';
 import styles from './EffectState.module.scss';
 import { Button, IconButton } from './Button';
 import { ProjectContext } from '../contexts/ProjectContext';
-import { FixtureSequenceMapping as FixtureSequenceMappingProto, FixtureState as FixtureStateProto, FixtureState_Channel, RGB, RGBW, EffectTiming } from "@dmx-controller/proto/effect_pb";
+import { FixtureSequenceMapping as FixtureSequenceMappingProto, FixtureState as FixtureStateProto, FixtureState_Channel, RGB, RGBW, EffectTiming, FixtureState_StrobeSpeed } from "@dmx-controller/proto/effect_pb";
 import { isFixtureState } from '../engine/effect';
 import { fixtureSequences } from '../engine/fixtureSequence';
 import { idMapToArray } from '../util/mapUtils';
@@ -177,6 +177,42 @@ function FixtureState(
               title="Add Brightness"
               onClick={() => {
                 state.brightness = 1;
+                onChange(state);
+              }}>
+              <IconBxPlus />
+            </IconButton>
+          </label>
+      }
+      {
+        state.strobe != null ?
+          <label className={styles.stateRow}>
+            <span>Strobe</span>
+            <select
+              value={state.strobe}
+              onChange={(e) => {
+                const speed = parseInt(e.target.value) as FixtureState_StrobeSpeed;
+                state.strobe = speed;
+                onChange(state);
+              }}>
+              <option value={FixtureState_StrobeSpeed.NONE}>None</option>
+              <option value={FixtureState_StrobeSpeed.SLOW}>Slow</option>
+              <option value={FixtureState_StrobeSpeed.FAST}>Fast</option>
+            </select>&nbsp;
+            <IconButton
+              title="Remove Strobe"
+              onClick={() => {
+                state.strobe = undefined;
+                onChange(state);
+              }}>
+              <IconBxX />
+            </IconButton>
+          </label> :
+          <label className={styles.stateRow}>
+            <span>Strobe</span>
+            <IconButton
+              title="Add Strobe"
+              onClick={() => {
+                state.strobe = FixtureState_StrobeSpeed.FAST;
                 onChange(state);
               }}>
               <IconBxPlus />

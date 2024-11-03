@@ -1,5 +1,6 @@
 import { Project } from "@dmx-controller/proto/project_pb";
 import { getAllFixtures } from "./group";
+import { FixtureState_StrobeSpeed } from "@dmx-controller/proto/effect_pb";
 
 export type DmxUniverse = Uint8Array;
 
@@ -15,6 +16,7 @@ export type ChannelTypes =
   'white-fine' |
   'brightness' |
   'brightness-fine' |
+  'strobe' |
   'pan' |
   'pan-fine' |
   'tilt' |
@@ -41,6 +43,11 @@ export interface WritableDevice {
    * Sets the brightness of the light based on a [0, 1] value.
    */
   setBrightness(brightness: number): void;
+
+  /**
+   * Sets the strobe amount of the light.
+   */
+  setStrobe(speed: FixtureState_StrobeSpeed): void;
 
   /**
    * Sets the pan based on a [0, 360] degree value.
@@ -80,6 +87,7 @@ export function getPhysicalWritableDevice(
   const rgbFunctions: Array<(r: number, g: number, b: number) => void> = [];
   const whiteFunctions: Array<(w: number) => void> = [];
   const brightnessFunctions: Array<(b: number) => void> = [];
+  const strobeFunctions: Array<(s: FixtureState_StrobeSpeed) => void> = [];
   const panFunctions: Array<(d: number) => void> = [];
   const tiltFunctions: Array<(d: number) => void> = [];
   const zoomFunctions: Array<(z: number) => void> = [];
@@ -141,6 +149,22 @@ export function getPhysicalWritableDevice(
           universe[index] = (b * 65025) % 255;
         });
         break;
+      case 'strobe':
+        strobeFunctions.push((s) => {
+          let amount: number;
+          switch (s) {
+            case FixtureState_StrobeSpeed.SLOW:
+              amount = channel.strobe.slowStrobe ?? channel.strobe.fastStrobe ?? channel.defaultValue;
+              break;
+            case FixtureState_StrobeSpeed.FAST:
+              amount = channel.strobe.fastStrobe ?? channel.strobe.slowStrobe ?? channel.defaultValue;
+              break;
+            default:
+              amount = channel.strobe.noStrobe ?? channel.defaultValue;
+          }
+          universe[index] = amount;
+        });
+        break;
       case 'pan':
         panFunctions.push((d) => {
           universe[index] = mapDegrees(d, channel.minDegrees, channel.maxDegrees);
@@ -188,6 +212,10 @@ export function getPhysicalWritableDevice(
 
     setBrightness: (brightness: number) => {
       brightnessFunctions.forEach(f => f(brightness));
+    },
+
+    setStrobe: (speed) => {
+      strobeFunctions.forEach(f => f(speed));
     },
 
     setPan: (degrees: number) => {
@@ -240,6 +268,8 @@ export function getPhysicalWritableDeviceFromGroup(
       writableDevices.forEach(d => d.setRGBW(red, green, blue, white)),
     setBrightness: (brightness: number) =>
       writableDevices.forEach(d => d.setBrightness(brightness)),
+    setStrobe: (speed) => 
+      writableDevices.forEach(d => d.setStrobe(speed)),
     setPan: (degrees: number) =>
       writableDevices.forEach(d => d.setPan(degrees)),
     setTilt: (degrees: number) =>
@@ -253,7 +283,7 @@ export function getPhysicalWritableDeviceFromGroup(
 export function deleteFixture(project: Project, fixtureId: number) {
   for (const group of Object.values(project.physicalFixtureGroups)) {
     group.physicalFixtureIds =
-        group.physicalFixtureIds.filter(f => f !== fixtureId);
+      group.physicalFixtureIds.filter(f => f !== fixtureId);
   }
 
   for (const show of project.shows) {
@@ -280,7 +310,7 @@ export function deleteFixture(project: Project, fixtureId: number) {
 export function deleteFixtureGroup(project: Project, fixtureGroupId: number) {
   for (const group of Object.values(project.physicalFixtureGroups)) {
     group.physicalFixtureGroupIds =
-        group.physicalFixtureGroupIds.filter(g => g !== fixtureGroupId);
+      group.physicalFixtureGroupIds.filter(g => g !== fixtureGroupId);
   }
 
   for (const show of project.shows) {

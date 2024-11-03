@@ -26,6 +26,10 @@ export function applyState(state: FixtureState, context: RenderContext): void {
     device.setBrightness(state.brightness);
   }
 
+  if (state.strobe != null) {
+    device.setStrobe(state.strobe);
+  }
+
   if (state.pan != null) {
     device.setPan(state.pan);
   }
