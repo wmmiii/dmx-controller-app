@@ -199,22 +199,14 @@ export function EffectDetails({
       details = (
         <StaticEffectDetails
           fixtureSequenceId={fixtureSequenceId}
-          effect={effect.effect.value}
-          onChange={(e) => {
-            effect.effect.value = e;
-            save('Modify effect.');
-          }} />
+          effect={effect.effect.value} />
       );
       break;
     case 'rampEffect':
       details = (
         <RampEffectDetails
           fixtureSequenceId={fixtureSequenceId}
-          effect={effect.effect.value}
-          onChange={(e) => {
-            effect.effect.value = e;
-            onChange(effect);
-          }} />
+          effect={effect.effect.value} />
       );
       break;
     default:
@@ -230,6 +222,7 @@ export function EffectDetails({
         <select
           value={effect.effect.case}
           onChange={(e) => {
+            let type: string;
             switch (e.target.value) {
               case 'staticEffect':
                 effect.effect = {
@@ -241,6 +234,7 @@ export function EffectDetails({
                   }),
                   case: 'staticEffect',
                 };
+                type = 'static';
                 break;
               case 'rampEffect':
                 effect.effect = {
@@ -256,12 +250,13 @@ export function EffectDetails({
                   }),
                   case: 'rampEffect',
                 };
+                type = 'ramp';
                 break;
               default:
                 console.error('Unrecognized event type: ', e.target.value);
                 return;
             }
-            onChange(effect);
+            save(`Change effect type to ${type}.`);
           }}>
           <option value="staticEffect">Static Effect</option>
           <option value="rampEffect">Ramp Effect</option>
@@ -276,8 +271,8 @@ export function EffectDetails({
             <select
               value={effect.timingMode}
               onChange={(e) => {
-                effect.timingMode = parseInt(e.target.value)
-                onChange(effect);
+                effect.timingMode = parseInt(e.target.value);
+                save(`Change effect timing to ${effect.timingMode === EffectTiming.ONE_SHOT ? 'one shot' : 'beat'}.`);
               }}>
               <option value={EffectTiming.ONE_SHOT}>One Shot</option>
               <option value={EffectTiming.BEAT}>Beat</option>
@@ -293,7 +288,7 @@ export function EffectDetails({
               value={effect.timingMultiplier || 1}
               onChange={(v) => {
                 effect.timingMultiplier = v;
-                onChange(effect);
+                save(`Change effect timing multiplier to ${v}.`);
               }} />
           </label>
 
@@ -316,7 +311,7 @@ export function EffectDetails({
                 }
                 effect.offset.case = effect.offset.case || 'offsetBeat';
                 effect.offset.value = v;
-                onChange(effect);
+                save('Change effect offset.');
               }} />
           </label>
 
@@ -337,7 +332,7 @@ export function EffectDetails({
                       value: effect.offset.value / 1000,
                     };
                   }
-                  onChange(effect);
+                  save('Change effect offset type.');
                 }}
                 labels={{ left: 'Beat', right: 'Seconds' }} /> :
               <></>
@@ -351,7 +346,7 @@ export function EffectDetails({
               variant={effect.mirrored ? 'primary' : 'default'}
               onClick={() => {
                 effect.mirrored = !effect.mirrored;
-                onChange(effect);
+                save(`Changed effect mirrored status to ${effect.mirrored}.`);
               }}>
               Mirrored
             </Button>
@@ -398,8 +393,9 @@ function effectIcons(effect: FixtureStateProto | FixtureSequenceMapping):
 function StaticEffectDetails({
   fixtureSequenceId,
   effect,
-  onChange,
 }: EffectDetailsBaseProps<Effect_StaticEffect>): JSX.Element {
+  const {save} = useContext(ProjectContext);
+
   return (
     <>
       <hr />
@@ -418,7 +414,7 @@ function StaticEffectDetails({
               value: e,
             };
           }
-          onChange(effect);
+          save('Change static effect state.');
         }} />
     </>
   );
@@ -427,8 +423,9 @@ function StaticEffectDetails({
 function RampEffectDetails({
   fixtureSequenceId,
   effect,
-  onChange,
 }: EffectDetailsBaseProps<Effect_RampEffect>): JSX.Element {
+  const {save} = useContext(ProjectContext);
+
   return (
     <>
       <label>
@@ -437,7 +434,7 @@ function RampEffectDetails({
           value={effect.easing}
           onChange={(e) => {
             effect.easing = parseInt(e.target.value);
-            onChange(effect);
+            save('Change effect easing type.');
           }}>
           <option value={Effect_RampEffect_EasingFunction.LINEAR}>Linear</option>
           <option value={Effect_RampEffect_EasingFunction.EASE_IN}>
@@ -471,7 +468,7 @@ function RampEffectDetails({
               value: e,
             };
           }
-          onChange(effect);
+          save('Change ramp effect start state.');
         }} />
       <hr />
       <h2>End</h2>
@@ -490,7 +487,7 @@ function RampEffectDetails({
               value: e,
             };
           }
-          onChange(effect);
+          save('Change ramp effect end state.');
         }} />
     </>
   );

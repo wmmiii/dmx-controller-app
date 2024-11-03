@@ -49,15 +49,16 @@ export default function LightTimeline(props: LightTimelineProps): JSX.Element {
   ]), [selectedEffect, setSelectedEffect]);
 
   return (
-    <EffectSelectContext.Provider value={{
-      selectedEffect: selectedEffect?.effect || null,
-      deleteSelectedEffect: () => {
-        selectedEffect?.delete();
-        setSelectedEffect(null);
-      },
-      selectEffect: (effect) => setSelectedEffect(effect),
-      copyEffect: copyEffect,
-    }}>
+    <EffectSelectContext.Provider
+      value={{
+        selectedEffect: selectedEffect?.effect || null,
+        deleteSelectedEffect: () => {
+          selectedEffect?.delete();
+          setSelectedEffect(null);
+        },
+        selectEffect: (effect) => setSelectedEffect(effect),
+        copyEffect: copyEffect,
+      }}>
       <HorizontalSplitPane
         className={styles.wrapper}
         defaultAmount={0.8}
@@ -328,7 +329,6 @@ interface DetailsPaneProps {
 }
 
 function DetailsPane({ fixtureSequenceId }: DetailsPaneProps): JSX.Element {
-  const { save } = useContext(ProjectContext);
   const { selectedEffect } = useContext(EffectSelectContext);
 
   if (selectedEffect == null) {
@@ -343,7 +343,6 @@ function DetailsPane({ fixtureSequenceId }: DetailsPaneProps): JSX.Element {
     <EffectDetails
       fixtureSequenceId={fixtureSequenceId}
       className={styles.effectDetails}
-      effect={selectedEffect}
-      onChange={save} />
+      effect={selectedEffect} />
   );
 }

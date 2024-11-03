@@ -114,17 +114,17 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
     await saveImpl(project, changeDescription);
     const minProject = new Project(project);
     minProject.assets = undefined;
+    // Remove all redo future operations & push current operation.
     operationStack.current.splice(operationIndex + 1, operationStack.current.length - operationIndex - 1);
     operationStack.current.push({
       projectState: minProject.toBinary(),
       description: changeDescription,
     });
+    // Truncate operation stack to MAX_UNDO length.
     if (operationStack.current.length > MAX_UNDO) {
       operationStack.current.splice(0, operationStack.current.length - MAX_UNDO);
-      setOperationIndex(MAX_UNDO - 1);
-    } else {
-      setOperationIndex((i) => i + 1);
     }
+    setOperationIndex(operationStack.current.length - 1);
 
     setProject(new Project(project));
     setLastOperation(changeDescription);

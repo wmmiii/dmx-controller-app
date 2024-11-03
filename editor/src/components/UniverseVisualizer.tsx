@@ -1,13 +1,18 @@
-import React, { useContext, useMemo } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 
 import styles from "./UniverseVisualizer.module.scss";
 import { SerialContext } from '../contexts/SerialContext';
 import { ProjectContext } from '../contexts/ProjectContext';
-import { ChannelTypes } from '../engine/fixture';
+import { ChannelTypes, DmxUniverse } from '../engine/fixture';
 
 export function UniverseVisualizer() {
   const { project } = useContext(ProjectContext);
-  const { lastKnownUniverse } = useContext(SerialContext);
+  const [universe, setUniverse] = useState<DmxUniverse>(new Uint8Array(512));
+  const { subscribeToUniverseUpdates } = useContext(SerialContext);
+
+  useEffect(() => {
+    subscribeToUniverseUpdates(setUniverse);
+  }, [subscribeToUniverseUpdates, setUniverse]);
 
   const fixtureMapping = useMemo(
     () => Object.values(project?.physicalFixtures || {})
@@ -39,7 +44,7 @@ export function UniverseVisualizer() {
     if (index === undefined) {
       return 0;
     } else {
-      return lastKnownUniverse[index];
+      return universe[index];
     }
   };
 

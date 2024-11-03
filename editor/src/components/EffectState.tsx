@@ -100,7 +100,7 @@ function FixtureState(
       throw Error('Unrecognized color profile: ' + type);
     }
     onChange(state);
-  }, [state]);
+  }, [state, onChange]);
 
   return (
     <>

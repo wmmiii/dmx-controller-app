@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { StrictMode } from 'react';
 import Index from './Index';
 import { BrowserRouter } from 'react-router-dom';
 import { DialogProvider } from './contexts/DialogContext';
@@ -15,15 +15,17 @@ import { createRoot } from 'react-dom/client';
 
 const root = createRoot(document.getElementById('root'));
 root.render(
-  <BrowserRouter basename="/">
-    <DialogProvider>
-      <SerialProvider>
-        <ShortcutProvider>
-          <ProjectProvider>
-            <Index />
-          </ProjectProvider>
-        </ShortcutProvider>
-      </SerialProvider>
-    </DialogProvider>
-  </BrowserRouter>
+  <StrictMode>
+    <BrowserRouter basename="/">
+      <DialogProvider>
+        <SerialProvider>
+          <ShortcutProvider>
+            <ProjectProvider>
+              <Index />
+            </ProjectProvider>
+          </ShortcutProvider>
+        </SerialProvider>
+      </DialogProvider>
+    </BrowserRouter>
+  </StrictMode>
 );

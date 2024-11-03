@@ -2,11 +2,12 @@ import { PropsWithChildren, createContext, useCallback, useContext, useEffect, u
 import { Modal } from "../components/Modal";
 import { DialogContext } from "./DialogContext";
 import IconBxErrorAlt from "../icons/IconBxErrorAlt";
+import { DmxUniverse } from "../engine/fixture";
 
 const BLACKOUT_UNIVERSE = new Uint8Array(512).fill(0);
 const FPS_BUFFER_SIZE = 100;
 
-type RenderUniverse = () => Uint8Array;
+type RenderUniverse = () => DmxUniverse;
 
 const EMPTY_CONTEXT = {
   port: null as (SerialPort | null),
@@ -18,7 +19,7 @@ const EMPTY_CONTEXT = {
   clearRenderUniverse: (_render: RenderUniverse) => { },
   currentFps: 0,
   maxFps: 0,
-  lastKnownUniverse: new Uint8Array(),
+  subscribeToUniverseUpdates: (_callback: (universe: DmxUniverse) => void) => { },
 };
 
 export const SerialContext = createContext(EMPTY_CONTEXT);
@@ -65,7 +66,7 @@ export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
 function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
   const [port, setPort] = useState<SerialPort | null>(null);
   const renderUniverse = useRef<RenderUniverse>(() => BLACKOUT_UNIVERSE);
-  const [lastKnownUniverse, setLastKnownUniverse] = useState<Uint8Array>(BLACKOUT_UNIVERSE);
+  const updateSubscribers = useRef<Array<(universe: DmxUniverse) => void>>([]);
   const blackout = useRef(false);
   const [blackoutState, setBlackoutState] = useState(false);
   const fpsBuffer = useRef([0]);
@@ -119,7 +120,8 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
   useEffect(() => {
     if (!port) {
       const handle = setInterval(() => {
-        setLastKnownUniverse(renderUniverse.current());
+        const universe = renderUniverse.current();
+        updateSubscribers.current.forEach(c => c(universe));
       }, 30);
       return () => clearInterval(handle);
     }
@@ -142,7 +144,7 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
         try {
           await writer.ready;
           await writer.write(universe);
-          setLastKnownUniverse(universe);
+          updateSubscribers.current.forEach(c => c(universe));
         } catch (e) {
           console.error('Could not write to serial port!', e);
           closed = true;
@@ -201,7 +203,7 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
       },
       currentFps: currentFps,
       maxFps: maxFps,
-      lastKnownUniverse: lastKnownUniverse,
+      subscribeToUniverseUpdates: useCallback((callback) => updateSubscribers.current.push(callback), [updateSubscribers]),
     }}>
       {children}
     </SerialContext.Provider>

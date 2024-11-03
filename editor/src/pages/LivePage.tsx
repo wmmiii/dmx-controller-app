@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { HorizontalSplitPane } from '../components/SplitPane';
 import { Scene } from '@dmx-controller/proto/scene_pb';
 import { ProjectContext } from '../contexts/ProjectContext';
@@ -161,6 +161,15 @@ interface EditorPaneProps {
 function EditorPane({ selected }: EditorPaneProps): JSX.Element {
   const { project, save } = useContext(ProjectContext);
 
+  const onDelete = useCallback(() => {
+    const name = project.scenes[selected.index].name;
+    project.scenes.splice(selected.index, 1);
+    if (project.activeScene === selected.index) {
+      project.activeScene = 0;
+    }
+    save(`Delete scene ${name}.`);
+  }, [project, save]);
+
   return (
     <div className={styles.editorPane}>
       {
@@ -174,14 +183,7 @@ function EditorPane({ selected }: EditorPaneProps): JSX.Element {
         <SceneEditor
           className={styles.sceneEditor}
           sceneId={selected.index}
-          onDelete={() => {
-            const name = project.scenes[selected.index].name;
-            project.scenes.splice(selected.index, 1);
-            if (project.activeScene === selected.index) {
-              project.activeScene = 0;
-            }
-            save(`Delete scene ${name}.`);
-          }} />
+          onDelete={onDelete} />
       }
     </div>
   );
