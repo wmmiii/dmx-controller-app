@@ -116,6 +116,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
     minProject.assets = undefined;
     // Remove all redo future operations & push current operation.
     operationStack.current.splice(operationIndex + 1, operationStack.current.length - operationIndex - 1);
+
     operationStack.current.push({
       projectState: minProject.toBinary(),
       description: changeDescription,
@@ -128,7 +129,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
 
     setProject(new Project(project));
     setLastOperation(changeDescription);
-  }, [project, operationStack, setProject, setOperationIndex]);
+  }, [project, operationStack, operationIndex, setProject, setOperationIndex]);
 
   const saveAssetsImpl = useCallback(async (project: Project) => {
     console.time('save assets');
@@ -148,7 +149,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
       const description = operationStack.current[operationIndex].description;
       const p = Project.fromBinary(state);
       await saveImpl(p, `Undo: ${description}`);
-      setOperationIndex((i) => i - 1);
+      setOperationIndex(operationIndex - 1);
       setProject(p);
       setLastOperation(`Undo: ${description}`);
     }
@@ -160,7 +161,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
       const description = operationStack.current[operationIndex + 1].description;
       const p = Project.fromBinary(state);
       await saveImpl(p, `Redo: ${description}`);
-      setOperationIndex((i) => i + 1);
+      setOperationIndex(operationIndex + 1);
       setProject(p);
       setLastOperation(`Redo: ${description}`);
     }

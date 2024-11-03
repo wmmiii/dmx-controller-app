@@ -43,7 +43,7 @@ export function SceneEditor({
       components.forEach(c => c.active = false);
     }
     save(`Toggle components with shortcut "${shortcut}".`);
-  }, [scene]);
+  }, [scene, save]);
 
   useEffect(() => {
     const shortcuts = new Set(

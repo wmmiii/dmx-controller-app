@@ -95,7 +95,7 @@ export function ShortcutProvider({ children }: PropsWithChildren): JSX.Element {
                 ...(s.shortcut.modifiers || []),
                 s.shortcut.key];
               return (
-                <p>
+                <p key={s.description}>
                   <strong>
                     {shortcut.join(' + ')}
                   </strong>:&nbsp;
