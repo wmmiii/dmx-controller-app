@@ -409,7 +409,7 @@ function EditDefinitionDialog({
       onClose={close}
       bodyClass={styles.editor}
       footer={
-        <div className={styles.dialogFooter}>
+        <div>
           <Button onClick={close} variant="primary">
             Done
           </Button>
@@ -420,137 +420,142 @@ function EditDefinitionDialog({
         onClick={copy}>
         <IconBxCopyAlt />
       </IconButton>
-      <label>
-        <span>Name</span>
-        <TextInput
-          value={definition.name}
-          onChange={(v) => {
-            definition.name = v;
-            save(`Change fixture definition name to ${v}.`);
-          }} />
-      </label>
-      <label>
-        <span>Manufacturer</span>
-        <TextInput
-          value={definition.manufacturer}
-          onChange={(v) => {
-            definition.manufacturer = v;
-            save(`Set manufacturer of fixture definition ${definition.name} to ${v}.`);
-          }} />
-      </label>
+      <div>
+        <label>
+          <span>Name</span>
+          <TextInput
+            value={definition.name}
+            onChange={(v) => {
+              definition.name = v;
+              save(`Change fixture definition name to ${v}.`);
+            }} />
+        </label>
+        <label>
+          <span>Manufacturer</span>
+          <TextInput
+            value={definition.manufacturer}
+            onChange={(v) => {
+              definition.manufacturer = v;
+              save(`Set manufacturer of fixture definition ${definition.name} to ${v}.`);
+            }} />
+        </label>
+      </div>
       <label>
         <span>Total channels</span>
         <NumberInput
-          min={0}
+          min={Math.max(0, ...Object.keys(definition.channels).map(i => parseInt(i)))}
           max={512}
           value={definition.numChannels}
           onChange={(v) => {
             definition.numChannels = v;
             save(`Set number of channels of ${definition.name} to ${v}.`);
           }} />
-        {
-          (nextId(definition.channels) > definition.numChannels) &&
-          <IconBxError />
-        }
       </label>
-      <div>Channel Mappings:</div>
-      {
-        idMapToArray(definition.channels)
-          .sort((a, b) => a[0] - b[0])
-          .map(([id, channel]) => (
-            <div key={id} className={styles.row}>
-              <NumberInput
-                min={0}
-                max={512}
-                value={id}
-                onChange={(v) => {
-                  delete definition.channels[id];
-                  definition.channels[v] = channel;
-                  save(`Set channel mapping to index ${channel}.`);
-                }} />
-              <select
-                value={channel.type}
-                onChange={(e) => {
-                  channel.type = e.target.value;
-                  save(`Set channel mapping to type ${channel.type}.`);
-                }}>
-                <option value="other">other</option>
-                <option value="red">Red</option>
-                <option value="red-fine">Red Fine</option>
-                <option value="green">Green</option>
-                <option value="green-fine">Green Fine</option>
-                <option value="blue">Blue</option>
-                <option value="blue-fine">Blue Fine</option>
-                <option value="white">White</option>
-                <option value="white-fine">White Fine</option>
-                <option value="brightness">Brightness</option>
-                <option value="brightness-fine">Brightness Fine</option>
-                <option value="pan">Pan</option>
-                <option value="pan-fine">Pan Fine</option>
-                <option value="tilt">Tilt</option>
-                <option value="tilt-fine">Tilt Fine</option>
-                <option value="zoom">Zoom</option>
-              </select>
-              <label>
-                <span>Default Value</span>
-                <NumberInput
-                  min={0}
-                  max={255}
-                  value={channel.defaultValue}
-                  onChange={(v) => {
-                    channel.defaultValue = v;
-                    save(`Set default value of channel mapping to ${v}.`);
-                  }} />
-              </label>
-              {
-                (
-                  channel.type === 'pan' || channel.type === 'pan-fine' ||
-                  channel.type === 'tilt' || channel.type === 'tilt-fine'
-                ) &&
-                <>
-                  <label>
-                    <span>Min deg</span>
-                    <NumberInput
-                      min={-720}
-                      max={720}
-                      value={channel.minDegrees}
-                      onChange={(v) => {
-                        channel.minDegrees = v;
-                        save(`Set channel min degrees to ${v}.`);
-                      }} />
-                  </label>
-                  <label>
-                    <span>Max deg</span>
-                    <NumberInput
-                      min={-720}
-                      max={720}
-                      value={channel.maxDegrees}
-                      onChange={(v) => {
-                        channel.maxDegrees = v;
-                        save(`Set channel max degrees to ${v}.`);
-                      }} />
-                  </label>
-                </>
-              }
-              <IconButton
-                title="Delete Channel Mapping"
-                onClick={() => {
-                  delete definition.channels[id];
-                  save(`Delete channel mapping for index ${id}.`);
-                }}>
-                <IconBxX />
-              </IconButton>
-            </div>
-          ))
-      }
-      <Button onClick={() => {
-        const newChannel = nextId(definition.channels);
-        definition.channels[newChannel] =
-          new FixtureDefinition_Channel({ type: 'other' });
-        save(`Create new channel mapping.`);
-      }}>
-        + Add New Channel Mapping
-      </Button>
+      <table>
+        <thead>
+          <tr>
+            <th>Channel</th>
+            <th>Type</th>
+            <th>Default</th>
+            <th>Min Deg</th>
+            <th>Max Deg</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            Array.from(Array(definition.numChannels), (_, i) => {
+              const index = i + 1;
+              const channel = definition.channels[index];
+              return (
+                <tr>
+                  <td>{index}</td>
+                  <td>
+                    <select
+                      value={channel?.type || 'unset'}
+                      onChange={(e) => {
+                        if (channel == null) {
+                          definition.channels[index] = new FixtureDefinition_Channel({
+                            type: e.target.value
+                          });
+                          save(`Add mapping for channel ${index}.`);
+                        } else if (e.target.value === 'unset') {
+                          delete definition.channels[index];
+                          save(`Delete mapping for channel ${index}.`);
+                        } else {
+                          channel.type = e.target.value;
+                          save(`Change type of mapping for channel ${index}.`);
+                        }
+                      }}>
+                      <option value="unset">Unset</option>
+                      <option value="other">Other</option>
+                      <option value="red">Red</option>
+                      <option value="red-fine">Red Fine</option>
+                      <option value="green">Green</option>
+                      <option value="green-fine">Green Fine</option>
+                      <option value="blue">Blue</option>
+                      <option value="blue-fine">Blue Fine</option>
+                      <option value="white">White</option>
+                      <option value="white-fine">White Fine</option>
+                      <option value="brightness">Brightness</option>
+                      <option value="brightness-fine">Brightness Fine</option>
+                      <option value="pan">Pan</option>
+                      <option value="pan-fine">Pan Fine</option>
+                      <option value="tilt">Tilt</option>
+                      <option value="tilt-fine">Tilt Fine</option>
+                      <option value="zoom">Zoom</option>
+                    </select>
+                  </td>
+                  <td>
+                    {
+                      channel != null &&
+                      <NumberInput
+                        min={0}
+                        max={255}
+                        value={channel.defaultValue}
+                        onChange={(v) => {
+                          channel.defaultValue = v;
+                          save(`Set default value of channel mapping ${index} to ${v}.`);
+                        }} />
+                    }
+                  </td>
+                  {
+                    (
+                      channel?.type === 'pan' || channel?.type === 'pan-fine' ||
+                      channel?.type === 'tilt' || channel?.type === 'tilt-fine'
+                    ) ?
+                      <>
+                        <td>
+                          <NumberInput
+                            min={-720}
+                            max={720}
+                            value={channel.minDegrees}
+                            onChange={(v) => {
+                              channel.minDegrees = v;
+                              save(`Set channel ${index} min degrees to ${v}.`);
+                            }} />
+                        </td>
+                        <td>
+                          <NumberInput
+                            min={-720}
+                            max={720}
+                            value={channel.maxDegrees}
+                            onChange={(v) => {
+                              channel.maxDegrees = v;
+                              save(`Set channel ${index} max degrees to ${v}.`);
+                            }} />
+                        </td>
+                      </> :
+                      <>
+                        <td></td>
+                        <td></td>
+                      </>
+                  }
+                </tr>
+              );
+            })
+          }
+        </tbody>
+      </table>
     </Modal>
   );
 }

@@ -10,11 +10,15 @@ interface GroupMember {
  * Returns fixtures and groups that may be added to the provided group.
  */
 export function getApplicableMembers(project: Project, groupId: number): GroupMember[] {
+  const group = project.physicalFixtureGroups[groupId];
   const members: GroupMember[] = [];
 
   const depMap: { [key: number]: Set<number> } = {};
   for (const idString in project.physicalFixtureGroups) {
     const id = parseInt(idString);
+    if (group.physicalFixtureGroupIds.indexOf(id) > -1) {
+      return;
+    }
     const deps = recursivelyGetDepMap(id, project, depMap)
     if (!deps.has(groupId)) {
       members.push({

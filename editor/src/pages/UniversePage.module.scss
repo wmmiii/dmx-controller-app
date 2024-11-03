@@ -29,31 +29,9 @@
   padding: spacing(2) 0;
 }
 
-.editorFooter {
-  display: flex;
-  flex-direction: row;
-  gap: spacing(2);
-  padding-top: spacing(2);
-}
-
 .row {
   align-items: center;
   display: flex;
   flex-direction: row;
   gap: spacing(2);
-}
-
-.defaultPreset {
-  border: 1px solid $col-border;
-  display: flex;
-  flex-direction: column;
-  gap: spacing(1);
-  padding: spacing(2);
-
-  .header {
-    align-items: center;
-    display: flex;
-    flex-direction: row;
-    gap: spacing(2);
-  }
 }
