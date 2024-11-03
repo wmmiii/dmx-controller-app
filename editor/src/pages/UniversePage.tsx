@@ -157,8 +157,7 @@ function EditFixtureDialog({
           variant='warning'
           onClick={onDelete}>
           Delete Fixture
-        </Button>&nbsp;
-        Cannot be undone!
+        </Button>
       </div>
       <label>
         <span>Name</span>
@@ -243,8 +242,7 @@ function EditGroupDialog({
           variant='warning'
           onClick={onDelete}>
           Delete Group
-        </Button>&nbsp;
-        Cannot be undone!
+        </Button>
       </div>
       <label>
         <span>Name</span>

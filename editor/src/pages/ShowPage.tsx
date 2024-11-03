@@ -199,8 +199,7 @@ export default function ShowPage(): JSX.Element {
                   setShowDetailsModal(false);
                 }}>
                 Delete Show
-              </Button>&nbsp;
-              Cannot be undone!
+              </Button>
             </div>
           </div>
         </Modal>

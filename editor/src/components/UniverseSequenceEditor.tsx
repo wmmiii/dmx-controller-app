@@ -127,8 +127,7 @@ export function UniverseSequenceEditor({
                   setSequenceDetailsModal(false);
                 }}>
                 Delete Sequence
-              </Button>&nbsp;
-              Cannot be undone!
+              </Button>
             </div>
           </div>
         </Modal>

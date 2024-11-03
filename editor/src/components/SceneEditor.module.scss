@@ -1,13 +1,17 @@
 @import '../vars';
 
 .scene-editor {
-  position: relative;
+  @include fill;
+
+  display: flex;
+  flex-direction: column;
 }
 
 .header {
   align-items: center;
   display: flex;
   flex-direction: row;
+  flex-shrink: 0;
   gap: spacing(1);
   margin: spacing(1);
 }
@@ -16,9 +20,24 @@
   width: 6em;
 }
 
+.component-list-wrapper {
+  flex: 1;
+  overflow: auto;
+}
+
 .component-list {
   border-collapse: collapse;
   user-select: none;
+
+  th {
+    background-color: $col-bg;
+    font-size: unset;
+    font-weight: unset;
+    padding-bottom: spacing(1);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
 
   td {
     padding: spacing(0.5) spacing(1);

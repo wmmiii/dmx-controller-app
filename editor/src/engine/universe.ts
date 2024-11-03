@@ -8,6 +8,7 @@ import { SEQUENCE_BEAT_RESOLUTION, applyFixtureSequence } from "./fixtureSequenc
 import { applyState } from "./effect";
 import { idMapToArray } from "../util/mapUtils";
 import { rampEffect } from "./rampEffect";
+import { interpolateUniverses } from "./utils";
 
 export interface RenderContext {
   readonly t: number;
@@ -51,7 +52,8 @@ export function renderSceneToUniverse(
   beatMetadata: BeatMetadata,
   project: Project,
 ): DmxUniverse {
-  t = t + project.timingOffsetMs - Number(beatMetadata.offsetMs);
+  const absoluteT = t + project.timingOffsetMs;
+  const beatT = t + project.timingOffsetMs - Number(beatMetadata.offsetMs);
 
   const universe = new Uint8Array(512);
 
@@ -63,24 +65,43 @@ export function renderSceneToUniverse(
   }
 
   for (const component of scene.components) {
-    if (!component.active || component.universeSequenceId === 0) {
+    if (component.universeSequenceId === 0) {
       continue;
+    }
+
+    let amount: number = 0;
+    if (component.transition.case === 'startFadeInMs') {
+      const fadeInMs = component.fadeInDuration.case === 'fadeInBeat' ?
+        (component.fadeInDuration.value || 0) * beatMetadata.lengthMs :
+        (component.fadeInDuration.value || 0);
+
+      amount = Math.min(1, (absoluteT - Number(component.transition.value)) / fadeInMs);
+    } else if (component.transition.case === 'startFadeOutMs') {
+      const fadeOutMs = component.fadeOutDuration.case === 'fadeOutBeat' ?
+        (component.fadeOutDuration.value || 0) * beatMetadata.lengthMs :
+        (component.fadeOutDuration.value || 0);
+
+      amount = Math.max(0, 1 - ((absoluteT - Number(component.transition.value)) / fadeOutMs));
     }
 
     const sequence = project.universeSequences[component.universeSequenceId];
 
     let sequenceT: number
     if (component.duration?.case === 'durationMs') {
-      sequenceT = (t * SEQUENCE_BEAT_RESOLUTION / component.duration.value) % (sequence.nativeBeats * SEQUENCE_BEAT_RESOLUTION);
+      sequenceT = (absoluteT * SEQUENCE_BEAT_RESOLUTION / component.duration.value) % (sequence.nativeBeats * SEQUENCE_BEAT_RESOLUTION);
     } else {
-      sequenceT = (t % (beatMetadata.lengthMs * sequence.nativeBeats)) * SEQUENCE_BEAT_RESOLUTION / beatMetadata.lengthMs;
+      sequenceT = (beatT % (beatMetadata.lengthMs * sequence.nativeBeats)) * SEQUENCE_BEAT_RESOLUTION / beatMetadata.lengthMs;
     }
 
+    const before = new Uint8Array(universe);
+    const after = new Uint8Array(universe);
     renderUniverseSequence(
       sequenceT,
       component.universeSequenceId,
       project,
-      universe);
+      after);
+
+    interpolateUniverses(universe, project, amount, before, after);
   }
 
   return universe;

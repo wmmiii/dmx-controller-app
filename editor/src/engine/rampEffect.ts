@@ -3,6 +3,7 @@ import { Effect_RampEffect, Effect_RampEffect_EasingFunction } from "@dmx-contro
 import { applyState } from "./effect";
 import { RenderContext, getDevice } from "./universe";
 import { applyFixtureSequence } from "./fixtureSequence";
+import { interpolateUniverses } from "./utils";
 
 export function rampEffect(
   context: RenderContext,
@@ -57,21 +58,5 @@ export function rampEffect(
       easedT = t;
   }
 
-  // First do a dumb interpolation of all the channels to set coarse values.
-  for (let i = 0; i < context.universe.length; ++i) {
-    context.universe[i] = Math.floor(start[i] * (1 - t) + end[i] * t);
-  }
-
-  const outputDevice = getDevice(context);
-
-  // Next fixup all the fine values.
-  outputDevice.channelTypes.forEach((type, i) => {
-    if (type.indexOf('-fine') >= 0) {
-      const coarseType = type.substring(0, type.length - 5) as ChannelTypes;
-      const coarseIndex = outputDevice.channelTypes.indexOf(coarseType);
-      const coarseValue = start[coarseIndex] * (1 - t) +
-        end[coarseIndex] * t;
-      context.universe[i] = Math.floor(coarseValue * 255) % 255;
-    }
-  });
+  interpolateUniverses(context.universe, context.project, t, start, end);
 }
