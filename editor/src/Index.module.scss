@@ -7,6 +7,8 @@ html {
   font-size: 14pt;
   font-weight: 300;
   overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: $col-scroll-thumb $col-scroll-track;
 }
 
 h1,
@@ -60,10 +62,28 @@ li {
   margin: spacing(1) 0;
 }
 
+table {
+  background-color: $col-bg;
+  border-collapse: collapse;
+}
+
+th {
+  background-color: $col-bg;
+  font-size: unset;
+  font-weight: unset;
+  padding: spacing(1) 0;
+  position: sticky;
+  text-align: left;
+  top: 0;
+  z-index: 1;
+}
+
 .wrapper {
   @include fill;
   display: flex;
   flex-direction: column;
+  gap: spacing(1);
+  padding: spacing(1);
 
   header {
     align-items: center;
@@ -72,7 +92,6 @@ li {
     flex-shrink: 0;
     gap: spacing(2);
     min-height: 0;
-    padding: spacing(2);
 
     .spacer {
       flex: 1;
@@ -83,12 +102,16 @@ li {
     background-color: $col-bg;
     border-radius: spacing(1);
     flex: 1;
-    margin: spacing(1);
-    margin-top: 0;
     overflow-y: auto;
     position: relative;
   }
 
+  footer {
+    align-items: center;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+  }
 }
 
 .welcome-dialog {
@@ -112,7 +135,6 @@ li {
   color: $col-text-dim;
   font-size: 10pt;
   overflow: hidden;
-  padding: spacing(1);
   text-overflow:ellipsis;
   white-space: nowrap;
 }

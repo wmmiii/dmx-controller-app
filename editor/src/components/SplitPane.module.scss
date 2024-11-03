@@ -24,9 +24,10 @@
 
 .pane {
   flex: 1;
-  position: relative;
   min-width: spacing(4);
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  position: relative;
 }
 
 .separator {

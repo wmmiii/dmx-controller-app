@@ -96,7 +96,7 @@ export function SceneEditor({
               <th></th>
               <th></th>
               <th colSpan={2}>Sequence</th>
-              <th>Shortcut</th>
+              <th>Key</th>
               <th>Loop duration</th>
               <th>Fade in</th>
               <th>Fade out</th>

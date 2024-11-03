@@ -17,7 +17,7 @@ export function getApplicableMembers(project: Project, groupId: number): GroupMe
   for (const idString in project.physicalFixtureGroups) {
     const id = parseInt(idString);
     if (group.physicalFixtureGroupIds.indexOf(id) > -1) {
-      return;
+      continue;
     }
     const deps = recursivelyGetDepMap(id, project, depMap)
     if (!deps.has(groupId)) {

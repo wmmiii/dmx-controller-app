@@ -4,6 +4,8 @@ $col-text: #ffffff;
 $col-text-dim: #8f8f8f;
 $col-border: #333333;
 $col-accent: #11a2ca;
+$col-scroll-thumb: #666666;
+$col-scroll-track: #333333;
 $col-interactive: lighten($col-accent, 20%);
 $col-interactive-hover: lighten($col-accent, 50%);
 $col-disabled: desaturate($col-interactive, 100%);

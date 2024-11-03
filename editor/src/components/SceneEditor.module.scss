@@ -26,18 +26,7 @@
 }
 
 .component-list {
-  border-collapse: collapse;
   user-select: none;
-
-  th {
-    background-color: $col-bg;
-    font-size: unset;
-    font-weight: unset;
-    padding-bottom: spacing(1);
-    position: sticky;
-    top: 0;
-    z-index: 1;
-  }
 
   td {
     padding: spacing(0.5) spacing(1);

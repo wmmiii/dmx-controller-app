@@ -120,10 +120,10 @@ export default function Index(): JSX.Element {
         </ErrorBoundary>
       </main>
       <footer>
-        <UniverseVisualizer />
         <div className={styles.message}>
           {lastOperation}
         </div>
+        <UniverseVisualizer />
       </footer>
     </div>
   );

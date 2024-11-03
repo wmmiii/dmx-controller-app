@@ -409,7 +409,7 @@ function EditDefinitionDialog({
       onClose={close}
       bodyClass={styles.editor}
       footer={
-        <div>
+        <div className={styles.dialogFooter}>
           <Button onClick={close} variant="primary">
             Done
           </Button>
@@ -467,7 +467,7 @@ function EditDefinitionDialog({
               const index = i + 1;
               const channel = definition.channels[index];
               return (
-                <tr>
+                <tr key={index}>
                   <td>{index}</td>
                   <td>
                     <select

@@ -26,7 +26,14 @@
   flex-direction: column;
   gap: spacing(2);
   min-width: 40em;
-  padding: spacing(2) 0;
+
+  th, td {
+    padding: spacing(1);
+  }
+}
+
+.dialog-footer {
+  padding-top: spacing(1);
 }
 
 .row {
