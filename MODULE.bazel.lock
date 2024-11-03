@@ -619,7 +619,7 @@
         "bzlTransitiveDigest": "HoSfa9d9Zb6DhjyTcbCAkRJqeLtha9KZbTHndTWl1eI=",
         "usagesDigest": "bJqg+9by4wZOpx8S9JJC1D7T478qXrWRgToobYGVq0k=",
         "recordedFileInputs": {
-          "@@//pnpm-lock.yaml": "6b4cf375fde63faf81ecc3a8f6c084baa89e450ef5ee92724aca54112ae3cb31"
+          "@@//pnpm-lock.yaml": "a8bc16b41282ad3000efd9f11e00e0121d43954b8b102b407d322fd4aace1e93"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -6546,6 +6546,63 @@
                 ],
                 "picomatch": [
                   "2.3.1"
+                ]
+              },
+              "lifecycle_build_target": false,
+              "lifecycle_hooks_env": [],
+              "lifecycle_hooks_execution_requirements": [],
+              "bins": {},
+              "npm_translate_lock_repo": "npm",
+              "package_visibility": [
+                "//visibility:public"
+              ]
+            }
+          },
+          "npm__realtime-bpm-analyzer__4.0.2": {
+            "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
+            "ruleClassName": "npm_import_rule",
+            "attributes": {
+              "package": "realtime-bpm-analyzer",
+              "version": "4.0.2",
+              "root_package": "",
+              "link_workspace": "",
+              "link_packages": {
+                "": [
+                  "realtime-bpm-analyzer"
+                ]
+              },
+              "integrity": "sha512-F4PLzZ0KzDvkOg4C5YeTM7VJjrDakMpBNI3uRz3tOq+HDXW/p/pwuDXs6KB7EUpiiLwSQrlRIptugofeBTeGNA==",
+              "url": "https://registry.npmjs.org/realtime-bpm-analyzer/-/realtime-bpm-analyzer-4.0.2.tgz",
+              "commit": "",
+              "patch_args": [],
+              "patches": [],
+              "custom_postinstall": "",
+              "npm_auth": "",
+              "npm_auth_basic": "",
+              "npm_auth_username": "",
+              "npm_auth_password": "",
+              "lifecycle_hooks": [],
+              "extra_build_content": "",
+              "generate_bzl_library_targets": false
+            }
+          },
+          "npm__realtime-bpm-analyzer__4.0.2__links": {
+            "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
+            "ruleClassName": "npm_import_links",
+            "attributes": {
+              "package": "realtime-bpm-analyzer",
+              "version": "4.0.2",
+              "dev": false,
+              "root_package": "",
+              "link_packages": {
+                "": [
+                  "realtime-bpm-analyzer"
+                ]
+              },
+              "deps": {},
+              "transitive_closure": {
+                "realtime-bpm-analyzer": [
+                  "4.0.2"
                 ]
               },
               "lifecycle_build_target": false,

@@ -14,6 +14,7 @@ TS_DEPS = [
     "//:node_modules/react-pick-color",
     "//:node_modules/react-router",
     "//:node_modules/react-router-dom",
+    "//:node_modules/realtime-bpm-analyzer",
     "//:node_modules/wavesurfer.js",
     "//proto:ts_proto",
 ]

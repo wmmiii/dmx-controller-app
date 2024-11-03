@@ -49,7 +49,7 @@ interface Operation {
 
 export const ProjectContext = createContext({
   project: null as (Project | null),
-  save: (_changeDescription: string) => { },
+  save: (_changeDescription: string, _undoable?: boolean) => { },
   update: () => { },
   saveAssets: () => { },
   downloadProject: () => { },
@@ -110,22 +110,25 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
     () => setProject(new Project(project)),
     [project, setProject]);
 
-  const save = useCallback(async (changeDescription: string) => {
+  const save = useCallback(async (changeDescription: string, undoable?: boolean) => {
     await saveImpl(project, changeDescription);
     const minProject = new Project(project);
     minProject.assets = undefined;
-    // Remove all redo future operations & push current operation.
-    operationStack.current.splice(operationIndex + 1, operationStack.current.length - operationIndex - 1);
 
-    operationStack.current.push({
-      projectState: minProject.toBinary(),
-      description: changeDescription,
-    });
-    // Truncate operation stack to MAX_UNDO length.
-    if (operationStack.current.length > MAX_UNDO) {
-      operationStack.current.splice(0, operationStack.current.length - MAX_UNDO);
+    if (undoable !== false) {
+      // Remove all redo future operations & push current operation.
+      operationStack.current.splice(operationIndex + 1, operationStack.current.length - operationIndex - 1);
+
+      operationStack.current.push({
+        projectState: minProject.toBinary(),
+        description: changeDescription,
+      });
+      // Truncate operation stack to MAX_UNDO length.
+      if (operationStack.current.length > MAX_UNDO) {
+        operationStack.current.splice(0, operationStack.current.length - MAX_UNDO);
+      }
+      setOperationIndex(operationStack.current.length - 1);
     }
-    setOperationIndex(operationStack.current.length - 1);
 
     setProject(new Project(project));
     setLastOperation(changeDescription);

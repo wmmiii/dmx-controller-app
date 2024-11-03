@@ -7,6 +7,7 @@
     "react-pick-color": "^2.0.0",
     "react-router": "6.20.1",
     "react-router-dom": "6.20.1",
+    "realtime-bpm-analyzer": "^4.0.2",
     "wavesurfer.js": "7.7.11"
   },
   "devDependencies": {

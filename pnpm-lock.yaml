@@ -17,6 +17,7 @@ specifiers:
   react-pick-color: ^2.0.0
   react-router: 6.20.1
   react-router-dom: 6.20.1
+  realtime-bpm-analyzer: ^4.0.2
   typescript: 5.3.3
   wavesurfer.js: 7.7.11
 
@@ -27,6 +28,7 @@ dependencies:
   react-pick-color: 2.0.0_biqbaboplfbrettd7655fr4n2y
   react-router: 6.20.1_react@18.2.0
   react-router-dom: 6.20.1_biqbaboplfbrettd7655fr4n2y
+  realtime-bpm-analyzer: 4.0.2
   wavesurfer.js: 7.7.11
 
 devDependencies:
@@ -839,6 +841,10 @@ packages:
     dependencies:
       picomatch: 2.3.1
     dev: true
+
+  /realtime-bpm-analyzer/4.0.2:
+    resolution: {integrity: sha512-F4PLzZ0KzDvkOg4C5YeTM7VJjrDakMpBNI3uRz3tOq+HDXW/p/pwuDXs6KB7EUpiiLwSQrlRIptugofeBTeGNA==}
+    dev: false
 
   /sass/1.69.5:
     resolution: {integrity: sha512-qg2+UCJibLr2LCVOt3OlPhr/dqVHWOa9XtZf2OjbLs/T4VPSJ00udtgJxH3neXZm+QqX8B+3cU7RaLqp1iVfcQ==}

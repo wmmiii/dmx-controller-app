@@ -8,7 +8,7 @@ interface LiveBeatProps {
 }
 
 export function LiveBeat({ className }: LiveBeatProps): JSX.Element {
-  const { beat, sampleQuality, addBeatSample } = useContext(BeatContext);
+  const { beat, sampleQuality, addBeatSample, detectionStrategy, setDetectionStrategy } = useContext(BeatContext);
   const { setShortcuts } = useContext(ShortcutContext);
 
   useEffect(() => setShortcuts([
@@ -35,6 +35,10 @@ export function LiveBeat({ className }: LiveBeatProps): JSX.Element {
     <div className={className}>
       {beatEmoji}
       &nbsp;BPM: {Math.floor(60_000 / (beat?.lengthMs || NaN))}
+      <select value={detectionStrategy} onChange={(e) => setDetectionStrategy(e.target.value as any)}>
+        <option value="manual">Manual</option>
+        <option value="microphone">Microphone</option>
+      </select>
     </div>
   );
 }

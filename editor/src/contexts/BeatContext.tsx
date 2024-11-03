@@ -1,21 +1,61 @@
 import React, { PropsWithChildren, createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
 import { ProjectContext } from './ProjectContext';
+import { createRealTimeBpmProcessor, getBiquadFilter } from 'realtime-bpm-analyzer';
 
 const DEVIATION_THRESHOLD = 75;
 
+type BeatDetectionStrategy = 'manual' | 'microphone';
 type SampleQuality = 'idle' | 'not enough samples' | 'poor' | 'fair' | 'excellent';
 
 export const BeatContext = createContext({
   beat: new BeatMetadata({ lengthMs: Number.MAX_SAFE_INTEGER, offsetMs: BigInt(0) }),
   addBeatSample: (_t: number) => { },
   sampleQuality: 'idle' as SampleQuality,
+  detectionStrategy: 'manual' as BeatDetectionStrategy,
+  setDetectionStrategy: (_strategy: BeatDetectionStrategy) => { },
 });
 
 export function BeatProvider({ children }: PropsWithChildren): JSX.Element {
   const { project, save } = useContext(ProjectContext);
+  const [strategy, setStrategy] = useState<BeatDetectionStrategy>('manual');
   const [beatSamples, setBeatSamples] = useState<number[]>([]);
   const [beatTimeout, setBeatTimeout] = useState<any>(null);
+
+  useEffect(() => {
+    if (strategy === 'microphone') {
+      const audioContext = new AudioContext();
+      let media: MediaStream;
+      (async () => {
+        media = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
+        const audioContext = new AudioContext();
+        const source = audioContext.createMediaStreamSource(media);
+
+        const realtimeAnalyzerNode = await createRealTimeBpmProcessor(audioContext, {
+          continuousAnalysis: true,
+          stabilizationTime: 16_000,
+        });
+
+        // We're not doing a lowpass here, it doesn't seem to help much.
+        source.connect(realtimeAnalyzerNode);
+
+        realtimeAnalyzerNode.port.onmessage = (event) => {
+          if (event.data.message === 'BPM_STABLE') {
+            const bpm = event.data.data.bpm[0].tempo;
+            console.log('Found stable bpm', bpm);
+            project.liveBeat.lengthMs = 60_000 / bpm;
+            save(`Auto set BPM to ${bpm}.`, false);
+          }
+        };
+      })();
+      return () => {
+        audioContext.close();
+        if (media != null) {
+          media.getAudioTracks()[0].stop();
+        }
+      };
+    }
+  }, [strategy]);
 
   const beat = useMemo(() => project?.liveBeat, [project]);
 
@@ -47,40 +87,49 @@ export function BeatProvider({ children }: PropsWithChildren): JSX.Element {
 
 
   useEffect(() => {
+    if (beatSamples.length < 2) {
+      return;
+    }
+
+    const durations = sampleDurations(beatSamples);
+    let sum = 0;
+    for (let d of sampleDurations(beatSamples)) {
+      sum += d;
+    }
+
+    let length = sum / durations.length;
+    const bpm = 60_000 / length;
+
+    // Try to snap to whole nearest BPM.
+    if (sampleQuality === 'excellent') {
+      const nearestWholeBpm = Math.round(bpm);
+      if (Math.abs(nearestWholeBpm - bpm) < 0.1) {
+        length = 60_000 / nearestWholeBpm;
+      }
+    }
+
+    const firstBeat = beatSamples[beatSamples.length - 1] -
+      beatSamples.length * length;
+    const offset = BigInt(Math.round(firstBeat));
     if (sampleQuality === 'fair' || sampleQuality === 'excellent') {
-      const durations = sampleDurations(beatSamples);
-      let sum = 0;
-      for (let d of sampleDurations(beatSamples)) {
-        sum += d;
-      }
-
-      let length = sum / durations.length;
-      const bpm = 60_000 / length;
-
-      // Try to snap to whole nearest BPM.
-      if (sampleQuality === 'excellent') {
-        const nearestWholeBpm = Math.round(bpm);
-        if (Math.abs(nearestWholeBpm - bpm) < 0.1) {
-          length = 60_000 / nearestWholeBpm;
-        }
-      }
-
-      const firstBeat = beatSamples[beatSamples.length - 1] -
-        beatSamples.length * length;
-
       project.liveBeat = new BeatMetadata({
         lengthMs: length,
-        offsetMs: BigInt(Math.round(firstBeat)),
+        offsetMs: offset,
       });
       save(`Set beat to ${Math.round(bpm)} BPM.`);
+    } else {
+      project.liveBeat.offsetMs = offset;
+      save(`Set beat offset to ${offset}.`);
     }
-  }, [beatSamples]);
+  }, [beatSamples, project?.liveBeat?.toJsonString()]);
 
   return (
     <BeatContext.Provider value={{
       beat,
       addBeatSample,
       sampleQuality,
+      detectionStrategy: strategy,
+      setDetectionStrategy: setStrategy
     }}>
       {children}
     </BeatContext.Provider>
