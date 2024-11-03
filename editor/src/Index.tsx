@@ -23,6 +23,7 @@ import { DialogContext } from './contexts/DialogContext';
 import { Modal } from './components/Modal';
 import IconBxError from './icons/IconBxError';
 import IconBxlGithub from './icons/IconBxlGithub';
+import { UniverseVisualizer } from './components/UniverseVisualizer';
 
 export default function Index(): JSX.Element {
   const { port, blackout, setBlackout, connect, disconnect, currentFps } = useContext(SerialContext);
@@ -118,7 +119,10 @@ export default function Index(): JSX.Element {
         </ErrorBoundary>
       </main>
       <footer>
-        {lastOperation}
+        <UniverseVisualizer />
+        <div className={styles.message}>
+          {lastOperation}
+        </div>
       </footer>
     </div>
   );

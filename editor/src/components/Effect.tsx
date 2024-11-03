@@ -60,7 +60,6 @@ export function Effect({
         {
           shortcut: { key: 'KeyV', modifiers: ['ctrl'] },
           action: () => {
-            const newEffect = copyEffect.clone();
             Object.assign(effect, copyEffect);
             save('Paste effect.');
           },
@@ -182,15 +181,14 @@ interface EffectDetailsBaseProps<T> {
   fixtureSequenceId?: number;
   className?: string;
   effect: T;
-  onChange: (effect: T) => void;
 }
 
 export function EffectDetails({
   fixtureSequenceId,
   className,
   effect,
-  onChange,
 }: EffectDetailsBaseProps<EffectProto>): JSX.Element {
+  const {save} = useContext(ProjectContext)
 
   const classes = [styles.effectDetails, className];
 
@@ -204,7 +202,7 @@ export function EffectDetails({
           effect={effect.effect.value}
           onChange={(e) => {
             effect.effect.value = e;
-            onChange(effect);
+            save('Modify effect.');
           }} />
       );
       break;

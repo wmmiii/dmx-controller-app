@@ -18,6 +18,7 @@ const EMPTY_CONTEXT = {
   clearRenderUniverse: (_render: RenderUniverse) => { },
   currentFps: 0,
   maxFps: 0,
+  lastKnownUniverse: new Uint8Array(),
 };
 
 export const SerialContext = createContext(EMPTY_CONTEXT);
@@ -64,6 +65,7 @@ export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
 function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
   const [port, setPort] = useState<SerialPort | null>(null);
   const renderUniverse = useRef<RenderUniverse>(() => BLACKOUT_UNIVERSE);
+  const [lastKnownUniverse, setLastKnownUniverse] = useState<Uint8Array>(BLACKOUT_UNIVERSE);
   const blackout = useRef(false);
   const [blackoutState, setBlackoutState] = useState(false);
   const fpsBuffer = useRef([0]);
@@ -116,7 +118,10 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
 
   useEffect(() => {
     if (!port) {
-      return;
+      const handle = setInterval(() => {
+        setLastKnownUniverse(renderUniverse.current());
+      }, 30);
+      return () => clearInterval(handle);
     }
 
     const writer = port.writable.getWriter();
@@ -137,6 +142,7 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
         try {
           await writer.ready;
           await writer.write(universe);
+          setLastKnownUniverse(universe);
         } catch (e) {
           console.error('Could not write to serial port!', e);
           closed = true;
@@ -195,6 +201,7 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
       },
       currentFps: currentFps,
       maxFps: maxFps,
+      lastKnownUniverse: lastKnownUniverse,
     }}>
       {children}
     </SerialContext.Provider>

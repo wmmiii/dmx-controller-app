@@ -89,16 +89,6 @@ li {
     position: relative;
   }
 
-  footer {
-    color: $col-text-dim;
-    overflow: hidden;
-    padding-bottom: spacing(1);
-    padding-left: spacing(1);
-    padding-right: spacing(1);
-    text-overflow:ellipsis;
-    white-space: nowrap;
-    font-size: 10pt;
-  }
 }
 
 .welcome-dialog {
@@ -116,4 +106,13 @@ li {
   gap: spacing(2);
   justify-content: space-between;
   margin: spacing(1) 0;
+}
+
+.message {
+  color: $col-text-dim;
+  font-size: 10pt;
+  overflow: hidden;
+  padding: spacing(1);
+  text-overflow:ellipsis;
+  white-space: nowrap;
 }
