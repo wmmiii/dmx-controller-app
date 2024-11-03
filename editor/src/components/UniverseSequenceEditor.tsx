@@ -33,7 +33,7 @@ export function UniverseSequenceEditor({
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [audioDuration, setAudioDuration] = useState<number>(SEQUENCE_BEAT_RESOLUTION);
 
-  const sequence = useMemo(() => project?.universeSequences[universeSequenceId], [universeSequenceId]);
+  const sequence = useMemo(() => project?.universeSequences[universeSequenceId], [project, universeSequenceId]);
   const beats = sequence?.nativeBeats;
 
   const wsMsToSceneMs = useCallback

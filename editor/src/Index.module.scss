@@ -88,6 +88,17 @@ li {
     overflow-y: auto;
     position: relative;
   }
+
+  footer {
+    color: $col-text-dim;
+    overflow: hidden;
+    padding-bottom: spacing(1);
+    padding-left: spacing(1);
+    padding-right: spacing(1);
+    text-overflow:ellipsis;
+    white-space: nowrap;
+    font-size: 10pt;
+  }
 }
 
 .welcome-dialog {

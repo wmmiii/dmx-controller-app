@@ -26,7 +26,7 @@ import IconBxlGithub from './icons/IconBxlGithub';
 
 export default function Index(): JSX.Element {
   const { port, blackout, setBlackout, connect, disconnect, currentFps } = useContext(SerialContext);
-  const { downloadProject, openProject, project, save } = useContext(ProjectContext);
+  const { downloadProject, openProject, project, save, lastOperation } = useContext(ProjectContext);
 
   const uploadButtonRef = createRef<HTMLInputElement>();
 
@@ -73,7 +73,7 @@ export default function Index(): JSX.Element {
             onChange={(v) => {
               if (project) {
                 project.timingOffsetMs = v;
-                save('Update project timing offset.');
+                save(`Update project timing offset to ${v}ms.`);
               }
             }} />
         </div>
@@ -117,6 +117,9 @@ export default function Index(): JSX.Element {
           </Routes>
         </ErrorBoundary>
       </main>
+      <footer>
+        {lastOperation}
+      </footer>
     </div>
   );
 }

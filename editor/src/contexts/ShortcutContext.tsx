@@ -113,17 +113,9 @@ export function ShortcutProvider({ children }: PropsWithChildren): JSX.Element {
 function matchesShortcut(
   event: KeyboardEvent,
   shortcut: ShortcutBundle[0]['shortcut']): boolean {
+  const modifiers = shortcut.modifiers || [];
   return shortcut.key === event.code &&
-    (shortcut.modifiers || []).every(m => {
-      switch (m) {
-        case 'alt':
-          return event.altKey;
-        case 'ctrl':
-          return event.ctrlKey;
-        case 'shift':
-          return event.shiftKey;
-        default:
-          return false;
-      }
-    });
+    event.altKey === modifiers.includes('alt') &&
+    event.ctrlKey === modifiers.includes('ctrl') &&
+    event.shiftKey === modifiers.includes('shift');
 }

@@ -17,13 +17,13 @@ const root = createRoot(document.getElementById('root'));
 root.render(
   <BrowserRouter basename="/">
     <DialogProvider>
-      <ProjectProvider>
-        <SerialProvider>
-          <ShortcutProvider>
+      <SerialProvider>
+        <ShortcutProvider>
+          <ProjectProvider>
             <Index />
-          </ShortcutProvider>
-        </SerialProvider>
-      </ProjectProvider>
+          </ProjectProvider>
+        </ShortcutProvider>
+      </SerialProvider>
     </DialogProvider>
   </BrowserRouter>
 );

@@ -12,7 +12,11 @@ export function TextInput({ value, onChange }: TextInputProps): JSX.Element {
 
   useEffect(() => setInput(String(value)), [value]);
 
-  const flushValue = useCallback(() => onChange(input), [input]);
+  const flushValue = useCallback(() => {
+    if (input !== value) {
+      onChange(input);
+    }
+  }, [input]);
 
   const classes = [styles.input];
   if (input != value) {
@@ -81,8 +85,10 @@ export function NumberInput({
   const flushValue = useCallback(() => {
     const parsed = Math.max(Math.min(parseValue(input), max), min);
     if (!isNaN(parsed)) {
-      onChange(parsed);
-      setInput(String(parsed));
+      if (parsed != value) {
+        onChange(parsed);
+        setInput(String(parsed));
+      }
     } else {
       setInput(String(value));
     }

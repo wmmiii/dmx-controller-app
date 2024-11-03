@@ -8,16 +8,13 @@ import { NumberInput, TextInput, ToggleInput } from './Input';
 import styles from './SceneEditor.module.scss';
 import { ShortcutContext } from '../contexts/ShortcutContext';
 import { LiveBeat } from './LiveBeat';
-import IconBxsCog from '../icons/IconBxsCog';
 import { Modal } from './Modal';
-import IconBxMinus from '../icons/IconBxMinus';
 import IconBxPause from '../icons/IconBxPause';
 import IconBxPlay from '../icons/IconBxPlay';
 import IconBxGridVertical from '../icons/IconBxGridVertical';
 import IconBxX from '../icons/IconBxX';
 import IconBxWrench from '../icons/IconBxWrench';
 import { UniverseSequenceEditor } from './UniverseSequenceEditor';
-import { Project } from '@dmx-controller/proto/project_pb';
 
 interface SceneEditorProps {
   className?: string;
@@ -36,7 +33,7 @@ export function SceneEditor({
   const [sceneDetailsModal, setSceneDetailsModal] = useState(false);
   const [draggingComponent, setDraggingComponent] = useState<Scene_Component | null>(null);
 
-  const scene = useMemo(() => project?.scenes[sceneId], [sceneId]);
+  const scene = useMemo(() => project?.scenes[sceneId], [project, sceneId]);
 
   const toggleComponents = useCallback((shortcut: string) => {
     const components = scene.components.filter((c) => c.shortcut === shortcut);
