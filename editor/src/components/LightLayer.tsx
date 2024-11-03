@@ -15,6 +15,8 @@ interface NewEffect {
 
 interface LightLayerProps {
   className?: string;
+  trackIndex: number;
+  layerIndex: number;
   layer: LightLayerProto;
   maxMs: number;
   msToPx: (ms: number) => number;
@@ -24,6 +26,8 @@ interface LightLayerProps {
 
 export function LightLayer({
   className,
+  trackIndex,
+  layerIndex,
   layer,
   maxMs,
   msToPx,
@@ -102,11 +106,9 @@ export function LightLayer({
               save('Add new effect.');
               setNewEffect(null);
               selectEffect({
-                effect: e,
-                delete: () => {
-                  layer.effects.splice(newEffect.effectIndex, 1);
-                  save('Delete effect.');
-                }
+                track: trackIndex,
+                layer: layerIndex,
+                effect: newEffect.effectIndex,
               })
             }}>
           </div>
@@ -120,15 +122,12 @@ export function LightLayer({
             left: msToPx(e.startMs),
             width: msToPx(e.endMs) - msToPx(e.startMs),
           }}
+          address={{track: trackIndex, layer: layerIndex, effect: i}}
           effect={e}
           minMs={layer.effects[i - 1]?.endMs || 0}
           maxMs={layer.effects[i + 1]?.startMs || maxMs}
           pxToMs={pxToMs}
-          snapToBeat={snapToBeat}
-          onDelete={() => {
-            layer.effects.splice(i, 1);
-            save('Delete effect.');
-          }} />
+          snapToBeat={snapToBeat} />
       ))}
     </div>
   );

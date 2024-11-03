@@ -7,7 +7,7 @@ import IconBxZoomOut from '../icons/IconBxZoomOut';
 import styles from "./LightTimeline.module.scss";
 import { AudioController, AudioTrackVisualizer } from './AudioTrackVisualizer';
 import { Button } from './Button';
-import { EffectDetails, EffectSelectContext, SelectedEffect } from './Effect';
+import { EffectAddress, EffectDetails, EffectSelectContext } from './Effect';
 import { HorizontalSplitPane } from './SplitPane';
 import { LightTrack as LightTrackProto } from '@dmx-controller/proto/light_track_pb';
 import { LightTrack, MappingFunctions } from './LightTrack';
@@ -17,46 +17,59 @@ import { NumberInput } from './Input';
 import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
 import { Effect as EffectProto } from '@dmx-controller/proto/effect_pb';
 
-
 export const LEFT_WIDTH = 180;
 
 type LightTimelineProps = TracksProps & DetailsPaneProps;
 
 export default function LightTimeline(props: LightTimelineProps): JSX.Element {
   const { setShortcuts } = useContext(ShortcutContext);
-  const [selectedEffect, setSelectedEffect] = useState<SelectedEffect | null>(null);
+  const [selectedAddress, setSelectedAddress] = useState<EffectAddress | null>(null);
   const [copyEffect, setCopyEffect] = useState<EffectProto | null>(null);
+
+  const selectedEffect = useMemo(() => {
+    if (selectedAddress == null) {
+      return null;
+    }
+    const s = selectedAddress;
+    return props.lightTracks[s.track].layers[s.layer].effects[s.effect]
+  }, [props.lightTracks, selectedAddress]);
+
+  const deleteSelected = useCallback(() => {
+    if (selectedAddress == null) {
+      return;
+    }
+    const s = selectedAddress;
+    props.lightTracks[s.track].layers[s.layer].effects.splice(s.effect, 1);
+  }, [selectedAddress, props.lightTracks])
 
   useEffect(() => setShortcuts([
     {
       shortcut: { key: 'Escape' },
-      action: () => setSelectedEffect(null),
+      action: () => setSelectedAddress(null),
       description: 'Deselect the currently selected effect.',
     },
     {
       shortcut: { key: 'Delete' },
       action: () => {
-        selectedEffect?.delete();
-        setSelectedEffect(null);
+        const s = selectedAddress;
+        props.lightTracks[s.track].layers[s.layer].effects.splice(s.effect, 1);
+        setSelectedAddress(null);
       },
       description: 'Delete the currently selected effect.',
     },
     {
       shortcut: { key: 'KeyC', modifiers: ['ctrl'] },
-      action: () => setCopyEffect(selectedEffect.effect),
+      action: () => setCopyEffect(selectedEffect),
       description: 'Copy currently selected effect to clipboard.'
     },
-  ]), [selectedEffect, setSelectedEffect]);
+  ]), [setSelectedAddress, selectedAddress, setCopyEffect, selectedEffect]);
 
   return (
     <EffectSelectContext.Provider
       value={{
-        selectedEffect: selectedEffect?.effect || null,
-        deleteSelectedEffect: () => {
-          selectedEffect?.delete();
-          setSelectedEffect(null);
-        },
-        selectEffect: (effect) => setSelectedEffect(effect),
+        selectedEffect: selectedEffect,
+        deleteSelectedEffect: deleteSelected,
+        selectEffect: (address) => setSelectedAddress(address),
         copyEffect: copyEffect,
       }}>
       <HorizontalSplitPane
@@ -279,6 +292,7 @@ function Tracks({
             lightTracks.map((t: LightTrackProto, i) => (
               <LightTrack
                 key={i}
+                trackIndex={i}
                 track={t}
                 maxMs={audioToTrack ?
                   audioToTrack(audioDuration) :

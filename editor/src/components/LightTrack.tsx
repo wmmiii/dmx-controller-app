@@ -21,6 +21,7 @@ export interface MappingFunctions {
 }
 
 interface LightTrackProps {
+  trackIndex: number;
   track: LightTrackProto;
   maxMs: number;
   leftWidth: number;
@@ -31,6 +32,7 @@ interface LightTrackProps {
 }
 
 export function LightTrack({
+  trackIndex,
   track,
   maxMs,
   leftWidth,
@@ -141,6 +143,8 @@ export function LightTrack({
             <LightLayer
               className={track.collapsed ? styles.collapsedLayer : null}
               key={i}
+              trackIndex={trackIndex}
+              layerIndex={i}
               layer={l}
               maxMs={maxMs}
               msToPx={mappingFunctions.msToPx}

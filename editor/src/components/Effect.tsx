@@ -14,38 +14,39 @@ import { NumberInput, ToggleInput } from './Input';
 import { ShortcutContext } from '../contexts/ShortcutContext';
 import { ProjectContext } from '../contexts/ProjectContext';
 
-export interface SelectedEffect {
-  effect: EffectProto;
-  delete: () => void;
+export interface EffectAddress {
+  track: number;
+  layer: number;
+  effect: number;
 }
 
 export const EffectSelectContext = createContext({
   selectedEffect: null as EffectProto | null,
   deleteSelectedEffect: () => { },
-  selectEffect: (_selected: SelectedEffect) => { },
+  selectEffect: (_selected: EffectAddress) => { },
   copyEffect: null as EffectProto | null,
 });
 
 interface EffectProps {
   className: string;
   style: CSSProperties;
+  address: EffectAddress;
   effect: EffectProto;
   minMs: number;
   maxMs: number;
   pxToMs: (px: number) => number;
   snapToBeat: (t: number) => number;
-  onDelete: () => void;
 }
 
 export function Effect({
   className,
   style,
+  address,
   effect,
   minMs,
   maxMs,
   pxToMs,
   snapToBeat,
-  onDelete,
 }: EffectProps): JSX.Element {
   const { copyEffect, selectedEffect, selectEffect } = useContext(EffectSelectContext);
   const { save, update } = useContext(ProjectContext);
@@ -60,14 +61,20 @@ export function Effect({
         {
           shortcut: { key: 'KeyV', modifiers: ['ctrl'] },
           action: () => {
-            Object.assign(effect, copyEffect);
+            Object.assign(
+              effect,
+              copyEffect.clone(),
+              {
+                endMs: effect.endMs,
+                startMs: effect.startMs,
+              });
             save('Paste effect.');
           },
           description: 'Paste effect from clipboard onto selected effect.'
         },
       ]);
     }
-  }, [copyEffect, effect, selectEffect, save]);
+  }, [copyEffect, effect, selectedEffect, save]);
 
   const icons: Set<(props: any) => JSX.Element> = new Set();
   if (effect.effect.case === 'staticEffect') {
@@ -94,10 +101,7 @@ export function Effect({
       className={containerClasses.join(' ')}
       style={style}
       onMouseDown={(e) => {
-        selectEffect({
-          effect: effect,
-          delete: onDelete,
-        });
+        selectEffect(address);
         setDrag({
           offsetMs: pxToMs(e.clientX) - effect.startMs,
           widthMs: effect.endMs - effect.startMs,
@@ -188,7 +192,7 @@ export function EffectDetails({
   className,
   effect,
 }: EffectDetailsBaseProps<EffectProto>): JSX.Element {
-  const {save} = useContext(ProjectContext)
+  const { save } = useContext(ProjectContext)
 
   const classes = [styles.effectDetails, className];
 
@@ -394,7 +398,7 @@ function StaticEffectDetails({
   fixtureSequenceId,
   effect,
 }: EffectDetailsBaseProps<Effect_StaticEffect>): JSX.Element {
-  const {save} = useContext(ProjectContext);
+  const { save } = useContext(ProjectContext);
 
   return (
     <>
@@ -424,7 +428,7 @@ function RampEffectDetails({
   fixtureSequenceId,
   effect,
 }: EffectDetailsBaseProps<Effect_RampEffect>): JSX.Element {
-  const {save} = useContext(ProjectContext);
+  const { save } = useContext(ProjectContext);
 
   return (
     <>
