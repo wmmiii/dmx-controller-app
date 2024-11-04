@@ -7,6 +7,10 @@ export function isFixtureState(effect: FixtureState | FixtureSequenceMapping): e
 
 export function applyState(state: FixtureState, context: RenderContext): void {
   const device = getDevice(context);
+  if (device == null) {
+    return;
+  }
+
   switch (state.color.case) {
     case 'rgb':
       {

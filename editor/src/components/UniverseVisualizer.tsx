@@ -65,10 +65,10 @@ export function UniverseVisualizer() {
         fixtureMapping.map((f) => {
           let background: string;
           let shadow: string;
-          if (getValue(f.strobeIndex) === f.strobe.slow && (t % 200) > 100) {
+          if (f.strobeIndex && getValue(f.strobeIndex) === f.strobe.slow && (t % 200) > 100) {
             background = '#000';
             shadow = '#000';
-          } else if (getValue(f.strobeIndex) === f.strobe.fast && (t % 100) > 50) {
+          } else if (f.strobeIndex && getValue(f.strobeIndex) === f.strobe.fast && (t % 100) > 50) {
             background = '#000';
             shadow = '#000';
           } else {
