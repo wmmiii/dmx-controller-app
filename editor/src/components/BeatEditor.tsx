@@ -29,7 +29,7 @@ interface BeatEditorProps {
 
 export function BeatEditor({ file, onCancel }: BeatEditorProps):
   JSX.Element {
-  const { save } = useContext(ProjectContext);
+  const { saveAssets } = useContext(ProjectContext);
   const { setShortcuts } = useContext(ShortcutContext);
   const waveRef = useRef<HTMLDivElement>();
   const [zoomLevel, setZoomLevel] = useState(64);
@@ -228,7 +228,7 @@ export function BeatEditor({ file, onCancel }: BeatEditorProps):
       lengthMs: beatDuration,
       offsetMs: BigInt(Math.floor(firstBeat)),
     });
-    save(`Update beat for ${file.name}.`);
+    saveAssets();
   }, [file, beatDuration, firstBeat]);
 
   return (

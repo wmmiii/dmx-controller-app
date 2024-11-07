@@ -1,0 +1,34 @@
+@import '../vars';
+
+.dropdown {
+  @include drop-shadow;
+  background-color: $col-bg-higher;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: $z-index-menu;
+
+  hr {
+    border-color: $col-border-higher;
+  }
+}
+
+.item {
+  align-items: center;
+  color: $col-interactive;
+  cursor: pointer;
+  display: flex;
+  flex-direction: row;
+  gap: spacing(1);
+  padding: spacing(1) spacing(2);
+  text-wrap: nowrap;
+  
+  &:hover {
+    color: $col-interactive-hover;
+  }
+
+  .icon {
+    height: 20px;
+    width: 20px;
+  }
+}

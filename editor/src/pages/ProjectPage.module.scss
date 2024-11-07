@@ -1,0 +1,26 @@
+@import '../vars';
+
+.browser {
+  @include fill;
+}
+
+.splitPane {
+  @include fill;
+}
+
+.audioFileList {
+  @include fill;
+  border: 1px solid transparent;
+}
+
+.faint {
+  color: $col-text-dim;
+}
+
+.highlightDrop {
+  border-color: $col-interactive;
+}
+
+.audioDetails {
+  padding: spacing(1);
+}

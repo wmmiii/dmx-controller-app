@@ -4,6 +4,7 @@ import { Project, Project_Assets } from '@dmx-controller/proto/project_pb';
 import { getBlob, storeBlob } from '../util/storageUtil';
 import upgradeProject from '../util/projectUpgrader';
 import { ShortcutContext } from './ShortcutContext';
+import { escapeForFilesystem } from '../util/fileUtils';
 
 const PROJECT_KEY = "tmp-project-1";
 const ASSETS_KEY = "tmp-assets-1";
@@ -181,7 +182,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
 
       const a = document.createElement('a');
       a.href = url;
-      a.download = project.name + '.proto';
+      a.download = escapeForFilesystem(project.name) + '.dmxapp';
       document.body.appendChild(a);
       a.click();
       a.remove();

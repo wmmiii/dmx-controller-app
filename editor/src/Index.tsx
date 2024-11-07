@@ -11,12 +11,11 @@ import SequencePage from './pages/SequencePage';
 import ShowPage from './pages/ShowPage';
 import UniversePage from './pages/UniversePage';
 import styles from './Index.module.scss';
-import { Button, IconButton } from './components/Button';
-import { Link, useLocation } from 'react-router-dom';
+import { Button } from './components/Button';
+import { useNavigate } from 'react-router-dom';
 import { ProjectContext } from './contexts/ProjectContext';
 import { Routes, Route } from 'react-router-dom';
 import { SerialContext } from './contexts/SerialContext';
-import { NumberInput } from './components/Input';
 import { LivePage } from './pages/LivePage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { DialogContext } from './contexts/DialogContext';
@@ -25,11 +24,16 @@ import IconBxError from './icons/IconBxError';
 import IconBxlGithub from './icons/IconBxlGithub';
 import { UniverseVisualizer } from './components/UniverseVisualizer';
 import IconBxlWindows from './icons/IconBxlWindows';
+import IconBxMenu from './icons/IconBxMenu';
+import { Dropdown } from './components/Dropdown';
+import ProjectPage from './pages/ProjectPage';
 
 export default function Index(): JSX.Element {
   const { port, blackout, setBlackout, connect, disconnect, currentFps } = useContext(SerialContext);
   const { downloadProject, openProject, project, save, lastOperation } = useContext(ProjectContext);
+  const navigate = useNavigate();
 
+  const [showMenu, setShowMenu] = useState(false);
   const uploadButtonRef = createRef<HTMLInputElement>();
 
   useEffect(() => {
@@ -49,13 +53,82 @@ export default function Index(): JSX.Element {
     <div className={styles.wrapper}>
       <WarningDialog />
       <header>
-        <PageLink to="/show" default={true}>Show</PageLink>
-        <PageLink to="/live">Live</PageLink>
-        <PageLink to="/assets">Assets</PageLink>
-        <PageLink to="/sequence">Sequence</PageLink>
-        <PageLink to="/universe">Universe</PageLink>
+        <h1>DMX Controller App</h1>
+        <input ref={uploadButtonRef} type="file" hidden></input>
+        <div
+          className={styles.menu}
+          onClick={(e) => {
+            setShowMenu(!showMenu);
+            e.stopPropagation();
+          }}>
+          <IconBxMenu className={styles.menuIcon} />
+          {
+            showMenu &&
+            <Dropdown
+              onClose={() => setShowMenu(false)}>
+              {[
+                {
+                  title: 'Live',
+                  onSelect: () => navigate('/live'),
+                },
+                {
+                  title: 'Show',
+                  onSelect: () => navigate('/show'),
+                },
+                {
+                  title: 'Assets',
+                  onSelect: () => navigate('/assets'),
+                },
+                {
+                  title: 'Sequence Editor',
+                  onSelect: () => navigate('/sequence'),
+                },
+                {
+                  title: 'Universe',
+                  onSelect: () => navigate('/universe'),
+                },
+                {
+                  title: 'Project Settings',
+                  onSelect: () => navigate('/project'),
+                },
+                { type: 'separator' },
+                {
+                  title: 'Download',
+                  icon: <IconBxDownload />,
+                  onSelect: downloadProject,
+                },
+                {
+                  title: 'Upload',
+                  icon: <IconBxUpload />,
+                  onSelect: () => uploadButtonRef.current?.click(),
+                },
+                { type: 'separator' },
+                {
+                  title: 'Connect to serial',
+                  icon: port ? <IconBxLink /> : <IconBxUnlink />,
+                  onSelect: () => port ? disconnect() : connect(),
+                },
+                {
+                  title: 'Toggle Blackout',
+                  icon: blackout ? <IconBxBulb /> : <IconBxsBulb />,
+                  onSelect: () => setBlackout(!blackout),
+                },
+                { type: 'separator' },
+                {
+                  title: 'GitHub Page',
+                  icon: <IconBxlGithub />,
+                  onSelect: () => window.open('https://github.com/wmmiii/dmx-controller-app/', '_blank'),
+                }
+              ]}
+            </Dropdown>
+          }
+        </div>
+        <UniverseVisualizer />
         <div className={styles.spacer}></div>
-        <div>
+        <div className={styles.message}>
+          {lastOperation}
+        </div>
+        <div className={styles.fps}>
           Fps: {
             Number.isNaN(currentFps) ?
               <>N/A</> :
@@ -66,66 +139,21 @@ export default function Index(): JSX.Element {
                 <>{currentFps}</>
           }
         </div>
-        <div>
-          Offset MS:
-          <NumberInput
-            min={-1000}
-            max={1000}
-            value={project?.timingOffsetMs || 0}
-            onChange={(v) => {
-              if (project) {
-                project.timingOffsetMs = v;
-                save(`Update project timing offset to ${v}ms.`);
-              }
-            }} />
-        </div>
-        <IconButton title="Blackout" onClick={() => setBlackout(!blackout)}>
-          {blackout ? <IconBxBulb /> : <IconBxsBulb />}
-        </IconButton>
-        <IconButton title="Connect to serial" onClick={() => {
-          if (port) {
-            disconnect();
-          } else {
-            connect();
-          }
-        }}>
-          {port ? <IconBxLink /> : <IconBxUnlink />}
-        </IconButton>
-        <IconButton title="Download" onClick={downloadProject}>
-          <IconBxDownload />
-        </IconButton>
-        <input ref={uploadButtonRef} type="file" hidden></input>
-        <IconButton
-          title="Upload"
-          onClick={() => uploadButtonRef.current?.click()}>
-          <IconBxUpload />
-        </IconButton>
-        <IconButton
-          title="GitHub Page"
-          onClick={() =>
-            window.open('https://github.com/wmmiii/dmx-controller-app/', '_blank')}>
-          <IconBxlGithub />
-        </IconButton>
-      </header>
+      </header >
       <main>
         <ErrorBoundary>
           <Routes>
-            <Route path="/" element={<ShowPage />} />
-            <Route path="/show" element={<ShowPage />} />
+            <Route path="/" element={<LivePage />} />
             <Route path="/live" element={<LivePage />} />
+            <Route path="/show" element={<ShowPage />} />
             <Route path="/assets" element={<AssetBrowserPage />} />
             <Route path="/sequence" element={<SequencePage />} />
             <Route path="/universe" element={<UniversePage />} />
+            <Route path="/project" element={<ProjectPage />} />
           </Routes>
         </ErrorBoundary>
       </main>
-      <footer>
-        <div className={styles.message}>
-          {lastOperation}
-        </div>
-        <UniverseVisualizer />
-      </footer>
-    </div>
+    </div >
   );
 }
 
@@ -133,20 +161,6 @@ interface PageLinkProps {
   to: string;
   default?: true;
   children: string;
-}
-
-function PageLink(props: PageLinkProps) {
-  const location = useLocation();
-  let className: string | undefined;
-  if (location.pathname === props.to ||
-    (location.pathname === '/' && props.default)) {
-    className = styles.active;
-  }
-  return (
-    <Link to={props.to} className={className}>
-      {props.children}
-    </Link>
-  );
 }
 
 const WARNING_DIALOG_KEY = 'instability-warning';

@@ -1,7 +1,7 @@
 import React, { PropsWithChildren, createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
 import { ProjectContext } from './ProjectContext';
-import { createRealTimeBpmProcessor, getBiquadFilter } from 'realtime-bpm-analyzer';
+import { createRealTimeBpmProcessor } from 'realtime-bpm-analyzer';
 
 const DEVIATION_THRESHOLD = 75;
 

@@ -1,15 +1,12 @@
 import React, { useContext, useMemo, useState } from 'react';
 import IconBxCopyAlt from '../icons/IconBxCopy';
-import IconBxError from '../icons/IconBxError';
 import IconBxX from '../icons/IconBxX';
 import styles from './UniversePage.module.scss';
 import { Button, IconButton } from '../components/Button';
 import { FixtureDefinition, FixtureDefinition_Channel, FixtureDefinition_StrobeMapping, PhysicalFixture, PhysicalFixtureGroup } from '@dmx-controller/proto/fixture_pb';
 import { HorizontalSplitPane } from '../components/SplitPane';
 import { Modal } from '../components/Modal';
-import { OutputDescription, OutputSelector } from '../components/OutputSelector';
 import { ProjectContext } from '../contexts/ProjectContext';
-import { Project_DefaultChannelValues } from '@dmx-controller/proto/project_pb';
 import { idMapToArray, nextId } from '../util/mapUtils';
 import { getApplicableMembers } from '../engine/group';
 import { NumberInput, TextInput } from '../components/Input';
@@ -46,6 +43,19 @@ function FixtureList(): JSX.Element {
 
   return (
     <div className={styles.pane}>
+      <div>
+        Offset MS:
+        <NumberInput
+          min={-1000}
+          max={1000}
+          value={project?.timingOffsetMs || 0}
+          onChange={(v) => {
+            if (project) {
+              project.timingOffsetMs = v;
+              save(`Update project timing offset to ${v}ms.`);
+            }
+          }} />
+      </div>
       <h2>Fixtures</h2>
       <ol>
         {
