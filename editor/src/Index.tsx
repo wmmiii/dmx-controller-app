@@ -29,7 +29,7 @@ import { Dropdown } from './components/Dropdown';
 import ProjectPage from './pages/ProjectPage';
 
 export default function Index(): JSX.Element {
-  const { port, blackout, setBlackout, connect, disconnect, currentFps } = useContext(SerialContext);
+  const { port, blackout, setBlackout, connect, disconnect } = useContext(SerialContext);
   const { downloadProject, openProject, lastOperation } = useContext(ProjectContext);
   const navigate = useNavigate();
 
@@ -128,17 +128,7 @@ export default function Index(): JSX.Element {
         <div className={styles.message}>
           {lastOperation}
         </div>
-        <div className={styles.fps}>
-          Fps: {
-            Number.isNaN(currentFps) ?
-              <>N/A</> :
-              currentFps < 30 ?
-                <span className={styles.warning}>
-                  {currentFps}
-                </span> :
-                <>{currentFps}</>
-          }
-        </div>
+        <FpsIndicator />
       </header >
       <main>
         <ErrorBoundary>
@@ -154,6 +144,29 @@ export default function Index(): JSX.Element {
         </ErrorBoundary>
       </main>
     </div >
+  );
+}
+
+function FpsIndicator() {
+  const {subscribeToFspUpdates} = useContext(SerialContext);
+  const [fps, setFps] = useState(0);
+
+  useEffect(() => {
+    subscribeToFspUpdates(setFps);
+  }, [subscribeToFspUpdates, setFps]);
+
+  return (
+    <div className={styles.fps}>
+      Fps: {
+        Number.isNaN(fps) ?
+          <>N/A</> :
+          fps < 30 ?
+            <span className={styles.warning}>
+              {fps}
+            </span> :
+            <>{fps}</>
+      }
+    </div>
   );
 }
 

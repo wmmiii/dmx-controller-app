@@ -17,9 +17,8 @@ const EMPTY_CONTEXT = {
   setBlackout: (_blackout: boolean) => { },
   setRenderUniverse: (_render: RenderUniverse) => { },
   clearRenderUniverse: (_render: RenderUniverse) => { },
-  currentFps: 0,
-  maxFps: 0,
   subscribeToUniverseUpdates: (_callback: (universe: DmxUniverse) => void) => { },
+  subscribeToFspUpdates: (_callback: (fps: number) => void) => { },
 };
 
 export const SerialContext = createContext(EMPTY_CONTEXT);
@@ -71,8 +70,7 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
   const blackout = useRef(false);
   const [blackoutState, setBlackoutState] = useState(false);
   const fpsBuffer = useRef([0]);
-  const [currentFps, setCurrentFps] = useState(NaN);
-  const [maxFps, setMaxFps] = useState(0);
+  const fpsSubscribers = useRef<Array<(fps: number) => void>>([]);
 
   // Expose render function for debugging purposes.
   useEffect(() => {
@@ -114,9 +112,9 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
   }, [connect, disconnect]);
 
   const resetFps = useCallback(() => {
-    setCurrentFps(NaN);
+    fpsSubscribers.current.forEach(s => s(NaN));
     fpsBuffer.current = [0];
-  }, [setCurrentFps, fpsBuffer]);
+  }, [fpsBuffer]);
 
   useEffect(() => {
     if (!port) {
@@ -153,8 +151,6 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
           closed = true;
           resetFps();
           disconnect();
-        } finally {
-          setMaxFps(Math.floor(1000 / (new Date().getTime() - start)));
         }
 
         const now = new Date().getTime();
@@ -165,7 +161,7 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
           average += fps;
         }
         average /= fpsBuffer.current.length;
-        setCurrentFps(Math.floor(1000 / (average)));
+        fpsSubscribers.current.forEach((s) => s(Math.floor(1000 / average)));
         lastFrame = now;
 
         // This is needed because sometimes the micro-controller gets
@@ -204,9 +200,8 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
           renderUniverse.current = () => BLACKOUT_UNIVERSE;
         }
       },
-      currentFps: currentFps,
-      maxFps: maxFps,
       subscribeToUniverseUpdates: useCallback((callback) => updateSubscribers.current.push(callback), [updateSubscribers]),
+      subscribeToFspUpdates: useCallback((callback) => fpsSubscribers.current.push(callback), [fpsSubscribers]),
     }}>
       {children}
     </SerialContext.Provider>
