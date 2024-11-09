@@ -1,7 +1,6 @@
-import { ChannelTypes } from "./fixture";
 import { Effect_RampEffect, Effect_RampEffect_EasingFunction } from "@dmx-controller/proto/effect_pb";
 import { applyState } from "./effect";
-import { RenderContext, getDevice } from "./universe";
+import { RenderContext } from "./universe";
 import { applyFixtureSequence } from "./fixtureSequence";
 import { interpolateUniverses } from "./utils";
 
@@ -10,7 +9,8 @@ export function rampEffect(
   effect: Effect_RampEffect,
   t: number,
   beatIndex: number,
-  beatT: number): void {
+  beatT: number,
+  frame: number): void {
 
   const start = new Uint8Array(context.universe);
   const end = new Uint8Array(context.universe);
@@ -24,7 +24,8 @@ export function rampEffect(
       effect.start.value,
       t,
       beatIndex,
-      beatT);
+      beatT,
+      frame);
   }
 
   const endContext = Object.assign({}, context, { universe: end });
@@ -36,7 +37,8 @@ export function rampEffect(
       effect.end.value,
       t,
       beatIndex,
-      beatT);
+      beatT,
+      frame);
   }
 
   let easedT: number;

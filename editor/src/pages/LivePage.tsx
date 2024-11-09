@@ -46,9 +46,10 @@ function LivePageImpl(): JSX.Element {
       return;
     }
 
-    const render = () => renderSceneToUniverse(
+    const render = (frame: number) => renderSceneToUniverse(
       new Date().getTime(),
       beatMetadata,
+      frame,
       project,
     );
     setRenderUniverse(render);

@@ -8,7 +8,7 @@ import styles from './Effect.module.scss';
 import { Button } from './Button';
 import { CSSProperties } from "react";
 import { DEFAULT_EFFECT_COLOR } from '../util/styleUtils';
-import { Effect as EffectProto, EffectTiming, Effect_RampEffect, Effect_RampEffect_EasingFunction, Effect_StaticEffect, FixtureState, FixtureState as FixtureStateProto, FixtureSequenceMapping, FixtureState_StrobeSpeed } from "@dmx-controller/proto/effect_pb";
+import { Effect as EffectProto, EffectTiming, Effect_RampEffect, Effect_RampEffect_EasingFunction, Effect_StaticEffect, FixtureState, FixtureState as FixtureStateProto, FixtureSequenceMapping, Effect_StrobeEffect } from "@dmx-controller/proto/effect_pb";
 import { isFixtureState } from '../engine/effect';
 import { NumberInput, ToggleInput } from './Input';
 import { ShortcutContext } from '../contexts/ShortcutContext';
@@ -90,6 +90,13 @@ export function Effect({
 
     effectIcons(effect.effect.value.start.value).forEach(i => icons.add(i));
     effectIcons(effect.effect.value.end.value).forEach(i => icons.add(i));
+  } else if (effect.effect.case === 'strobeEffect') {
+    const start = effectColor(effect.effect.value.stateA.value);
+    const end = effectColor(effect.effect.value.stateB.value);
+    style.background = `linear-gradient(90deg, ${start} 0%, ${end} 100%)`;
+
+    effectIcons(effect.effect.value.stateA.value).forEach(i => icons.add(i));
+    effectIcons(effect.effect.value.stateB.value).forEach(i => icons.add(i));
   }
 
   const containerClasses = [styles.effect, className];
@@ -220,9 +227,14 @@ export function EffectDetails({
           effect={effect.effect.value} />
       );
       break;
+    case 'strobeEffect':
+      details = (
+        <StrobeEffectDetails effect={effect.effect.value} />
+      );
+      break;
     default:
       details = (
-        <p>Unrecognized effect type: {effect.effect.case}</p>
+        <p>Unrecognized effect type: {(effect.effect as any).case}</p>
       );
   }
 
@@ -263,6 +275,24 @@ export function EffectDetails({
                 };
                 type = 'ramp';
                 break;
+              case 'strobeEffect':
+                effect.effect = {
+                  value: new Effect_StrobeEffect({
+                    stateAFames: 1,
+                    stateBFames: 1,
+                    stateA: {
+                      case: 'fixtureStateA',
+                      value: {},
+                    },
+                    stateB: {
+                      case: 'fixtureStateB',
+                      value: {},
+                    },
+                  }),
+                  case: 'strobeEffect',
+                };
+                type = 'strobe';
+                break;
               default:
                 console.error('Unrecognized event type: ', e.target.value);
                 return;
@@ -271,11 +301,12 @@ export function EffectDetails({
           }}>
           <option value="staticEffect">Static Effect</option>
           <option value="rampEffect">Ramp Effect</option>
+          <option value="strobeEffect">Strobe Effect</option>
         </select>
       </label>
 
       {
-        effect.effect.case !== 'staticEffect' &&
+        effect.effect.case === 'rampEffect' &&
         <>
           <label>
             <span>Timing mode</span>
@@ -505,6 +536,72 @@ function RampEffectDetails({
             };
           }
           save('Change ramp effect end state.');
+        }} />
+    </>
+  );
+}
+
+function StrobeEffectDetails({
+  fixtureSequenceId,
+  effect,
+}: EffectDetailsBaseProps<Effect_StrobeEffect>): JSX.Element {
+  const { save } = useContext(ProjectContext);
+
+  return (
+    <>
+      <label>
+        <span>State A duration (frames)</span>
+        <NumberInput
+          title="speed"
+          type="integer"
+          min={1}
+          max={10}
+          value={effect.stateAFames}
+          onChange={(value) => {
+            effect.stateAFames = value;
+            save(`Change strobe effect state A frames to ${value}.`);
+          }} />
+      </label>
+      <label>
+        <span>State B duration (frames)</span>
+        <NumberInput
+          title="speed"
+          type="integer"
+          min={1}
+          max={10}
+          value={effect.stateBFames}
+          onChange={(value) => {
+            effect.stateBFames = value;
+            save(`Change strobe effect state B frames to ${value}.`);
+          }} />
+      </label>
+      <hr />
+      <h2>State A</h2>
+      <EffectState
+        fixtureSequenceId={fixtureSequenceId}
+        effect={effect.stateA.value}
+        onChange={(e) => {
+          if (isFixtureState(e)) {
+            effect.stateA = {
+              case: 'fixtureStateA',
+              value: e,
+            };
+            save('Change strobe effect A.');
+          }
+        }} />
+      <hr />
+      <h2>State B</h2>
+      <EffectState
+        fixtureSequenceId={fixtureSequenceId}
+        effect={effect.stateB.value}
+        onChange={(e) => {
+          if (isFixtureState(e)) {
+            effect.stateB = {
+              case: 'fixtureStateB',
+              value: e,
+            };
+            save('Change strobe effect B.');
+          }
         }} />
     </>
   );

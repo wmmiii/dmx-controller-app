@@ -18,6 +18,10 @@ export function UniverseVisualizer() {
     () => Object.values(project?.physicalFixtures || {})
       .map((f, i) => {
         const definition = project.fixtureDefinitions[f.fixtureDefinitionId];
+        // Can happen if the definition is unset.
+        if (definition == null) {
+          return;
+        }
 
         const getChannel = (type: ChannelTypes): number | undefined => {
           try {
@@ -46,7 +50,7 @@ export function UniverseVisualizer() {
             slow: strobe?.slowStrobe || 0,
             fast: strobe?.fastStrobe || 0,
           },
-        }
+        };
       }), [project]);
 
   const getValue = (index: number | undefined) => {
@@ -62,7 +66,22 @@ export function UniverseVisualizer() {
   return (
     <ol className={styles.visualizer}>
       {
-        fixtureMapping.map((f) => {
+        fixtureMapping.map((f, i) => {
+          // Can happen if fixture definition is unset.
+          if (f == null) {
+            return (
+              <li
+                key={i}
+                className={styles.visualizerDot}
+                title={'Unknown'}
+                style={{
+                  backgroundColor: '#000',
+                  boxShadow: '0 0 8px #000',
+                }}>
+              </li>
+            );
+          }
+
           let background: string;
           let shadow: string;
           if (f.strobeIndex && getValue(f.strobeIndex) === f.strobe.slow && (t % 200) > 100) {
@@ -85,7 +104,7 @@ export function UniverseVisualizer() {
 
           return (
             <li
-              key={f.id}
+              key={i}
               className={styles.visualizerDot}
               title={f.name}
               style={{

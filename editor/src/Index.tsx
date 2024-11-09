@@ -30,7 +30,7 @@ import ProjectPage from './pages/ProjectPage';
 
 export default function Index(): JSX.Element {
   const { port, blackout, setBlackout, connect, disconnect, currentFps } = useContext(SerialContext);
-  const { downloadProject, openProject, project, save, lastOperation } = useContext(ProjectContext);
+  const { downloadProject, openProject, lastOperation } = useContext(ProjectContext);
   const navigate = useNavigate();
 
   const [showMenu, setShowMenu] = useState(false);

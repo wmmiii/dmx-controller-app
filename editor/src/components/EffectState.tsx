@@ -324,7 +324,7 @@ function FixtureState(
       <label>Channels:</label>
       {
         state.channels.map((c: FixtureState_Channel, i: number) => (
-          <div className={styles.stateRow}>
+          <div key={i} className={styles.stateRow}>
             <NumberInput
               className={styles.input}
               title="index"

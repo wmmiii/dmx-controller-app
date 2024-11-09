@@ -75,10 +75,11 @@ export default function newSequencePage(): JSX.Element {
       return;
     }
 
-    const render = () => renderSequenceToUniverse(
+    const render = (frame: number) => renderSequenceToUniverse(
       t.current,
       fixtureSequenceId,
       beatMetadata,
+      frame,
       virtualTracks[0].output,
       project,
     );

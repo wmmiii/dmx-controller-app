@@ -131,11 +131,7 @@ function AudioDetails({ file }: AudioDetailsProps): JSX.Element {
         beatFile &&
         <BeatEditor
           file={file}
-          onCancel={() => setBeatFile(null)}
-          onSave={() => {
-            saveAssets();
-            setBeatFile(null);
-          }} />
+          onCancel={() => setBeatFile(null)} />
       }
     </div>
   );

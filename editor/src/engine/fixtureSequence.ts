@@ -12,8 +12,8 @@ export function applyFixtureSequence(
   mapping: FixtureSequenceMapping,
   amountT: number,
   beatIndex: number,
-  beatT: number):
-  void {
+  beatT: number,
+  frame: number): void {
 
   const fixtureSequence = context.project.fixtureSequences[mapping.fixtureSequenceId];
   if (fixtureSequence == null) {
@@ -37,13 +37,13 @@ export function applyFixtureSequence(
 
 
   // Re-time into fixtureSequence space.
-  const sequenceContext = Object.assign({}, context, {t: t});
+  const sequenceContext = Object.assign({}, context, { t: t });
   const beatMetadata = new BeatMetadata({
     lengthMs: SEQUENCE_BEAT_RESOLUTION,
     offsetMs: 0n,
   });
 
-  renderLayersToUniverse(t, fixtureSequence.layers, sequenceContext, beatMetadata);
+  renderLayersToUniverse(t, fixtureSequence.layers, sequenceContext, beatMetadata, frame);
 }
 
 export function fixtureSequences(project: Project, forbidden?: number):

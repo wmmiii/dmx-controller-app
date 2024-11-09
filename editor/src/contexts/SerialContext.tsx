@@ -7,7 +7,7 @@ import { DmxUniverse } from "../engine/fixture";
 const BLACKOUT_UNIVERSE = new Uint8Array(512).fill(0);
 const FPS_BUFFER_SIZE = 100;
 
-type RenderUniverse = () => DmxUniverse;
+type RenderUniverse = (frame: number) => DmxUniverse;
 
 const EMPTY_CONTEXT = {
   port: null as (SerialPort | null),
@@ -67,6 +67,7 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
   const [port, setPort] = useState<SerialPort | null>(null);
   const renderUniverse = useRef<RenderUniverse>(() => BLACKOUT_UNIVERSE);
   const updateSubscribers = useRef<Array<(universe: DmxUniverse) => void>>([]);
+  const frameRef = useRef(0);
   const blackout = useRef(false);
   const [blackoutState, setBlackoutState] = useState(false);
   const fpsBuffer = useRef([0]);
@@ -76,7 +77,7 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
   // Expose render function for debugging purposes.
   useEffect(() => {
     const global = (window || globalThis) as any;
-    global['debugRender'] = () => renderUniverse.current();
+    global['debugRender'] = () => renderUniverse.current(frameRef.current);
   }, [renderUniverse]);
 
   const connect = useCallback(async () => {
@@ -120,7 +121,8 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
   useEffect(() => {
     if (!port) {
       const handle = setInterval(() => {
-        const universe = renderUniverse.current();
+        frameRef.current += 1;
+        const universe = renderUniverse.current(frameRef.current);
         updateSubscribers.current.forEach(c => c(universe));
       }, 30);
       return () => clearInterval(handle);
@@ -138,7 +140,8 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
         if (blackout.current) {
           universe = BLACKOUT_UNIVERSE;
         } else {
-          universe = renderUniverse.current();
+          frameRef.current += 1;
+          universe = renderUniverse.current(frameRef.current);
         }
 
         try {

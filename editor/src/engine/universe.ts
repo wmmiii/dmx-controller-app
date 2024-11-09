@@ -8,6 +8,7 @@ import { SEQUENCE_BEAT_RESOLUTION, applyFixtureSequence } from "./fixtureSequenc
 import { applyState } from "./effect";
 import { rampEffect } from "./rampEffect";
 import { interpolateUniverses } from "./utils";
+import { strobeEffect } from "./strobeEffect";
 
 export interface RenderContext {
   readonly t: number;
@@ -16,7 +17,7 @@ export interface RenderContext {
   readonly universe: DmxUniverse;
 }
 
-export function renderShowToUniverse(t: number, project: Project):
+export function renderShowToUniverse(t: number, frame: number, project: Project):
   DmxUniverse {
   t += project.timingOffsetMs;
 
@@ -39,7 +40,7 @@ export function renderShowToUniverse(t: number, project: Project):
 
     for (const track of show.lightTracks) {
       const trackContext = Object.assign({}, context, { output: track.output });
-      renderLayersToUniverse(t, track.layers, trackContext, beatMetadata);
+      renderLayersToUniverse(t, track.layers, trackContext, beatMetadata, frame);
     }
   }
 
@@ -49,6 +50,7 @@ export function renderShowToUniverse(t: number, project: Project):
 export function renderSceneToUniverse(
   t: number,
   beatMetadata: BeatMetadata,
+  frame: number,
   project: Project,
 ): DmxUniverse {
   const absoluteT = t + project.timingOffsetMs;
@@ -96,6 +98,7 @@ export function renderSceneToUniverse(
     const after = new Uint8Array(universe);
     renderUniverseSequence(
       sequenceT,
+      frame,
       component.universeSequenceId,
       project,
       after);
@@ -108,6 +111,7 @@ export function renderSceneToUniverse(
 
 function renderUniverseSequence(
   t: number,
+  frame: number,
   universeSequenceId: number,
   project: Project,
   universe: DmxUniverse,
@@ -123,10 +127,15 @@ function renderUniverseSequence(
 
     for (const track of universeSequence.lightTracks) {
       const trackContext = Object.assign({}, context, { output: track.output });
-      renderLayersToUniverse(t, track.layers, trackContext, new BeatMetadata({
-        lengthMs: SEQUENCE_BEAT_RESOLUTION,
-        offsetMs: 0n,
-      }));
+      renderLayersToUniverse(
+        t,
+        track.layers,
+        trackContext,
+        new BeatMetadata({
+          lengthMs: SEQUENCE_BEAT_RESOLUTION,
+          offsetMs: 0n,
+        }),
+        frame);
     }
   }
 }
@@ -135,6 +144,7 @@ export function renderSequenceToUniverse(
   t: number,
   fixtureSequenceId: number,
   beatMetadata: BeatMetadata,
+  frame: number,
   output: LightTrack['output'],
   project: Project,
 ): DmxUniverse {
@@ -154,7 +164,7 @@ export function renderSequenceToUniverse(
       universe: universe,
     };
 
-    renderLayersToUniverse(t, fixtureSequence.layers, context, beatMetadata);
+    renderLayersToUniverse(t, fixtureSequence.layers, context, beatMetadata, frame);
   }
 
   return universe;
@@ -165,11 +175,12 @@ export function renderLayersToUniverse(
   layers: LightLayer[],
   context: Partial<RenderContext>,
   beatMetadata: BeatMetadata,
+  frame: number,
 ): void {
   for (const layer of layers) {
     const effect = layer.effects.find((e) => e.startMs <= t && e.endMs > t);
     if (effect) {
-      applyEffect(context as RenderContext, beatMetadata, effect);
+      applyEffect(context as RenderContext, beatMetadata, frame, effect);
     }
   }
 }
@@ -184,7 +195,7 @@ function applyDefaults(project: Project, universe: DmxUniverse): void {
   }
 }
 
-function applyEffect(context: RenderContext, beat: BeatMetadata, effect: Effect): void {
+function applyEffect(context: RenderContext, beat: BeatMetadata, frame: number, effect: Effect): void {
   let offsetMs: number;
   switch (effect.offset.case) {
     case 'offsetBeat':
@@ -241,7 +252,8 @@ function applyEffect(context: RenderContext, beat: BeatMetadata, effect: Effect)
         effect.effect.value.effect.value,
         effectT,
         beatIndex,
-        beatT);
+        beatT,
+        frame);
     }
 
   } else if (effect.effect.case === 'rampEffect') {
@@ -250,7 +262,10 @@ function applyEffect(context: RenderContext, beat: BeatMetadata, effect: Effect)
       effect.effect.value,
       effectT,
       beatIndex,
-      beatT);
+      beatT,
+      frame);
+  } else if (effect.effect.case === 'strobeEffect') {
+    strobeEffect(context, effect.effect.value, frame);
   }
 }
 

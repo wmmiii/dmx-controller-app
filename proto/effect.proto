@@ -87,6 +87,18 @@ message Effect {
     }
   }
 
+  message StrobeEffect {
+    int32 state_a_fames = 1;
+    int32 state_b_fames = 4;
+
+    oneof state_a {
+      FixtureState fixture_state_a = 2;
+    }
+    oneof state_b {
+      FixtureState fixture_state_b = 3;
+    }
+  }
+
   uint32 start_ms = 1;
   uint32 end_ms = 2;
   reserved 3 to 10;
@@ -106,5 +118,6 @@ message Effect {
   oneof effect {
     StaticEffect static_effect = 101;
     RampEffect ramp_effect = 102;
+    StrobeEffect strobe_effect = 103;
   }
 }

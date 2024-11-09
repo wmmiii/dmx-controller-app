@@ -52,7 +52,7 @@ export default function ShowPage(): JSX.Element {
       return;
     }
 
-    const render = () => renderShowToUniverse(t.current, project);
+    const render = (frame: number) => renderShowToUniverse(t.current, frame, project);
     setRenderUniverse(render);
 
     return () => clearRenderUniverse(render);
@@ -88,7 +88,7 @@ export default function ShowPage(): JSX.Element {
             save('Create default show.');
           }}>
             Create a show!
-          </Button>       
+          </Button>
         </>
       );
     }
