@@ -80,6 +80,8 @@
   padding: spacing(2);
 }
 
-.effectDetails {
+.effect-details {
+  @include fill;
+
   padding: spacing(2);
 }

@@ -9,10 +9,9 @@ import { Button, IconButton } from "./Button";
 import { LightLayer as LightLayerProto } from '@dmx-controller/proto/light_layer_pb';
 import { LightLayer } from '../components/LightLayer';
 import { LightTrack as LightTrackProto } from '@dmx-controller/proto/light_track_pb';
-import { OutputDescription, OutputSelector } from '../components/OutputSelector';
+import { getOutputName, OutputDescription, OutputSelector } from '../components/OutputSelector';
 import { ProjectContext } from "../contexts/ProjectContext";
 import IconBxX from "../icons/IconBxX";
-import { Project } from "@dmx-controller/proto/project_pb";
 
 export interface MappingFunctions {
   msWidthToPxWidth: (ms: number) => number;
@@ -169,15 +168,4 @@ export function LightTrack({
       </div>
     </div>
   );
-}
-
-function getOutputName(project: Project, output: LightTrackProto['output']) {
-  switch (output?.case) {
-    case 'physicalFixtureId':
-      return project.physicalFixtures[output.value].name;
-    case 'physicalFixtureGroupId':
-      return project.physicalFixtureGroups[output.value].name;
-    default:
-      return '<Unset>';
-  }
 }

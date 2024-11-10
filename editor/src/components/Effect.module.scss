@@ -93,7 +93,6 @@ $handle-size: 30px;
 }
 
 .effect-details {
-  @include fill;
   display: flex;
   flex-direction: column;
   gap: spacing(1);

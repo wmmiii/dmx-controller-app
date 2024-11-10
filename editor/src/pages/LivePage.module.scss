@@ -2,6 +2,9 @@
 
 .wrapper {
   @include fill;
+
+  display: flex;
+  flex-direction: column;
 }
 
 .editor-pane {
@@ -9,18 +12,68 @@
 
   display: flex;
   flex-direction: column;
+}
 
-  .beat {
-    flex-shrink: 0;
+.beat {
+  flex-shrink: 0;
+  padding: spacing(1) spacing(2);
+}
+
+.scene-editor {
+  flex: 1;
+  position: relative;
+}
+
+.split-pane {
+  @include fill;
+}
+
+.meta-pane,
+.details-pane {
+  @include fill;
+
+  overflow-y: auto;
+  background-color: $col-bg;
+}
+
+.meta-pane {
+  h2 {
+    margin: spacing(2);
+  }
+
+  .row {
+    align-items: baseline;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    gap: spacing(4);
+    justify-content: space-between;
+    padding: spacing(1) spacing(2);
+    width: 100%;
+
+    > label {
+      flex-shrink: 0;
+    }
+
+    > input,
+    > div {
+      flex: 1;
+      min-width: 0;
+    }
   }
 }
 
-.header {
-  display: flex;
-  flex-shrink: 0;
+.effect {
+  width: 300px;
 }
 
-.universe-sequence-editor,
-.scene-editor {
-  flex: 1;
+.state-header {
+  align-items: center;
+  display: flex;
+  flex-direction: row;
+  padding: spacing(2) spacing(1) 0;
+
+  & > * {
+    flex: 1;
+  }
 }

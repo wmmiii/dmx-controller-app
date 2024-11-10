@@ -4,11 +4,11 @@ html {
   background-color: $col-bg-higher;
   color: $col-text;
   font-family: 'Roboto', sans-serif;
-  font-size: 14pt;
+  font-size: 11pt;
   font-weight: 300;
   overflow-x: hidden;
-  scrollbar-width: thin;
   scrollbar-color: $col-scroll-thumb $col-scroll-track;
+  scrollbar-width: thin;
 }
 
 h1,

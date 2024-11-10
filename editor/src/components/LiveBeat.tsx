@@ -34,7 +34,7 @@ export function LiveBeat({ className }: LiveBeatProps): JSX.Element {
   return (
     <div className={className}>
       {beatEmoji}
-      &nbsp;BPM: {Math.floor(60_000 / (beat?.lengthMs || NaN))}
+      &nbsp;BPM: {Math.floor(60_000 / (beat?.lengthMs || NaN))}&nbsp;
       <select value={detectionStrategy} onChange={(e) => setDetectionStrategy(e.target.value as any)}>
         <option value="manual">Manual</option>
         <option value="microphone">Microphone</option>

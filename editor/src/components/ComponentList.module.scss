@@ -1,30 +1,5 @@
 @import '../vars';
 
-.scene-editor {
-  @include fill;
-
-  display: flex;
-  flex-direction: column;
-}
-
-.header {
-  align-items: center;
-  display: flex;
-  flex-direction: row;
-  flex-shrink: 0;
-  gap: spacing(1);
-  margin: spacing(1);
-}
-
-.activate-button {
-  width: 6em;
-}
-
-.component-list-wrapper {
-  flex: 1;
-  overflow: auto;
-}
-
 .component-list {
   user-select: none;
 

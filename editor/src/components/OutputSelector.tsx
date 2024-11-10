@@ -1,5 +1,7 @@
 import React, { useContext, useMemo } from 'react';
 import { ProjectContext } from '../contexts/ProjectContext';
+import { Project } from '@dmx-controller/proto/project_pb';
+import { LightTrack as LightTrackProto } from '@dmx-controller/proto/light_track_pb';
 
 export interface OutputDescription {
   id: number;
@@ -8,7 +10,7 @@ export interface OutputDescription {
 
 interface OutputSelectorProps {
   value: OutputDescription;
-  setValue: (value: OutputDescription|undefined) => void;
+  setValue: (value: OutputDescription | undefined) => void;
 }
 
 export function OutputSelector({ value, setValue }: OutputSelectorProps):
@@ -60,4 +62,16 @@ export function OutputSelector({ value, setValue }: OutputSelectorProps):
       ))}
     </select>
   );
+}
+
+
+export function getOutputName(project: Project, output: LightTrackProto['output']) {
+  switch (output?.case) {
+    case 'physicalFixtureId':
+      return project.physicalFixtures[output.value].name;
+    case 'physicalFixtureGroupId':
+      return project.physicalFixtureGroups[output.value].name;
+    default:
+      return '<Unset>';
+  }
 }

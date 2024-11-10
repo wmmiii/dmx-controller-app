@@ -2,39 +2,39 @@ import React, { useCallback, useContext, useEffect, useMemo, useState } from 're
 import IconBxPlus from '../icons/IconBxPlus';
 import { Button, IconButton } from './Button';
 import { ProjectContext } from '../contexts/ProjectContext';
-import { Scene_Component } from '@dmx-controller/proto/scene_pb';
-import { NumberInput, TextInput, ToggleInput } from './Input';
+import { Scene, Scene_Component, Scene_Component_EffectComponent, Scene_Component_SequenceComponent } from '@dmx-controller/proto/scene_pb';
+import { NumberInput, ToggleInput } from './Input';
 
-import styles from './SceneEditor.module.scss';
+import styles from './ComponentList.module.scss';
 import { ShortcutContext } from '../contexts/ShortcutContext';
-import { LiveBeat } from './LiveBeat';
 import { Modal } from './Modal';
 import IconBxPause from '../icons/IconBxPause';
 import IconBxPlay from '../icons/IconBxPlay';
 import IconBxGridVertical from '../icons/IconBxGridVertical';
 import IconBxX from '../icons/IconBxX';
 import IconBxWrench from '../icons/IconBxWrench';
-import { UniverseSequenceEditor } from './UniverseSequenceEditor';
 import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
 import { BeatContext } from '../contexts/BeatContext';
+import { Effect, Effect_StaticEffect, FixtureState } from '@dmx-controller/proto/effect_pb';
 
-interface SceneEditorProps {
+interface ComponentList {
   className?: string;
   sceneId: number;
-  onDelete: () => void;
+  onSelect: (component: Scene_Component) => void;
 }
 
-export function SceneEditor({
+export function ComponentList({
   className,
   sceneId,
-  onDelete,
-}: SceneEditorProps): JSX.Element {
+  onSelect,
+}: ComponentList): JSX.Element {
   const { beat } = useContext(BeatContext);
-  const { project, save } = useContext(ProjectContext);
+  const { project, save, update } = useContext(ProjectContext);
   const { setShortcuts } = useContext(ShortcutContext);
 
-  const [sceneDetailsModal, setSceneDetailsModal] = useState(false);
-  const [draggingComponent, setDraggingComponent] = useState<Scene_Component | null>(null);
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [draggingComponent, setDraggingComponent] =
+      useState<{component: Scene_Component, originalIndex: number} | null>(null);
 
   const scene = useMemo(() => project?.scenes[sceneId], [project, sceneId]);
 
@@ -49,6 +49,10 @@ export function SceneEditor({
   }, [scene, save]);
 
   useEffect(() => {
+    if (scene == null) {
+      return;
+    }
+
     const shortcuts = new Set(
       scene.components.map(c => c.shortcut).filter(c => c != null && c !== ''));
 
@@ -59,114 +63,87 @@ export function SceneEditor({
           action: () => toggleComponents(s),
           description: `Group toggle all components with the "${s}" shortcut.`,
         })));
-  }, [scene.components.map(c => c.shortcut)]);
+  }, [scene?.components.map(c => c.shortcut)]);
 
   const onDragOver = (newIndex: number) => {
-    const originalIndex = scene.components.indexOf(draggingComponent);
+    const originalIndex = scene.components.indexOf(draggingComponent.component);
     if (originalIndex !== newIndex) {
       scene.components.splice(originalIndex, 1);
-      scene.components.splice(newIndex, 0, draggingComponent);
-      save('Rearrange components.');
+      scene.components.splice(newIndex, 0, draggingComponent.component);
+      update();
     }
   }
 
-  const classes = [styles.sceneEditor, className];
+  useEffect(() => {
+    if (draggingComponent != null) {
+      const listener = () =>  {
+        const index = scene.components.indexOf(draggingComponent.component);
+        if (index !== draggingComponent.originalIndex) {
+          save('Rearrange components.');
+        }
+        setDraggingComponent(null);
+      };
+      document.addEventListener('dragend', listener);
+      return () => document.removeEventListener('dragend', listener);
+    }
+  }, [draggingComponent]);
+
+  if (scene == null) {
+    return <div className={className}></div>;
+  }
 
   return (
-    <div className={classes.join(' ')}>
-      <div className={styles.header}>
-        <Button
-          className={styles.activateButton}
-          disabled={project.activeScene === sceneId}
-          onClick={() => {
-            project.activeScene = sceneId;
-            save(`Activate scene ${project.scenes[sceneId].name}.`);
-          }}>
-          {project.activeScene === sceneId ? 'Active' : 'Activate'}
-        </Button>
-        <Button onClick={() => setSceneDetailsModal(true)}>
-          Scene Details
-        </Button>
-        <LiveBeat />
-      </div>
-      <div className={styles.componentListWrapper}>
-        <table className={styles.componentList}>
-          <thead>
-            <tr>
-              <th></th>
-              <th></th>
-              <th colSpan={2}>Sequence</th>
-              <th>Key</th>
-              <th>Loop duration</th>
-              <th>Fade in</th>
-              <th>Fade out</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {
-              scene.components.map((c, i) => (
-                <tr
-                  key={i}
-                  draggable={draggingComponent === c}
-                  onDragOver={() => onDragOver(i)}>
-                  <Component
-                    component={c}
-                    onDelete={() => {
-                      const name = project.universeSequences[scene.components[i].universeSequenceId]?.name || '<Unset>';
-                      scene.components.splice(i, 1);
-                      save(`Delete component for ${name}.`);
-                    }}
-                    onDragStart={() => setDraggingComponent(c)} />
-                </tr>
-              ))
-            }
-            <tr>
-              <td></td>
-              <td colSpan={2}>
-                <Button
-                  icon={<IconBxPlus />}
-                  onClick={() => {
-                    scene.components.push(new Scene_Component({
-                      universeSequenceId: 0,
-                      transition: {
-                        case: 'startFadeOutMs',
-                        value: 0n,
-                      }
-                    }));
-                    save('Create new component.');
-                  }}>
-                  Add Component
-                </Button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      {
-        sceneDetailsModal &&
-        <Modal
-          title={`${scene.name} Details`}
-          footer={
-            <Button
-              variant="primary"
-              onClick={() => setSceneDetailsModal(false)}>
-              Done
-            </Button>
+    <div className={className}>
+      <table className={styles.componentList}>
+        <thead>
+          <tr>
+            <th></th>
+            <th></th>
+            <th colSpan={2}>Sequence</th>
+            <th>Key</th>
+            <th>Loop duration</th>
+            <th>Fade in</th>
+            <th>Fade out</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            scene.components.map((c, i) => (
+              <tr
+                key={i}
+                draggable={draggingComponent?.component === c}
+                onDragOver={() => onDragOver(i)}>
+                <Component
+                  component={c}
+                  onSelect={() => onSelect(scene.components[i])}
+                  onDelete={() => {
+                    const name = scene.components[i].name;
+                    scene.components.splice(i, 1);
+                    save(`Delete component for ${name}.`);
+                  }}
+                  onDragStart={() => setDraggingComponent({component: c, originalIndex: i})} />
+              </tr>
+            ))
           }
-          onClose={() => setSceneDetailsModal(false)}>
-          <TextInput
-            value={scene.name}
-            onChange={(v) => {
-              scene.name = v;
-              save(`Update scene name to "${v}".`);
-            }} />
-          <Button
-            variant="warning"
-            onClick={onDelete}>
-            Delete Scene
-          </Button>
-        </Modal>
+          <tr>
+            <td></td>
+            <td colSpan={2}>
+              <Button
+                icon={<IconBxPlus />}
+                onClick={() => setShowAddDialog(true)}>
+                Add Component
+              </Button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      {
+        showAddDialog &&
+        <AddNewDialog
+          scene={scene}
+          onSelect={onSelect}
+          onClose={() => setShowAddDialog(false)} />
       }
     </div>
   );
@@ -174,17 +151,14 @@ export function SceneEditor({
 
 interface ComponentProps {
   component: Scene_Component;
+  onSelect: () => void;
   onDelete: () => void;
   onDragStart: () => void;
 }
 
-function Component({ component, onDelete, onDragStart }: ComponentProps) {
+function Component({ component, onSelect, onDelete, onDragStart }: ComponentProps) {
   const { beat } = useContext(BeatContext);
-  const { save, project } = useContext(ProjectContext);
-
-  const [showSequenceEditor, setShowSequenceEditor] = useState(false);
-
-  const name = project.universeSequences[component.universeSequenceId]?.name || '<Unset>';
+  const { save } = useContext(ProjectContext);
 
   return (
     <>
@@ -198,8 +172,8 @@ function Component({ component, onDelete, onDragStart }: ComponentProps) {
       <td>
         <IconButton
           title={component.transition.case === 'startFadeInMs' ?
-            `Disable ${project.universeSequences[component.universeSequenceId]?.name}` :
-            `Enable ${project.universeSequences[component.universeSequenceId]?.name}`
+            `Disable ${component.name}` :
+            `Enable ${component.name}`
           }
           variant={component.transition.case === 'startFadeInMs' ? 'primary' : 'default'}
           onClick={() => {
@@ -215,41 +189,14 @@ function Component({ component, onDelete, onDragStart }: ComponentProps) {
         </IconButton>
       </td>
       <td>
-        <select
-          value={component.universeSequenceId}
-          onChange={(e) => {
-            component.universeSequenceId = parseInt(e.target.value);
-            const name = project.universeSequences[component.universeSequenceId].name;
-            save(`Set component to ${name}.`);
-          }}>
-          <option value={0}>&lt;Unset&gt;</option>
-          {
-            Object.keys(project.universeSequences)
-              .map(id => {
-                const sequence = project.universeSequences[parseInt(id)];
-                return (
-                  <option key={id} value={id}>{sequence.name}</option>
-                );
-              })
-          }
-        </select>
+        {component.name}
       </td>
       <td>
         <IconButton
-          title="Show editor"
-          onClick={() => setShowSequenceEditor(true)}>
+          title="Component editor"
+          onClick={onSelect}>
           <IconBxWrench />
         </IconButton>
-        {
-          showSequenceEditor &&
-          <Modal
-            bodyClass={styles.universeSequenceEditor}
-            title={`Edit ${project.universeSequences[component.universeSequenceId].name}`}
-            onClose={() => setShowSequenceEditor(false)}
-            fullScreen={true}>
-            <UniverseSequenceEditor universeSequenceId={component.universeSequenceId} />
-          </Modal>
-        }
       </td>
       <td>
         <input
@@ -374,4 +321,77 @@ function transitionComponent(component: Scene_Component, enabled: boolean, beat:
   } else {
     return false;
   }
+}
+
+interface AddNewDialogProps {
+  scene: Scene;
+  onSelect: (component: Scene_Component) => void;
+  onClose: () => void;
+}
+
+function AddNewDialog({ scene, onSelect, onClose }: AddNewDialogProps) {
+  const { save } = useContext(ProjectContext);
+
+  const addComponent = (description: Scene_Component['description']) => {
+    const component = new Scene_Component({
+      name: 'New Component',
+      description: description,
+      duration: {
+        case: 'durationBeat',
+        value: NaN,
+      },
+      transition: {
+        case: 'startFadeOutMs',
+        value: 0n,
+      },
+    });
+    scene.components.push(component);
+    return component;
+  }
+  return (
+    <Modal
+      title="Add new component"
+      onClose={onClose}>
+      <Button
+        icon={<IconBxPlus />}
+        onClick={() => {
+          const component = addComponent({
+            case: 'effect',
+            value: new Scene_Component_EffectComponent({
+              effect: new Effect({
+                effect: {
+                  case: 'staticEffect',
+                  value: new Effect_StaticEffect({
+                    effect: {
+                      case: 'state',
+                      value: new FixtureState(),
+                    }
+                  }),
+                },
+              }),
+            }),
+          });
+          save('Add new effect component.');
+          onClose();
+          onSelect(component);
+        }}>
+        Add Effect
+      </Button>
+      <Button
+        icon={<IconBxPlus />}
+        onClick={() => {
+          const component = addComponent({
+            case: 'sequence',
+            value: new Scene_Component_SequenceComponent({
+              nativeBeats: 1,
+            }),
+          });
+          save('Add new effect component.');
+          onClose();
+          onSelect(component);
+        }}>
+        Add Sequence
+      </Button>
+    </Modal>
+  )
 }

@@ -45,7 +45,7 @@ message Project {
 
   // Fixture sequence 0 is reserved for the "unset" sequence.
   map<uint32, FixtureSequence> fixture_sequences = 41;
-  map<uint32, UniverseSequence> universe_sequences = 42;
+  reserved 42; // universe_sequences
 
   // Scene 0 is reserved for the "unset" scene.
   repeated Scene scenes = 51;
