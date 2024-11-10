@@ -1,4 +1,4 @@
-import React, { useContext, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import IconBxCopyAlt from '../icons/IconBxCopy';
 import IconBxX from '../icons/IconBxX';
 import styles from './UniversePage.module.scss';
@@ -10,7 +10,8 @@ import { ProjectContext } from '../contexts/ProjectContext';
 import { idMapToArray, nextId } from '../util/mapUtils';
 import { getApplicableMembers } from '../engine/group';
 import { NumberInput, TextInput } from '../components/Input';
-import { deleteFixture, deleteFixtureGroup } from '../engine/fixture';
+import { deleteFixture, deleteFixtureGroup, DmxUniverse } from '../engine/fixture';
+import { SerialContext } from '../contexts/SerialContext';
 
 export default function UniversePage(): JSX.Element {
   return (
@@ -201,11 +202,11 @@ function EditFixtureDialog({
       <label>
         <span>Channel</span>
         <NumberInput
-          min={0}
+          min={1}
           max={512}
-          value={fixture.channelOffset}
+          value={fixture.channelOffset + 1}
           onChange={(v) => {
-            fixture.channelOffset = v;
+            fixture.channelOffset = v - 1;
             save(`Change channel offset of ${fixture.name} to ${v}.`);
           }} />
       </label>
@@ -412,6 +413,30 @@ function EditDefinitionDialog({
   copy,
 }: EditDefinitionDialogProps): JSX.Element {
   const { save } = useContext(ProjectContext);
+  const { setRenderUniverse, clearRenderUniverse } = useContext(SerialContext);
+  const [testIndex, setTestIndex] = useState(0);
+  const [testValues, setTestValues] = useState([]);
+
+  useEffect(() => {
+    const testValues: number[] = [];
+    Object.entries(definition.channels).forEach(([i, c]) => {
+      testValues[parseInt(i) - 1] = c.defaultValue || 0;
+    });
+    setTestValues(testValues);
+  }, [setTestValues]);
+
+  useEffect(() => {
+    const render = () => {
+      const universe: DmxUniverse = new Uint8Array(512);
+      for (let i = 0; i < definition.numChannels; ++i) {
+        universe[i] = testValues[i] || 0;
+      }
+      return universe;
+    };
+
+    setRenderUniverse(render);
+    return () => clearRenderUniverse(render);
+  }, [definition, testValues, setRenderUniverse, clearRenderUniverse]);
 
   return (
     <Modal
@@ -461,6 +486,14 @@ function EditDefinitionDialog({
             save(`Set number of channels of ${definition.name} to ${v}.`);
           }} />
       </label>
+      <label>
+        <span>Test fixture index</span>
+        <NumberInput
+          min={1}
+          max={512}
+          value={testIndex + 1}
+          onChange={(v) => setTestIndex(v - 1)} />
+      </label>
       <table>
         <thead>
           <tr>
@@ -470,6 +503,7 @@ function EditDefinitionDialog({
             <th>Min Deg</th>
             <th>Max Deg</th>
             <th>Strobe</th>
+            <th>Test</th>
           </tr>
         </thead>
         <tbody>
@@ -603,6 +637,18 @@ function EditDefinitionDialog({
                       </td> :
                       <td></td>
                   }
+                  <td>
+                    <NumberInput
+                      min={0}
+                      max={255}
+                      value={testValues[i] || 0}
+                      onChange={(v) => {
+                        setTestValues(testValues => {
+                          testValues[i] = v;
+                          return [...testValues];
+                        })
+                      }} />
+                  </td>
                 </tr>
               );
             })

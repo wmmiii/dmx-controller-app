@@ -328,12 +328,12 @@ function FixtureState(
             <NumberInput
               className={styles.input}
               title="index"
-              value={c.index}
+              value={c.index + 1}
               onChange={(v) => {
-                c.index = v;
+                c.index = v - 1;
                 onChange(state);
               }}
-              min={0}
+              min={1}
               max={512} />
             <NumberInput
               className={styles.input}
