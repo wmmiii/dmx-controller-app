@@ -15,6 +15,7 @@ import IconBxX from "../icons/IconBxX";
 import { Project } from "@dmx-controller/proto/project_pb";
 
 export interface MappingFunctions {
+  msWidthToPxWidth: (ms: number) => number;
   msToPx: (ms: number) => number;
   pxToMs: (px: number) => number;
   snapToBeat: (t: number) => number;

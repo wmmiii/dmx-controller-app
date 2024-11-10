@@ -16,6 +16,7 @@ import { ShortcutContext } from '../contexts/ShortcutContext';
 import { NumberInput } from './Input';
 import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
 import { Effect as EffectProto } from '@dmx-controller/proto/effect_pb';
+import { RenderingContext } from '../contexts/RenderingContext';
 
 export const LEFT_WIDTH = 180;
 
@@ -154,6 +155,7 @@ function Tracks({
   }, [beatMetadata, beatSubdivisions]);
 
   const mappingFunctions: MappingFunctions = useMemo(() => {
+    let msWidthToPxWidth = (_ms: number) => 0;
     let msToPx = (_ms: number) => 0;
     let pxToMs = (_px: number) => 0;
     let snapToBeat = (_t: number) => 0;
@@ -164,6 +166,10 @@ function Tracks({
       const bounding = panelRef.current.getBoundingClientRect();
       const width = panelRef.current.getBoundingClientRect().width - LEFT_WIDTH;
       const left = bounding.left + LEFT_WIDTH;
+
+      msWidthToPxWidth = (ms: number) => {
+        return ms * width / (endT - startT);
+      };
 
       msToPx = (ms: number) => {
         return ((ms - startT) * width) /
@@ -187,6 +193,7 @@ function Tracks({
     }
 
     return {
+      msWidthToPxWidth,
       msToPx,
       pxToMs,
       snapToBeat,
@@ -286,52 +293,57 @@ function Tracks({
           className={styles.cursor}
           style={{ left: mappingFunctions.msToPx(tState) + LEFT_WIDTH }}>
         </div>
-        <div className={styles.tracks}>
-          {
-            lightTracks.map((t: LightTrackProto, i) => (
-              <LightTrack
-                key={i}
-                trackIndex={i}
-                track={t}
-                maxMs={audioToTrack ?
-                  audioToTrack(audioDuration) :
-                  audioDuration}
-                leftWidth={LEFT_WIDTH}
-                mappingFunctions={mappingFunctions}
-                deleteTrack={() => {
-                  let name: string;
-                  switch (t.output.case) {
-                    case 'physicalFixtureId':
-                      name = project.physicalFixtures[t.output.value]?.name || '<Unset>';
-                      break;
-                    case 'physicalFixtureGroupId':
-                      name = project.physicalFixtureGroups[t.output.value]?.name || '<Unset>';
-                      break;
-                    default:
-                      name = '<Unset>';
-                  }
-                  lightTracks.splice(i, 1);
-                  save(`Delete track for ${name}.`);
-                }}
-                swapUp={
-                  i == 0 || swap === undefined ?
-                    undefined :
-                    () => {
-                      swap(i, i - 1);
-                      save('Rearrange track order.');
-                    }
-                } />
-            ))
-          }
-          <div className={styles.newOutput} style={{ width: LEFT_WIDTH }}>
+        <RenderingContext.Provider value={{
+          beatWidthPx: mappingFunctions.msWidthToPxWidth(beatMetadata.lengthMs),
+          msWidthToPxWidth: mappingFunctions.msWidthToPxWidth,
+        }}>
+          <div className={styles.tracks}>
             {
-              addLayer &&
-              <Button onClick={addLayer}>
-                + New Output
-              </Button>
+              lightTracks.map((t: LightTrackProto, i) => (
+                <LightTrack
+                  key={i}
+                  trackIndex={i}
+                  track={t}
+                  maxMs={audioToTrack ?
+                    audioToTrack(audioDuration) :
+                    audioDuration}
+                  leftWidth={LEFT_WIDTH}
+                  mappingFunctions={mappingFunctions}
+                  deleteTrack={() => {
+                    let name: string;
+                    switch (t.output.case) {
+                      case 'physicalFixtureId':
+                        name = project.physicalFixtures[t.output.value]?.name || '<Unset>';
+                        break;
+                      case 'physicalFixtureGroupId':
+                        name = project.physicalFixtureGroups[t.output.value]?.name || '<Unset>';
+                        break;
+                      default:
+                        name = '<Unset>';
+                    }
+                    lightTracks.splice(i, 1);
+                    save(`Delete track for ${name}.`);
+                  }}
+                  swapUp={
+                    i == 0 || swap === undefined ?
+                      undefined :
+                      () => {
+                        swap(i, i - 1);
+                        save('Rearrange track order.');
+                      }
+                  } />
+              ))
             }
+            <div className={styles.newOutput} style={{ width: LEFT_WIDTH }}>
+              {
+                addLayer &&
+                <Button onClick={addLayer}>
+                  + New Output
+                </Button>
+              }
+            </div>
           </div>
-        </div>
+        </RenderingContext.Provider>
       </div>
     </div>
   )

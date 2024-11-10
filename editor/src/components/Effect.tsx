@@ -7,7 +7,7 @@ import IconRgb from '../icons/IconRgb';
 import styles from './Effect.module.scss';
 import { Button } from './Button';
 import { CSSProperties } from "react";
-import { DEFAULT_EFFECT_COLOR } from '../util/styleUtils';
+import { DEFAULT_EFFECT_COLOR, DEFAULT_EFFECT_COLOR_ALT } from '../util/styleUtils';
 import { Effect as EffectProto, EffectTiming, Effect_RampEffect, Effect_RampEffect_EasingFunction, Effect_StaticEffect, FixtureState, FixtureState as FixtureStateProto, FixtureSequenceMapping, Effect_StrobeEffect } from "@dmx-controller/proto/effect_pb";
 import { isFixtureState } from '../engine/effect';
 import { NumberInput, ToggleInput } from './Input';
@@ -15,6 +15,7 @@ import { ShortcutContext } from '../contexts/ShortcutContext';
 import { ProjectContext } from '../contexts/ProjectContext';
 import IconBxsBinoculars from '../icons/IconBxsBinoculars';
 import IconBxsBolt from '../icons/IconBxsBolt';
+import { RenderingContext } from '../contexts/RenderingContext';
 
 export interface EffectAddress {
   track: number;
@@ -52,6 +53,7 @@ export function Effect({
 }: EffectProps): JSX.Element {
   const { copyEffect, selectedEffect, selectEffect } = useContext(EffectSelectContext);
   const { save, update } = useContext(ProjectContext);
+  const { beatWidthPx, msWidthToPxWidth } = useContext(RenderingContext);
   const { setShortcuts } = useContext(ShortcutContext);
   const [dragStart, setDragStart] = useState(false);
   const [dragEnd, setDragEnd] = useState(false);
@@ -85,15 +87,27 @@ export function Effect({
     effectIcons(effect.effect.value.effect.value).forEach(i => icons.add(i));
   } else if (effect.effect.case === 'rampEffect') {
     const start = effectColor(effect.effect.value.start.value);
-    const end = effectColor(effect.effect.value.end.value);
-    style.background = `linear-gradient(90deg, ${start} 0%, ${end} 100%)`;
+    const end = effectColor(effect.effect.value.end.value, true);
+    let width: number;
+    if (effect.timingMode === EffectTiming.BEAT) {
+      width = beatWidthPx / (effect.timingMultiplier || 1);
+    } else {
+      width = msWidthToPxWidth(effect.endMs - effect.startMs) / (effect.timingMultiplier || 1);
+    }
+    if (effect.mirrored) {
+      style.background = `repeating-linear-gradient(90deg, ${end} 0, ${start} ${width}px, ${end} ${width * 2}px)`;
+    } else {
+      style.background = `repeating-linear-gradient(90deg, ${start} 0, ${end} ${width}px)`;
+    }
 
     effectIcons(effect.effect.value.start.value).forEach(i => icons.add(i));
     effectIcons(effect.effect.value.end.value).forEach(i => icons.add(i));
   } else if (effect.effect.case === 'strobeEffect') {
     const start = effectColor(effect.effect.value.stateA.value);
-    const end = effectColor(effect.effect.value.stateB.value);
-    style.background = `linear-gradient(90deg, ${start} 0%, ${end} 100%)`;
+    const end = effectColor(effect.effect.value.stateB.value, true);
+    const aWidth = effect.effect.value.stateAFames * 2;
+    const bWidth = effect.effect.value.stateBFames * 2;
+    style.background = `repeating-linear-gradient(-45deg, ${start} 0, ${start} ${aWidth}px, ${end} ${aWidth}px, ${end} ${aWidth + bWidth}px)`;
 
     effectIcons(effect.effect.value.stateA.value).forEach(i => icons.add(i));
     effectIcons(effect.effect.value.stateB.value).forEach(i => icons.add(i));
@@ -400,7 +414,7 @@ export function EffectDetails({
   )
 }
 
-function effectColor(effect: FixtureState | FixtureSequenceMapping): string {
+function effectColor(effect: FixtureState | FixtureSequenceMapping, alt = false): string {
   const color = (effect as FixtureState)?.color?.value;
   if (color) {
     const white = Math.floor((color.white || 0) * 255);
@@ -408,6 +422,8 @@ function effectColor(effect: FixtureState | FixtureSequenceMapping): string {
     const g = Math.min(Math.floor(color.green * 255) + white, 255);
     const b = Math.min(Math.floor(color.blue * 255) + white, 255);
     return `rgb(${r}, ${g}, ${b})`;
+  } else if (alt) {
+    return DEFAULT_EFFECT_COLOR_ALT;
   } else {
     return DEFAULT_EFFECT_COLOR;
   }
