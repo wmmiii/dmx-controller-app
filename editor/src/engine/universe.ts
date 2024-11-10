@@ -9,6 +9,7 @@ import { applyState } from "./effect";
 import { rampEffect } from "./rampEffect";
 import { interpolateUniverses } from "./utils";
 import { strobeEffect } from "./strobeEffect";
+import { Scene_Component_SequenceComponent } from "@dmx-controller/proto/scene_pb";
 
 export interface RenderContext {
   readonly t: number;
@@ -66,10 +67,6 @@ export function renderSceneToUniverse(
   }
 
   for (const component of scene.components) {
-    if (component.universeSequenceId === 0) {
-      continue;
-    }
-
     let amount: number = 0;
     if (component.transition.case === 'startFadeInMs') {
       const fadeInMs = component.fadeInDuration.case === 'fadeInBeat' ?
@@ -85,23 +82,43 @@ export function renderSceneToUniverse(
       amount = Math.max(0, 1 - ((absoluteT - Number(component.transition.value)) / fadeOutMs));
     }
 
-    const sequence = project.universeSequences[component.universeSequenceId];
-
-    let sequenceT: number
-    if (component.duration?.case === 'durationMs') {
-      sequenceT = (absoluteT * SEQUENCE_BEAT_RESOLUTION / component.duration.value) % (sequence.nativeBeats * SEQUENCE_BEAT_RESOLUTION);
-    } else {
-      sequenceT = (beatT % (beatMetadata.lengthMs * sequence.nativeBeats)) * SEQUENCE_BEAT_RESOLUTION / beatMetadata.lengthMs;
-    }
-
     const before = new Uint8Array(universe);
     const after = new Uint8Array(universe);
-    renderUniverseSequence(
-      sequenceT,
-      frame,
-      component.universeSequenceId,
-      project,
-      after);
+
+    switch (component.description.case) {
+      case 'effect':
+        const effectComponent = component.description.value;
+
+        applyEffect({
+          t: absoluteT,
+          output: effectComponent.output,
+          project: project,
+          universe: after
+        }, beatMetadata, frame, effectComponent.effect);
+        break;
+
+      case 'sequence':
+        const sequence = component.description.value;
+
+        let sequenceT: number
+        if (component.duration?.case === 'durationMs') {
+          sequenceT = (absoluteT * SEQUENCE_BEAT_RESOLUTION / component.duration.value) % (sequence.nativeBeats * SEQUENCE_BEAT_RESOLUTION);
+        } else {
+          sequenceT = (beatT % (beatMetadata.lengthMs * sequence.nativeBeats)) * SEQUENCE_BEAT_RESOLUTION / beatMetadata.lengthMs;
+        }
+
+        renderUniverseSequence(
+          sequenceT,
+          frame,
+          sequence,
+          project,
+          after);
+        break;
+
+      default:
+        console.error(`Unrecognized description type ${(component.description as any).case}.`);
+        return universe;
+    }
 
     interpolateUniverses(universe, project, amount, before, after);
   }
@@ -112,12 +129,10 @@ export function renderSceneToUniverse(
 function renderUniverseSequence(
   t: number,
   frame: number,
-  universeSequenceId: number,
+  universeSequence: Scene_Component_SequenceComponent,
   project: Project,
   universe: DmxUniverse,
 ) {
-  const universeSequence = project.universeSequences[universeSequenceId];
-
   if (universeSequence) {
     const context: Partial<RenderContext> = {
       t: t,

@@ -1,6 +1,6 @@
 import styles from './LightLayer.module.scss';
 import { Effect as EffectComponent, EffectSelectContext } from "./Effect";
-import { Effect, Effect_RampEffect, Effect_StaticEffect } from "@dmx-controller/proto/effect_pb";
+import { Effect, Effect_RampEffect } from "@dmx-controller/proto/effect_pb";
 import { LightLayer as LightLayerProto } from "@dmx-controller/proto/light_layer_pb";
 import { useContext, useState } from "react";
 import { ProjectContext } from '../contexts/ProjectContext';

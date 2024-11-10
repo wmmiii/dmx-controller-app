@@ -7,25 +7,21 @@ import { SEQUENCE_BEAT_RESOLUTION } from '../engine/fixtureSequence';
 import { getAudioBlob } from '../util/metronome';
 
 import styles from './UniverseSequenceEditor.module.scss';
-import { NumberInput, TextInput } from './Input';
-import { Button } from './Button';
-import { Modal } from './Modal';
-import { deleteSequence } from '../engine/universeSequence';
+import { NumberInput } from './Input';
+import { Scene_Component_SequenceComponent } from '@dmx-controller/proto/scene_pb';
 
 interface UniverseSequenceEditorProps {
   className?: string;
-  universeSequenceId: number;
+  sequence: Scene_Component_SequenceComponent;
 }
 
 export function UniverseSequenceEditor({
   className,
-  universeSequenceId
+  sequence,
 }: UniverseSequenceEditorProps): JSX.Element {
-  const { project, save } = useContext(ProjectContext);
+  const { save } = useContext(ProjectContext);
 
   const panelRef = useRef<HTMLDivElement>();
-
-  const [sequenceDetailsModal, setSequenceDetailsModal] = useState(false);
 
   const t = useRef<number>(0);
 
@@ -33,7 +29,6 @@ export function UniverseSequenceEditor({
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [audioDuration, setAudioDuration] = useState<number>(SEQUENCE_BEAT_RESOLUTION);
 
-  const sequence = useMemo(() => project?.universeSequences[universeSequenceId], [project, universeSequenceId]);
   const beats = sequence?.nativeBeats;
 
   const wsMsToSceneMs = useCallback
@@ -44,11 +39,12 @@ export function UniverseSequenceEditor({
       [beats, audioDuration]);
 
   useEffect(() => {
+    console.log(beats);
     if (beats) {
       getAudioBlob(beats, beatSubdivisions)
         .then(setAudioBlob);
     }
-  }, [beats, beatSubdivisions]);
+  }, [beats, beatSubdivisions, setAudioBlob]);
 
   const beatMetadata = useMemo(() => {
     return new BeatMetadata({
@@ -83,13 +79,7 @@ export function UniverseSequenceEditor({
               }} />
           </span>
         }
-        leftOptions={
-          <>
-            <Button onClick={() => setSequenceDetailsModal(true)}>
-              Sequence Details
-            </Button>
-          </>
-        }
+        leftOptions={<></>}
         lightTracks={sequence.lightTracks}
         addLayer={() => {
           sequence?.lightTracks.push(new LightTrackProto());
@@ -98,40 +88,6 @@ export function UniverseSequenceEditor({
         panelRef={panelRef}
         audioToTrack={wsMsToSceneMs}
         t={t} />
-      {
-        sequenceDetailsModal &&
-        <Modal
-          title={sequence.name + ' Metadata'}
-          footer={
-            <Button variant="primary" onClick={() => setSequenceDetailsModal(false)}>
-              Done
-            </Button>
-          }
-          onClose={() => setSequenceDetailsModal(false)}>
-          <div className={styles.detailsModal}>
-            <div>
-              Title:&nbsp;
-              <TextInput
-                value={sequence.name}
-                onChange={(v) => {
-                  sequence.name = v;
-                  save(`Update sequence name to ${sequence.name}.`);
-                }} />
-            </div>
-            <div>
-              <Button
-                variant='warning'
-                onClick={() => {
-                  deleteSequence(universeSequenceId, project);
-                  save(`Delete sequence ${sequence.name}`);
-                  setSequenceDetailsModal(false);
-                }}>
-                Delete Sequence
-              </Button>
-            </div>
-          </div>
-        </Modal>
-      }
     </div>
   );
 }

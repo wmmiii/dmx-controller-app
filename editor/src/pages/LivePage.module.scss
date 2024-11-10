@@ -24,3 +24,25 @@
 .scene-editor {
   flex: 1;
 }
+
+.split-pane {
+  @include fill;
+}
+
+.meta-pane,
+.details-pane {
+  @include fill;
+
+  background-color: $col-bg;
+}
+
+.meta-pane {
+  label {
+    display: block;
+    margin: spacing(2);
+  }
+
+  .shortcut {
+    width: 3em;
+  }
+}

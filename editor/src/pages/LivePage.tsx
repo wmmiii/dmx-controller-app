@@ -1,52 +1,30 @@
-import React, { useCallback, useContext, useEffect, useState } from 'react';
-import { HorizontalSplitPane } from '../components/SplitPane';
-import { Scene } from '@dmx-controller/proto/scene_pb';
+import React, { useContext, useEffect, useState } from 'react';
+import { Scene, Scene_Component, Scene_Component_EffectComponent, Scene_Component_SequenceComponent } from '@dmx-controller/proto/scene_pb';
 import { ProjectContext } from '../contexts/ProjectContext';
-import { Button } from '../components/Button';
 import styles from "./LivePage.module.scss";
-import { UniverseSequence } from '@dmx-controller/proto/universe_sequence_pb';
-import { nextId } from '../util/mapUtils';
 import { BeatContext, BeatProvider } from '../contexts/BeatContext';
-import { UniverseSequenceEditor } from '../components/UniverseSequenceEditor';
-import { SceneEditor } from '../components/SceneEditor';
+import { ComponentList } from '../components/ComponentList';
 import { SerialContext } from '../contexts/SerialContext';
-import { renderSceneToUniverse } from '../engine/universe';
+import { renderSceneToUniverse as renderActiveSceneToUniverse } from '../engine/universe';
+import { Modal } from '../components/Modal';
+import { HorizontalSplitPane } from '../components/SplitPane';
+import { NumberInput, TextInput } from '../components/Input';
+import { Effect } from '@dmx-controller/proto/effect_pb';
+import { UniverseSequenceEditor } from '../components/UniverseSequenceEditor';
 
 export function LivePage(): JSX.Element {
-  return (
-    <BeatProvider>
-      <LivePageImpl />
-    </BeatProvider>
-  );
-}
-
-interface Selected {
-  type: 'scene' | 'sequence'
-  index: number;
-}
-
-function LivePageImpl(): JSX.Element {
   const { project } = useContext(ProjectContext);
   const { beat: beatMetadata } = useContext(BeatContext);
   const { setRenderUniverse, clearRenderUniverse } = useContext(SerialContext);
 
-  const [selected, setSelected] = useState<Selected | null>(null);
+  const [selected, setSelected] = useState<Scene_Component | null>(null);
 
   useEffect(() => {
-    if (selected == null && project?.activeScene != null) {
-      setSelected({
-        type: 'scene',
-        index: project.activeScene,
-      });
-    }
-  }, [project?.activeScene, selected]);
-
-  useEffect(() => {
-    if (!project || selected?.type !== 'scene') {
+    if (!project) {
       return;
     }
 
-    const render = (frame: number) => renderSceneToUniverse(
+    const render = (frame: number) => renderActiveSceneToUniverse(
       new Date().getTime(),
       beatMetadata,
       frame,
@@ -59,133 +37,93 @@ function LivePageImpl(): JSX.Element {
 
   return (
     <BeatProvider>
-      <HorizontalSplitPane
-        className={styles.wrapper}
-        defaultAmount={0.2}
-        left={<List selected={selected} setSelected={setSelected} />}
-        right={<EditorPane selected={selected} />} />
+      <ComponentList
+        className={styles.sceneEditor}
+        sceneId={0}
+        onSelect={setSelected} />
+      {
+        selected &&
+        <ComponentEditor component={selected} onClose={() => setSelected(null)} />
+      }
     </BeatProvider>
   );
 }
 
-interface SceneListProps {
-  selected: Selected;
-  setSelected: (elected: Selected) => void;
+interface ComponentEditorProps {
+  component: Scene_Component;
+  onClose: () => void;
 }
 
-function List({ selected, setSelected }: SceneListProps): JSX.Element {
-  const { project, save } = useContext(ProjectContext);
-
-  if (!project) {
-    return null;
-  }
+function ComponentEditor({ component, onClose }: ComponentEditorProps) {
+  const { save } = useContext(ProjectContext);
 
   return (
-    <>
-      <h2>Scenes</h2>
-      <ul>
-        {
-          project.scenes.map((s, i) => (
-            <li
-              key={i}
-              onMouseDown={() => setSelected({ type: 'scene', index: i })}>
-              {
-                selected?.index === i && selected?.type === 'scene' ?
-                  <strong>{s.name}</strong> :
-                  s.name
-              }
-            </li>
-          ))
-        }
-        <li>
-          <Button onClick={() => {
-            project.scenes.push(new Scene({
-              name: 'Untitled Scene',
-              components: [],
-            }));
-            save('Create new scene.');
-            setSelected({
-              type: 'scene',
-              index: project.scenes.length - 1,
-            });
-          }}>
-            + Create New Scene
-          </Button>
-        </li>
-      </ul>
-      <h2>Sequences</h2>
-      <ul>
-        {
-          Object.keys(project.universeSequences)
-            .map((id) => parseInt(id, 10))
-            .map((id: number) => {
-              const sequence = project.universeSequences[id];
-              if (!sequence) {
-                return;
-              }
-
-              return (
-                <li
-                  key={id}
-                  onMouseDown={() => setSelected({ type: 'sequence', index: id })}>
-                  {
-                    selected?.index === id && selected?.type === 'sequence' ?
-                      <strong>{sequence.name}</strong> :
-                      sequence.name
+    <Modal
+      title={`Edit Component "${component.name}"`}
+      fullScreen={true}
+      onClose={onClose}>
+      <HorizontalSplitPane
+        className={styles.splitPane}
+        defaultAmount={0.15}
+        left={
+          <div className={styles.metaPane}>
+            <label>
+              Name&nbsp;
+              <TextInput
+                value={component.name}
+                onChange={(v) => {
+                  component.name = v;
+                  save(`Change component name to "${v}".`);
+                }} />
+            </label>
+            <label>
+              Shortcut&nbsp;
+              <input
+                className={styles.shortcut}
+                onChange={() => { }}
+                onKeyDown={(e) => {
+                  if (e.code.startsWith('Digit')) {
+                    component.shortcut = e.code.substring(5);
+                    save(`Add shortcut ${component.shortcut} for component ${name}.`);
+                  } else if (e.code === 'Backspace' || e.code === 'Delete') {
+                    save(`Remove shortcut for component ${name}.`);
                   }
-                </li>
-              );
-            })
+                }}
+                value={component.shortcut} />
+            </label>
+          </div>
         }
-        <li>
-          <Button onClick={() => {
-            const id = nextId(project.universeSequences);
-            project.universeSequences[id] = new UniverseSequence({
-              name: 'Untitled Sequence',
-              nativeBeats: 1,
-              lightTracks: [],
-            });
-            save('Create new sequence.');
-          }}>
-            + Create New Sequence
-          </Button>
-        </li>
-      </ul>
-    </>
+        right={
+          component.description.case === 'effect' ?
+            <EffectEditor effect={component.description.value} /> :
+            <SequenceEditor sequence={component.description.value} />
+        } />
+    </Modal>
   );
 }
 
-interface EditorPaneProps {
-  selected: Selected;
+interface EffectEditorProps {
+  effect: Scene_Component_EffectComponent;
 }
 
-function EditorPane({ selected }: EditorPaneProps): JSX.Element {
-  const { project, save } = useContext(ProjectContext);
-
-  const onDelete = useCallback(() => {
-    const name = project.scenes[selected.index].name;
-    project.scenes.splice(selected.index, 1);
-    if (project.activeScene === selected.index) {
-      project.activeScene = 0;
-    }
-    save(`Delete scene ${name}.`);
-  }, [project, save]);
-
+function EffectEditor({ effect }: EffectEditorProps) {
   return (
-    <div className={styles.editorPane}>
-      {
-        selected?.type === 'sequence' &&
-        <UniverseSequenceEditor
-          className={styles.universeSequenceEditor}
-          universeSequenceId={selected.index} />
-      }
-      {
-        selected?.type === 'scene' && project.scenes[selected.index] &&
-        <SceneEditor
-          className={styles.sceneEditor}
-          sceneId={selected.index}
-          onDelete={onDelete} />
-      }
+    <div className={styles.detailsPane}>
+      Effect
+    </div>
+  );
+}
+
+interface SequenceEditorProps {
+  sequence: Scene_Component_SequenceComponent;
+}
+
+function SequenceEditor({ sequence }: SequenceEditorProps) {
+  return (
+    <div className={styles.detailsPane}>
+      <UniverseSequenceEditor 
+      className={styles.detailsPane}
+      sequence={sequence} />
     </div>
   );
 }
