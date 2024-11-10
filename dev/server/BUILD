@@ -19,6 +19,7 @@ go_library(
 sh_binary(
     name = "server",
     srcs = ["run_server.sh"],
+    tags = ["ibazel_live_reload"],
     args = [
         "$(location :server_bin) $(location server.crt) $(location server.key)",
     ],

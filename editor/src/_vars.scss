@@ -4,7 +4,7 @@ $col-text: #ffffff;
 $col-text-dim: #8f8f8f;
 $col-border: #333333;
 $col-border-higher: #555555;
-$col-accent: #11a2ca;
+$col-accent: #ffd900; // #11a2ca;
 $col-scroll-thumb: #666666;
 $col-scroll-track: #333333;
 $col-interactive: lighten($col-accent, 20%);
@@ -23,7 +23,7 @@ $page-width: 900px;
 $z-index-header: 20;
 $z-index-menu: 40;
 $z-index-modal: 80;
-$z-index-interactive-mask: 999;
+$z-index-interactive-mask: 9999;
 
 @function spacing($amount) {
   @return $amount * 8px;
