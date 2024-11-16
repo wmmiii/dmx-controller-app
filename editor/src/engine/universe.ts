@@ -66,61 +66,63 @@ export function renderSceneToUniverse(
     return;
   }
 
-  for (const component of scene.components) {
-    let amount: number = 0;
-    if (component.transition.case === 'startFadeInMs') {
-      const fadeInMs = component.fadeInDuration.case === 'fadeInBeat' ?
-        (component.fadeInDuration.value || 0) * beatMetadata.lengthMs :
-        (component.fadeInDuration.value || 0);
+  for (const row of scene.rows) {
+    for (const component of row.components) {
+      let amount: number = 0;
+      if (component.transition.case === 'startFadeInMs') {
+        const fadeInMs = component.fadeInDuration.case === 'fadeInBeat' ?
+          (component.fadeInDuration.value || 0) * beatMetadata.lengthMs :
+          (component.fadeInDuration.value || 0);
 
-      amount = Math.min(1, (absoluteT - Number(component.transition.value)) / fadeInMs);
-    } else if (component.transition.case === 'startFadeOutMs') {
-      const fadeOutMs = component.fadeOutDuration.case === 'fadeOutBeat' ?
-        (component.fadeOutDuration.value || 0) * beatMetadata.lengthMs :
-        (component.fadeOutDuration.value || 0);
+        amount = Math.min(1, (absoluteT - Number(component.transition.value)) / fadeInMs);
+      } else if (component.transition.case === 'startFadeOutMs') {
+        const fadeOutMs = component.fadeOutDuration.case === 'fadeOutBeat' ?
+          (component.fadeOutDuration.value || 0) * beatMetadata.lengthMs :
+          (component.fadeOutDuration.value || 0);
 
-      amount = Math.max(0, 1 - ((absoluteT - Number(component.transition.value)) / fadeOutMs));
+        amount = Math.max(0, 1 - ((absoluteT - Number(component.transition.value)) / fadeOutMs));
+      }
+
+      const before = new Uint8Array(universe);
+      const after = new Uint8Array(universe);
+
+      switch (component.description.case) {
+        case 'effect':
+          const effectComponent = component.description.value;
+
+          applyEffect({
+            t: absoluteT,
+            output: effectComponent.output,
+            project: project,
+            universe: after
+          }, beatMetadata, frame, effectComponent.effect);
+          break;
+
+        case 'sequence':
+          const sequence = component.description.value;
+
+          let sequenceT: number
+          if (component.duration?.case === 'durationMs') {
+            sequenceT = (absoluteT * SEQUENCE_BEAT_RESOLUTION / component.duration.value) % (sequence.nativeBeats * SEQUENCE_BEAT_RESOLUTION);
+          } else {
+            sequenceT = (beatT % (beatMetadata.lengthMs * sequence.nativeBeats)) * SEQUENCE_BEAT_RESOLUTION / beatMetadata.lengthMs;
+          }
+
+          renderUniverseSequence(
+            sequenceT,
+            frame,
+            sequence,
+            project,
+            after);
+          break;
+
+        default:
+          console.error(`Unrecognized description type ${(component.description as any).case}.`);
+          return universe;
+      }
+
+      interpolateUniverses(universe, project, amount, before, after);
     }
-
-    const before = new Uint8Array(universe);
-    const after = new Uint8Array(universe);
-
-    switch (component.description.case) {
-      case 'effect':
-        const effectComponent = component.description.value;
-
-        applyEffect({
-          t: absoluteT,
-          output: effectComponent.output,
-          project: project,
-          universe: after
-        }, beatMetadata, frame, effectComponent.effect);
-        break;
-
-      case 'sequence':
-        const sequence = component.description.value;
-
-        let sequenceT: number
-        if (component.duration?.case === 'durationMs') {
-          sequenceT = (absoluteT * SEQUENCE_BEAT_RESOLUTION / component.duration.value) % (sequence.nativeBeats * SEQUENCE_BEAT_RESOLUTION);
-        } else {
-          sequenceT = (beatT % (beatMetadata.lengthMs * sequence.nativeBeats)) * SEQUENCE_BEAT_RESOLUTION / beatMetadata.lengthMs;
-        }
-
-        renderUniverseSequence(
-          sequenceT,
-          frame,
-          sequence,
-          project,
-          after);
-        break;
-
-      default:
-        console.error(`Unrecognized description type ${(component.description as any).case}.`);
-        return universe;
-    }
-
-    interpolateUniverses(universe, project, amount, before, after);
   }
 
   return universe;

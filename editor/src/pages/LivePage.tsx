@@ -3,7 +3,6 @@ import { Scene_Component, Scene_Component_EffectComponent, Scene_Component_Seque
 import { ProjectContext } from '../contexts/ProjectContext';
 import styles from "./LivePage.module.scss";
 import { BeatContext, BeatProvider } from '../contexts/BeatContext';
-import { ComponentList } from '../components/ComponentList';
 import { SerialContext } from '../contexts/SerialContext';
 import { renderSceneToUniverse as renderActiveSceneToUniverse } from '../engine/universe';
 import { Modal } from '../components/Modal';
@@ -13,6 +12,7 @@ import { UniverseSequenceEditor } from '../components/UniverseSequenceEditor';
 import { LiveBeat } from '../components/LiveBeat';
 import { EffectDetails } from '../components/Effect';
 import { getOutputName, OutputDescription, OutputSelector } from '../components/OutputSelector';
+import { ComponentGrid } from '../components/ComponentGrid';
 
 
 export function LivePage(): JSX.Element {
@@ -50,7 +50,7 @@ function LivePageImpl(): JSX.Element {
     <BeatProvider>
       <div className={styles.wrapper}>
         <LiveBeat className={styles.beat} />
-        <ComponentList
+        <ComponentGrid
           className={styles.sceneEditor}
           sceneId={0}
           onSelect={setSelected} />

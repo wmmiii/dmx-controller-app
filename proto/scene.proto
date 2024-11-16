@@ -61,8 +61,13 @@ message Scene {
     }
   }
 
+  message ComponentRow {
+    repeated Component components = 11;
+  }
+
   string name = 1;
   reserved 2 to 10;
 
-  repeated Component components = 11;
+  repeated Component components = 11 [deprecated = true];
+  repeated ComponentRow rows = 12;
 }

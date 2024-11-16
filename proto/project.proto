@@ -12,7 +12,7 @@ import "proto/universe_sequence.proto";
 
 message Project {
   message Assets {
-    repeated AudioFile deprecated_audio_files = 1;
+    repeated AudioFile deprecated_audio_files = 1  [deprecated = true];
     map<uint32, AudioFile> audio_files = 2;
   }
 
