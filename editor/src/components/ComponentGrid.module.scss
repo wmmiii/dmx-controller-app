@@ -1,6 +1,7 @@
 @import '../vars';
 
 $element-height: 80px;
+$element-width: 200px;
 
 .component-grid {
   min-width: 100%;
@@ -28,8 +29,11 @@ $element-height: 80px;
 .component,
 .component-placeholder {
   width: 200px;
-  height: $element-height;
   border-radius: $dim-border-radius;
+}
+
+.component-placeholder {
+  justify-content: stretch;
 }
 
 .row-placeholder,
@@ -48,26 +52,38 @@ $element-height: 80px;
 }
 
 .component {
+  align-items: center;
   background-color: $col-bg-higher;
   border: 4px solid transparent;
   box-sizing: border-box;
   cursor: pointer;
   display: flex;
   flex-direction: row;
-  align-items: center;
+  gap: spacing(1);
+  padding: spacing(1);
+  width: $element-width;
 
   &.active {
     border-color: $col-accent;
   }
 
+  .drag-handle {
+    margin: spacing(-1);
+  }
+
   .title {
     flex: 1;
     font-size: 14pt;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .settings {
+    grid-column: 3 / 4;
+    grid-row: 1 / 2;
     flex-shrink: 0;
-    margin: spacing(1);
+    justify-self: end;
   }
 }
 
