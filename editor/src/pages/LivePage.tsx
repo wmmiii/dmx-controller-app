@@ -13,6 +13,8 @@ import { LiveBeat } from '../components/LiveBeat';
 import { EffectDetails } from '../components/Effect';
 import { getOutputName, OutputDescription, OutputSelector } from '../components/OutputSelector';
 import { ComponentGrid } from '../components/ComponentGrid';
+import { IconButton } from '../components/Button';
+import IconBxBrushAlt from '../icons/IconBxBrush';
 
 
 export function LivePage(): JSX.Element {
@@ -24,7 +26,7 @@ export function LivePage(): JSX.Element {
 }
 
 function LivePageImpl(): JSX.Element {
-  const { project } = useContext(ProjectContext);
+  const { project, save } = useContext(ProjectContext);
   const { beat: beatMetadata } = useContext(BeatContext);
   const { setRenderUniverse, clearRenderUniverse } = useContext(SerialContext);
 
@@ -49,7 +51,17 @@ function LivePageImpl(): JSX.Element {
   return (
     <BeatProvider>
       <div className={styles.wrapper}>
-        <LiveBeat className={styles.beat} />
+        <div className={styles.header}>
+          <LiveBeat className={styles.beat} />
+          <IconButton
+            title="Cleanup rows"
+            onClick={() => {
+              project.scenes[0].rows = project.scenes[0].rows.filter(r => r.components.length > 0);
+              save('Cleanup rows.');
+            }}>
+            <IconBxBrushAlt />
+          </IconButton>
+        </div>
         <ComponentGrid
           className={styles.sceneEditor}
           sceneId={0}

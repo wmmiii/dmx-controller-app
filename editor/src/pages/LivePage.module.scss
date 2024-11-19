@@ -14,9 +14,17 @@
   flex-direction: column;
 }
 
+.header {
+  align-items: center;
+  display: flex;
+  flex-direction: row;
+  gap: spacing(2);
+  justify-content: flex-start;
+  padding: spacing(1) spacing(2) 0;
+}
+
 .beat {
   flex-shrink: 0;
-  padding: spacing(1) spacing(2) 0;
 }
 
 .scene-editor {
@@ -51,12 +59,12 @@
     padding: spacing(1) spacing(2);
     width: 100%;
 
-    > label {
+    >label {
       flex-shrink: 0;
     }
 
-    > input,
-    > div {
+    >input,
+    >div {
       flex: 1;
       min-width: 0;
     }
@@ -73,7 +81,7 @@
   flex-direction: row;
   padding: spacing(2) spacing(1) 0;
 
-  & > * {
+  &>* {
     flex: 1;
   }
 }

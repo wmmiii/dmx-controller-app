@@ -73,6 +73,7 @@ $element-height: 80px;
 
 .drag-handle {
   align-items: center;
+  align-self: stretch;
   border-radius: $dim-border-radius;
   box-sizing: border-box;
   color: $col-text-dim;

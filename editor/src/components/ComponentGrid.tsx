@@ -28,6 +28,7 @@ export function ComponentGrid({
   const { project, save, update } = useContext(ProjectContext);
   const { setShortcuts } = useContext(ShortcutContext);
   const [draggingRow, setDraggingRow] = useState<Scene_ComponentRow | null>(null);
+  const [draggingComponent, setDraggingComponent] = useState<Scene_Component | null>(null);
 
   const [addRowIndex, setAddRowIndex] = useState<number>(null);
 
@@ -47,7 +48,9 @@ export function ComponentGrid({
 
   const dragOverRow = useCallback((dropIndex: number) => {
     const draggingIndex = scene.rows.indexOf(draggingRow);
-    if (draggingIndex === dropIndex) {
+    if (draggingIndex < 0) {
+      return;
+    } else if (draggingIndex === dropIndex) {
       return;
     }
     scene.rows.splice(draggingIndex, 1);
@@ -57,7 +60,35 @@ export function ComponentGrid({
 
   const onDropRow = useCallback(() => {
     setDraggingRow(null);
-    save('Reorder rows.');
+    save(`Reorder rows in scene ${scene.name}.`);
+  }, [save]);
+
+  const dragComponentOver = useCallback((dropRow: number, dropIndex: number) => {
+    let draggingRow: number;
+    let draggingIndex: number;
+    for (const rowIndex in scene.rows) {
+      const row = scene.rows[rowIndex];
+      const index = row.components.indexOf(draggingComponent);
+      if (index > -1) {
+        draggingRow = parseInt(rowIndex);
+        draggingIndex = index;
+        break;
+      }
+    }
+    if (draggingRow == null || draggingIndex == null) {
+      return;
+    } else if (draggingRow === dropRow && draggingIndex === dropIndex) {
+      return;
+    }
+    scene.rows[draggingRow].components.splice(draggingIndex, 1);
+    scene.rows[dropRow].components.splice(dropIndex, 0, draggingComponent);
+    scene.rows[dropRow].components = scene.rows[dropRow].components.filter((c) => c != null);
+    update();
+  }, [draggingComponent, update]);
+
+  const onDropComponent = useCallback(() => {
+    setDraggingComponent(null);
+    save(`Rearrange components in scene ${scene.name}.`);
   }, [save]);
 
   // Setup shortcuts.
@@ -79,7 +110,7 @@ export function ComponentGrid({
           action: () => toggleComponents(s),
           description: `Group toggle all components with the "${s}" shortcut.`,
         })));
-  }, [scene?.rows.flatMap(r => r.components).map(c => c.shortcut)]);
+  }, [scene?.rows.flatMap(r => r?.components || []).map(c => c.shortcut)]);
 
   if (scene == null) {
     return <div className={className}></div>;
@@ -100,8 +131,11 @@ export function ComponentGrid({
             onSelect={onSelect}
             dragging={draggingRow === r}
             onDragRow={setDraggingRow}
-            onDragOver={() => dragOverRow(i)}
-            onDrop={onDropRow}
+            onDragRowOver={() => dragOverRow(i)}
+            onDropRow={onDropRow}
+            onDragComponent={setDraggingComponent}
+            onDragComponentOver={(index: number) => dragComponentOver(i, index)}
+            onDropComponent={onDropComponent}
             onAddComponent={() => setAddRowIndex(i)} />
         ))
       }
@@ -110,6 +144,14 @@ export function ComponentGrid({
         onClick={() => {
           scene.rows.push(new Scene_ComponentRow());
           save('Add new component row.');
+        }}
+        onDragOver={(e) => {
+          if (draggingComponent) {
+            scene.rows.push(new Scene_ComponentRow());
+            update();
+          }
+          e.stopPropagation();
+          e.preventDefault();
         }}>
         Add new component row
       </div>
@@ -129,21 +171,43 @@ interface ComponentRowProps {
   row: Scene_ComponentRow;
   dragging: boolean;
   onDragRow: (row: Scene_ComponentRow) => void;
-  onDragOver: () => void;
-  onDrop: () => void;
+  onDragRowOver: () => void;
+  onDropRow: () => void;
+  onDragComponent: (component: Scene_Component) => void;
+  onDragComponentOver: (index: number) => void;
+  onDropComponent: () => void;
   onSelect: (component: Scene_Component) => void;
   onAddComponent: () => void;
 }
 
-function ComponentRow({ row, dragging, onDragRow, onDragOver, onDrop, onSelect, onAddComponent }: ComponentRowProps) {
+function ComponentRow({
+  row,
+  dragging,
+  onDragRow,
+  onDragRowOver,
+  onDropRow,
+  onDragComponent,
+  onDragComponentOver,
+  onDropComponent,
+  onSelect,
+  onAddComponent,
+}: ComponentRowProps) {
   const { save } = useContext(ProjectContext);
 
   return (
     <div
       className={styles.row}
       draggable={dragging}
-      onDragOver={onDragOver}
-      onDragEnd={onDrop}>
+      onDragOver={(e) => {
+        onDragRowOver();
+        e.stopPropagation();
+        e.preventDefault();
+      }}
+      onDragEnd={(e) => {
+        onDropRow();
+        e.preventDefault();
+        e.stopPropagation();
+      }}>
       <div className={styles.dragHandle} onMouseDown={() => onDragRow(row)}>
         <IconBxGridVertical />
       </div>
@@ -152,6 +216,9 @@ function ComponentRow({ row, dragging, onDragRow, onDragOver, onDrop, onSelect, 
           <Component
             key={i}
             component={c}
+            onDragComponent={onDragComponent}
+            onDragComponentOver={() => onDragComponentOver(i)}
+            onDropComponent={onDropComponent}
             onSelect={() => onSelect(c)}
             onDelete={() => () => {
               const name = row.components[i].name;
@@ -162,7 +229,12 @@ function ComponentRow({ row, dragging, onDragRow, onDragOver, onDrop, onSelect, 
       }
       <div
         className={styles.componentPlaceholder}
-        onClick={onAddComponent}>
+        onClick={onAddComponent}
+        onDragOver={(e) => {
+          onDragComponentOver(row.components.length)
+          e.stopPropagation();
+          e.preventDefault();
+        }}>
         Add new component
       </div>
     </div>
@@ -171,11 +243,14 @@ function ComponentRow({ row, dragging, onDragRow, onDragOver, onDrop, onSelect, 
 
 interface ComponentProps {
   component: Scene_Component;
+  onDragComponent: (component: Scene_Component) => void;
+  onDragComponentOver: () => void;
+  onDropComponent: () => void;
   onSelect: () => void;
   onDelete: () => void;
 }
 
-function Component({ component, onSelect }: ComponentProps) {
+function Component({ component, onDragComponent, onDragComponentOver, onDropComponent, onSelect }: ComponentProps) {
   const { beat } = useContext(BeatContext);
   const { save } = useContext(ProjectContext);
 
@@ -191,8 +266,19 @@ function Component({ component, onSelect }: ComponentProps) {
         if (transitionComponent(component, component.transition.case !== 'startFadeInMs', beat)) {
           save(`${component.transition.case === 'startFadeInMs' ? 'Enable' : 'Disable'} component ${name}.`);
         }
+      }}
+      draggable={true}
+      onDragOver={(e) => {
+        onDragComponentOver();
+        e.stopPropagation();
+        e.preventDefault();
+      }}
+      onDragEnd={(e) => {
+        onDropComponent();
+        e.preventDefault();
+        e.stopPropagation();
       }}>
-      <div className={styles.dragHandle}>
+      <div className={styles.dragHandle} onMouseDown={() => onDragComponent(component)}>
         <IconBxGridVertical />
       </div>
       <div className={styles.title}>
