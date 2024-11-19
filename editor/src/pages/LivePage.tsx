@@ -13,7 +13,7 @@ import { LiveBeat } from '../components/LiveBeat';
 import { EffectDetails } from '../components/Effect';
 import { getOutputName, OutputDescription, OutputSelector } from '../components/OutputSelector';
 import { ComponentGrid } from '../components/ComponentGrid';
-import { IconButton } from '../components/Button';
+import { Button, IconButton } from '../components/Button';
 import IconBxBrushAlt from '../icons/IconBxBrush';
 
 
@@ -81,7 +81,7 @@ interface ComponentEditorProps {
 }
 
 function ComponentEditor({ component, onClose }: ComponentEditorProps) {
-  const { save } = useContext(ProjectContext);
+  const { project, save } = useContext(ProjectContext);
 
   return (
     <Modal
@@ -183,6 +183,24 @@ function ComponentEditor({ component, onClose }: ComponentEditorProps) {
                   save(`Set fade out duration for ${component.name}.`);
                 }} />
             </div>
+            <Button
+              variant="warning"
+              onClick={() => {
+                let modified = false;
+                project.scenes[0].rows.forEach(row => {
+                  const index = row.components.indexOf(component);
+                  if (index > -1) {
+                    row.components.splice(index, 1);
+                    modified = true;
+                  }
+                });
+                if (modified) {
+                  onClose();
+                  save(`Delete component ${component.name}.`);
+                }
+              }}>
+              Delete Component
+            </Button>
           </div>
         }
         right={
