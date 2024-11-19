@@ -193,6 +193,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
 
   const openProject = useCallback(async (projectBlob: Uint8Array) => {
     const p = Project.fromBinary(projectBlob);
+    upgradeProject(p);
     await saveAssetsImpl(p);
     await saveImpl(p, 'Open project.');
     setProject(p);

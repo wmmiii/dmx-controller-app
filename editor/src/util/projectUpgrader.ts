@@ -1,10 +1,11 @@
 import { Project } from "@dmx-controller/proto/project_pb";
 import { idMapToArray } from "./mapUtils";
 import { Effect } from "@dmx-controller/proto/effect_pb";
-import { Scene_ComponentRow } from "@dmx-controller/proto/scene_pb";
+import { Scene_Component, Scene_ComponentRow } from "@dmx-controller/proto/scene_pb";
 
 export default function upgradeProject(project: Project): void {
   upgradeIndices(project);
+  upgradeLive(project);
 }
 
 function upgradeIndices(project: Project): void {
@@ -120,19 +121,6 @@ function upgradeIndices(project: Project): void {
     project.liveBeat.offsetMs = BigInt(project.liveBeat.deprecatedOffsetMs);
     project.liveBeat.deprecatedOffsetMs = 0;
   }
-
-  // Scene components
-  for (const scene of project.scenes) {
-    if (scene.rows.length <= 0) {
-      for (const component of scene.components) {
-        scene.rows.push(new Scene_ComponentRow({
-          components: [component],
-        }));
-      }
-
-      delete scene.components;
-    }
-  }
 }
 
 function shiftMapping(map: { [id: number]: any }): boolean {
@@ -143,5 +131,15 @@ function shiftMapping(map: { [id: number]: any }): boolean {
     return true;
   } else {
     return false;
+  }
+}
+
+function upgradeLive(project: Project) {
+  // Scene components
+  for (const scene of project.scenes) {
+    if (scene.rows == null) {
+      scene.rows = [];
+    }
+    // delete scene.components;
   }
 }

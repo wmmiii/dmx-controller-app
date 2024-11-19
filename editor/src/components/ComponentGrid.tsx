@@ -25,8 +25,9 @@ export function ComponentGrid({
   onSelect,
 }: ComponentGridProps): JSX.Element {
   const { beat } = useContext(BeatContext);
-  const { project, save } = useContext(ProjectContext);
+  const { project, save, update } = useContext(ProjectContext);
   const { setShortcuts } = useContext(ShortcutContext);
+  const [draggingRow, setDraggingRow] = useState<Scene_ComponentRow | null>(null);
 
   const [addRowIndex, setAddRowIndex] = useState<number>(null);
 
@@ -44,6 +45,22 @@ export function ComponentGrid({
     save(`Toggle components with shortcut "${shortcut}".`);
   }, [scene, save]);
 
+  const dragOverRow = useCallback((dropIndex: number) => {
+    const draggingIndex = scene.rows.indexOf(draggingRow);
+    if (draggingIndex === dropIndex) {
+      return;
+    }
+    scene.rows.splice(draggingIndex, 1);
+    scene.rows.splice(dropIndex, 0, draggingRow);
+    update();
+  }, [scene, draggingRow]);
+
+  const onDropRow = useCallback(() => {
+    setDraggingRow(null);
+    save('Reorder rows.');
+  }, [save]);
+
+  // Setup shortcuts.
   useEffect(() => {
     if (scene == null) {
       return;
@@ -81,6 +98,10 @@ export function ComponentGrid({
             key={i}
             row={r}
             onSelect={onSelect}
+            dragging={draggingRow === r}
+            onDragRow={setDraggingRow}
+            onDragOver={() => dragOverRow(i)}
+            onDrop={onDropRow}
             onAddComponent={() => setAddRowIndex(i)} />
         ))
       }
@@ -106,15 +127,26 @@ export function ComponentGrid({
 
 interface ComponentRowProps {
   row: Scene_ComponentRow;
+  dragging: boolean;
+  onDragRow: (row: Scene_ComponentRow) => void;
+  onDragOver: () => void;
+  onDrop: () => void;
   onSelect: (component: Scene_Component) => void;
   onAddComponent: () => void;
 }
 
-function ComponentRow({ row, onSelect, onAddComponent }: ComponentRowProps) {
+function ComponentRow({ row, dragging, onDragRow, onDragOver, onDrop, onSelect, onAddComponent }: ComponentRowProps) {
   const { save } = useContext(ProjectContext);
 
   return (
-    <div className={styles.row}>
+    <div
+      className={styles.row}
+      draggable={dragging}
+      onDragOver={onDragOver}
+      onDragEnd={onDrop}>
+      <div className={styles.dragHandle} onMouseDown={() => onDragRow(row)}>
+        <IconBxGridVertical />
+      </div>
       {
         row.components.map((c, i) => (
           <Component
