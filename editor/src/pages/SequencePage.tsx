@@ -14,7 +14,7 @@ import { SerialContext } from '../contexts/SerialContext';
 import { idMapToArray, nextId } from '../util/mapUtils';
 import { renderSequenceToUniverse } from '../engine/universe';
 import { getAudioBlob } from '../util/metronome';
-import { OutputId, OutputId_FixtureMapping } from '@dmx-controller/proto/output_id_pb';
+import { OutputId_FixtureMapping } from '@dmx-controller/proto/output_id_pb';
 import { getActiveUniverse } from '../util/projectUtils';
 
 export default function newSequencePage(): JSX.Element {

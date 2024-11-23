@@ -364,8 +364,13 @@ function AddNewDialog({ scene, rowIndex, onSelect, onClose }: AddNewDialogProps)
   }
   return (
     <Modal
-      title={`Add new component to row ${rowIndex}`}
+      bodyClass={styles.addComponent}
+      title={`Add new component to row ${rowIndex + 1}`}
       onClose={onClose}>
+      <div className={styles.addComponentDescription}>
+        Static effects simply set a fixture or group of fixtures to a specific
+        state. They do not change over time.
+      </div>
       <Button
         icon={<IconBxPlus />}
         onClick={() => {
@@ -395,8 +400,12 @@ function AddNewDialog({ scene, rowIndex, onSelect, onClose }: AddNewDialogProps)
           onClose();
           onSelect(component);
         }}>
-        Add Effect
+        Add Static Effect
       </Button>
+      <div className={styles.addComponentDescription}>
+        Sequences can change over time and loop over a specified duration. They
+        may control multiple fixtures and groups.
+      </div>
       <Button
         icon={<IconBxPlus />}
         onClick={() => {
