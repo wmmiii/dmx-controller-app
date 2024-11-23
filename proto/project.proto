@@ -6,9 +6,10 @@ import "proto/audio.proto";
 import "proto/beat.proto";
 import "proto/fixture.proto";
 import "proto/fixture_sequence.proto";
+import "proto/output_id.proto";
 import "proto/scene.proto";
 import "proto/show.proto";
-import "proto/universe_sequence.proto";
+import "proto/universe.proto";
 
 message Project {
   message Assets {
@@ -22,6 +23,7 @@ message Project {
       uint32 physical_fixture_id = 2;
       uint32 physical_fixture_group_id = 3;
     }
+    OutputId output_id = 5;
     map<uint32, uint32> channels = 4;
   }
 
@@ -33,10 +35,13 @@ message Project {
   uint32 update_frequency_ms = 11;
   int32 timing_offset_ms = 12;
   map<uint32, FixtureDefinition> fixture_definitions = 13;
-  map<uint32, PhysicalFixture> physical_fixtures = 14;
-  map<uint32, PhysicalFixtureGroup> physical_fixture_groups = 15;
-  repeated DefaultChannelValues default_channel_values = 16;
-  reserved 17 to 20;
+  map<uint32, PhysicalFixture> physical_fixtures = 14 [deprecated = true];
+  map<uint32, PhysicalFixtureGroup> physical_fixture_groups = 15 [deprecated = true];
+  map<uint64, Universe> universes = 17;
+  uint64 active_universe = 18;
+  map<uint64, PhysicalFixtureGroup> groups = 19;
+  repeated DefaultChannelValues default_channel_values = 16 [deprecated = true];
+  reserved 20;
 
   Assets assets = 21;
 

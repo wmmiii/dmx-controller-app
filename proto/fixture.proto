@@ -41,7 +41,14 @@ message PhysicalFixture {
 }
 
 message PhysicalFixtureGroup {
+  message FixtureList {
+    repeated uint64 fixtures  = 1;
+  }
+
   string name = 1;
-  repeated uint32 physical_fixture_ids = 2;
-  repeated uint32 physical_fixture_group_ids = 3;
+  repeated uint32 physical_fixture_ids = 2 [deprecated = true];
+  repeated uint32 physical_fixture_group_ids = 3 [deprecated = true];
+
+  map<uint64, FixtureList> fixtures = 4;
+  repeated uint64 groups = 5;
 }

@@ -17,19 +17,10 @@ const DEFAULT_SHOW = new Show({
   audioTrack: {
     audioFileId: UNSET_INDEX + 1,
   },
-  lightTracks: [
-    {
-      output: {
-        value: 0,
-        case: 'physicalFixtureId',
-      },
-      layers: [
-        {
-          effects: [],
-        }
-      ]
-    },
-  ],
+  lightTracks: [{
+    collapsed: false,
+    layers: [],
+  }],
 });
 
 export default function ShowPage(): JSX.Element {

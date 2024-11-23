@@ -3,13 +3,17 @@ syntax = "proto3";
 package dmx_controller;
 
 import "proto/light_layer.proto";
+import "proto/output_id.proto";
 
 message LightTrack {
   reserved 1; // name
   bool collapsed = 5;
   oneof output {
-    uint32 physical_fixture_id = 2;
-    uint32 physical_fixture_group_id = 3;
+    uint32 physical_fixture_id = 2 [deprecated = true];
+    uint32 physical_fixture_group_id = 3 [deprecated = true];
   }
+
+  OutputId output_id = 6;
+
   repeated LightLayer layers = 4;
 }

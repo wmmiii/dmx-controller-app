@@ -12,6 +12,9 @@ import { getApplicableMembers } from '../engine/group';
 import { NumberInput, TextInput } from '../components/Input';
 import { deleteFixture, deleteFixtureGroup, DmxUniverse } from '../engine/fixture';
 import { SerialContext } from '../contexts/SerialContext';
+import { getActiveUniverse } from '../util/projectUtils';
+import { randomUint64 } from '../util/numberUtils';
+import { Universe } from '@dmx-controller/proto/universe_pb';
 
 export default function UniversePage(): JSX.Element {
   return (
@@ -28,14 +31,14 @@ export default function UniversePage(): JSX.Element {
 function FixtureList(): JSX.Element {
   const { project, save } = useContext(ProjectContext);
   const [selectedFixtureId, setSelectedFixtureId] =
-    useState<number | null>(null);
-  const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
+    useState<bigint | null>(null);
+  const [selectedGroupId, setSelectedGroupId] = useState<bigint | null>(null);
 
   const selectedFixture = useMemo(
-    () => project?.physicalFixtures[selectedFixtureId],
+    () => getActiveUniverse(project)?.fixtures[String(selectedFixtureId)],
     [project, selectedFixtureId]);
   const selectedGroup = useMemo(
-    () => project?.physicalFixtureGroups[selectedGroupId],
+    () => project?.groups[String(selectedGroupId)],
     [project, selectedGroupId]);
 
   if (!project) {
@@ -44,6 +47,37 @@ function FixtureList(): JSX.Element {
 
   return (
     <div className={styles.pane}>
+      <select
+        value={project.activeUniverse.toString()}
+        onChange={(e) => {
+          project.activeUniverse = BigInt(e.target.value);
+          save(`Change active universe to ${getActiveUniverse(project).name}.`);
+        }}>
+        {
+          Object.entries(project.universes).map(([i, u]) =>
+            <option key={i} value={i.toString()}>
+              {u.name}
+            </option>
+          )
+        }
+      </select>
+      <TextInput
+        value={getActiveUniverse(project).name}
+        onChange={(v) => {
+          getActiveUniverse(project).name = v;
+          save(`Set universe name to "${v}".`);
+        }}
+      />
+      <Button onClick={() => {
+        const id = randomUint64();
+        project.universes[id.toString()] = new Universe({
+          name: 'New Universe'
+        });
+        project.activeUniverse = id;
+        save('Create a new universe.');
+      }}>
+        Create new universe
+      </Button>
       <div>
         Offset MS:
         <NumberInput
@@ -60,7 +94,7 @@ function FixtureList(): JSX.Element {
       <h2>Fixtures</h2>
       <ol>
         {
-          idMapToArray(project.physicalFixtures)
+          Object.entries(getActiveUniverse(project).fixtures)
             .sort((a, b) => a[1].channelOffset - b[1].channelOffset)
             .map(([id, fixture]) => {
               const definition =
@@ -68,7 +102,7 @@ function FixtureList(): JSX.Element {
 
               return (
                 <li key={id} onClick={() => {
-                  setSelectedFixtureId(id);
+                  setSelectedFixtureId(BigInt(id));
                 }}>
                   (
                   {fixture.channelOffset + 1}
@@ -81,10 +115,11 @@ function FixtureList(): JSX.Element {
         }
       </ol>
       <Button onClick={() => {
-        const newId = nextId(project.physicalFixtures);
-        project.physicalFixtures[newId] = new PhysicalFixture({
-          name: 'New Fixture',
-        });
+        const newId = randomUint64();
+        getActiveUniverse(project).fixtures[newId.toString()] =
+          new PhysicalFixture({
+            name: 'New Fixture',
+          });
         setSelectedFixtureId(newId);
         save(`Create new fixture.`);
       }}>
@@ -93,17 +128,17 @@ function FixtureList(): JSX.Element {
       <h2>Groups</h2>
       <ul>
         {
-          idMapToArray(project.physicalFixtureGroups)
+          Object.entries(project.groups)
             .map(([id, group]) => (
-              <li key={id} onClick={() => setSelectedGroupId(id)}>
+              <li key={id} onClick={() => setSelectedGroupId(BigInt(id))}>
                 {group.name}
               </li>
             ))
         }
       </ul>
       <Button onClick={() => {
-        const newId = nextId(project.physicalFixtureGroups);
-        project.physicalFixtureGroups[newId] = new PhysicalFixtureGroup({
+        const newId = randomUint64();
+        project.groups[newId.toString()] = new PhysicalFixtureGroup({
           name: 'New Group',
         });
         setSelectedGroupId(newId);
@@ -117,7 +152,7 @@ function FixtureList(): JSX.Element {
           fixture={selectedFixture}
           close={() => setSelectedFixtureId(null)}
           onDelete={() => {
-            const name = project.physicalFixtures[selectedFixtureId].name;
+            const name = getActiveUniverse(project).fixtures[selectedFixtureId.toString()].name;
             deleteFixture(project, selectedFixtureId);
             save(`Delete fixture ${name}.`);
           }} />
@@ -129,7 +164,7 @@ function FixtureList(): JSX.Element {
           group={selectedGroup}
           close={() => setSelectedGroupId(null)}
           onDelete={() => {
-            const name = project.physicalFixtureGroups[selectedGroupId].name;
+            const name = project.groups[selectedGroupId.toString()].name;
             deleteFixtureGroup(project, selectedGroupId);
             save(`Delete fixture group ${name}.`);
           }} />
@@ -215,7 +250,7 @@ function EditFixtureDialog({
 }
 
 interface EditGroupDialogProps {
-  groupId: number;
+  groupId: bigint;
   group: PhysicalFixtureGroup;
   close: () => void;
   onDelete: () => void;
@@ -228,8 +263,7 @@ function EditGroupDialog({
   onDelete,
 }: EditGroupDialogProps): JSX.Element {
   const { project, save } = useContext(ProjectContext);
-  const [newMember, setNewMember] =
-    useState<ReturnType<typeof getApplicableMembers>[0]>(null);
+  const [newMemberIndex, setNewMemberIndex] = useState<number | null>(null);
 
   const applicableMembers = useMemo(
     () => getApplicableMembers(project, groupId),
@@ -267,19 +301,19 @@ function EditGroupDialog({
       <div>Members:</div>
       {
 
-        (group.physicalFixtureIds.length +
-          group.physicalFixtureGroupIds.length === 0) &&
+        (Object.keys(group.fixtures).length +
+          group.groups.length === 0) &&
         <div className='row'>No Members</div>
       }
       {
-        group.physicalFixtureGroupIds.map((id, i) => (
+        group.groups.map((id, i) => (
           <div key={id} className={styles.row}>
-            {project.physicalFixtureGroups[id]?.name}
+            {project.groups[id.toString()]?.name}
             <IconButton
               title="Remove Group"
               onClick={() => {
-                const name = project.physicalFixtureGroups[group.physicalFixtureGroupIds[i]].name;
-                group.physicalFixtureGroupIds.splice(i, 1);
+                const name = project.groups[group.groups[i].toString()].name;
+                group.groups.splice(i, 1);
                 save(`Remove group ${name} from group ${group.name}.`);
               }}>
               <IconBxX />
@@ -288,14 +322,14 @@ function EditGroupDialog({
         ))
       }
       {
-        group.physicalFixtureIds.map((id, i) => (
+        group.fixtures?.[project.activeUniverse.toString()]?.fixtures.map((id, i) => (
           <div key={id} className={styles.row}>
-            {project.physicalFixtures[id].name}
+            {getActiveUniverse(project).fixtures[id.toString()].name}
             <IconButton
               title="Remove Fixture"
               onClick={() => {
-                const name = project.physicalFixtures[group.physicalFixtureIds[i]].name;
-                group.physicalFixtureIds.splice(i, 1);
+                const name = getActiveUniverse(project).fixtures[id.toString()].name;
+                group.fixtures[project.activeUniverse.toString()].fixtures.splice(i, 1);
                 save(`Remove fixture ${name} from group ${group.name}.`);
               }}>
               <IconBxX />
@@ -305,16 +339,20 @@ function EditGroupDialog({
       }
       <label className={styles.row}>
         <select
-          value={JSON.stringify(newMember)}
+          value={newMemberIndex === null ? ' ' : newMemberIndex}
           onChange={(e) => {
-            setNewMember(JSON.parse(e.target.value));
+            try {
+              setNewMemberIndex(parseInt(e.target.value));
+            } catch {
+              setNewMemberIndex(null);
+            }
           }}>
           <option value="null">
             &lt;Select Member&gt;
           </option>
           {
             applicableMembers.map((m, i) => (
-              <option key={i} value={JSON.stringify(m)}>
+              <option key={i} value={i}>
                 {m.name}
               </option>
             ))
@@ -322,24 +360,27 @@ function EditGroupDialog({
         </select>
         <Button
           onClick={() => {
-            if (!newMember) {
+            if (newMemberIndex === null) {
               return;
             }
 
+            const newMember = applicableMembers[newMemberIndex];
+
             let name: string;
-            if (newMember.type === 'fixture') {
-              group.physicalFixtureIds.push(newMember.id);
-              name = project.physicalFixtures[newMember.id].name;
-            } else if (newMember.type === 'group') {
-              group.physicalFixtureGroupIds.push(newMember.id);
-              name = project.physicalFixtureGroups[newMember.id].name;
+            if (newMember.id.output.case === 'fixtures') {
+              const id = newMember.id.output.value.fixtures[project.activeUniverse.toString()];
+              group.fixtures[project.activeUniverse.toString()].fixtures.push(id);
+              name = getActiveUniverse(project).fixtures[id.toString()].name;
+            } else if (newMember.id.output.case === 'group') {
+              group.groups.push(newMember.id.output.value);
+              name = project.groups[newMember.id.output.value.toString()].name;
             } else {
-              throw new Error(`Unrecognized member type: ${newMember.type}`);
+              throw new Error(`Unrecognized member type: ${newMember.id.output.case}`);
             }
 
-            setNewMember(null);
+            setNewMemberIndex(null);
 
-            save(`Add ${newMember.type} ${name} to group ${group.name}.`);
+            save(`Add ${name} to group ${group.name}.`);
           }}>
           + Add New Member
         </Button>

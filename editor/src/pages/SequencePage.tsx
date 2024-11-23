@@ -14,6 +14,8 @@ import { SerialContext } from '../contexts/SerialContext';
 import { idMapToArray, nextId } from '../util/mapUtils';
 import { renderSequenceToUniverse } from '../engine/universe';
 import { getAudioBlob } from '../util/metronome';
+import { OutputId, OutputId_FixtureMapping } from '@dmx-controller/proto/output_id_pb';
+import { getActiveUniverse } from '../util/projectUtils';
 
 export default function newSequencePage(): JSX.Element {
   const { project, save } = useContext(ProjectContext);
@@ -56,10 +58,15 @@ export default function newSequencePage(): JSX.Element {
 
   const virtualTracks = useMemo(() => {
     if (fixtureSequence?.layers) {
+      const fixtureMap = new OutputId_FixtureMapping();
+      fixtureMap.fixtures[project.activeUniverse.toString()] =
+        BigInt(Object.keys(getActiveUniverse(project).fixtures)[0]);
       const virtualTrack = new LightTrackProto({
-        output: {
-          value: 1,
-          case: 'physicalFixtureId',
+        outputId: {
+          output: {
+            case: 'fixtures',
+            value: fixtureMap,
+          }
         },
       });
       // We need a shallow copy of the array so it can be modified.
@@ -80,7 +87,7 @@ export default function newSequencePage(): JSX.Element {
       fixtureSequenceId,
       beatMetadata,
       frame,
-      virtualTracks[0].output,
+      virtualTracks[0].outputId,
       project,
     );
     setRenderUniverse(render);

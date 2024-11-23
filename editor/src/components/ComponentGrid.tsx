@@ -372,17 +372,23 @@ function AddNewDialog({ scene, rowIndex, onSelect, onClose }: AddNewDialogProps)
           const component = addComponent({
             case: 'effect',
             value: new Scene_Component_EffectComponent({
-              effect: new Effect({
+              effect: {
                 effect: {
                   case: 'staticEffect',
-                  value: new Effect_StaticEffect({
+                  value: {
                     effect: {
                       case: 'state',
-                      value: new FixtureState(),
+                      value: {},
                     }
-                  }),
+                  },
                 },
-              }),
+              },
+              outputId: {
+                output: {
+                  case: undefined,
+                  value: undefined,
+                },
+              },
             }),
           });
           save(`Add new effect component to row ${rowIndex}.`);

@@ -4,6 +4,7 @@ import styles from "./UniverseVisualizer.module.scss";
 import { SerialContext } from '../contexts/SerialContext';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { ChannelTypes, DmxUniverse } from '../engine/fixture';
+import { getActiveUniverse } from '../util/projectUtils';
 
 export function UniverseVisualizer() {
   const { project } = useContext(ProjectContext);
@@ -15,43 +16,49 @@ export function UniverseVisualizer() {
   }, [subscribeToUniverseUpdates, setUniverse]);
 
   const fixtureMapping = useMemo(
-    () => Object.values(project?.physicalFixtures || {})
-      .map((f, i) => {
-        const definition = project.fixtureDefinitions[f.fixtureDefinitionId];
-        // Can happen if the definition is unset.
-        if (definition == null) {
-          return;
-        }
+    () => {
+      if (getActiveUniverse(project)?.fixtures == null) {
+        return [];
+      }
 
-        const getChannel = (type: ChannelTypes): number | undefined => {
-          try {
-            return parseInt(
-              Object.entries(definition.channels)
-                .find(e => e[1].type === type)[0]
-            ) + f.channelOffset - 1;
-          } catch {
-            return undefined;
+      return Object.values(getActiveUniverse(project).fixtures)
+        .map((f, i) => {
+          const definition = project.fixtureDefinitions[f.fixtureDefinitionId];
+          // Can happen if the definition is unset.
+          if (definition == null) {
+            return;
           }
-        };
 
-        const strobe = Object.entries(definition.channels)
-          .find(e => e[1].type === 'strobe')?.[1].strobe;
+          const getChannel = (type: ChannelTypes): number | undefined => {
+            try {
+              return parseInt(
+                Object.entries(definition.channels)
+                  .find(e => e[1].type === type)[0]
+              ) + f.channelOffset - 1;
+            } catch {
+              return undefined;
+            }
+          };
 
-        return {
-          id: i,
-          name: f.name,
-          rIndex: getChannel('red'),
-          gIndex: getChannel('green'),
-          bIndex: getChannel('blue'),
-          wIndex: getChannel('white'),
-          strobeIndex: getChannel('strobe'),
-          strobe: {
-            none: strobe?.noStrobe || 0,
-            slow: strobe?.slowStrobe || 0,
-            fast: strobe?.fastStrobe || 0,
-          },
-        };
-      }), [project]);
+          const strobe = Object.entries(definition.channels)
+            .find(e => e[1].type === 'strobe')?.[1].strobe;
+
+          return {
+            id: i,
+            name: f.name,
+            rIndex: getChannel('red'),
+            gIndex: getChannel('green'),
+            bIndex: getChannel('blue'),
+            wIndex: getChannel('white'),
+            strobeIndex: getChannel('strobe'),
+            strobe: {
+              none: strobe?.noStrobe || 0,
+              slow: strobe?.slowStrobe || 0,
+              fast: strobe?.fastStrobe || 0,
+            },
+          };
+        });
+      }, [project]);
 
   const getValue = (index: number | undefined) => {
     if (index === undefined) {

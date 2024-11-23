@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package dmx_controller;
+
+message OutputId {
+  message FixtureMapping {
+    map<uint64, uint64> fixtures = 1;
+  }
+
+  oneof output {
+    FixtureMapping fixtures = 1;
+    uint64 group = 2;
+  }
+}

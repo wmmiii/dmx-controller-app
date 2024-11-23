@@ -81,7 +81,14 @@ export function UniverseSequenceEditor({
         leftOptions={<></>}
         lightTracks={sequence.lightTracks}
         addLayer={() => {
-          sequence?.lightTracks.push(new LightTrackProto());
+          sequence?.lightTracks.push(new LightTrackProto({
+            outputId: {
+              output: {
+                case: undefined,
+                value: undefined,
+              },
+            },
+          }));
           save(`Add new light track to sequence ${sequence.name}.`);
         }}
         panelRef={panelRef}
