@@ -2,7 +2,6 @@ import { BeatMetadata } from "@dmx-controller/proto/beat_pb";
 import { DmxUniverse, WritableDevice, getPhysicalWritableDevice, getPhysicalWritableDeviceFromGroup } from "./fixture";
 import { Effect, EffectTiming } from "@dmx-controller/proto/effect_pb";
 import { LightLayer } from "@dmx-controller/proto/light_layer_pb";
-import { LightTrack } from "@dmx-controller/proto/light_track_pb";
 import { Project } from "@dmx-controller/proto/project_pb";
 import { SEQUENCE_BEAT_RESOLUTION, applyFixtureSequence } from "./fixtureSequence";
 import { applyState } from "./effect";
@@ -11,7 +10,7 @@ import { interpolateUniverses } from "./utils";
 import { strobeEffect } from "./strobeEffect";
 import { Scene_Component_SequenceComponent } from "@dmx-controller/proto/scene_pb";
 import { OutputId } from "@dmx-controller/proto/output_id_pb";
-import { getActiveUniverse } from "../util/projectUtils";
+import { getActiveUniverse, getComponentDurationMs } from "../util/projectUtils";
 
 export interface RenderContext {
   readonly t: number;
@@ -91,9 +90,24 @@ export function renderSceneToUniverse(
       switch (component.description.case) {
         case 'effect':
           const effectComponent = component.description.value;
+          const duration = getComponentDurationMs(component, beatMetadata);
+
+          let t = absoluteT;
+          if (component.oneShot) {
+            if (component.transition.case === 'startFadeInMs') {
+              t = absoluteT - Number(component.transition.value);
+            } else {
+              t = duration + 1;
+            }
+
+            // Only play once
+            if (t > duration) {
+              break;
+            }
+          }
 
           applyEffect({
-            t: absoluteT,
+            t: t,
             outputId: effectComponent.outputId,
             project: project,
             universe: after

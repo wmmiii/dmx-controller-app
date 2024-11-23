@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Scene_Component, Scene_Component_EffectComponent, Scene_Component_SequenceComponent } from '@dmx-controller/proto/scene_pb';
 import { ProjectContext } from '../contexts/ProjectContext';
 import styles from "./LivePage.module.scss";
@@ -15,6 +15,8 @@ import { getOutputName, OutputSelector } from '../components/OutputSelector';
 import { ComponentGrid } from '../components/ComponentGrid';
 import { Button, IconButton } from '../components/Button';
 import IconBxBrushAlt from '../icons/IconBxBrush';
+import { getComponentDurationMs } from '../util/projectUtils';
+import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
 
 
 export function LivePage(): JSX.Element {
@@ -82,6 +84,14 @@ interface ComponentEditorProps {
 
 function ComponentEditor({ component, onClose }: ComponentEditorProps) {
   const { project, save } = useContext(ProjectContext);
+  const { beat } = useContext(BeatContext);
+
+  const recalculateComponentDuration = useCallback((component: Scene_Component) => {
+    if (component.description.case === 'effect') {
+      component.description.value.effect.endMs =
+        Math.floor(getComponentDurationMs(component, beat));
+    }
+  }, [beat]);
 
   return (
     <Modal
@@ -120,6 +130,17 @@ function ComponentEditor({ component, onClose }: ComponentEditorProps) {
             <div className={styles.row}>
               <ToggleInput
                 className={styles.switch}
+                value={component.oneShot}
+                onChange={(value) => {
+                  component.oneShot = value;
+                  recalculateComponentDuration(component);
+                  save(`Set  ${component.name} to ${value ? 'one-shot' : 'looping'}.`);
+                }}
+                labels={{ left: 'Loop', right: 'One-shot' }} />
+            </div>
+            <div className={styles.row}>
+              <ToggleInput
+                className={styles.switch}
                 value={component.duration?.case === 'durationMs'}
                 onChange={(value) => {
                   if (value) {
@@ -131,7 +152,8 @@ function ComponentEditor({ component, onClose }: ComponentEditorProps) {
                     component.duration.case = undefined;
                     component.duration.value = undefined;
                   }
-                  save(`Set timing type for component ${name} to ${value ? 'seconds' : 'beats'}.`);
+                  recalculateComponentDuration(component);
+                  save(`Set timing type for component ${component.name} to ${value ? 'seconds' : 'beats'}.`);
                 }}
                 labels={{ left: 'Beat', right: 'Seconds' }} />
             </div>
@@ -146,6 +168,7 @@ function ComponentEditor({ component, onClose }: ComponentEditorProps) {
                   value={component.duration?.value / 1000 || NaN}
                   onChange={(value) => {
                     component.duration.value = Math.floor(value * 1000);
+                    recalculateComponentDuration(component, beat);
                     save(`Set duration for component ${component.name}.`);
                   }}
                   disabled={component.duration?.case !== 'durationMs'} />

@@ -9,9 +9,10 @@ import { ShortcutContext } from '../contexts/ShortcutContext';
 import { Modal } from './Modal';
 import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
 import { BeatContext } from '../contexts/BeatContext';
-import { Effect, Effect_StaticEffect, FixtureState } from '@dmx-controller/proto/effect_pb';
 import IconBxGridVertical from '../icons/IconBxGridVertical';
 import IconBxsCog from '../icons/IconBxsCog';
+import { componentActive } from '../util/projectUtils';
+import { TimeContext } from '../contexts/TimeContext';
 
 interface ComponentGridProps {
   className?: string;
@@ -38,10 +39,10 @@ export function ComponentGrid({
     const components = scene.rows
       .flatMap(r => r.components)
       .filter((c) => c.shortcut === shortcut);
-    if (components.find(c => c.transition.case !== 'startFadeInMs')) {
-      components.forEach(c => transitionComponent(c, true, beat));
-    } else {
+    if (components.find(c => !c.oneShot && c.transition.case === 'startFadeInMs')) {
       components.forEach(c => transitionComponent(c, false, beat));
+    } else {
+      components.forEach(c => transitionComponent(c, true, beat));
     }
     save(`Toggle components with shortcut "${shortcut}".`);
   }, [scene, save]);
@@ -252,10 +253,11 @@ interface ComponentProps {
 
 function Component({ component, onDragComponent, onDragComponentOver, onDropComponent, onSelect }: ComponentProps) {
   const { beat } = useContext(BeatContext);
+  const { t } = useContext(TimeContext);
   const { save } = useContext(ProjectContext);
 
   const classes = [styles.component];
-  if (component.transition.case === 'startFadeInMs') {
+  if (componentActive(component, beat, t)) {
     classes.push(styles.active);
   }
 
@@ -263,8 +265,8 @@ function Component({ component, onDragComponent, onDragComponentOver, onDropComp
     <div
       className={classes.join(' ')}
       onClick={() => {
-        if (transitionComponent(component, component.transition.case !== 'startFadeInMs', beat)) {
-          save(`${component.transition.case === 'startFadeInMs' ? 'Enable' : 'Disable'} component ${name}.`);
+        if (transitionComponent(component, component.oneShot || component.transition.case !== 'startFadeInMs', beat)) {
+          save(`${component.transition.case === 'startFadeInMs' ? 'Enable' : 'Disable'} component ${component.name}.`);
         }
       }}
       draggable={true}
@@ -301,6 +303,15 @@ function transitionComponent(component: Scene_Component, enabled: boolean, beat:
       case: 'startFadeOutMs',
       value: 0n,
     };
+  }
+
+  // One shot components should always restart now.
+  if (enabled && component.oneShot) {
+    component.transition = {
+      case: 'startFadeInMs',
+      value: t,
+    };
+    return true;
   }
 
   const fadeInMs = component.fadeInDuration.case === 'fadeInBeat' ?
@@ -387,6 +398,8 @@ function AddNewDialog({ scene, rowIndex, onSelect, onClose }: AddNewDialogProps)
                     }
                   },
                 },
+                startMs: 0,
+                endMs: Number.MAX_SAFE_INTEGER,
               },
               outputId: {
                 output: {

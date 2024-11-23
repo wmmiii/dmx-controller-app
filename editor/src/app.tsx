@@ -6,6 +6,7 @@ import { ProjectProvider } from './contexts/ProjectContext';
 import { SerialProvider } from './contexts/SerialContext';
 import { ShortcutProvider } from './contexts/ShortcutContext';
 import { createRoot } from 'react-dom/client';
+import { TimeProvider } from './contexts/TimeContext';
 
 // import wasm, {hello_world} from '@dmx-controller/core_interface/core_wasm';
 
@@ -17,15 +18,17 @@ const root = createRoot(document.getElementById('root'));
 root.render(
   <StrictMode>
     <BrowserRouter basename="/">
-      <DialogProvider>
-        <SerialProvider>
-          <ShortcutProvider>
-            <ProjectProvider>
-              <Index />
-            </ProjectProvider>
-          </ShortcutProvider>
-        </SerialProvider>
-      </DialogProvider>
+      <TimeProvider>
+        <DialogProvider>
+          <SerialProvider>
+            <ShortcutProvider>
+              <ProjectProvider>
+                <Index />
+              </ProjectProvider>
+            </ShortcutProvider>
+          </SerialProvider>
+        </DialogProvider>
+      </TimeProvider>
     </BrowserRouter>
   </StrictMode>
 );

@@ -41,6 +41,7 @@ message Scene {
     }
     reserved 3; // active
     string shortcut = 4;
+    bool one_shot = 15;
 
     oneof duration {
       int32 duration_ms = 5;
