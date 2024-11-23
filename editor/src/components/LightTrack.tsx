@@ -9,7 +9,7 @@ import { Button, IconButton } from "./Button";
 import { LightLayer as LightLayerProto } from '@dmx-controller/proto/light_layer_pb';
 import { LightLayer } from '../components/LightLayer';
 import { LightTrack as LightTrackProto } from '@dmx-controller/proto/light_track_pb';
-import { getOutputName, OutputDescription, OutputSelector } from '../components/OutputSelector';
+import { getOutputName, OutputSelector } from '../components/OutputSelector';
 import { ProjectContext } from "../contexts/ProjectContext";
 import IconBxX from "../icons/IconBxX";
 
@@ -45,49 +45,26 @@ export function LightTrack({
   const { project, save } = useContext(ProjectContext);
   const trackRef = useRef<HTMLDivElement>();
 
-  const device: OutputDescription = useMemo(() => {
-    switch (track.output.case) {
-      case 'physicalFixtureId':
-        return {
-          id: track.output.value,
-          type: 'fixture',
-        };
-      case 'physicalFixtureGroupId':
-        return {
-          id: track.output.value,
-          type: 'group',
-        };
-    }
-  }, [project, track]);
-
   return (
     <div className={styles.lightTrack}>
       <div className={styles.left} style={{ width: leftWidth }}>
         <div className={styles.header}>
           <OutputSelector
-            value={device}
+            value={track.outputId}
             setValue={(o) => {
-              if (o == null) {
-                track.output.case = undefined;
-                track.output.value = undefined;
+              track.outputId = o;
+              const name = getOutputName(project, o);
+              if (name === '<Unset>') {
+                save(`Unset track output.`);
               } else {
-                switch (o.type) {
-                  case 'fixture':
-                    track.output.case = 'physicalFixtureId';
-                    break;
-                  case 'group':
-                    track.output.case = 'physicalFixtureGroupId';
-                    break;
-                }
-                track.output.value = o.id;
+                save(`Set track output to ${name}.`);
               }
-              save(`Set track output to ${getOutputName(project, track.output)}.`);
             }} />
           <IconButton
             title={track.collapsed ? 'Expand' : 'Collapse'}
             onClick={() => {
               track.collapsed = !track.collapsed;
-              save(`${track.collapsed ? 'Collapse' : 'Expand'} track ${getOutputName(project, track.output)}.`);
+              save(`${track.collapsed ? 'Collapse' : 'Expand'} track ${getOutputName(project, track.outputId)}.`);
             }}>
             {
               track.collapsed ?
@@ -104,7 +81,7 @@ export function LightTrack({
                 title="Cleanup Empty Layers"
                 onClick={() => {
                   track.layers = track.layers.filter((l) => l.effects.length > 0);
-                  save(`Cleanup empty layers for track ${getOutputName(project, track.output)}`);
+                  save(`Cleanup empty layers for track ${getOutputName(project, track.outputId)}`);
                 }}>
                 <IconBxBrushAlt />
               </IconButton>
@@ -136,7 +113,7 @@ export function LightTrack({
         className={styles.right}
         onClick={() => {
           track.collapsed = false;
-          save(`Expand track ${getOutputName(project, track.output)}`);
+          save(`Expand track ${getOutputName(project, track.outputId)}`);
         }}>
         {
           track.layers.map((l, i) => (

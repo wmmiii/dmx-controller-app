@@ -1,11 +1,16 @@
 import { Project } from "@dmx-controller/proto/project_pb";
 import { idMapToArray } from "./mapUtils";
 import { Effect } from "@dmx-controller/proto/effect_pb";
-import { Scene_Component, Scene_ComponentRow } from "@dmx-controller/proto/scene_pb";
+import { randomUint64 } from "./numberUtils";
+import { Universe } from "@dmx-controller/proto/universe_pb";
+import { OutputId, OutputId_FixtureMapping } from "@dmx-controller/proto/output_id_pb";
+import { LightTrack } from "@dmx-controller/proto/light_track_pb";
+import { PhysicalFixtureGroup, PhysicalFixtureGroup_FixtureList } from "@dmx-controller/proto/fixture_pb";
 
 export default function upgradeProject(project: Project): void {
   upgradeIndices(project);
   upgradeLive(project);
+  upgradeUniverse(project);
 }
 
 function upgradeIndices(project: Project): void {
@@ -142,4 +147,121 @@ function upgradeLive(project: Project) {
     }
     // delete scene.components;
   }
+}
+
+function upgradeUniverse(project: Project) {
+  // Check to see if this has been applied already.
+  if (project?.universes == null || Object.keys(project.universes).length !== 0) {
+    return;
+  }
+
+  const universeId = randomUint64();
+
+  // Create new universe.
+  const universe = new Universe();
+
+  const fixtureMapping: { [id: number]: bigint } = {};
+  const groupMapping: { [id: number]: bigint } = {};
+
+  // Update fixtures.
+  for (const oldFixtureId in project.physicalFixtures) {
+    const newFixtureId = randomUint64();
+    fixtureMapping[oldFixtureId] = newFixtureId;
+
+    const fixture = project.physicalFixtures[oldFixtureId];
+    universe.fixtures[newFixtureId.toString()] = fixture;
+  }
+
+  // Update groups.
+  for (const oldGroupId in project.physicalFixtureGroups) {
+    const newGroupId = randomUint64();
+    groupMapping[oldGroupId] = newGroupId;
+    const oldGroup = project.physicalFixtureGroups[oldGroupId];
+
+    const fixtures: {[universe: string]: PhysicalFixtureGroup_FixtureList} = {};
+    fixtures[universeId.toString()] = new PhysicalFixtureGroup_FixtureList({
+      fixtures: oldGroup.physicalFixtureIds.map(id => fixtureMapping[id]),
+    });
+    const newGroup = new PhysicalFixtureGroup({
+      name: oldGroup.name,
+      fixtures: fixtures,
+      groups: oldGroup.physicalFixtureGroupIds.map(id => groupMapping[id]),
+    });
+
+    project.groups[newGroupId.toString()] = newGroup;
+  }
+
+  project.activeUniverse = universeId;
+  project.universes[universeId.toString()] = universe;
+
+  const updateLightTrack = (track: LightTrack) => {
+    if (track.output.case === 'physicalFixtureGroupId') {
+      track.outputId = new OutputId({
+        output: {
+          case: 'group',
+          value: groupMapping[track.output.value],
+        },
+      });
+    } else if (track.output.case === 'physicalFixtureId') {
+      const fixtureMap = new OutputId_FixtureMapping();
+      fixtureMap.fixtures[universeId.toString()] = fixtureMapping[track.output.value];
+
+      track.outputId = new OutputId({
+        output: {
+          case: 'fixtures',
+          value: fixtureMap,
+        },
+      });
+    } else {
+      track.outputId = new OutputId();
+    }
+
+    track.output = {
+      case: undefined,
+      value: undefined,
+    };
+  };
+
+  // Update shows.
+  project.shows
+    .flatMap(s => s.lightTracks)
+    .forEach(updateLightTrack);
+
+  // Update scenes.
+  project.scenes
+    .flatMap(s => s.rows)
+    .flatMap(r => r.components)
+    .forEach(c => {
+      if (c.description.case === 'effect') {
+        const description = c.description.value;
+
+        if (description.output.case === 'physicalFixtureGroupId') {
+          description.outputId = new OutputId({
+            output: {
+              case: 'group',
+              value: groupMapping[description.output.value],
+            },
+          });
+        } else if (description.output.case === 'physicalFixtureId') {
+          const fixtureMap = new OutputId_FixtureMapping();
+          fixtureMap.fixtures[universeId.toString()] = fixtureMapping[description.output.value];
+
+          description.outputId = new OutputId({
+            output: {
+              case: 'fixtures',
+              value: fixtureMap,
+            },
+          });
+        }
+        description.output = {
+          case: undefined,
+          value: undefined,
+        };
+      } else if (c.description.case === 'sequence') {
+        c.description.value.lightTracks.forEach(updateLightTrack);
+      }
+    });
+
+  delete project.physicalFixtures;
+  delete project.physicalFixtureGroups;
 }

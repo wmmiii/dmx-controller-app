@@ -17,6 +17,7 @@ import { NumberInput } from './Input';
 import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
 import { Effect as EffectProto } from '@dmx-controller/proto/effect_pb';
 import { RenderingContext } from '../contexts/RenderingContext';
+import { getOutputName } from './OutputSelector';
 
 export const LEFT_WIDTH = 180;
 
@@ -310,17 +311,7 @@ function Tracks({
                   leftWidth={LEFT_WIDTH}
                   mappingFunctions={mappingFunctions}
                   deleteTrack={() => {
-                    let name: string;
-                    switch (t.output.case) {
-                      case 'physicalFixtureId':
-                        name = project.physicalFixtures[t.output.value]?.name || '<Unset>';
-                        break;
-                      case 'physicalFixtureGroupId':
-                        name = project.physicalFixtureGroups[t.output.value]?.name || '<Unset>';
-                        break;
-                      default:
-                        name = '<Unset>';
-                    }
+                    const name = getOutputName(project, t.outputId);
                     lightTracks.splice(i, 1);
                     save(`Delete track for ${name}.`);
                   }}

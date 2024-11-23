@@ -10,10 +10,12 @@ import { rampEffect } from "./rampEffect";
 import { interpolateUniverses } from "./utils";
 import { strobeEffect } from "./strobeEffect";
 import { Scene_Component_SequenceComponent } from "@dmx-controller/proto/scene_pb";
+import { OutputId } from "@dmx-controller/proto/output_id_pb";
+import { getActiveUniverse } from "../util/projectUtils";
 
 export interface RenderContext {
   readonly t: number;
-  readonly output: LightTrack['output'];
+  readonly outputId: OutputId;
   readonly project: Project;
   readonly universe: DmxUniverse;
 }
@@ -33,14 +35,14 @@ export function renderShowToUniverse(t: number, frame: number, project: Project)
       .assets
       ?.audioFiles[show.audioTrack?.audioFileId]
       ?.beatMetadata;
-    const context: Partial<RenderContext> = {
+    const context: Omit<RenderContext, 'outputId'> = {
       t: t,
       project: project,
       universe: universe,
     };
 
     for (const track of show.lightTracks) {
-      const trackContext = Object.assign({}, context, { output: track.output });
+      const trackContext = Object.assign({}, context, { outputId: track.outputId });
       renderLayersToUniverse(t, track.layers, trackContext, beatMetadata, frame);
     }
   }
@@ -92,7 +94,7 @@ export function renderSceneToUniverse(
 
           applyEffect({
             t: absoluteT,
-            output: effectComponent.output,
+            outputId: effectComponent.outputId,
             project: project,
             universe: after
           }, beatMetadata, frame, effectComponent.effect);
@@ -136,14 +138,14 @@ function renderUniverseSequence(
   universe: DmxUniverse,
 ) {
   if (universeSequence) {
-    const context: Partial<RenderContext> = {
+    const context: Omit<RenderContext, 'outputId'> = {
       t: t,
       project: project,
       universe: universe,
     };
 
     for (const track of universeSequence.lightTracks) {
-      const trackContext = Object.assign({}, context, { output: track.output });
+      const trackContext = Object.assign({}, context, { outputId: track.outputId });
       renderLayersToUniverse(
         t,
         track.layers,
@@ -162,7 +164,7 @@ export function renderSequenceToUniverse(
   fixtureSequenceId: number,
   beatMetadata: BeatMetadata,
   frame: number,
-  output: LightTrack['output'],
+  output: OutputId,
   project: Project,
 ): DmxUniverse {
   t += project.timingOffsetMs;
@@ -176,7 +178,7 @@ export function renderSequenceToUniverse(
   if (fixtureSequence) {
     const context: RenderContext = {
       t: t,
-      output: output,
+      outputId: output,
       project: project,
       universe: universe,
     };
@@ -190,21 +192,26 @@ export function renderSequenceToUniverse(
 export function renderLayersToUniverse(
   t: number,
   layers: LightLayer[],
-  context: Partial<RenderContext>,
+  context: RenderContext,
   beatMetadata: BeatMetadata,
   frame: number,
 ): void {
   for (const layer of layers) {
     const effect = layer.effects.find((e) => e.startMs <= t && e.endMs > t);
     if (effect) {
-      applyEffect(context as RenderContext, beatMetadata, frame, effect);
+      applyEffect(context, beatMetadata, frame, effect);
     }
   }
 }
 
 function applyDefaults(project: Project, universe: DmxUniverse): void {
-  for (const fixture of Object.values(project.physicalFixtures)) {
+  for (const fixture of Object.values(getActiveUniverse(project).fixtures)) {
     const fixtureDefinition = project.fixtureDefinitions[fixture.fixtureDefinitionId];
+    // Can happen if fixture has not yet set a definition.
+    if (!fixtureDefinition) {
+      continue;
+    }
+    
     for (const channel of Object.entries(fixtureDefinition.channels)) {
       const index = parseInt(channel[0]) - 1 + fixture.channelOffset;
       universe[index] = channel[1].defaultValue;
@@ -287,23 +294,26 @@ function applyEffect(context: RenderContext, beat: BeatMetadata, frame: number, 
 }
 
 export function getDevice(
-  { output, project, universe }: {
-    output: LightTrack['output'];
+  { outputId, project, universe }: {
+    outputId: OutputId;
     project: Project;
     universe: DmxUniverse;
   }
 ): WritableDevice | undefined {
+  if (!outputId) {
+    throw new Error('Could not find outputId when getting device!');
+  }
 
-  switch (output.case) {
-    case 'physicalFixtureId':
+  switch (outputId.output.case) {
+    case 'fixtures':
       return getPhysicalWritableDevice(
         project,
-        output.value,
+        outputId.output.value,
         universe);
-    case 'physicalFixtureGroupId':
+    case 'group':
       return getPhysicalWritableDeviceFromGroup(
         project,
-        output.value,
+        outputId.output.value,
         universe);
     case undefined:
       return undefined;

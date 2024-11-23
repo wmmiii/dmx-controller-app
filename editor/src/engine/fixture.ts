@@ -1,6 +1,9 @@
 import { Project } from "@dmx-controller/proto/project_pb";
 import { getAllFixtures } from "./group";
 import { FixtureState_StrobeSpeed } from "@dmx-controller/proto/effect_pb";
+import { OutputId_FixtureMapping } from "@dmx-controller/proto/output_id_pb";
+import { getActiveUniverse } from "../util/projectUtils";
+import { LightTrack } from "@dmx-controller/proto/light_track_pb";
 
 export type DmxUniverse = Uint8Array;
 
@@ -72,9 +75,11 @@ export interface WritableDevice {
 
 export function getPhysicalWritableDevice(
   project: Project,
-  physicalFixtureId: number,
+  fixtureMapping: OutputId_FixtureMapping,
   universe: DmxUniverse): WritableDevice | undefined {
-  const physicalFixture = project.physicalFixtures[physicalFixtureId];
+  const activeUniverseId = project.activeUniverse.toString();
+  const fixtureId = fixtureMapping.fixtures[activeUniverseId];
+  const physicalFixture = project.universes[activeUniverseId].fixtures[fixtureId.toString()];
   if (physicalFixture == null) {
     return undefined;
   }
@@ -244,16 +249,19 @@ function mapDegrees(value: number, minDegrees: number, maxDegrees: number): numb
 
 export function getPhysicalWritableDeviceFromGroup(
   project: Project,
-  physicalFixtureGroupId: number,
+  groupId: bigint,
   universe: DmxUniverse): WritableDevice | undefined {
-  const group = project.physicalFixtureGroups[physicalFixtureGroupId];
+  const group = project.groups[groupId.toString()];
   if (!group) {
     return undefined;
   }
 
-  const writableDevices = getAllFixtures(project, physicalFixtureGroupId)
-    .map((id) => getPhysicalWritableDevice(
-      project, id, universe));
+  const writableDevices = getAllFixtures(project, groupId)
+    .map((id) => {
+      const mapping = new OutputId_FixtureMapping();
+      mapping.fixtures[project.activeUniverse.toString()] = id;
+      return getPhysicalWritableDevice(project, mapping, universe);
+    });
 
   const channelTypes: ChannelTypes[] = [];
   writableDevices.forEach(d => d.channelTypes
@@ -268,7 +276,7 @@ export function getPhysicalWritableDeviceFromGroup(
       writableDevices.forEach(d => d.setRGBW(red, green, blue, white)),
     setBrightness: (brightness: number) =>
       writableDevices.forEach(d => d.setBrightness(brightness)),
-    setStrobe: (speed) => 
+    setStrobe: (speed) =>
       writableDevices.forEach(d => d.setStrobe(speed)),
     setPan: (degrees: number) =>
       writableDevices.forEach(d => d.setPan(degrees)),
@@ -280,56 +288,80 @@ export function getPhysicalWritableDeviceFromGroup(
   };
 }
 
-export function deleteFixture(project: Project, fixtureId: number) {
-  for (const group of Object.values(project.physicalFixtureGroups)) {
-    group.physicalFixtureIds =
-      group.physicalFixtureIds.filter(f => f !== fixtureId);
+export function deleteFixture(project: Project, fixtureId: bigint) {
+  // Delete from groups.
+  for (const group of Object.values(project.groups)) {
+    group.fixtures[project.activeUniverse.toString()].fixtures =
+      group.fixtures[project.activeUniverse.toString()]
+        .fixtures.filter(f => f !== fixtureId);
   }
 
-  for (const show of project.shows) {
-    for (const track of show.lightTracks) {
-      if (track.output.case === 'physicalFixtureId' && track.output.value === fixtureId) {
-        track.output.case = undefined;
-        track.output.value = undefined;
+  const deleteFromLightTrack = (t: LightTrack) => {
+    if (t.outputId.output.case === 'fixtures') {
+      if (t.outputId.output.value.fixtures[project.activeUniverse.toString()] === fixtureId) {
+        delete t.outputId.output.value.fixtures[project.activeUniverse.toString()];
       }
     }
-  }
+  };
 
-  for (const sequence of Object.values(project.universeSequences)) {
-    for (const track of sequence.lightTracks) {
-      if (track.output.case === 'physicalFixtureId' && track.output.value === fixtureId) {
-        track.output.case = undefined;
-        track.output.value = undefined;
+  // Delete from shows.
+  project.shows
+    .flatMap(s => s.lightTracks)
+    .forEach(deleteFromLightTrack);
+
+  // Delete from scenes.
+  project.scenes
+    .flatMap(s => s.rows)
+    .flatMap(r => r.components)
+    .forEach(c => {
+      const description = c.description;
+      if (description.case === 'effect') {
+        if (description.value.outputId.output.case === 'fixtures') {
+          const fixtures = description.value.outputId.output.value.fixtures;
+          delete fixtures[project.activeUniverse.toString()];
+        }
+      } else if (description.case === 'sequence') {
+        description.value.lightTracks.forEach(deleteFromLightTrack);
       }
-    }
-  }
+    });
 
-  delete project.physicalFixtures[fixtureId];
+  delete getActiveUniverse(project).fixtures[fixtureId.toString()];
 }
 
-export function deleteFixtureGroup(project: Project, fixtureGroupId: number) {
-  for (const group of Object.values(project.physicalFixtureGroups)) {
-    group.physicalFixtureGroupIds =
-      group.physicalFixtureGroupIds.filter(g => g !== fixtureGroupId);
+export function deleteFixtureGroup(project: Project, fixtureGroupId: bigint) {
+  // Delete from groups.
+  for (const group of Object.values(project.groups)) {
+    group.groups =
+      group.groups.filter(g => g !== fixtureGroupId);
   }
 
-  for (const show of project.shows) {
-    for (const track of show.lightTracks) {
-      if (track.output.case === 'physicalFixtureGroupId' && track.output.value === fixtureGroupId) {
-        track.output.case = undefined;
-        track.output.value = undefined;
+  const deleteFromLightTrack = (t: LightTrack) => {
+    if (t.outputId.output.case === 'group') {
+      if (t.outputId.output.value === fixtureGroupId) {
+        delete t.outputId;
       }
     }
-  }
+  };
 
-  for (const sequence of Object.values(project.universeSequences)) {
-    for (const track of sequence.lightTracks) {
-      if (track.output.case === 'physicalFixtureGroupId' && track.output.value === fixtureGroupId) {
-        track.output.case = undefined;
-        track.output.value = undefined;
+  // Delete from shows.
+  project.shows
+    .flatMap(s => s.lightTracks)
+    .forEach(deleteFromLightTrack);
+
+  // Delete from scenes.
+  project.scenes
+    .flatMap(s => s.rows)
+    .flatMap(r => r.components)
+    .forEach(c => {
+      const description = c.description;
+      if (description.case === 'effect') {
+        if (description.value.outputId.output.case === 'group' && description.value.outputId.output.value === fixtureGroupId) {
+          delete description.value.outputId;
+        }
+      } else if (description.case === 'sequence') {
+        description.value.lightTracks.forEach(deleteFromLightTrack);
       }
-    }
-  }
+    });
 
-  delete project.physicalFixtureGroups[fixtureGroupId];
+  delete project.groups[fixtureGroupId.toString()];
 }

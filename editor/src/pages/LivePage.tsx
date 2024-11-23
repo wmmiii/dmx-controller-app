@@ -11,7 +11,7 @@ import { NumberInput, TextInput, ToggleInput } from '../components/Input';
 import { UniverseSequenceEditor } from '../components/UniverseSequenceEditor';
 import { LiveBeat } from '../components/LiveBeat';
 import { EffectDetails } from '../components/Effect';
-import { getOutputName, OutputDescription, OutputSelector } from '../components/OutputSelector';
+import { getOutputName, OutputSelector } from '../components/OutputSelector';
 import { ComponentGrid } from '../components/ComponentGrid';
 import { Button, IconButton } from '../components/Button';
 import IconBxBrushAlt from '../icons/IconBxBrush';
@@ -219,44 +219,16 @@ interface EffectEditorProps {
 function EffectEditor({ effect }: EffectEditorProps) {
   const { project, save } = useContext(ProjectContext);
 
-  const device: OutputDescription = useMemo(() => {
-    switch (effect.output.case) {
-      case 'physicalFixtureId':
-        return {
-          id: effect.output.value,
-          type: 'fixture',
-        };
-      case 'physicalFixtureGroupId':
-        return {
-          id: effect.output.value,
-          type: 'group',
-        };
-    }
-  }, [effect]);
-
   return (
     <div className={styles.detailsPane}>
       <div className={styles.effect}>
         <label className={styles.stateHeader}>
           <span>Output</span>
           <OutputSelector
-            value={device}
+            value={effect.outputId}
             setValue={(o) => {
-              if (o == null) {
-                effect.output.case = undefined;
-                effect.output.value = undefined;
-              } else {
-                switch (o.type) {
-                  case 'fixture':
-                    effect.output.case = 'physicalFixtureId';
-                    break;
-                  case 'group':
-                    effect.output.case = 'physicalFixtureGroupId';
-                    break;
-                }
-                effect.output.value = o.id;
-              }
-              save(`Set effect output to ${getOutputName(project, effect.output)}.`);
+              effect.outputId = o;
+              save(`Set effect output to ${getOutputName(project, o)}.`);
             }} />
         </label>
         <EffectDetails effect={effect.effect} />

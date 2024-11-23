@@ -4,7 +4,7 @@ package dmx_controller;
 
 import "proto/effect.proto";
 import "proto/light_track.proto";
-import "proto/universe_sequence.proto";
+import "proto/output_id.proto";
 
 // A scene is a part of a live show that composes components together to form
 // the final output of the universe.
@@ -17,9 +17,11 @@ message Scene {
       Effect effect = 1;
 
       oneof output {
-        uint32 physical_fixture_id = 2;
-        uint32 physical_fixture_group_id = 3;
+        uint32 physical_fixture_id = 2 [deprecated = true];
+        uint32 physical_fixture_group_id = 3 [deprecated = true];
       }
+
+      OutputId output_id = 4;
     }
 
     message SequenceComponent {

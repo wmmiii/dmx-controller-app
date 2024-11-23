@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package dmx_controller;
+
+import "proto/fixture.proto";
+
+message Universe {
+  string name = 1;
+
+  map<uint64, PhysicalFixture> fixtures = 2;
+}
