@@ -13,6 +13,12 @@ import IconBxGridVertical from '../icons/IconBxGridVertical';
 import IconBxsCog from '../icons/IconBxsCog';
 import { componentActive } from '../util/projectUtils';
 import { TimeContext } from '../contexts/TimeContext';
+import IconBxArrowToRight from '../icons/IconBxArrowToRight';
+import IconBxRightArrowAlt from '../icons/IconBxRightArrowAlt';
+import IconBxCheckbox from '../icons/IconBxCheckbox';
+import IconBxCategory from '../icons/IconBxCategory';
+import IconBxPulse from '../icons/IconBxPulse';
+import IconBxTimeFive from '../icons/IconBxTimeFive';
 
 interface ComponentGridProps {
   className?: string;
@@ -134,6 +140,7 @@ export function ComponentGrid({
             onDragRow={setDraggingRow}
             onDragRowOver={() => dragOverRow(i)}
             onDropRow={onDropRow}
+            draggingComponent={draggingComponent}
             onDragComponent={setDraggingComponent}
             onDragComponentOver={(index: number) => dragComponentOver(i, index)}
             onDropComponent={onDropComponent}
@@ -174,6 +181,7 @@ interface ComponentRowProps {
   onDragRow: (row: Scene_ComponentRow) => void;
   onDragRowOver: () => void;
   onDropRow: () => void;
+  draggingComponent: Scene_Component | undefined;
   onDragComponent: (component: Scene_Component) => void;
   onDragComponentOver: (index: number) => void;
   onDropComponent: () => void;
@@ -187,6 +195,7 @@ function ComponentRow({
   onDragRow,
   onDragRowOver,
   onDropRow,
+  draggingComponent,
   onDragComponent,
   onDragComponentOver,
   onDropComponent,
@@ -217,6 +226,7 @@ function ComponentRow({
           <Component
             key={i}
             component={c}
+            dragging={c === draggingComponent}
             onDragComponent={onDragComponent}
             onDragComponentOver={() => onDragComponentOver(i)}
             onDropComponent={onDropComponent}
@@ -236,7 +246,15 @@ function ComponentRow({
           e.stopPropagation();
           e.preventDefault();
         }}>
-        Add new component
+        <div className={styles.icon}>
+          <IconBxPlus />
+        </div>
+        <div className={styles.iconPlaceholder}></div>
+        <div className={styles.iconPlaceholder}></div>
+        <div className={styles.settingsPlaceholder}></div>
+        <div className={styles.title}>
+          Add new component
+        </div>
       </div>
     </div>
   );
@@ -244,6 +262,7 @@ function ComponentRow({
 
 interface ComponentProps {
   component: Scene_Component;
+  dragging: boolean;
   onDragComponent: (component: Scene_Component) => void;
   onDragComponentOver: () => void;
   onDropComponent: () => void;
@@ -251,7 +270,7 @@ interface ComponentProps {
   onDelete: () => void;
 }
 
-function Component({ component, onDragComponent, onDragComponentOver, onDropComponent, onSelect }: ComponentProps) {
+function Component({ component, dragging, onDragComponent, onDragComponentOver, onDropComponent, onSelect }: ComponentProps) {
   const { beat } = useContext(BeatContext);
   const { t } = useContext(TimeContext);
   const { save } = useContext(ProjectContext);
@@ -259,6 +278,9 @@ function Component({ component, onDragComponent, onDragComponentOver, onDropComp
   const classes = [styles.component];
   if (componentActive(component, beat, t)) {
     classes.push(styles.active);
+  }
+  if (dragging) {
+    classes.push(styles.dragging);
   }
 
   return (
@@ -270,21 +292,46 @@ function Component({ component, onDragComponent, onDragComponentOver, onDropComp
         }
       }}
       draggable={true}
+      onDragStart={(e) => {
+        onDragComponent(component);
+        e.stopPropagation();
+      }}
       onDragOver={(e) => {
         onDragComponentOver();
         e.stopPropagation();
         e.preventDefault();
       }}
-      onDragEnd={(e) => {
+      onDrop={(e) => {
         onDropComponent();
         e.preventDefault();
         e.stopPropagation();
       }}>
-      <div className={styles.dragHandle} onMouseDown={() => onDragComponent(component)}>
-        <IconBxGridVertical />
+      <div
+        className={styles.icon}
+        title={component.oneShot ? 'One-shot' : 'Loop'}>
+        {
+          component.oneShot ?
+            <IconBxArrowToRight /> :
+            <IconBxRightArrowAlt />
+        }
       </div>
-      <div className={styles.title}>
-        {component.name}
+      <div
+        className={styles.icon}
+        title={component.description.case === 'effect' ? 'Effect' : 'Sequence'}>
+        {
+          component.description.case === 'effect' ?
+            <IconBxCheckbox /> :
+            <IconBxCategory />
+        }
+      </div>
+      <div
+        className={styles.icon}
+        title={component.duration.case === 'durationBeat' ? 'Beat' : 'Fixed timing'}>
+        {
+          component.duration.case === 'durationBeat' ?
+            <IconBxPulse /> :
+            <IconBxTimeFive />
+        }
       </div>
       <IconButton
         className={styles.settings}
@@ -292,6 +339,9 @@ function Component({ component, onDragComponent, onDragComponentOver, onDropComp
         onClick={onSelect}>
         <IconBxsCog />
       </IconButton>
+      <div className={styles.title}>
+        {component.name}
+      </div>
     </div>
   );
 }

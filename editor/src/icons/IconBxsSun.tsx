@@ -1,7 +1,7 @@
 // icon:bxs-sun | Boxicons https://boxicons.com/ | Atisa
 import * as React from "react";
 
-function IconBxsSun(props) {
+function IconBxsSun(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       viewBox="0 0 24 24"

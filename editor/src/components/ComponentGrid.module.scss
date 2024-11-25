@@ -26,16 +26,6 @@ $element-width: 200px;
   width: calc(100% - spacing(2));
 }
 
-.component,
-.component-placeholder {
-  width: 200px;
-  border-radius: $dim-border-radius;
-}
-
-.component-placeholder {
-  justify-content: stretch;
-}
-
 .row-placeholder,
 .component-placeholder {
   align-items: center;
@@ -51,39 +41,65 @@ $element-width: 200px;
   }
 }
 
-.component {
+.component,
+.component-placeholder {
   align-items: center;
   background-color: $col-bg-higher;
+  border-radius: $dim-border-radius;
   border: 4px solid transparent;
   box-sizing: border-box;
   cursor: pointer;
-  display: flex;
-  flex-direction: row;
+  display: grid;
   gap: spacing(1);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   padding: spacing(1);
-  width: $element-width;
 
   &.active {
     border-color: $col-accent;
   }
 
-  .drag-handle {
-    margin: spacing(-1);
+  &.dragging {
+    border-color: $col-border;
+    border-style: dashed;
+  }
+
+  .row {
+    display: flex;
+    flex-direction: row;
+    gap: spacing(1);
+  }
+
+  .icon,
+  .settings {
+    align-items: center;
+    display: flex;
+    font-size: 24px;
+    grid-row: 1 / 2;
+    justify-content: center;
+  }
+
+  .icon {
+    color: $col-text-dim;
+  }
+
+  .icon-placeholder {
+    width: 24px;
+  }
+
+  .settings-placeholder {
+    height: 40px;
+    width: 40px;
   }
 
   .title {
-    flex: 1;
     font-size: 14pt;
+    grid-column: 1 / 5;
+    grid-row: 2 / 3;
     overflow: hidden;
+    text-align: center;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-
-  .settings {
-    grid-column: 3 / 4;
-    grid-row: 1 / 2;
-    flex-shrink: 0;
-    justify-self: end;
+    max-width: 184px;
   }
 }
 
