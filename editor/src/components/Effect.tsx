@@ -213,12 +213,14 @@ interface EffectDetailsBaseProps<T> {
   fixtureSequenceId?: number;
   className?: string;
   effect: T;
+  showTiming?: false;
 }
 
 export function EffectDetails({
   fixtureSequenceId,
   className,
   effect,
+  showTiming,
 }: EffectDetailsBaseProps<EffectProto>): JSX.Element {
   const { save } = useContext(ProjectContext)
 
@@ -322,18 +324,20 @@ export function EffectDetails({
       {
         effect.effect.case === 'rampEffect' &&
         <>
-          <label>
-            <span>Timing mode</span>
-            <select
-              value={effect.timingMode}
-              onChange={(e) => {
-                effect.timingMode = parseInt(e.target.value);
-                save(`Change effect timing to ${effect.timingMode === EffectTiming.ONE_SHOT ? 'one shot' : 'beat'}.`);
-              }}>
-              <option value={EffectTiming.ONE_SHOT}>One Shot</option>
-              <option value={EffectTiming.BEAT}>Beat</option>
-            </select>
-          </label>
+          {showTiming === undefined &&
+            <label>
+              <span>Timing mode</span>
+              <select
+                value={effect.timingMode}
+                onChange={(e) => {
+                  effect.timingMode = parseInt(e.target.value);
+                  save(`Change effect timing to ${effect.timingMode === EffectTiming.ONE_SHOT ? 'one shot' : 'beat'}.`);
+                }}>
+                <option value={EffectTiming.ONE_SHOT}>One Shot</option>
+                <option value={EffectTiming.BEAT}>Beat</option>
+              </select>
+            </label>
+          }
 
           <label>
             <span>Timing multiplier</span>

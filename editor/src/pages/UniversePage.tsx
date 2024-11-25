@@ -468,7 +468,7 @@ function EditDefinitionDialog({
 
   useEffect(() => {
     const render = () => {
-      const universe: DmxUniverse = new Uint8Array(512);
+      const universe = new Uint8Array(512);
       for (let i = 0; i < definition.numChannels; ++i) {
         universe[i] = testValues[i] || 0;
       }

@@ -16,6 +16,7 @@ import { renderSequenceToUniverse } from '../engine/universe';
 import { getAudioBlob } from '../util/metronome';
 import { OutputId_FixtureMapping } from '@dmx-controller/proto/output_id_pb';
 import { getActiveUniverse } from '../util/projectUtils';
+import { universeToUint8Array } from '../engine/utils';
 
 export default function newSequencePage(): JSX.Element {
   const { project, save } = useContext(ProjectContext);
@@ -82,14 +83,17 @@ export default function newSequencePage(): JSX.Element {
       return;
     }
 
-    const render = (frame: number) => renderSequenceToUniverse(
-      t.current,
-      fixtureSequenceId,
-      beatMetadata,
-      frame,
-      virtualTracks[0].outputId,
-      project,
-    );
+    const render = (frame: number) =>
+      universeToUint8Array(
+        project,
+        renderSequenceToUniverse(
+          t.current,
+          fixtureSequenceId,
+          beatMetadata,
+          frame,
+          virtualTracks[0].outputId,
+          project,
+        ));
     setRenderUniverse(render);
 
     return () => clearRenderUniverse(render);

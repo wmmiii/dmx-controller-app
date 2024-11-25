@@ -17,6 +17,7 @@ import { Button, IconButton } from '../components/Button';
 import IconBxBrushAlt from '../icons/IconBxBrush';
 import { getComponentDurationMs } from '../util/projectUtils';
 import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
+import { universeToUint8Array } from '../engine/utils';
 
 
 export function LivePage(): JSX.Element {
@@ -39,12 +40,14 @@ function LivePageImpl(): JSX.Element {
       return;
     }
 
-    const render = (frame: number) => renderActiveSceneToUniverse(
-      new Date().getTime(),
-      beatMetadata,
-      frame,
+    const render = (frame: number) => universeToUint8Array(
       project,
-    );
+      renderActiveSceneToUniverse(
+        new Date().getTime(),
+        beatMetadata,
+        frame,
+        project,
+      ));
     setRenderUniverse(render);
 
     return () => clearRenderUniverse(render);
@@ -149,8 +152,10 @@ function ComponentEditor({ component, onClose }: ComponentEditorProps) {
                       value: 1000,
                     }
                   } else {
-                    component.duration.case = undefined;
-                    component.duration.value = undefined;
+                    component.duration = {
+                      case: 'durationBeat',
+                      value: 1,
+                    }
                   }
                   recalculateComponentDuration(component);
                   save(`Set timing type for component ${component.name} to ${value ? 'seconds' : 'beats'}.`);
@@ -168,7 +173,7 @@ function ComponentEditor({ component, onClose }: ComponentEditorProps) {
                   value={component.duration?.value / 1000 || NaN}
                   onChange={(value) => {
                     component.duration.value = Math.floor(value * 1000);
-                    recalculateComponentDuration(component, beat);
+                    recalculateComponentDuration(component);
                     save(`Set duration for component ${component.name}.`);
                   }}
                   disabled={component.duration?.case !== 'durationMs'} />
@@ -254,7 +259,7 @@ function EffectEditor({ effect }: EffectEditorProps) {
               save(`Set effect output to ${getOutputName(project, o)}.`);
             }} />
         </label>
-        <EffectDetails effect={effect.effect} />
+        <EffectDetails effect={effect.effect} showTiming={false} />
       </div>
     </div>
   );

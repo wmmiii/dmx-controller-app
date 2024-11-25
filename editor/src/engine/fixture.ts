@@ -5,7 +5,7 @@ import { OutputId_FixtureMapping } from "@dmx-controller/proto/output_id_pb";
 import { getActiveUniverse } from "../util/projectUtils";
 import { LightTrack } from "@dmx-controller/proto/light_track_pb";
 
-export type DmxUniverse = Uint8Array;
+export type DmxUniverse = number[];
 
 export type ChannelTypes =
   'other' |

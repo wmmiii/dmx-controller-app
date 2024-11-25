@@ -11,6 +11,7 @@ import { Show, Show_AudioTrack } from '@dmx-controller/proto/show_pb';
 import { TextInput } from '../components/Input';
 import { UNSET_INDEX, idMapToArray } from '../util/mapUtils';
 import { renderShowToUniverse } from '../engine/universe';
+import { universeToUint8Array } from '../engine/utils';
 
 const DEFAULT_SHOW = new Show({
   name: 'Untitled Show',
@@ -43,7 +44,9 @@ export default function ShowPage(): JSX.Element {
       return;
     }
 
-    const render = (frame: number) => renderShowToUniverse(t.current, frame, project);
+    const render = (frame: number) => universeToUint8Array(
+      project,
+      renderShowToUniverse(t.current, frame, project));
     setRenderUniverse(render);
 
     return () => clearRenderUniverse(render);

@@ -23,7 +23,7 @@ export function renderShowToUniverse(t: number, frame: number, project: Project)
   DmxUniverse {
   t += project.timingOffsetMs;
 
-  const universe = new Uint8Array(512);
+  const universe = new Array(512).fill(0);
 
   applyDefaults(project, universe);
 
@@ -58,7 +58,7 @@ export function renderSceneToUniverse(
   const absoluteT = t + project.timingOffsetMs;
   const beatT = t + project.timingOffsetMs - Number(beatMetadata.offsetMs);
 
-  const universe = new Uint8Array(512);
+  const universe = new Array(512).fill(0);
 
   applyDefaults(project, universe);
 
@@ -67,61 +67,91 @@ export function renderSceneToUniverse(
     return;
   }
 
-  for (const row of scene.rows) {
-    for (const component of row.components) {
+  for (const row of scene.rows.slice().reverse()) {
+    for (const component of row.components.slice().reverse()) {
+      if (component.oneShot && component.transition.case === 'startFadeOutMs') {
+        continue;
+      }
+
+      const sinceTransition = Number(BigInt(absoluteT) - component.transition.value);
+
       let amount: number = 0;
       if (component.transition.case === 'startFadeInMs') {
         const fadeInMs = component.fadeInDuration.case === 'fadeInBeat' ?
           (component.fadeInDuration.value || 0) * beatMetadata.lengthMs :
           (component.fadeInDuration.value || 0);
 
-        amount = Math.min(1, (absoluteT - Number(component.transition.value)) / fadeInMs);
+        amount = Math.min(1, sinceTransition / fadeInMs);
       } else if (component.transition.case === 'startFadeOutMs') {
         const fadeOutMs = component.fadeOutDuration.case === 'fadeOutBeat' ?
           (component.fadeOutDuration.value || 0) * beatMetadata.lengthMs :
           (component.fadeOutDuration.value || 0);
 
-        amount = Math.max(0, 1 - ((absoluteT - Number(component.transition.value)) / fadeOutMs));
+        amount = Math.max(0, 1 - sinceTransition / fadeOutMs);
       }
 
-      const before = new Uint8Array(universe);
-      const after = new Uint8Array(universe);
+      const before = [...universe];
+      const after = [...universe];
 
       switch (component.description.case) {
         case 'effect':
-          const effectComponent = component.description.value;
-          const duration = getComponentDurationMs(component, beatMetadata);
+          const effect = component.description.value.effect;
+          const effectLength = effect.endMs - effect.startMs;
 
-          let t = absoluteT;
+          const durationEffect = getComponentDurationMs(component, beatMetadata);
+          let effectT: number;
           if (component.oneShot) {
-            if (component.transition.case === 'startFadeInMs') {
-              t = absoluteT - Number(component.transition.value);
+            if (component.duration.case === 'durationBeat') {
+              effectT = (sinceTransition * effectLength) / beatMetadata.lengthMs;
             } else {
-              t = duration + 1;
+              effectT = sinceTransition;
             }
 
             // Only play once
-            if (t > duration) {
+            if (effectT > durationEffect) {
               break;
+            }
+
+          } else {
+            if (component.duration.case === 'durationBeat') {
+              effectT = (beatT * effectLength) / beatMetadata.lengthMs;
+            } else {
+              effectT = (absoluteT * effectLength) / component.duration.value;
             }
           }
 
           applyEffect({
-            t: t,
-            outputId: effectComponent.outputId,
+            t: effectT,
+            outputId: component.description.value.outputId,
             project: project,
             universe: after
-          }, beatMetadata, frame, effectComponent.effect);
+          }, beatMetadata, frame, effect);
           break;
 
         case 'sequence':
           const sequence = component.description.value;
 
-          let sequenceT: number
-          if (component.duration?.case === 'durationMs') {
-            sequenceT = (absoluteT * SEQUENCE_BEAT_RESOLUTION / component.duration.value) % (sequence.nativeBeats * SEQUENCE_BEAT_RESOLUTION);
+          const durationSequence = SEQUENCE_BEAT_RESOLUTION * sequence.nativeBeats;
+          let sequenceT: number;
+          if (component.oneShot) {
+            const relativeT = sinceTransition * SEQUENCE_BEAT_RESOLUTION;
+            if (component.duration.case === 'durationBeat') {
+              sequenceT = relativeT / beatMetadata.lengthMs;
+            } else {
+              sequenceT = (relativeT * sequence.nativeBeats) / component.duration.value;
+            }
+
+            // Only play once
+            if (sequenceT > durationSequence) {
+              break;
+            }
+
           } else {
-            sequenceT = (beatT % (beatMetadata.lengthMs * sequence.nativeBeats)) * SEQUENCE_BEAT_RESOLUTION / beatMetadata.lengthMs;
+            if (component.duration?.case === 'durationBeat') {
+              sequenceT = (beatT % (beatMetadata.lengthMs * sequence.nativeBeats)) * SEQUENCE_BEAT_RESOLUTION / beatMetadata.lengthMs;
+            } else {
+              sequenceT = (absoluteT * SEQUENCE_BEAT_RESOLUTION * sequence.nativeBeats / component.duration.value) % (sequence.nativeBeats * SEQUENCE_BEAT_RESOLUTION);
+            }
           }
 
           renderUniverseSequence(
@@ -137,7 +167,7 @@ export function renderSceneToUniverse(
           return universe;
       }
 
-      interpolateUniverses(universe, project, amount, before, after);
+      interpolateUniverses(universe, amount, before, after);
     }
   }
 
@@ -183,7 +213,7 @@ export function renderSequenceToUniverse(
 ): DmxUniverse {
   t += project.timingOffsetMs;
 
-  const universe = new Uint8Array(512);
+  const universe = new Array(512).fill(0);
 
   applyDefaults(project, universe);
 
@@ -225,7 +255,7 @@ function applyDefaults(project: Project, universe: DmxUniverse): void {
     if (!fixtureDefinition) {
       continue;
     }
-    
+
     for (const channel of Object.entries(fixtureDefinition.channels)) {
       const index = parseInt(channel[0]) - 1 + fixture.channelOffset;
       universe[index] = channel[1].defaultValue;

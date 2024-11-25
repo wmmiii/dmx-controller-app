@@ -363,7 +363,7 @@ function AddNewDialog({ scene, rowIndex, onSelect, onClose }: AddNewDialogProps)
       description: description,
       duration: {
         case: 'durationBeat',
-        value: NaN,
+        value: 1000,
       },
       transition: {
         case: 'startFadeOutMs',
@@ -399,7 +399,7 @@ function AddNewDialog({ scene, rowIndex, onSelect, onClose }: AddNewDialogProps)
                   },
                 },
                 startMs: 0,
-                endMs: Number.MAX_SAFE_INTEGER,
+                endMs: 4_294_967_295,
               },
               outputId: {
                 output: {

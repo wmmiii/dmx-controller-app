@@ -2,12 +2,11 @@ import { PropsWithChildren, createContext, useCallback, useContext, useEffect, u
 import { Modal } from "../components/Modal";
 import { DialogContext } from "./DialogContext";
 import IconBxErrorAlt from "../icons/IconBxErrorAlt";
-import { DmxUniverse } from "../engine/fixture";
 
-const BLACKOUT_UNIVERSE = new Uint8Array(512).fill(0);
+const BLACKOUT_UNIVERSE = new Uint8Array(512);
 const FPS_BUFFER_SIZE = 100;
 
-type RenderUniverse = (frame: number) => DmxUniverse;
+type RenderUniverse = (frame: number) => Uint8Array;
 
 const EMPTY_CONTEXT = {
   port: null as (SerialPort | null),
@@ -17,7 +16,7 @@ const EMPTY_CONTEXT = {
   setBlackout: (_blackout: boolean) => { },
   setRenderUniverse: (_render: RenderUniverse) => { },
   clearRenderUniverse: (_render: RenderUniverse) => { },
-  subscribeToUniverseUpdates: (_callback: (universe: DmxUniverse) => void) => { },
+  subscribeToUniverseUpdates: (_callback: (universe: Uint8Array) => void) => { },
   subscribeToFspUpdates: (_callback: (fps: number) => void) => { },
 };
 
@@ -65,7 +64,7 @@ export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
 function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
   const [port, setPort] = useState<SerialPort | null>(null);
   const renderUniverse = useRef<RenderUniverse>(() => BLACKOUT_UNIVERSE);
-  const updateSubscribers = useRef<Array<(universe: DmxUniverse) => void>>([]);
+  const updateSubscribers = useRef<Array<(universe: Uint8Array) => void>>([]);
   const frameRef = useRef(0);
   const blackout = useRef(false);
   const [blackoutState, setBlackoutState] = useState(false);
@@ -132,8 +131,6 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
     let lastFrame = new Date().getTime();
     (async () => {
       while (!closed) {
-        const start = new Date().getTime();
-
         let universe;
         if (blackout.current) {
           universe = BLACKOUT_UNIVERSE;

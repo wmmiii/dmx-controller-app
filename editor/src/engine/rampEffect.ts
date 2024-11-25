@@ -12,8 +12,8 @@ export function rampEffect(
   beatT: number,
   frame: number): void {
 
-  const start = new Uint8Array(context.universe);
-  const end = new Uint8Array(context.universe);
+  const start = [...context.universe];
+  const end = [...context.universe];
 
   const startContext = Object.assign({}, context, { universe: start });
   if (effect.start.case === 'fixtureStateStart') {
@@ -60,5 +60,5 @@ export function rampEffect(
       easedT = t;
   }
 
-  interpolateUniverses(context.universe, context.project, t, start, end);
+  interpolateUniverses(context.universe, easedT, start, end);
 }

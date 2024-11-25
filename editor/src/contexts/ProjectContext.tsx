@@ -65,6 +65,12 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
   const operationStack = useRef<Operation[]>([]);
   const [operationIndex, setOperationIndex] = useState<number>(-1);
 
+  // Expose project globally for debugging purposes.
+  useEffect(() => {
+    const global = (window || globalThis) as any;
+    global['project'] = project;
+  }, [project]);
+
   useEffect(() => {
     (async () => {
       try {

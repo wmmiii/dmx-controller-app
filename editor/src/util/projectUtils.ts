@@ -9,11 +9,11 @@ export function getActiveUniverse(project: Project) {
 export function getComponentDurationMs(component: Scene_Component, beat: BeatMetadata) {
   switch (component.duration.case) {
     case 'durationBeat':
-      let nativeBeats = 1;
       if (component.description.case === 'sequence') {
-        nativeBeats = component.description.value.nativeBeats;
+        return component.description.value.nativeBeats * beat.lengthMs;
+      } else {
+        return beat.lengthMs;
       }
-      return component.duration.value * beat.lengthMs * nativeBeats;
     case 'durationMs':
       return component.duration.value;
     default:
