@@ -14,6 +14,22 @@
   flex-direction: column;
 }
 
+.add-component {
+  display: grid;
+  grid-template-columns: 50% 50%;
+  width: 600px;
+
+  .add-component-description {
+    grid-row: 1 / 2;
+    margin: spacing(3);
+  }
+
+  button {
+    grid-row: 2 / 3;
+    justify-self: center;
+  }
+}
+
 .header {
   align-items: center;
   display: flex;
@@ -71,8 +87,29 @@
   }
 }
 
+.effect-group {
+  align-items: stretch;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+}
+
 .effect {
+  overflow-x: hidden;
+  overflow-y: auto;
   width: 300px;
+
+  .delete-effect {
+    margin: spacing(1);
+  }
+}
+
+.new-effect {
+  align-items: center;
+  display: flex;
+  height: 100%;
+  justify-content: center;
+  margin: spacing(2);
 }
 
 .state-header {

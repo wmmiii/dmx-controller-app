@@ -119,19 +119,3 @@ $element-width: 200px;
     background-color: $col-bg-placeholder-hover;
   }
 }
-
-.add-component {
-  display: grid;
-  grid-template-columns: 50% 50%;
-  width: 600px;
-
-  .add-component-description {
-    grid-row: 1 / 2;
-    margin: spacing(3);
-  }
-
-  button {
-    grid-row: 2 / 3;
-    justify-self: center;
-  }
-}

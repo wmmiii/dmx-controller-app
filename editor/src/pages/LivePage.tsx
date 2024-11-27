@@ -1,5 +1,5 @@
-import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { Scene_Component, Scene_Component_EffectComponent, Scene_Component_SequenceComponent } from '@dmx-controller/proto/scene_pb';
+import React, { useContext, useEffect, useState } from 'react';
+import { Scene, Scene_Component, Scene_Component_EffectGroupComponent, Scene_Component_EffectGroupComponent_EffectChannel, Scene_Component_SequenceComponent } from '@dmx-controller/proto/scene_pb';
 import { ProjectContext } from '../contexts/ProjectContext';
 import styles from "./LivePage.module.scss";
 import { BeatContext, BeatProvider } from '../contexts/BeatContext';
@@ -15,9 +15,9 @@ import { getOutputName, OutputSelector } from '../components/OutputSelector';
 import { ComponentGrid } from '../components/ComponentGrid';
 import { Button, IconButton } from '../components/Button';
 import IconBxBrushAlt from '../icons/IconBxBrush';
-import { getComponentDurationMs } from '../util/projectUtils';
-import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
 import { universeToUint8Array } from '../engine/utils';
+import IconBxPlus from '../icons/IconBxPlus';
+import IconBxX from '../icons/IconBxX';
 
 
 export function LivePage(): JSX.Element {
@@ -31,6 +31,7 @@ export function LivePage(): JSX.Element {
 function LivePageImpl(): JSX.Element {
   const { project, save } = useContext(ProjectContext);
   const { beat: beatMetadata } = useContext(BeatContext);
+  const [addRowIndex, setAddRowIndex] = useState<number>(null);
   const { setRenderUniverse, clearRenderUniverse } = useContext(SerialContext);
 
   const [selected, setSelected] = useState<Scene_Component | null>(null);
@@ -70,8 +71,17 @@ function LivePageImpl(): JSX.Element {
         <ComponentGrid
           className={styles.sceneEditor}
           sceneId={0}
-          onSelect={setSelected} />
+          onSelect={setSelected}
+          setAddRowIndex={setAddRowIndex} />
       </div>
+      {
+        addRowIndex != null &&
+        <AddNewDialog
+          scene={project.scenes[0]}
+          rowIndex={addRowIndex}
+          onSelect={setSelected}
+          onClose={() => setAddRowIndex(null)} />
+      }
       {
         selected &&
         <ComponentEditor component={selected} onClose={() => setSelected(null)} />
@@ -88,13 +98,6 @@ interface ComponentEditorProps {
 function ComponentEditor({ component, onClose }: ComponentEditorProps) {
   const { project, save } = useContext(ProjectContext);
   const { beat } = useContext(BeatContext);
-
-  const recalculateComponentDuration = useCallback((component: Scene_Component) => {
-    if (component.description.case === 'effect') {
-      component.description.value.effect.endMs =
-        Math.floor(getComponentDurationMs(component, beat));
-    }
-  }, [beat]);
 
   return (
     <Modal
@@ -136,7 +139,6 @@ function ComponentEditor({ component, onClose }: ComponentEditorProps) {
                 value={component.oneShot}
                 onChange={(value) => {
                   component.oneShot = value;
-                  recalculateComponentDuration(component);
                   save(`Set  ${component.name} to ${value ? 'one-shot' : 'looping'}.`);
                 }}
                 labels={{ left: 'Loop', right: 'One-shot' }} />
@@ -157,7 +159,6 @@ function ComponentEditor({ component, onClose }: ComponentEditorProps) {
                       value: 1,
                     }
                   }
-                  recalculateComponentDuration(component);
                   save(`Set timing type for component ${component.name} to ${value ? 'seconds' : 'beats'}.`);
                 }}
                 labels={{ left: 'Beat', right: 'Seconds' }} />
@@ -173,7 +174,6 @@ function ComponentEditor({ component, onClose }: ComponentEditorProps) {
                   value={component.duration?.value / 1000 || NaN}
                   onChange={(value) => {
                     component.duration.value = Math.floor(value * 1000);
-                    recalculateComponentDuration(component);
                     save(`Set duration for component ${component.name}.`);
                   }}
                   disabled={component.duration?.case !== 'durationMs'} />
@@ -232,37 +232,134 @@ function ComponentEditor({ component, onClose }: ComponentEditorProps) {
           </div>
         }
         right={
-          component.description.case === 'effect' ?
-            <EffectEditor effect={component.description.value} /> :
+          component.description.case === 'effectGroup' ?
+            <EffectGroupEditor effect={component.description.value} name={component.name} /> :
             <SequenceEditor sequence={component.description.value} />
         } />
     </Modal>
   );
 }
 
-interface EffectEditorProps {
-  effect: Scene_Component_EffectComponent;
+interface EffectGroupEditorProps {
+  effect: Scene_Component_EffectGroupComponent;
+  name: string;
 }
 
-function EffectEditor({ effect }: EffectEditorProps) {
+function EffectGroupEditor({ effect, name }: EffectGroupEditorProps) {
   const { project, save } = useContext(ProjectContext);
 
   return (
-    <div className={styles.detailsPane}>
-      <div className={styles.effect}>
-        <label className={styles.stateHeader}>
-          <span>Output</span>
-          <OutputSelector
-            value={effect.outputId}
-            setValue={(o) => {
-              effect.outputId = o;
-              save(`Set effect output to ${getOutputName(project, o)}.`);
-            }} />
-        </label>
-        <EffectDetails effect={effect.effect} showTiming={false} />
+    <div className={`${styles.detailsPane} ${styles.effectGroup}`}>
+      {
+        effect.channels.map((c, i) => (
+          <div key={i} className={styles.effect}>
+            <IconButton
+              className={styles.deleteEffect}
+              title="Delete Channel"
+              onClick={() => {
+                effect.channels.splice(i, 1);
+                save(`Delete channel from ${name}`)
+              }}>
+              <IconBxX />
+            </IconButton>
+            <label className={styles.stateHeader}>
+              <span>Output</span>
+              <OutputSelector
+                value={c.outputId}
+                setValue={(o) => {
+                  c.outputId = o;
+                  save(`Set effect output to ${getOutputName(project, o)}.`);
+                }} />
+            </label>
+            <EffectDetails effect={c.effect} showTiming={false} />
+          </div>
+        ))
+      }
+      <div className={styles.newEffect}>
+        <IconButton
+          title="Add Effect"
+          onClick={() => {
+            effect.channels.push(createEffectChannel());
+            save('Add channel to effect.')
+          }}>
+          <IconBxPlus />
+        </IconButton>
       </div>
     </div>
   );
+}
+
+interface AddNewDialogProps {
+  scene: Scene;
+  rowIndex: number;
+  onSelect: (component: Scene_Component) => void;
+  onClose: () => void;
+}
+
+function AddNewDialog({ scene, rowIndex, onSelect, onClose }: AddNewDialogProps) {
+  const { save } = useContext(ProjectContext);
+
+  const addComponent = (description: Scene_Component['description']) => {
+    const component = new Scene_Component({
+      name: 'New Component',
+      description: description,
+      duration: {
+        case: 'durationMs',
+        value: 1000,
+      },
+      transition: {
+        case: 'startFadeOutMs',
+        value: 0n,
+      },
+    });
+    scene.rows[rowIndex].components.push(component);
+    return component;
+  }
+  return (
+    <Modal
+      bodyClass={styles.addComponent}
+      title={`Add new component to row ${rowIndex + 1}`}
+      onClose={onClose}>
+      <div className={styles.addComponentDescription}>
+        Static effects simply set a fixture or group of fixtures to a specific
+        state. They do not change over time.
+      </div>
+      <Button
+        icon={<IconBxPlus />}
+        onClick={() => {
+          const component = addComponent({
+            case: 'effectGroup',
+            value: new Scene_Component_EffectGroupComponent({
+              channels: [createEffectChannel()],
+            }),
+          });
+          save(`Add new effect component to row ${rowIndex}.`);
+          onClose();
+          onSelect(component);
+        }}>
+        Add Static Effect
+      </Button>
+      <div className={styles.addComponentDescription}>
+        Sequences can change over time and loop over a specified duration. They
+        may control multiple fixtures and groups.
+      </div>
+      <Button
+        icon={<IconBxPlus />}
+        onClick={() => {
+          const component = addComponent({
+            case: 'sequence',
+            value: new Scene_Component_SequenceComponent({
+              nativeBeats: 1,
+            }),
+          });
+          save(`Add new sequence component to row ${rowIndex}.`);
+          onClose();
+          onSelect(component);
+        }}>
+        Add Sequence
+      </Button>
+    </Modal>
+  )
 }
 
 interface SequenceEditorProps {
@@ -277,4 +374,28 @@ function SequenceEditor({ sequence }: SequenceEditorProps) {
         sequence={sequence} />
     </div>
   );
+}
+
+function createEffectChannel() {
+  return new Scene_Component_EffectGroupComponent_EffectChannel({
+    effect: {
+      effect: {
+        case: 'staticEffect',
+        value: {
+          effect: {
+            case: 'state',
+            value: {},
+          }
+        },
+      },
+      startMs: 0,
+      endMs: 4_294_967_295,
+    },
+    outputId: {
+      output: {
+        case: undefined,
+        value: undefined,
+      },
+    },
+  });
 }

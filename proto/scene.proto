@@ -13,15 +13,23 @@ message Scene {
   // A component is a part of a scene that can be enabled or disabled and
   // applies state to the universe.
   message Component {
-    message EffectComponent {
-      Effect effect = 1;
+    message EffectGroupComponent {
+      message EffectChannel {
+        Effect effect = 1;
+
+        OutputId output_id = 2;
+      }
+
+      repeated EffectChannel channels = 5;
+      
+      Effect effect = 1 [deprecated = true];
 
       oneof output {
         uint32 physical_fixture_id = 2 [deprecated = true];
         uint32 physical_fixture_group_id = 3 [deprecated = true];
       }
 
-      OutputId output_id = 4;
+      OutputId output_id = 4 [deprecated = true];
     }
 
     message SequenceComponent {
@@ -37,7 +45,7 @@ message Scene {
     reserved 2; // universe_sequence_id
     oneof description {
       SequenceComponent sequence = 13;
-      EffectComponent effect = 14;
+      EffectGroupComponent effect_group = 14;
     }
     reserved 3; // active
     string shortcut = 4;

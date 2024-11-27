@@ -6,11 +6,13 @@ import { Universe } from "@dmx-controller/proto/universe_pb";
 import { OutputId, OutputId_FixtureMapping } from "@dmx-controller/proto/output_id_pb";
 import { LightTrack } from "@dmx-controller/proto/light_track_pb";
 import { PhysicalFixtureGroup, PhysicalFixtureGroup_FixtureList } from "@dmx-controller/proto/fixture_pb";
+import { Scene_Component_EffectGroupComponent_EffectChannel } from "@dmx-controller/proto/scene_pb";
 
 export default function upgradeProject(project: Project): void {
   upgradeIndices(project);
   upgradeLive(project);
   upgradeUniverse(project);
+  upgradeLiveEffects(project);
 }
 
 function upgradeIndices(project: Project): void {
@@ -234,7 +236,7 @@ function upgradeUniverse(project: Project) {
     .flatMap(s => s.rows)
     .flatMap(r => r.components)
     .forEach(c => {
-      if (c.description.case === 'effect') {
+      if (c.description.case === 'effectGroup') {
         const description = c.description.value;
 
         if (description.output.case === 'physicalFixtureGroupId') {
@@ -266,4 +268,34 @@ function upgradeUniverse(project: Project) {
 
   delete project.physicalFixtures;
   delete project.physicalFixtureGroups;
+}
+
+function upgradeLiveEffects(project: Project) {
+  project.scenes
+  .flatMap(s => s.rows)
+  .flatMap(r => r.components)
+  .forEach(c => {
+    if (c.description.case === 'effectGroup') {
+      const effect = c.description.value;
+      if (effect.outputId != null) {
+        effect.channels = [new Scene_Component_EffectGroupComponent_EffectChannel({
+          outputId: effect.outputId,
+          effect: effect.effect,
+        })];
+      }
+      effect.channels.forEach(c => {
+        if (!c.outputId?.output) {
+          c.outputId = new OutputId({
+            output: {
+              case: undefined,
+              value: undefined,
+            }
+          });
+        }
+        if (!c.effect) {
+          c.effect = new Effect();
+        }
+      })
+    }
+  });
 }

@@ -94,38 +94,40 @@ export function renderSceneToUniverse(
       const after = [...universe];
 
       switch (component.description.case) {
-        case 'effect':
-          const effect = component.description.value.effect;
-          const effectLength = effect.endMs - effect.startMs;
+        case 'effectGroup':
+          for (const channel of component.description.value.channels) {
+            const effect = channel.effect;
+            const effectLength = effect.endMs - effect.startMs;
 
-          const durationEffect = getComponentDurationMs(component, beatMetadata);
-          let effectT: number;
-          if (component.oneShot) {
-            if (component.duration.case === 'durationBeat') {
-              effectT = (sinceTransition * effectLength) / beatMetadata.lengthMs;
+            const durationEffect = getComponentDurationMs(component, beatMetadata);
+            let effectT: number;
+            if (component.oneShot) {
+              if (component.duration.case === 'durationBeat') {
+                effectT = (sinceTransition * effectLength) / beatMetadata.lengthMs;
+              } else {
+                effectT = sinceTransition;
+              }
+
+              // Only play once
+              if (effectT > durationEffect) {
+                break;
+              }
+
             } else {
-              effectT = sinceTransition;
+              if (component.duration.case === 'durationBeat') {
+                effectT = (beatT * effectLength) / beatMetadata.lengthMs;
+              } else {
+                effectT = (absoluteT * effectLength) / component.duration.value;
+              }
             }
 
-            // Only play once
-            if (effectT > durationEffect) {
-              break;
-            }
-
-          } else {
-            if (component.duration.case === 'durationBeat') {
-              effectT = (beatT * effectLength) / beatMetadata.lengthMs;
-            } else {
-              effectT = (absoluteT * effectLength) / component.duration.value;
-            }
+            applyEffect({
+              t: effectT,
+              outputId: channel.outputId,
+              project: project,
+              universe: after
+            }, beatMetadata, frame, effect);
           }
-
-          applyEffect({
-            t: effectT,
-            outputId: component.description.value.outputId,
-            project: project,
-            universe: after
-          }, beatMetadata, frame, effect);
           break;
 
         case 'sequence':

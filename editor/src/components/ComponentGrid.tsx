@@ -1,12 +1,11 @@
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import IconBxPlus from '../icons/IconBxPlus';
-import { Button, IconButton } from './Button';
+import { IconButton } from './Button';
 import { ProjectContext } from '../contexts/ProjectContext';
-import { Scene, Scene_Component, Scene_Component_EffectComponent, Scene_Component_SequenceComponent, Scene_ComponentRow } from '@dmx-controller/proto/scene_pb';
+import { Scene_Component, Scene_ComponentRow } from '@dmx-controller/proto/scene_pb';
 
 import styles from './ComponentGrid.module.scss';
 import { ShortcutContext } from '../contexts/ShortcutContext';
-import { Modal } from './Modal';
 import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
 import { BeatContext } from '../contexts/BeatContext';
 import IconBxGridVertical from '../icons/IconBxGridVertical';
@@ -24,20 +23,20 @@ interface ComponentGridProps {
   className?: string;
   sceneId: number;
   onSelect: (component: Scene_Component) => void;
+  setAddRowIndex: (index: number) => void;
 }
 
 export function ComponentGrid({
   className,
   sceneId,
   onSelect,
+  setAddRowIndex,
 }: ComponentGridProps): JSX.Element {
   const { beat } = useContext(BeatContext);
   const { project, save, update } = useContext(ProjectContext);
   const { setShortcuts } = useContext(ShortcutContext);
   const [draggingRow, setDraggingRow] = useState<Scene_ComponentRow | null>(null);
   const [draggingComponent, setDraggingComponent] = useState<Scene_Component | null>(null);
-
-  const [addRowIndex, setAddRowIndex] = useState<number>(null);
 
   const scene = useMemo(() => project?.scenes[sceneId], [project, sceneId]);
 
@@ -163,14 +162,6 @@ export function ComponentGrid({
         }}>
         Add new component row
       </div>
-      {
-        addRowIndex != null &&
-        <AddNewDialog
-          scene={scene}
-          rowIndex={addRowIndex}
-          onSelect={onSelect}
-          onClose={() => setAddRowIndex(null)} />
-      }
     </div>
   );
 }
@@ -397,93 +388,3 @@ function transitionComponent(component: Scene_Component, enabled: boolean, beat:
   }
 }
 
-interface AddNewDialogProps {
-  scene: Scene;
-  rowIndex: number;
-  onSelect: (component: Scene_Component) => void;
-  onClose: () => void;
-}
-
-function AddNewDialog({ scene, rowIndex, onSelect, onClose }: AddNewDialogProps) {
-  const { save } = useContext(ProjectContext);
-
-  const addComponent = (description: Scene_Component['description']) => {
-    const component = new Scene_Component({
-      name: 'New Component',
-      description: description,
-      duration: {
-        case: 'durationBeat',
-        value: 1000,
-      },
-      transition: {
-        case: 'startFadeOutMs',
-        value: 0n,
-      },
-    });
-    scene.rows[rowIndex].components.push(component);
-    return component;
-  }
-  return (
-    <Modal
-      bodyClass={styles.addComponent}
-      title={`Add new component to row ${rowIndex + 1}`}
-      onClose={onClose}>
-      <div className={styles.addComponentDescription}>
-        Static effects simply set a fixture or group of fixtures to a specific
-        state. They do not change over time.
-      </div>
-      <Button
-        icon={<IconBxPlus />}
-        onClick={() => {
-          const component = addComponent({
-            case: 'effect',
-            value: new Scene_Component_EffectComponent({
-              effect: {
-                effect: {
-                  case: 'staticEffect',
-                  value: {
-                    effect: {
-                      case: 'state',
-                      value: {},
-                    }
-                  },
-                },
-                startMs: 0,
-                endMs: 4_294_967_295,
-              },
-              outputId: {
-                output: {
-                  case: undefined,
-                  value: undefined,
-                },
-              },
-            }),
-          });
-          save(`Add new effect component to row ${rowIndex}.`);
-          onClose();
-          onSelect(component);
-        }}>
-        Add Static Effect
-      </Button>
-      <div className={styles.addComponentDescription}>
-        Sequences can change over time and loop over a specified duration. They
-        may control multiple fixtures and groups.
-      </div>
-      <Button
-        icon={<IconBxPlus />}
-        onClick={() => {
-          const component = addComponent({
-            case: 'sequence',
-            value: new Scene_Component_SequenceComponent({
-              nativeBeats: 1,
-            }),
-          });
-          save(`Add new sequence component to row ${rowIndex}.`);
-          onClose();
-          onSelect(component);
-        }}>
-        Add Sequence
-      </Button>
-    </Modal>
-  )
-}

@@ -222,7 +222,7 @@ export function EffectDetails({
   effect,
   showTiming,
 }: EffectDetailsBaseProps<EffectProto>): JSX.Element {
-  const { save } = useContext(ProjectContext)
+  const { save } = useContext(ProjectContext);
 
   const classes = [styles.effectDetails, className];
 
