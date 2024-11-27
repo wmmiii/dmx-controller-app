@@ -49,7 +49,7 @@ message Project {
   int32 selected_show = 32;
 
   // Fixture sequence 0 is reserved for the "unset" sequence.
-  map<uint32, FixtureSequence> fixture_sequences = 41;
+  map<uint32, FixtureSequence> fixture_sequences = 41 [deprecated = true];
   reserved 42; // universe_sequences
 
   // Scene 0 is reserved for the "unset" scene.

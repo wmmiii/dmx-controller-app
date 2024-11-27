@@ -1,14 +1,14 @@
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 
 import styles from "./UniverseVisualizer.module.scss";
-import { SerialContext } from '../contexts/SerialContext';
+import { ChannelTypes } from '../engine/fixture';
 import { ProjectContext } from '../contexts/ProjectContext';
-import { ChannelTypes, DmxUniverse } from '../engine/fixture';
+import { SerialContext } from '../contexts/SerialContext';
 import { getActiveUniverse } from '../util/projectUtils';
 
 export function UniverseVisualizer() {
   const { project } = useContext(ProjectContext);
-  const [universe, setUniverse] = useState<DmxUniverse>(new Uint8Array(512));
+  const [universe, setUniverse] = useState<Uint8Array>(new Uint8Array(512));
   const { subscribeToUniverseUpdates } = useContext(SerialContext);
 
   useEffect(() => {

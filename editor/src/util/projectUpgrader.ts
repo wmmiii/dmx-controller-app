@@ -82,41 +82,6 @@ function upgradeIndices(project: Project): void {
     }
   }
 
-  // Sequences
-  if (shiftMapping(project.fixtureSequences)) {
-    const upgradeEffect = (e: Effect) => {
-      if (e.effect.case === 'staticEffect' &&
-        e.effect.value.effect.case === 'fixtureSequence') {
-        e.effect.value.effect.value.fixtureSequenceId += 1;
-      } else if (e.effect.case === 'rampEffect') {
-        if (e.effect.value.start.case === 'fixtureSequenceMappingStart') {
-          e.effect.value.start.value.fixtureSequenceId += 1;
-        }
-        if (e.effect.value.end.case === 'fixtureSequenceMappingEnd') {
-          e.effect.value.end.value.fixtureSequenceId += 1;
-        }
-      }
-    }
-
-    for (const s of project.shows) {
-      for (const t of s.lightTracks) {
-        for (const l of t.layers) {
-          for (const e of l.effects) {
-            upgradeEffect(e);
-          }
-        }
-      }
-    }
-
-    for (const s of Object.values(project.fixtureSequences)) {
-      for (const l of s.layers) {
-        for (const e of l.effects) {
-          upgradeEffect(e);
-        }
-      }
-    }
-  }
-
   // Beat metadata
   for (const a of Object.values(project.assets?.audioFiles || {})) {
     if ((a.beatMetadata?.deprecatedOffsetMs || 0) != 0) {

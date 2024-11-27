@@ -1,5 +1,4 @@
 import React, { JSX, useContext, useEffect, useMemo, useRef, useState } from 'react';
-
 import LightTimeline from '../components/LightTimeline';
 import styles from "./ShowPage.module.scss";
 import { Button } from '../components/Button';

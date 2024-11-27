@@ -1,23 +1,22 @@
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import IconBxArrowToRight from '../icons/IconBxArrowToRight';
+import IconBxCategory from '../icons/IconBxCategory';
+import IconBxCheckbox from '../icons/IconBxCheckbox';
+import IconBxGridVertical from '../icons/IconBxGridVertical';
 import IconBxPlus from '../icons/IconBxPlus';
+import IconBxPulse from '../icons/IconBxPulse';
+import IconBxRightArrowAlt from '../icons/IconBxRightArrowAlt';
+import IconBxTimeFive from '../icons/IconBxTimeFive';
+import IconBxsCog from '../icons/IconBxsCog';
+import styles from './ComponentGrid.module.scss';
+import { BeatContext } from '../contexts/BeatContext';
+import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
 import { IconButton } from './Button';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { Scene_Component, Scene_ComponentRow } from '@dmx-controller/proto/scene_pb';
-
-import styles from './ComponentGrid.module.scss';
 import { ShortcutContext } from '../contexts/ShortcutContext';
-import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
-import { BeatContext } from '../contexts/BeatContext';
-import IconBxGridVertical from '../icons/IconBxGridVertical';
-import IconBxsCog from '../icons/IconBxsCog';
-import { componentActive } from '../util/projectUtils';
 import { TimeContext } from '../contexts/TimeContext';
-import IconBxArrowToRight from '../icons/IconBxArrowToRight';
-import IconBxRightArrowAlt from '../icons/IconBxRightArrowAlt';
-import IconBxCheckbox from '../icons/IconBxCheckbox';
-import IconBxCategory from '../icons/IconBxCategory';
-import IconBxPulse from '../icons/IconBxPulse';
-import IconBxTimeFive from '../icons/IconBxTimeFive';
+import { componentActive } from '../util/projectUtils';
 
 interface ComponentGridProps {
   className?: string;
@@ -308,9 +307,9 @@ function Component({ component, dragging, onDragComponent, onDragComponentOver, 
       </div>
       <div
         className={styles.icon}
-        title={component.description.case === 'effect' ? 'Effect' : 'Sequence'}>
+        title={component.description.case === 'effectGroup' ? 'Effect' : 'Sequence'}>
         {
-          component.description.case === 'effect' ?
+          component.description.case === 'effectGroup' ?
             <IconBxCheckbox /> :
             <IconBxCategory />
         }

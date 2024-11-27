@@ -1,10 +1,10 @@
 import React, { PropsWithChildren, createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import upgradeProject from '../util/projectUpgrader';
 import { FixtureDefinition, PhysicalFixture } from '@dmx-controller/proto/fixture_pb';
 import { Project, Project_Assets } from '@dmx-controller/proto/project_pb';
-import { getBlob, storeBlob } from '../util/storageUtil';
-import upgradeProject from '../util/projectUpgrader';
 import { ShortcutContext } from './ShortcutContext';
 import { escapeForFilesystem } from '../util/fileUtils';
+import { getBlob, storeBlob } from '../util/storageUtil';
 
 const PROJECT_KEY = "tmp-project-1";
 const ASSETS_KEY = "tmp-assets-1";
@@ -160,10 +160,10 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
       const p = Project.fromBinary(state);
       await saveImpl(p, `Undo: ${description}`);
       setOperationIndex(operationIndex - 1);
-      setProject(p);
+      setProject(Object.assign({}, p, {assets: project.assets}));
       setLastOperation(`Undo: ${description}`);
     }
-  }, [operationIndex, operationStack, setOperationIndex, setProject, saveImpl]);
+  }, [operationIndex, operationStack, project, setOperationIndex, setProject, saveImpl]);
 
   const redo = useCallback(async () => {
     if (operationIndex < operationStack.current.length - 1) {
@@ -172,10 +172,10 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
       const p = Project.fromBinary(state);
       await saveImpl(p, `Redo: ${description}`);
       setOperationIndex(operationIndex + 1);
-      setProject(p);
+      setProject(Object.assign({}, p, {assets: project.assets}));
       setLastOperation(`Redo: ${description}`);
     }
-  }, [operationIndex, operationStack, setOperationIndex, setProject, saveImpl]);
+  }, [operationIndex, operationStack, project, setOperationIndex, setProject, saveImpl]);
 
   const downloadProject = useCallback(() => {
     const blob = new Blob([project.toBinary()], {

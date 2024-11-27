@@ -317,11 +317,13 @@ export function deleteFixture(project: Project, fixtureId: bigint) {
     .flatMap(r => r.components)
     .forEach(c => {
       const description = c.description;
-      if (description.case === 'effect') {
-        if (description.value.outputId.output.case === 'fixtures') {
-          const fixtures = description.value.outputId.output.value.fixtures;
-          delete fixtures[project.activeUniverse.toString()];
-        }
+      if (description.case === 'effectGroup') {
+        description.value.channels.forEach(c => {
+          if (c.outputId.output.case === 'fixtures') {
+            const fixtures = c.outputId.output.value.fixtures;
+            delete fixtures[project.activeUniverse.toString()];
+          }
+        });
       } else if (description.case === 'sequence') {
         description.value.lightTracks.forEach(deleteFromLightTrack);
       }
@@ -356,10 +358,12 @@ export function deleteFixtureGroup(project: Project, fixtureGroupId: bigint) {
     .flatMap(r => r.components)
     .forEach(c => {
       const description = c.description;
-      if (description.case === 'effect') {
-        if (description.value.outputId.output.case === 'group' && description.value.outputId.output.value === fixtureGroupId) {
-          delete description.value.outputId;
-        }
+      if (description.case === 'effectGroup') {
+        description.value.channels.forEach(c => {
+          if (c.outputId.output.case === 'group' && description.value.outputId.output.value === fixtureGroupId) {
+            delete c.outputId;
+          }
+        });
       } else if (description.case === 'sequence') {
         description.value.lightTracks.forEach(deleteFromLightTrack);
       }

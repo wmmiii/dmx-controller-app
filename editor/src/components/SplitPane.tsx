@@ -52,4 +52,4 @@ export function HorizontalSplitPane(
       <div className={styles.pane} style={{ flex: 1 - amount }}>{right}</div>
     </div>
   );
-} 
+}

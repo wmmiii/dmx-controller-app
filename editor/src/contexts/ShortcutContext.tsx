@@ -1,6 +1,6 @@
-import { PropsWithChildren, createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState } from "react";
-import { SerialContext } from "./SerialContext";
+import React, { PropsWithChildren, createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { Modal } from "../components/Modal";
+import { SerialContext } from "./SerialContext";
 
 type ShortcutBundle = Array<{
   shortcut: {

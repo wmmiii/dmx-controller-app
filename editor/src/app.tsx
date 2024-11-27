@@ -5,8 +5,8 @@ import { DialogProvider } from './contexts/DialogContext';
 import { ProjectProvider } from './contexts/ProjectContext';
 import { SerialProvider } from './contexts/SerialContext';
 import { ShortcutProvider } from './contexts/ShortcutContext';
-import { createRoot } from 'react-dom/client';
 import { TimeProvider } from './contexts/TimeContext';
+import { createRoot } from 'react-dom/client';
 
 // import wasm, {hello_world} from '@dmx-controller/core_interface/core_wasm';
 

@@ -1,4 +1,4 @@
-import { PropsWithChildren, createContext, useCallback, useEffect, useState } from "react";
+import { PropsWithChildren, createContext, useCallback, useState } from "react";
 
 const DIALOG_DISMISSED_KEY = 'dialogs-dismissed';
 

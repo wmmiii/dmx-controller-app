@@ -1,5 +1,5 @@
-import { Project } from "@dmx-controller/proto/project_pb";
 import { ChannelTypes, DmxUniverse } from "./fixture";
+import { Project } from "@dmx-controller/proto/project_pb";
 import { getActiveUniverse } from "../util/projectUtils";
 
 export function interpolateUniverses(universe: DmxUniverse, t: number, start: DmxUniverse, end: DmxUniverse) {

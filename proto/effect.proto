@@ -61,10 +61,9 @@ enum EffectTiming {
 message Effect {
 
   message StaticEffect {
-    oneof effect {
-      FixtureState state = 1;
-      FixtureSequenceMapping fixture_sequence = 2;
-    }
+    FixtureState state = 1;
+
+    FixtureSequenceMapping fixture_sequence = 2 [ deprecated = true ];
   }
 
   message RampEffect {
@@ -77,26 +76,21 @@ message Effect {
     }
 
     EasingFunction easing = 1;
-    oneof start {
-      FixtureState fixture_state_start = 2;
-      FixtureSequenceMapping fixture_sequence_mapping_start = 4;
-    }
-    oneof end {
-      FixtureState fixture_state_end = 3;
-      FixtureSequenceMapping fixture_sequence_mapping_end = 5;
-    }
+    FixtureState state_start = 2;
+    FixtureState state_end = 3;
+
+    FixtureSequenceMapping fixture_sequence_mapping_start = 4
+        [ deprecated = true ];
+    FixtureSequenceMapping fixture_sequence_mapping_end = 5
+        [ deprecated = true ];
   }
 
   message StrobeEffect {
     int32 state_a_fames = 1;
     int32 state_b_fames = 4;
 
-    oneof state_a {
-      FixtureState fixture_state_a = 2;
-    }
-    oneof state_b {
-      FixtureState fixture_state_b = 3;
-    }
+    FixtureState state_a = 2;
+    FixtureState state_b = 3;
   }
 
   uint32 start_ms = 1;

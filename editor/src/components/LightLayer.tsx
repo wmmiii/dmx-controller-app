@@ -89,16 +89,10 @@ export function LightLayer({
                 startMs: Math.min(newEffect.firstMs, newEffect.secondMs),
                 endMs: Math.max(newEffect.firstMs, newEffect.secondMs),
                 effect: {
-                  value: new Effect_RampEffect({
-                    start: {
-                      case: 'fixtureStateStart',
-                      value: {},
-                    },
-                    end: {
-                      case: 'fixtureStateEnd',
-                      value: {},
-                    },
-                  }),
+                  value: {
+                    stateStart: {},
+                    stateEnd: {},
+                  },
                   case: 'rampEffect',
                 },
               });

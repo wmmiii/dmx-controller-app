@@ -1,3 +1,4 @@
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import IconBxPause from "../icons/IconBxPause";
 import IconBxPlay from "../icons/IconBxPlay";
 import IconBxPulse from "../icons/IconBxPulse";
@@ -14,13 +15,10 @@ import { AudioFile } from "@dmx-controller/proto/audio_pb";
 import { BeatMetadata } from "@dmx-controller/proto/beat_pb";
 import { Button } from "./Button";
 import { Modal } from "./Modal";
-import { ShortcutContext } from "../contexts/ShortcutContext";
-import { WAVEFORM_COLOR, WAVEFORM_CURSOR_COLOR, WAVEFORM_PROGRESS_COLOR, WAVEFORM_SAMPLE_RATE } from "../util/styleUtils";
-import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { NumberInput } from "./Input";
 import { ProjectContext } from "../contexts/ProjectContext";
-
-const MS_PER_MINUTE = 1000 * 60;
+import { ShortcutContext } from "../contexts/ShortcutContext";
+import { WAVEFORM_COLOR, WAVEFORM_CURSOR_COLOR, WAVEFORM_PROGRESS_COLOR, WAVEFORM_SAMPLE_RATE } from "../util/styleUtils";
 
 interface BeatEditorProps {
   file: AudioFile;

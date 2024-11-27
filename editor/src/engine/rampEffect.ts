@@ -1,45 +1,21 @@
 import { Effect_RampEffect, Effect_RampEffect_EasingFunction } from "@dmx-controller/proto/effect_pb";
-import { applyState } from "./effect";
 import { RenderContext } from "./universe";
-import { applyFixtureSequence } from "./fixtureSequence";
+import { applyState } from "./effect";
 import { interpolateUniverses } from "./utils";
 
 export function rampEffect(
   context: RenderContext,
   effect: Effect_RampEffect,
-  t: number,
-  beatIndex: number,
-  beatT: number,
-  frame: number): void {
+  t: number): void {
 
   const start = [...context.universe];
   const end = [...context.universe];
 
   const startContext = Object.assign({}, context, { universe: start });
-  if (effect.start.case === 'fixtureStateStart') {
-    applyState(effect.start.value, startContext);
-  } else {
-    applyFixtureSequence(
-      startContext,
-      effect.start.value,
-      t,
-      beatIndex,
-      beatT,
-      frame);
-  }
+  applyState(effect.stateStart, startContext);
 
   const endContext = Object.assign({}, context, { universe: end });
-  if (effect.end.case === 'fixtureStateEnd') {
-    applyState(effect.end.value, endContext);
-  } else {
-    applyFixtureSequence(
-      endContext,
-      effect.end.value,
-      t,
-      beatIndex,
-      beatT,
-      frame);
-  }
+  applyState(effect.stateEnd, endContext);
 
   let easedT: number;
   switch (effect.easing) {

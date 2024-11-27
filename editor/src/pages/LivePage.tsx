@@ -1,23 +1,23 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { Scene, Scene_Component, Scene_Component_EffectGroupComponent, Scene_Component_EffectGroupComponent_EffectChannel, Scene_Component_SequenceComponent } from '@dmx-controller/proto/scene_pb';
-import { ProjectContext } from '../contexts/ProjectContext';
-import styles from "./LivePage.module.scss";
-import { BeatContext, BeatProvider } from '../contexts/BeatContext';
-import { SerialContext } from '../contexts/SerialContext';
-import { renderSceneToUniverse as renderActiveSceneToUniverse } from '../engine/universe';
-import { Modal } from '../components/Modal';
-import { HorizontalSplitPane } from '../components/SplitPane';
-import { NumberInput, TextInput, ToggleInput } from '../components/Input';
-import { UniverseSequenceEditor } from '../components/UniverseSequenceEditor';
-import { LiveBeat } from '../components/LiveBeat';
-import { EffectDetails } from '../components/Effect';
-import { getOutputName, OutputSelector } from '../components/OutputSelector';
-import { ComponentGrid } from '../components/ComponentGrid';
-import { Button, IconButton } from '../components/Button';
 import IconBxBrushAlt from '../icons/IconBxBrush';
-import { universeToUint8Array } from '../engine/utils';
 import IconBxPlus from '../icons/IconBxPlus';
 import IconBxX from '../icons/IconBxX';
+import styles from "./LivePage.module.scss";
+import { BeatContext, BeatProvider } from '../contexts/BeatContext';
+import { Button, IconButton } from '../components/Button';
+import { ComponentGrid } from '../components/ComponentGrid';
+import { EffectDetails } from '../components/Effect';
+import { HorizontalSplitPane } from '../components/SplitPane';
+import { LiveBeat } from '../components/LiveBeat';
+import { Modal } from '../components/Modal';
+import { NumberInput, TextInput, ToggleInput } from '../components/Input';
+import { ProjectContext } from '../contexts/ProjectContext';
+import { Scene, Scene_Component, Scene_Component_EffectGroupComponent, Scene_Component_EffectGroupComponent_EffectChannel, Scene_Component_SequenceComponent } from '@dmx-controller/proto/scene_pb';
+import { SerialContext } from '../contexts/SerialContext';
+import { UniverseSequenceEditor } from '../components/UniverseSequenceEditor';
+import { getOutputName, OutputSelector } from '../components/OutputSelector';
+import { renderSceneToUniverse as renderActiveSceneToUniverse } from '../engine/universe';
+import { universeToUint8Array } from '../engine/utils';
 
 
 export function LivePage(): JSX.Element {
@@ -382,10 +382,7 @@ function createEffectChannel() {
       effect: {
         case: 'staticEffect',
         value: {
-          effect: {
-            case: 'state',
-            value: {},
-          }
+          state: {},
         },
       },
       startMs: 0,

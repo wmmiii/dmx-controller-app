@@ -1,32 +1,30 @@
 import React, { JSX, createRef, useContext, useEffect, useState } from 'react';
-
 import AssetBrowserPage from './pages/AssetBrowserPage';
 import IconBxBulb from './icons/IconBxBulb';
 import IconBxDownload from './icons/IconBxDownload';
+import IconBxError from './icons/IconBxError';
 import IconBxLink from './icons/IconBxLink';
+import IconBxMenu from './icons/IconBxMenu';
 import IconBxUnlink from './icons/IconBxUnlink';
 import IconBxUpload from './icons/IconBxUpload';
+import IconBxlGithub from './icons/IconBxlGithub';
+import IconBxlWindows from './icons/IconBxlWindows';
 import IconBxsBulb from './icons/IconBxsBulb';
-import SequencePage from './pages/SequencePage';
+import ProjectPage from './pages/ProjectPage';
 import ShowPage from './pages/ShowPage';
 import UniversePage from './pages/UniversePage';
 import styles from './Index.module.scss';
 import { Button } from './components/Button';
-import { useNavigate } from 'react-router-dom';
+import { DialogContext } from './contexts/DialogContext';
+import { Dropdown } from './components/Dropdown';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { LivePage } from './pages/LivePage';
+import { Modal } from './components/Modal';
 import { ProjectContext } from './contexts/ProjectContext';
 import { Routes, Route } from 'react-router-dom';
 import { SerialContext } from './contexts/SerialContext';
-import { LivePage } from './pages/LivePage';
-import { ErrorBoundary } from './components/ErrorBoundary';
-import { DialogContext } from './contexts/DialogContext';
-import { Modal } from './components/Modal';
-import IconBxError from './icons/IconBxError';
-import IconBxlGithub from './icons/IconBxlGithub';
 import { UniverseVisualizer } from './components/UniverseVisualizer';
-import IconBxlWindows from './icons/IconBxlWindows';
-import IconBxMenu from './icons/IconBxMenu';
-import { Dropdown } from './components/Dropdown';
-import ProjectPage from './pages/ProjectPage';
+import { useNavigate } from 'react-router-dom';
 
 export default function Index(): JSX.Element {
   const { port, blackout, setBlackout, connect, disconnect } = useContext(SerialContext);
@@ -78,10 +76,6 @@ export default function Index(): JSX.Element {
                 {
                   title: 'Assets',
                   onSelect: () => navigate('/assets'),
-                },
-                {
-                  title: 'Sequence Editor',
-                  onSelect: () => navigate('/sequence'),
                 },
                 {
                   title: 'Universe',
@@ -137,7 +131,6 @@ export default function Index(): JSX.Element {
             <Route path="/live" element={<LivePage />} />
             <Route path="/show" element={<ShowPage />} />
             <Route path="/assets" element={<AssetBrowserPage />} />
-            <Route path="/sequence" element={<SequencePage />} />
             <Route path="/universe" element={<UniversePage />} />
             <Route path="/project" element={<ProjectPage />} />
           </Routes>

@@ -1,6 +1,6 @@
-import React, { createRef, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import MinimapPlugin from "wavesurfer.js/dist/plugins/minimap.js";
-import RegionsPlugin, { Region } from "wavesurfer.js/dist/plugins/regions.js";
+import RegionsPlugin from "wavesurfer.js/dist/plugins/regions.js";
 import WaveSurfer from 'wavesurfer.js';
 import { BEAT_MARKER, WAVEFORM_COLOR, WAVEFORM_CURSOR_COLOR, WAVEFORM_PROGRESS_COLOR, WAVEFORM_SAMPLE_RATE } from '../util/styleUtils';
 import { BeatMetadata } from '@dmx-controller/proto/beat_pb';

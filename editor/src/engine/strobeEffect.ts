@@ -7,12 +7,8 @@ export function strobeEffect(
   effect: Effect_StrobeEffect,
   frame: number): void {
   if (frame % (effect.stateAFames + effect.stateBFames) < effect.stateAFames) {
-    if (effect.stateA.case === 'fixtureStateA') {
-      applyState(effect.stateA.value, context);
-    }
+    applyState(effect.stateA, context);
   } else {
-    if (effect.stateB.case === 'fixtureStateB') {
-      applyState(effect.stateB.value, context);
-    }
+    applyState(effect.stateB, context);
   }
 }

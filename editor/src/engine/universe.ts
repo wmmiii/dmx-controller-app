@@ -2,15 +2,15 @@ import { BeatMetadata } from "@dmx-controller/proto/beat_pb";
 import { DmxUniverse, WritableDevice, getPhysicalWritableDevice, getPhysicalWritableDeviceFromGroup } from "./fixture";
 import { Effect, EffectTiming } from "@dmx-controller/proto/effect_pb";
 import { LightLayer } from "@dmx-controller/proto/light_layer_pb";
-import { Project } from "@dmx-controller/proto/project_pb";
-import { SEQUENCE_BEAT_RESOLUTION, applyFixtureSequence } from "./fixtureSequence";
-import { applyState } from "./effect";
-import { rampEffect } from "./rampEffect";
-import { interpolateUniverses } from "./utils";
-import { strobeEffect } from "./strobeEffect";
-import { Scene_Component_SequenceComponent } from "@dmx-controller/proto/scene_pb";
 import { OutputId } from "@dmx-controller/proto/output_id_pb";
+import { Project } from "@dmx-controller/proto/project_pb";
+import { SEQUENCE_BEAT_RESOLUTION } from "../components/UniverseSequenceEditor";
+import { Scene_Component_SequenceComponent } from "@dmx-controller/proto/scene_pb";
+import { applyState } from "./effect";
 import { getActiveUniverse, getComponentDurationMs } from "../util/projectUtils";
+import { interpolateUniverses } from "./utils";
+import { rampEffect } from "./rampEffect";
+import { strobeEffect } from "./strobeEffect";
 
 export interface RenderContext {
   readonly t: number;
@@ -205,36 +205,6 @@ function renderUniverseSequence(
   }
 }
 
-export function renderSequenceToUniverse(
-  t: number,
-  fixtureSequenceId: number,
-  beatMetadata: BeatMetadata,
-  frame: number,
-  output: OutputId,
-  project: Project,
-): DmxUniverse {
-  t += project.timingOffsetMs;
-
-  const universe = new Array(512).fill(0);
-
-  applyDefaults(project, universe);
-
-  const fixtureSequence = project.fixtureSequences[fixtureSequenceId];
-
-  if (fixtureSequence) {
-    const context: RenderContext = {
-      t: t,
-      outputId: output,
-      project: project,
-      universe: universe,
-    };
-
-    renderLayersToUniverse(t, fixtureSequence.layers, context, beatMetadata, frame);
-  }
-
-  return universe;
-}
-
 export function renderLayersToUniverse(
   t: number,
   layers: LightLayer[],
@@ -314,26 +284,13 @@ function applyEffect(context: RenderContext, beat: BeatMetadata, frame: number, 
   }
 
   if (effect.effect.case === 'staticEffect') {
-    if (effect.effect.value.effect.case === 'state') {
-      applyState(effect.effect.value.effect.value, context);
-    } else {
-      applyFixtureSequence(
-        context,
-        effect.effect.value.effect.value,
-        effectT,
-        beatIndex,
-        beatT,
-        frame);
-    }
+    applyState(effect.effect.value.state, context);
 
   } else if (effect.effect.case === 'rampEffect') {
     rampEffect(
       context,
       effect.effect.value,
-      effectT,
-      beatIndex,
-      beatT,
-      frame);
+      effectT);
   } else if (effect.effect.case === 'strobeEffect') {
     strobeEffect(context, effect.effect.value, frame);
   }

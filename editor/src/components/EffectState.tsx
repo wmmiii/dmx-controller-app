@@ -1,69 +1,20 @@
-import React, { useCallback, useContext } from 'react';
+import React, { useCallback } from 'react';
 import ColorPicker from 'react-pick-color';
 import IconBxPlus from '../icons/IconBxPlus';
 import IconBxX from '../icons/IconBxX';
 import RangeInput from './RangeInput';
 import styles from './EffectState.module.scss';
 import { Button, IconButton } from './Button';
-import { ProjectContext } from '../contexts/ProjectContext';
-import { FixtureSequenceMapping as FixtureSequenceMappingProto, FixtureState as FixtureStateProto, FixtureState_Channel, RGB, RGBW, EffectTiming, FixtureState_StrobeSpeed } from "@dmx-controller/proto/effect_pb";
-import { isFixtureState } from '../engine/effect';
-import { fixtureSequences } from '../engine/fixtureSequence';
-import { idMapToArray } from '../util/mapUtils';
+import { FixtureState as FixtureStateProto, FixtureState_Channel, RGB, RGBW, EffectTiming, FixtureState_StrobeSpeed } from "@dmx-controller/proto/effect_pb";
 import { NumberInput } from './Input';
 
 interface EffectStateProps {
-  // Only needs to be set if this effect is part of a fixtureSequence.
-  fixtureSequenceId?: number;
-  effect: FixtureStateProto | FixtureSequenceMappingProto;
-  onChange: (effect: FixtureStateProto | FixtureSequenceMappingProto) => void;
-}
-
-export default function EffectState({ fixtureSequenceId, effect, onChange }: EffectStateProps):
-  JSX.Element {
-  let details: JSX.Element;
-  if (isFixtureState(effect)) {
-    details = <FixtureState state={effect} onChange={onChange} />;
-  } else {
-    details = <FixtureSequenceMapping
-      fixtureSequenceId={fixtureSequenceId}
-      fixtureSequence={effect}
-      onChange={onChange} />;
-  }
-  return (
-    <>
-      <label>
-        <span>Type</span>
-        <select
-          value={String(isFixtureState(effect))}
-          onChange={(e) => {
-            if (e.target.value === 'true') {
-              onChange(new FixtureStateProto({}));
-            } else {
-              onChange(new FixtureSequenceMappingProto({
-                fixtureSequenceId: 0,
-                timingMode: EffectTiming.BEAT,
-                offsetMs: 0,
-                timingMultiplier: 1,
-              }));
-            }
-          }}>
-          <option value="true">Fixture State</option>
-          <option value="false">Sequence</option>
-        </select>
-      </label>
-      {details}
-    </>
-  );
-}
-
-interface FixtureStateProps {
   state: FixtureStateProto;
   onChange: (state: FixtureStateProto) => void;
 }
 
-function FixtureState(
-  { state, onChange }: FixtureStateProps):
+export function EffectState(
+  { state, onChange }: EffectStateProps):
   JSX.Element {
 
   const onColorTypeChange = useCallback((type: string) => {
@@ -365,64 +316,6 @@ function FixtureState(
       }}>
         Add custom channel
       </Button>
-    </>
-  );
-}
-
-interface SequenceMappingProps {
-  fixtureSequenceId?: number;
-  fixtureSequence: FixtureSequenceMappingProto;
-  onChange: (fixtureSequence: FixtureSequenceMappingProto) => void;
-}
-
-function FixtureSequenceMapping({ fixtureSequenceId, fixtureSequence, onChange }: SequenceMappingProps): JSX.Element {
-  const { project } = useContext(ProjectContext);
-
-  return (
-    <>
-      <label>
-        <span>Sequence</span>
-        <select
-          value={fixtureSequence.fixtureSequenceId}
-          onChange={(e) => {
-            fixtureSequence.fixtureSequenceId = parseInt(e.target.value);
-            onChange(fixtureSequence);
-          }}>
-          <option value={0}>&lt;Unset&gt;</option>
-          {
-            idMapToArray(fixtureSequences(project, fixtureSequenceId))
-              .map(([id, s]) => (
-                <option value={id}>{s.name}</option>
-              ))
-          }
-        </select>
-      </label>
-
-      <label>
-        <span>Sequence Timing</span>
-        <select
-          value={fixtureSequence.timingMode}
-          onChange={(e) => {
-            fixtureSequence.timingMode = parseInt(e.target.value);
-            onChange(fixtureSequence);
-          }}>
-          <option value={EffectTiming.ONE_SHOT}>One Shot</option>
-          <option value={EffectTiming.BEAT}>Beat</option>
-        </select>
-      </label>
-
-      <label>
-        <span>Timing multiplier</span>
-        <NumberInput
-          type="float"
-          min={0}
-          max={128}
-          value={fixtureSequence.timingMultiplier || 1}
-          onChange={(v) => {
-            fixtureSequence.timingMultiplier = v;
-            onChange(fixtureSequence);
-          }} />
-      </label>
     </>
   );
 }

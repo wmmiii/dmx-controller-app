@@ -21,9 +21,7 @@ import { getOutputName } from './OutputSelector';
 
 export const LEFT_WIDTH = 180;
 
-type LightTimelineProps = TracksProps & DetailsPaneProps;
-
-export default function LightTimeline(props: LightTimelineProps): JSX.Element {
+export default function LightTimeline(props: TracksProps): JSX.Element {
   const { setShortcuts } = useContext(ShortcutContext);
   const { save } = useContext(ProjectContext);
   const [selectedAddress, setSelectedAddress] = useState<EffectAddress | null>(null);
@@ -77,7 +75,15 @@ export default function LightTimeline(props: LightTimelineProps): JSX.Element {
         className={styles.wrapper}
         defaultAmount={0.8}
         left={<Tracks {...props} />}
-        right={<DetailsPane {...props} />} />
+        right={
+          selectedEffect ?
+            <EffectDetails
+              className={styles.effectDetails}
+              effect={selectedEffect} /> :
+            <div className={styles.effectDetails}>
+              Select an effect to view details.
+            </div>
+        } />
     </EffectSelectContext.Provider>
   );
 }
@@ -338,27 +344,4 @@ function Tracks({
       </div>
     </div>
   )
-}
-
-interface DetailsPaneProps {
-  fixtureSequenceId?: number;
-}
-
-function DetailsPane({ fixtureSequenceId }: DetailsPaneProps): JSX.Element {
-  const { selectedEffect } = useContext(EffectSelectContext);
-
-  if (selectedEffect == null) {
-    return (
-      <div className={styles.effectDetails}>
-        Select an effect to view details.
-      </div>
-    );
-  }
-
-  return (
-    <EffectDetails
-      fixtureSequenceId={fixtureSequenceId}
-      className={styles.effectDetails}
-      effect={selectedEffect} />
-  );
 }
