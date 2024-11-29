@@ -85,7 +85,7 @@ export function getPhysicalWritableDevice(
   }
   const physicalFixture = project.universes[activeUniverseId].fixtures[fixtureId.toString()];
   const definition =
-    project.fixtureDefinitions[physicalFixture.fixtureDefinitionId];
+    project.fixtureDefinitions[physicalFixture.fixtureDefinitionId.toString()];
   // Check to ensure this fixture has a definition.
   if (definition == null) {
     return undefined;
@@ -205,7 +205,7 @@ export function getPhysicalWritableDevice(
 
   return {
     setChannel: (index, value) => {
-      universe[index + physicalFixture.channelOffset - 1] = value;
+      universe[index + physicalFixture.channelOffset] = value;
     },
 
     setRGB: (r, g, b) => {

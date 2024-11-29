@@ -23,7 +23,7 @@ export function UniverseVisualizer() {
 
       return Object.values(getActiveUniverse(project).fixtures)
         .map((f, i) => {
-          const definition = project.fixtureDefinitions[f.fixtureDefinitionId];
+          const definition = project.fixtureDefinitions[f.fixtureDefinitionId.toString()];
           // Can happen if the definition is unset.
           if (definition == null) {
             return;

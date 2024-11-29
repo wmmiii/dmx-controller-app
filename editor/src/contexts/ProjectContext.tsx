@@ -1,6 +1,5 @@
 import React, { PropsWithChildren, createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import upgradeProject from '../util/projectUpgrader';
-import { FixtureDefinition, PhysicalFixture } from '@dmx-controller/proto/fixture_pb';
 import { Project, Project_Assets } from '@dmx-controller/proto/project_pb';
 import { ShortcutContext } from './ShortcutContext';
 import { escapeForFilesystem } from '../util/fileUtils';
@@ -10,37 +9,12 @@ const PROJECT_KEY = "tmp-project-1";
 const ASSETS_KEY = "tmp-assets-1";
 const MAX_UNDO = 100;
 
-const miniLedMovingHead = new FixtureDefinition({
-  name: 'Mini LED Moving Head',
-  manufacturer: 'Wash',
-  channels: {
-    1: { type: 'pan', minDegrees: -180, maxDegrees: 360 },
-    2: { type: 'pan-fine', minDegrees: -180, maxDegrees: 360 },
-    3: { type: 'tilt', minDegrees: -90, maxDegrees: 90 },
-    4: { type: 'tilt-fine', minDegrees: -90, maxDegrees: 90 },
-    7: { type: 'red' },
-    8: { type: 'green' },
-    9: { type: 'blue' },
-    10: { type: 'white' }
-  }
-});
-
-const fixture = new PhysicalFixture({
-  name: 'Moving Head 1',
-  fixtureDefinitionId: 1,
-  channelOffset: 0,
-});
-
 const DEFAULT_PROJECT = new Project({
   name: "Untitled Project",
   updateFrequencyMs: 15,
   timingOffsetMs: 0,
-  fixtureDefinitions: {
-    0: miniLedMovingHead,
-  },
-  physicalFixtures: {
-    0: fixture,
-  },
+  fixtureDefinitions: {},
+  physicalFixtures: {},
 });
 
 interface Operation {

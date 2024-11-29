@@ -13,8 +13,9 @@ import "proto/universe.proto";
 
 message Project {
   message Assets {
-    repeated AudioFile deprecated_audio_files = 1  [deprecated = true];
     map<uint32, AudioFile> audio_files = 2;
+
+    repeated AudioFile deprecated_audio_files = 1 [ deprecated = true ];
   }
 
   message DefaultChannelValues {
@@ -34,14 +35,10 @@ message Project {
   // Universe descriptions
   uint32 update_frequency_ms = 11;
   int32 timing_offset_ms = 12;
-  map<uint32, FixtureDefinition> fixture_definitions = 13;
-  map<uint32, PhysicalFixture> physical_fixtures = 14 [deprecated = true];
-  map<uint32, PhysicalFixtureGroup> physical_fixture_groups = 15 [deprecated = true];
+  map<uint64, FixtureDefinition> fixture_definitions = 20;
   map<uint64, Universe> universes = 17;
   uint64 active_universe = 18;
   map<uint64, PhysicalFixtureGroup> groups = 19;
-  repeated DefaultChannelValues default_channel_values = 16 [deprecated = true];
-  reserved 20;
 
   Assets assets = 21;
 
@@ -49,11 +46,19 @@ message Project {
   int32 selected_show = 32;
 
   // Fixture sequence 0 is reserved for the "unset" sequence.
-  map<uint32, FixtureSequence> fixture_sequences = 41 [deprecated = true];
   reserved 42; // universe_sequences
 
   // Scene 0 is reserved for the "unset" scene.
   repeated Scene scenes = 51;
   uint32 active_scene = 52;
   BeatMetadata live_beat = 53;
+
+  map<uint32, PhysicalFixture> physical_fixtures = 14 [ deprecated = true ];
+  map<uint32, FixtureSequence> fixture_sequences = 41 [ deprecated = true ];
+  repeated DefaultChannelValues default_channel_values = 16
+      [ deprecated = true ];
+  map<uint32, FixtureDefinition> deprecated_fixture_definitions = 13
+      [ deprecated = true ];
+  map<uint32, PhysicalFixtureGroup> physical_fixture_groups = 15
+      [ deprecated = true ];
 }

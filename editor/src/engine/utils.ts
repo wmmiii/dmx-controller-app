@@ -17,7 +17,7 @@ export function universeToUint8Array(project: Project, universe: DmxUniverse) {
 
   Object.values(getActiveUniverse(project).fixtures)
     .forEach(f => {
-      const d = project.fixtureDefinitions[f.fixtureDefinitionId];
+      const d = project.fixtureDefinitions[f.fixtureDefinitionId.toString()];
       for (const channel of Object.entries(d.channels)) {
         const type = channel[1].type;
         if (type.indexOf('-fine') > -1) {

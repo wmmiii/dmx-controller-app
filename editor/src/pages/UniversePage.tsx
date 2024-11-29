@@ -3,14 +3,14 @@ import IconBxCopyAlt from '../icons/IconBxCopy';
 import IconBxX from '../icons/IconBxX';
 import styles from './UniversePage.module.scss';
 import { Button, IconButton } from '../components/Button';
-import { FixtureDefinition, FixtureDefinition_Channel, FixtureDefinition_StrobeMapping, PhysicalFixture, PhysicalFixtureGroup } from '@dmx-controller/proto/fixture_pb';
+import { FixtureDefinition, FixtureDefinition_Channel, PhysicalFixture, PhysicalFixtureGroup } from '@dmx-controller/proto/fixture_pb';
 import { HorizontalSplitPane } from '../components/SplitPane';
 import { Modal } from '../components/Modal';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { idMapToArray, nextId } from '../util/mapUtils';
 import { getApplicableMembers } from '../engine/group';
 import { NumberInput, TextInput } from '../components/Input';
-import { deleteFixture, deleteFixtureGroup, DmxUniverse } from '../engine/fixture';
+import { deleteFixture, deleteFixtureGroup } from '../engine/fixture';
 import { SerialContext } from '../contexts/SerialContext';
 import { getActiveUniverse } from '../util/projectUtils';
 import { randomUint64 } from '../util/numberUtils';
@@ -98,7 +98,7 @@ function FixtureList(): JSX.Element {
             .sort((a, b) => a[1].channelOffset - b[1].channelOffset)
             .map(([id, fixture]) => {
               const definition =
-                project.fixtureDefinitions[fixture.fixtureDefinitionId];
+                project.fixtureDefinitions[fixture.fixtureDefinitionId.toString()];
 
               return (
                 <li key={id} onClick={() => {
@@ -217,10 +217,10 @@ function EditFixtureDialog({
       <label>
         <span>Definition</span>
         <select
-          value={fixture.fixtureDefinitionId}
+          value={fixture.fixtureDefinitionId.toString()}
           onChange={(e) => {
-            fixture.fixtureDefinitionId = parseInt(e.target.value);
-            const definitionName = project.fixtureDefinitions[fixture.fixtureDefinitionId].name;
+            fixture.fixtureDefinitionId = BigInt(e.target.value);
+            const definitionName = project.fixtureDefinitions[fixture.fixtureDefinitionId.toString()].name;
             save(`Change fixture definition for ${fixture.name} to ${definitionName}`);
           }}>
           {
@@ -392,10 +392,10 @@ function EditGroupDialog({
 function FixtureDefinitionList(): JSX.Element {
   const { project, save } = useContext(ProjectContext);
   const [selectedDefinitionId, setSelectedDefinitionId] =
-    useState<number | null>(null);
+    useState<bigint | null>(null);
 
   const selectedDefinition = useMemo(
-    () => project?.fixtureDefinitions[selectedDefinitionId],
+    () => project?.fixtureDefinitions[selectedDefinitionId?.toString()],
     [project, selectedDefinitionId]);
 
   if (!project) {
@@ -407,17 +407,17 @@ function FixtureDefinitionList(): JSX.Element {
       <h2>Fixture Definitions</h2>
       <ul>
         {
-          idMapToArray(project.fixtureDefinitions)
+          Object.entries(project.fixtureDefinitions)
             .map(([id, definition]) => (
-              <li key={id} onClick={() => setSelectedDefinitionId(id)}>
+              <li key={id} onClick={() => setSelectedDefinitionId(BigInt(id))}>
                 {definition.name}
               </li>
             ))
         }
       </ul>
       <Button onClick={() => {
-        const newId = nextId(project.fixtureDefinitions);
-        project.fixtureDefinitions[newId] = new FixtureDefinition({
+        const newId = randomUint64();
+        project.fixtureDefinitions[newId.toString()] = new FixtureDefinition({
           name: 'New Fixture Definition',
         });
         setSelectedDefinitionId(newId);
@@ -430,12 +430,17 @@ function FixtureDefinitionList(): JSX.Element {
         <EditDefinitionDialog definition={selectedDefinition}
           close={() => setSelectedDefinitionId(null)}
           copy={() => {
-            const newId = nextId(project.fixtureDefinitions);
-            project.fixtureDefinitions[newId] =
-              new FixtureDefinition(selectedDefinition);
-            project.fixtureDefinitions[newId].name = "Copy of " + selectedDefinition.name;
+            const newId = randomUint64();
+            const definition = new FixtureDefinition(selectedDefinition);
+            definition.name = "Copy of " + selectedDefinition.name;
+            project.fixtureDefinitions[newId.toString()] = definition;
             setSelectedDefinitionId(newId);
             save(`Copy fixture definition ${selectedDefinition.name}.`);
+          }}
+          deleteDefinition={() => {
+            const name = project.fixtureDefinitions[selectedDefinitionId.toString()].name;
+            delete project.fixtureDefinitions[selectedDefinitionId.toString()];
+            save(`Delete fixture definition ${name}.`);
           }} />
       }
     </div>
@@ -446,12 +451,14 @@ interface EditDefinitionDialogProps {
   definition: FixtureDefinition;
   close: () => void;
   copy: () => void;
+  deleteDefinition: () => void;
 }
 
 function EditDefinitionDialog({
   definition,
   close,
   copy,
+  deleteDefinition,
 }: EditDefinitionDialogProps): JSX.Element {
   const { save } = useContext(ProjectContext);
   const { setRenderUniverse, clearRenderUniverse } = useContext(SerialContext);
@@ -495,6 +502,12 @@ function EditDefinitionDialog({
         title="Copy Fixture Definition"
         onClick={copy}>
         <IconBxCopyAlt />
+      </IconButton>
+      <IconButton
+        variant='warning'
+        title="Delete Fixture Definition"
+        onClick={deleteDefinition}>
+        <IconBxX />
       </IconButton>
       <div>
         <label>
@@ -561,20 +574,16 @@ function EditDefinitionDialog({
                       onChange={(e) => {
                         if (channel == null) {
                           definition.channels[index] = new FixtureDefinition_Channel({
-                            type: e.target.value
+                            type: e.target.value,
+                            minValue: 0,
+                            maxValue: 255,
                           });
-                          if (e.target.value === 'strobe') {
-                            definition.channels[index].strobe = new FixtureDefinition_StrobeMapping();
-                          }
                           save(`Add mapping for channel ${index}.`);
                         } else if (e.target.value === 'unset') {
                           delete definition.channels[index];
                           save(`Delete mapping for channel ${index}.`);
                         } else {
                           channel.type = e.target.value;
-                          if (e.target.value === 'strobe') {
-                            definition.channels[index].strobe = new FixtureDefinition_StrobeMapping();
-                          }
                           save(`Change type of mapping for channel ${index}.`);
                         }
                       }}>

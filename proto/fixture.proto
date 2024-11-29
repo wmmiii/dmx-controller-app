@@ -15,6 +15,18 @@ message FixtureDefinition {
     /* Default value to output for this channel. */
     uint32 default_value = 4;
 
+    /*
+     * The minimum value [0, 255] for this channel.
+     * Used to map a sub range of a channel on a fixture.
+     */
+    uint32 min_value = 6;
+
+    /*
+     * The minimum value [0, 255] for this channel.
+     * Used to map a sub range of a channel on a fixture.
+     */
+    uint32 max_value = 7;
+
     /* Minimum number of degrees that a "pan" or "tilt" channel can move.
      * Also applicable for "fine" variants. */
     int32 min_degrees = 2;
@@ -25,7 +37,7 @@ message FixtureDefinition {
 
     /* If this channel type is "strobe" this mapping is set to configure fixture
      * strobe settings. */
-    StrobeMapping strobe = 5;
+    StrobeMapping strobe = 5 [deprecated = true];
   }
 
   string name = 1;
@@ -36,19 +48,20 @@ message FixtureDefinition {
 
 message PhysicalFixture {
   string name = 1;
-  uint32 fixture_definition_id = 2;
+  uint64 fixture_definition_id = 4;
   uint32 channel_offset = 3;
+
+  uint32 deprecated_fixture_definition_id = 2 [deprecated = true];
 }
 
 message PhysicalFixtureGroup {
-  message FixtureList {
-    repeated uint64 fixtures  = 1;
-  }
+  message FixtureList { repeated uint64 fixtures = 1; }
 
   string name = 1;
-  repeated uint32 physical_fixture_ids = 2 [deprecated = true];
-  repeated uint32 physical_fixture_group_ids = 3 [deprecated = true];
 
   map<uint64, FixtureList> fixtures = 4;
   repeated uint64 groups = 5;
+
+  repeated uint32 physical_fixture_ids = 2 [ deprecated = true ];
+  repeated uint32 physical_fixture_group_ids = 3 [ deprecated = true ];
 }

@@ -295,7 +295,7 @@ export function EffectState(
                 onChange(state);
               }}
               min={0}
-              max={512} />
+              max={255} />
             <IconButton
               title="Remove Channel"
               onClick={() => {

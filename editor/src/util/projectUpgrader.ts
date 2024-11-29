@@ -13,6 +13,7 @@ export default function upgradeProject(project: Project): void {
   upgradeLive(project);
   upgradeUniverse(project);
   upgradeLiveEffects(project);
+  upgradeFixtures(project);
 }
 
 function upgradeIndices(project: Project): void {
@@ -26,12 +27,6 @@ function upgradeIndices(project: Project): void {
     });
 
     project.assets.deprecatedAudioFiles = [];
-  }
-
-  // Fixture definitions
-  if (shiftMapping(project.fixtureDefinitions)) {
-    Object.values(project.physicalFixtures)
-      .forEach(f => f.fixtureDefinitionId += 1);
   }
 
   // Physical fixtures
@@ -147,7 +142,7 @@ function upgradeUniverse(project: Project) {
     groupMapping[oldGroupId] = newGroupId;
     const oldGroup = project.physicalFixtureGroups[oldGroupId];
 
-    const fixtures: {[universe: string]: PhysicalFixtureGroup_FixtureList} = {};
+    const fixtures: { [universe: string]: PhysicalFixtureGroup_FixtureList } = {};
     fixtures[universeId.toString()] = new PhysicalFixtureGroup_FixtureList({
       fixtures: oldGroup.physicalFixtureIds.map(id => fixtureMapping[id]),
     });
@@ -237,30 +232,59 @@ function upgradeUniverse(project: Project) {
 
 function upgradeLiveEffects(project: Project) {
   project.scenes
-  .flatMap(s => s.rows)
-  .flatMap(r => r.components)
-  .forEach(c => {
-    if (c.description.case === 'effectGroup') {
-      const effect = c.description.value;
-      if (effect.outputId != null) {
-        effect.channels = [new Scene_Component_EffectGroupComponent_EffectChannel({
-          outputId: effect.outputId,
-          effect: effect.effect,
-        })];
+    .flatMap(s => s.rows)
+    .flatMap(r => r.components)
+    .forEach(c => {
+      if (c.description.case === 'effectGroup') {
+        const effect = c.description.value;
+        if (effect.outputId != null) {
+          effect.channels = [new Scene_Component_EffectGroupComponent_EffectChannel({
+            outputId: effect.outputId,
+            effect: effect.effect,
+          })];
+        }
+        effect.channels.forEach(c => {
+          if (!c.outputId?.output) {
+            c.outputId = new OutputId({
+              output: {
+                case: undefined,
+                value: undefined,
+              }
+            });
+          }
+          if (!c.effect) {
+            c.effect = new Effect();
+          }
+        })
       }
-      effect.channels.forEach(c => {
-        if (!c.outputId?.output) {
-          c.outputId = new OutputId({
-            output: {
-              case: undefined,
-              value: undefined,
-            }
-          });
-        }
-        if (!c.effect) {
-          c.effect = new Effect();
-        }
-      })
+    });
+}
+
+function upgradeFixtures(project: Project) {
+  for (const entry of Object.entries(project.deprecatedFixtureDefinitions)) {
+    const definitionId = randomUint64();
+
+    const oldId = parseInt(entry[0]);
+    const definition = entry[1];
+    for (const channel of Object.values(definition.channels)) {
+      if (channel.strobe) {
+        channel.minValue = channel.strobe.slowStrobe;
+        channel.maxValue = channel.strobe.fastStrobe;
+      } else {
+        channel.minValue = 0;
+        channel.maxValue = 255;
+      }
     }
-  });
+    project.fixtureDefinitions[definitionId.toString()] = definition;
+
+    for (const universe of Object.values(project.universes)) {
+      for (const fixture of Object.values(universe.fixtures)) {
+        if (fixture.deprecatedFixtureDefinitionId === oldId) {
+          fixture.fixtureDefinitionId = definitionId;
+        }
+      }
+     }
+  }
+
+  delete project.deprecatedFixtureDefinitions;
 }

@@ -222,7 +222,7 @@ export function renderLayersToUniverse(
 
 function applyDefaults(project: Project, universe: DmxUniverse): void {
   for (const fixture of Object.values(getActiveUniverse(project).fixtures)) {
-    const fixtureDefinition = project.fixtureDefinitions[fixture.fixtureDefinitionId];
+    const fixtureDefinition = project.fixtureDefinitions[fixture.fixtureDefinitionId.toString()];
     // Can happen if fixture has not yet set a definition.
     if (!fixtureDefinition) {
       continue;
