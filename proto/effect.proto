@@ -37,7 +37,9 @@ message FixtureState {
   optional double pan = 5;
   optional double tilt = 6;
   optional double zoom = 7;
-  optional StrobeSpeed strobe = 8;
+  optional double strobe = 9;
+
+  optional StrobeSpeed deprecated_strobe = 8 [deprecated = true];
 }
 
 message FixtureSequenceMapping {

@@ -15,6 +15,7 @@ import { SerialContext } from '../contexts/SerialContext';
 import { getActiveUniverse } from '../util/projectUtils';
 import { randomUint64 } from '../util/numberUtils';
 import { Universe } from '@dmx-controller/proto/universe_pb';
+import RangeInput from '../components/RangeInput';
 
 export default function UniversePage(): JSX.Element {
   return (
@@ -468,7 +469,7 @@ function EditDefinitionDialog({
   useEffect(() => {
     const testValues: number[] = [];
     Object.entries(definition.channels).forEach(([i, c]) => {
-      testValues[parseInt(i) - 1] = c.defaultValue || 0;
+      testValues[parseInt(i) - 1 + testIndex] = c.defaultValue || 0;
     });
     setTestValues(testValues);
   }, [setTestValues]);
@@ -556,7 +557,8 @@ function EditDefinitionDialog({
             <th>Default</th>
             <th>Min Deg</th>
             <th>Max Deg</th>
-            <th>Strobe</th>
+            <th>Min Value</th>
+            <th>Max Value</th>
             <th>Test</th>
           </tr>
         </thead>
@@ -653,39 +655,29 @@ function EditDefinitionDialog({
                       </>
                   }
                   {
-                    channel?.type === 'strobe' ?
-                      <td>
-                        <NumberInput
-                          title='No Strobe'
-                          type='integer'
-                          min={0}
-                          max={255}
-                          value={channel.strobe.noStrobe}
-                          onChange={(value) => {
-                            channel.strobe.noStrobe = value;
-                          }} />
-
-                        <NumberInput
-                          title='Slow Strobe'
-                          type='integer'
-                          min={0}
-                          max={255}
-                          value={channel.strobe.slowStrobe}
-                          onChange={(value) => {
-                            channel.strobe.slowStrobe = value;
-                          }} />
-
-                        <NumberInput
-                          title='Fast Strobe'
-                          type='integer'
-                          min={0}
-                          max={255}
-                          value={channel.strobe.fastStrobe}
-                          onChange={(value) => {
-                            channel.strobe.fastStrobe = value;
-                          }} />
-                      </td> :
-                      <td></td>
+                    channel?.type === 'brightness' ||
+                      channel?.type === 'strobe' ||
+                      channel?.type === 'zoom' ?
+                      <>
+                        <td>
+                          <RangeInput
+                            title={`Minimum value for ${channel?.type} channel.`}
+                            value={channel.minValue}
+                            onChange={(value) => { channel.minValue = value; }}
+                            max="255" />
+                        </td>
+                        <td>
+                          <RangeInput
+                            title={`Maximum value for ${channel?.type} channel.`}
+                            value={channel.maxValue}
+                            onChange={(value) => { channel.maxValue = value; }}
+                            max="255" />
+                        </td>
+                      </> :
+                      <>
+                        <td></td>
+                        <td></td>
+                      </>
                   }
                   <td>
                     <NumberInput

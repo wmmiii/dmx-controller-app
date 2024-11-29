@@ -40,9 +40,6 @@ export function UniverseVisualizer() {
             }
           };
 
-          const strobe = Object.entries(definition.channels)
-            .find(e => e[1].type === 'strobe')?.[1].strobe;
-
           return {
             id: i,
             name: f.name,
@@ -50,15 +47,9 @@ export function UniverseVisualizer() {
             gIndex: getChannel('green'),
             bIndex: getChannel('blue'),
             wIndex: getChannel('white'),
-            strobeIndex: getChannel('strobe'),
-            strobe: {
-              none: strobe?.noStrobe || 0,
-              slow: strobe?.slowStrobe || 0,
-              fast: strobe?.fastStrobe || 0,
-            },
           };
         });
-      }, [project]);
+    }, [project]);
 
   const getValue = (index: number | undefined) => {
     if (index === undefined) {
@@ -89,25 +80,15 @@ export function UniverseVisualizer() {
             );
           }
 
-          let background: string;
-          let shadow: string;
-          if (f.strobeIndex && getValue(f.strobeIndex) === f.strobe.slow && (t % 200) > 100) {
-            background = '#000';
-            shadow = '#000';
-          } else if (f.strobeIndex && getValue(f.strobeIndex) === f.strobe.fast && (t % 100) > 50) {
-            background = '#000';
-            shadow = '#000';
-          } else {
-            const redRaw = getValue(f.rIndex);
-            const greenRaw = getValue(f.gIndex);
-            const blueRaw = getValue(f.bIndex);
-            const whiteRaw = getValue(f.wIndex);
-            const red = redRaw + whiteRaw;
-            const green = greenRaw + whiteRaw;
-            const blue = blueRaw + whiteRaw;
-            background = `rgb(${Math.min(red, 255)}, ${Math.min(green, 255)}, ${Math.min(blue, 255)})`;
-            shadow = `rgb(${Math.max(red - 255, 0)}, ${Math.max(green - 255, 0)}, ${Math.max(blue - 255, 0)})`;
-          }
+          const redRaw = getValue(f.rIndex);
+          const greenRaw = getValue(f.gIndex);
+          const blueRaw = getValue(f.bIndex);
+          const whiteRaw = getValue(f.wIndex);
+          const red = redRaw + whiteRaw;
+          const green = greenRaw + whiteRaw;
+          const blue = blueRaw + whiteRaw;
+          const background = `rgb(${Math.min(red, 255)}, ${Math.min(green, 255)}, ${Math.min(blue, 255)})`;
+          const shadow = `rgb(${Math.max(red - 255, 0)}, ${Math.max(green - 255, 0)}, ${Math.max(blue - 255, 0)})`;
 
           return (
             <li

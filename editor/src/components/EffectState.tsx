@@ -5,7 +5,7 @@ import IconBxX from '../icons/IconBxX';
 import RangeInput from './RangeInput';
 import styles from './EffectState.module.scss';
 import { Button, IconButton } from './Button';
-import { FixtureState as FixtureStateProto, FixtureState_Channel, RGB, RGBW, EffectTiming, FixtureState_StrobeSpeed } from "@dmx-controller/proto/effect_pb";
+import { FixtureState as FixtureStateProto, FixtureState_Channel, RGB, RGBW } from "@dmx-controller/proto/effect_pb";
 import { NumberInput } from './Input';
 
 interface EffectStateProps {
@@ -138,17 +138,15 @@ export function EffectState(
         state.strobe != null ?
           <label className={styles.stateRow}>
             <span>Strobe</span>
-            <select
+            <NumberInput
+              type="float"
+              max={1}
+              min={0}
               value={state.strobe}
-              onChange={(e) => {
-                const speed = parseInt(e.target.value) as FixtureState_StrobeSpeed;
-                state.strobe = speed;
+              onChange={(v) => {
+                state.strobe = v;
                 onChange(state);
-              }}>
-              <option value={FixtureState_StrobeSpeed.NONE}>None</option>
-              <option value={FixtureState_StrobeSpeed.SLOW}>Slow</option>
-              <option value={FixtureState_StrobeSpeed.FAST}>Fast</option>
-            </select>&nbsp;
+              }} />&nbsp;
             <IconButton
               title="Remove Strobe"
               onClick={() => {
@@ -163,7 +161,7 @@ export function EffectState(
             <IconButton
               title="Add Strobe"
               onClick={() => {
-                state.strobe = FixtureState_StrobeSpeed.FAST;
+                state.strobe = 0;
                 onChange(state);
               }}>
               <IconBxPlus />

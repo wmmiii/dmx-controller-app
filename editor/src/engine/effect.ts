@@ -39,8 +39,8 @@ export function applyState(state: FixtureState, context: RenderContext): void {
     device.setAmount(universe, 'strobe', state.strobe);
   }
 
-  if (state.strobe != null) {
-    device.setAmount(universe, 'zoom', state.strobe);
+  if (state.zoom != null) {
+    device.setAmount(universe, 'zoom', state.zoom);
   }
 
   for (const channel of state.channels) {

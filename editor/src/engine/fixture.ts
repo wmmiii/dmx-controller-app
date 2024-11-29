@@ -197,9 +197,7 @@ function collectFunctions(fixtureIndex: number, definition: FixtureDefinition, c
         const amountFunctions = collection.amountFunctions.get(channelType) || [];
         amountFunctions.push((universe, a) => {
           universe[index] = (
-            (a * 255 - channel.minValue)
-            /
-            (channel.maxValue - channel.minValue)
+            a * (channel.maxValue - channel.minValue) + channel.minValue
           ) % 256;
         });
         collection.amountFunctions.set(channelType, amountFunctions);

@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import IconBxBrushAlt from '../icons/IconBxBrush';
 import IconBxPlus from '../icons/IconBxPlus';
 import IconBxX from '../icons/IconBxX';
@@ -18,6 +18,7 @@ import { UniverseSequenceEditor } from '../components/UniverseSequenceEditor';
 import { getOutputName, OutputSelector } from '../components/OutputSelector';
 import { renderSceneToUniverse as renderActiveSceneToUniverse } from '../engine/universe';
 import { universeToUint8Array } from '../engine/utils';
+import { Project } from '@dmx-controller/proto/project_pb';
 
 
 export function LivePage(): JSX.Element {
@@ -30,6 +31,7 @@ export function LivePage(): JSX.Element {
 
 function LivePageImpl(): JSX.Element {
   const { project, save } = useContext(ProjectContext);
+  const projectRef = useRef<Project>(project);
   const { beat: beatMetadata } = useContext(BeatContext);
   const [addRowIndex, setAddRowIndex] = useState<number>(null);
   const { setRenderUniverse, clearRenderUniverse } = useContext(SerialContext);
@@ -37,22 +39,29 @@ function LivePageImpl(): JSX.Element {
   const [selected, setSelected] = useState<Scene_Component | null>(null);
 
   useEffect(() => {
-    if (!project) {
-      return;
-    }
+    projectRef.current = project;
+  }, [project]);
 
-    const render = (frame: number) => universeToUint8Array(
-      project,
-      renderActiveSceneToUniverse(
-        new Date().getTime(),
-        beatMetadata,
-        frame,
-        project,
-      ));
+  useEffect(() => {
+    const render = (frame: number) => {
+      const project = projectRef.current;
+      if (project != null) {
+      return universeToUint8Array(
+        projectRef.current,
+        renderActiveSceneToUniverse(
+          new Date().getTime(),
+          beatMetadata,
+          frame,
+          project,
+        ));
+      } else {
+        return new Uint8Array(512);
+      }
+    };
     setRenderUniverse(render);
 
     return () => clearRenderUniverse(render);
-  }, [selected, beatMetadata, project]);
+  }, [beatMetadata, projectRef]);
 
   return (
     <BeatProvider>
