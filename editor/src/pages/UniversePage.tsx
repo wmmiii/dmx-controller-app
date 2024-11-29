@@ -7,7 +7,7 @@ import { FixtureDefinition, FixtureDefinition_Channel, PhysicalFixture, Physical
 import { HorizontalSplitPane } from '../components/SplitPane';
 import { Modal } from '../components/Modal';
 import { ProjectContext } from '../contexts/ProjectContext';
-import { idMapToArray, nextId } from '../util/mapUtils';
+import { idMapToArray } from '../util/mapUtils';
 import { getApplicableMembers } from '../engine/group';
 import { NumberInput, TextInput } from '../components/Input';
 import { deleteFixture, deleteFixtureGroup } from '../engine/fixture';

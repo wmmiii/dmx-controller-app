@@ -1,89 +1,62 @@
 import { Project } from "@dmx-controller/proto/project_pb";
 import { getAllFixtures } from "./group";
-import { FixtureState_StrobeSpeed } from "@dmx-controller/proto/effect_pb";
-import { OutputId_FixtureMapping } from "@dmx-controller/proto/output_id_pb";
+import { OutputId, OutputId_FixtureMapping } from "@dmx-controller/proto/output_id_pb";
 import { getActiveUniverse } from "../util/projectUtils";
 import { LightTrack } from "@dmx-controller/proto/light_track_pb";
+import { FixtureDefinition } from "@dmx-controller/proto/fixture_pb";
 
 export type DmxUniverse = number[];
 
-export type ChannelTypes =
-  'other' |
-  'red' |
-  'red-fine' |
-  'green' |
-  'green-fine' |
-  'blue' |
-  'blue-fine' |
-  'white' |
-  'white-fine' |
-  'brightness' |
-  'brightness-fine' |
-  'strobe' |
-  'pan' |
-  'pan-fine' |
-  'tilt' |
-  'tilt-fine' |
-  'zoom';
+export type ColorChannel = 'red' | 'green' | 'blue' | 'white';
+
+export type AngleChannel = 'pan' | 'tilt';
+
+export type AmountChannel = 'brightness' | 'strobe' | 'zoom';
+
+export type ChannelTypes = ColorChannel | AngleChannel | AmountChannel;
 
 export interface WritableDevice {
   /**
    * Manually overrides a channel. Valid numbers are [0, 255].
    */
-  setChannel(index: number, value: number): void;
+  setChannel(universe: DmxUniverse, index: number, value: number): void;
 
   /**
    * Sets the color based on a [0, 1] value for red, green, and blue.
    */
-  setRGB(red: number, green: number, blue: number): void;
+  setColor(universe: DmxUniverse, red: number, green: number, blue: number, white?: number): void;
 
   /**
-   * Sets the color based on a [0, 1] value for red, green, blue, and white.
+   * Sets a fixture angle based on degrees.
    */
-  setRGBW(red: number, green: number, blue: number, white: number): void;
+  setAngle(universe: DmxUniverse, type: AngleChannel, angle: number): void;
 
   /**
-   * Sets the brightness of the light based on a [0, 1] value.
+   * Sets an amount based on a [0, 1] value.
    */
-  setBrightness(brightness: number): void;
+  setAmount(universe: DmxUniverse, type: AmountChannel, amount: number): void;
 
-  /**
-   * Sets the strobe amount of the light.
-   */
-  setStrobe(speed: FixtureState_StrobeSpeed): void;
-
-  /**
-   * Sets the pan based on a [0, 360] degree value.
-   */
-  setPan(degrees: number): void;
-
-  /**
-   * Sets the tilt based on a [0, 360] degree value.
-   */
-  setTilt(degrees: number): void;
-
-  /**
-   * Sets the zoom amount based on a [0, 1] value.
-   */
-  setZoom(amount: number): void;
-
-  /**
-   * Returns the type of all the channels according to this device.
-   */
-  readonly channelTypes: ChannelTypes[];
 }
 
-export function getPhysicalWritableDevice(
+export function getWritableDevice(project: Project, outputId: OutputId) {
+  switch (outputId.output.case) {
+    case 'fixtures':
+      return getPhysicalWritableDevice(project, outputId.output.value);
+    case 'group':
+      return getPhysicalWritableDeviceFromGroup(project, outputId.output.value);
+  }
+}
+
+function getPhysicalWritableDevice(
   project: Project,
-  fixtureMapping: OutputId_FixtureMapping,
-  universe: DmxUniverse): WritableDevice | undefined {
+  fixtureMapping: OutputId_FixtureMapping): WritableDevice | undefined {
   const activeUniverseId = project.activeUniverse.toString();
   const fixtureId = fixtureMapping.fixtures[activeUniverseId];
   // Check if this output is defined for the current universe.
   if (fixtureId == null) {
     return undefined;
   }
-  const physicalFixture = project.universes[activeUniverseId].fixtures[fixtureId.toString()];
+  const physicalFixture = getActiveUniverse(project).fixtures[fixtureId.toString()];
   const definition =
     project.fixtureDefinitions[physicalFixture.fixtureDefinitionId.toString()];
   // Check to ensure this fixture has a definition.
@@ -91,203 +64,41 @@ export function getPhysicalWritableDevice(
     return undefined;
   }
 
-  const rgbFunctions: Array<(r: number, g: number, b: number) => void> = [];
-  const whiteFunctions: Array<(w: number) => void> = [];
-  const brightnessFunctions: Array<(b: number) => void> = [];
-  const strobeFunctions: Array<(s: FixtureState_StrobeSpeed) => void> = [];
-  const panFunctions: Array<(d: number) => void> = [];
-  const tiltFunctions: Array<(d: number) => void> = [];
-  const zoomFunctions: Array<(z: number) => void> = [];
-
-  const channelTypes: ChannelTypes[] = [];
-
-  for (const stringIndex in definition.channels) {
-    const channel = definition.channels[stringIndex];
-    const index = physicalFixture.channelOffset + parseInt(stringIndex) - 1;
-    channelTypes[index] = channel.type as ChannelTypes;
-    switch (channel.type as ChannelTypes) {
-      case 'red':
-        rgbFunctions.push((r, _g, _b) => {
-          universe[index] = r * 255;
-        });
-        break;
-      case 'red-fine':
-        rgbFunctions.push((r, _g, _b) => {
-          universe[index] = (r * 65025) % 255;
-        });
-        break;
-      case 'green':
-        rgbFunctions.push((_r, g, _b) => {
-          universe[index] = g * 255;
-        });
-        break;
-      case 'green-fine':
-        rgbFunctions.push((_r, g, _b) => {
-          universe[index] = (g * 65025) % 255;
-        });
-        break;
-      case 'blue':
-        rgbFunctions.push((_r, _g, b) => {
-          universe[index] = b * 255;
-        });
-        break;
-      case 'blue-fine':
-        rgbFunctions.push((_r, _g, b) => {
-          universe[index] = (b * 65025) % 255;
-        });
-        break;
-      case 'white':
-        whiteFunctions.push((w) => {
-          universe[index] = w * 255;
-        });
-        break;
-      case 'white-fine':
-        whiteFunctions.push((w) => {
-          universe[index] = (w * 65025) % 255;
-        });
-        break;
-      case 'brightness':
-        brightnessFunctions.push((b) => {
-          universe[index] = b * 255;
-        });
-        break;
-      case 'brightness-fine':
-        brightnessFunctions.push((b) => {
-          universe[index] = (b * 65025) % 255;
-        });
-        break;
-      case 'strobe':
-        strobeFunctions.push((s) => {
-          let amount: number;
-          switch (s) {
-            case FixtureState_StrobeSpeed.SLOW:
-              amount = channel.strobe.slowStrobe ?? channel.strobe.fastStrobe ?? channel.defaultValue;
-              break;
-            case FixtureState_StrobeSpeed.FAST:
-              amount = channel.strobe.fastStrobe ?? channel.strobe.slowStrobe ?? channel.defaultValue;
-              break;
-            default:
-              amount = channel.strobe.noStrobe ?? channel.defaultValue;
-          }
-          universe[index] = amount;
-        });
-        break;
-      case 'pan':
-        panFunctions.push((d) => {
-          universe[index] = mapDegrees(d, channel.minDegrees, channel.maxDegrees);
-        });
-        break;
-      case 'pan-fine':
-        panFunctions.push((d) => {
-          universe[index] =
-            (mapDegrees(d, channel.minDegrees, channel.maxDegrees) * 255) % 255;
-        });
-        break;
-      case 'tilt':
-        tiltFunctions.push((d) => {
-          universe[index] = mapDegrees(d, channel.minDegrees, channel.maxDegrees);
-        });
-        break;
-      case 'tilt-fine':
-        tiltFunctions.push((d) => {
-          const m = mapDegrees(d, channel.minDegrees, channel.maxDegrees);
-          universe[index] =
-            (m * 255) % 255;
-        });
-      case 'zoom':
-        zoomFunctions.push((z) => {
-          universe[index] = (z * 255) % 256;
-        });
-      default:
-        continue;
-    }
-  }
-
-  return {
-    setChannel: (index, value) => {
-      universe[index + physicalFixture.channelOffset] = value;
-    },
-
-    setRGB: (r, g, b) => {
-      rgbFunctions.forEach(f => f(r, g, b));
-    },
-
-    setRGBW: (r, g, b, w) => {
-      rgbFunctions.forEach(f => f(r, g, b));
-      whiteFunctions.forEach(f => f(w));
-    },
-
-    setBrightness: (brightness: number) => {
-      brightnessFunctions.forEach(f => f(brightness));
-    },
-
-    setStrobe: (speed) => {
-      strobeFunctions.forEach(f => f(speed));
-    },
-
-    setPan: (degrees: number) => {
-      panFunctions.forEach(f => f(degrees));
-    },
-
-    setTilt: (degrees: number) => {
-      tiltFunctions.forEach(f => f(degrees));
-    },
-
-    setZoom: (amount: number) => {
-      zoomFunctions.forEach(f => f(amount));
-    },
-
-    channelTypes,
+  const functionCollection: FunctionCollection = {
+    manualFunctions: [],
+    colorFunctions: [],
+    angleFunctions: new Map(),
+    amountFunctions: new Map(),
   };
+
+  collectFunctions(physicalFixture.channelOffset, definition, functionCollection);
+  return functionCollectionToDevice(functionCollection);
 }
 
-function mapDegrees(value: number, minDegrees: number, maxDegrees: number): number {
-  return Math.max(
-    Math.min(
-      255 * (value - minDegrees) / (maxDegrees - minDegrees),
-      255),
-    0);
-}
-
-export function getPhysicalWritableDeviceFromGroup(
+function getPhysicalWritableDeviceFromGroup(
   project: Project,
-  groupId: bigint,
-  universe: DmxUniverse): WritableDevice | undefined {
+  groupId: bigint): WritableDevice | undefined {
   const group = project.groups[groupId.toString()];
   if (!group) {
     return undefined;
   }
 
-  const writableDevices = getAllFixtures(project, groupId)
-    .map((id) => {
-      const mapping = new OutputId_FixtureMapping();
-      mapping.fixtures[project.activeUniverse.toString()] = id;
-      return getPhysicalWritableDevice(project, mapping, universe);
+  const functionCollection: FunctionCollection = {
+    manualFunctions: [],
+    colorFunctions: [],
+    angleFunctions: new Map(),
+    amountFunctions: new Map(),
+  };
+
+  getAllFixtures(project, groupId)
+    .forEach(id => {
+      const physicalFixture = getActiveUniverse(project).fixtures[id.toString()];
+      const definition =
+        project.fixtureDefinitions[physicalFixture.fixtureDefinitionId.toString()];
+      collectFunctions(physicalFixture.channelOffset, definition, functionCollection);
     });
 
-  const channelTypes: ChannelTypes[] = [];
-  writableDevices.forEach(d => d.channelTypes
-    .forEach((c, i) => channelTypes[i] = c));
-
-  return {
-    setChannel: (index: number, value: number) =>
-      writableDevices.forEach(d => d.setChannel(index, value)),
-    setRGB: (red: number, green: number, blue: number) =>
-      writableDevices.forEach(d => d.setRGB(red, green, blue)),
-    setRGBW: (red: number, green: number, blue: number, white: number) =>
-      writableDevices.forEach(d => d.setRGBW(red, green, blue, white)),
-    setBrightness: (brightness: number) =>
-      writableDevices.forEach(d => d.setBrightness(brightness)),
-    setStrobe: (speed) =>
-      writableDevices.forEach(d => d.setStrobe(speed)),
-    setPan: (degrees: number) =>
-      writableDevices.forEach(d => d.setPan(degrees)),
-    setTilt: (degrees: number) =>
-      writableDevices.forEach(d => d.setTilt(degrees)),
-    setZoom: (amount: number) =>
-      writableDevices.forEach(d => d.setZoom(amount)),
-    channelTypes,
-  };
+  return functionCollectionToDevice(functionCollection);
 }
 
 export function deleteFixture(project: Project, fixtureId: bigint) {
@@ -330,6 +141,94 @@ export function deleteFixture(project: Project, fixtureId: bigint) {
     });
 
   delete getActiveUniverse(project).fixtures[fixtureId.toString()];
+}
+
+interface FunctionCollection {
+  manualFunctions: Array<(universe: DmxUniverse, index: number, value: number) => void>;
+  colorFunctions: Array<(universe: DmxUniverse, r: number, g: number, b: number, w: number) => void>;
+  angleFunctions: Map<AngleChannel, Array<(universe: DmxUniverse, a: number) => void>>;
+  amountFunctions: Map<AmountChannel, Array<(universe: DmxUniverse, a: number) => void>>;
+}
+
+function collectFunctions(fixtureIndex: number, definition: FixtureDefinition, collection: FunctionCollection) {
+  collection.manualFunctions.push((universe, index, value) => {
+    universe[fixtureIndex + index] = value;
+  });
+
+  for (const stringIndex in definition.channels) {
+    const channel = definition.channels[stringIndex];
+    const index = fixtureIndex + parseInt(stringIndex) - 1;
+    const channelType = channel.type as ChannelTypes;
+    switch (channelType) {
+      case 'red':
+        collection.colorFunctions.push((universe, r, _g, _b, _w) => {
+          universe[index] = r * 255;
+        });
+        break;
+      case 'green':
+        collection.colorFunctions.push((universe, _r, g, _b, _w) => {
+          universe[index] = g * 255;
+        });
+        break;
+      case 'blue':
+        collection.colorFunctions.push((universe, _r, _g, b, _w) => {
+          universe[index] = b * 255;
+        });
+        break;
+      case 'white':
+        collection.colorFunctions.push((universe, _r, _g, _b, w) => {
+          if (w != null) {
+            universe[index] = w * 255;
+          }
+        });
+        break;
+      case 'pan':
+      case 'tilt':
+        const angleFunctions = collection.angleFunctions.get(channelType) || [];
+        angleFunctions.push((universe, d) => {
+          universe[index] =
+            (mapDegrees(d, channel.minDegrees, channel.maxDegrees) * 255) % 255;
+        });
+        collection.angleFunctions.set(channelType, angleFunctions);
+        break;
+      case 'brightness':
+      case 'strobe':
+      case 'zoom':
+        const amountFunctions = collection.amountFunctions.get(channelType) || [];
+        amountFunctions.push((universe, a) => {
+          universe[index] = (
+            (a * 255 - channel.minValue)
+            /
+            (channel.maxValue - channel.minValue)
+          ) % 256;
+        });
+        collection.amountFunctions.set(channelType, amountFunctions);
+        break;
+      default:
+        continue;
+    }
+  }
+}
+
+function mapDegrees(value: number, minDegrees: number, maxDegrees: number): number {
+  return Math.max(
+    Math.min(
+      255 * (value - minDegrees) / (maxDegrees - minDegrees),
+      255),
+    0);
+}
+
+function functionCollectionToDevice(collection: FunctionCollection): WritableDevice {
+  return {
+    setChannel: (universe, index, value) =>
+      collection.manualFunctions.forEach(f => f(universe, index, value)),
+    setColor: (universe, red, green, blue, white) =>
+      collection.colorFunctions.forEach(f => f(universe, red, green, blue, white)),
+    setAngle: (universe, type, angle) =>
+      collection.angleFunctions.get(type)?.forEach(f => f(universe, angle)),
+    setAmount: (universe, type, amount) =>
+      collection.amountFunctions.get(type)?.forEach(f => f(universe, amount)),
+  };
 }
 
 export function deleteFixtureGroup(project: Project, fixtureGroupId: bigint) {

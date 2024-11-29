@@ -1,8 +1,7 @@
 import { BeatMetadata } from "@dmx-controller/proto/beat_pb";
-import { DmxUniverse, WritableDevice, getPhysicalWritableDevice, getPhysicalWritableDeviceFromGroup } from "./fixture";
+import { DmxUniverse, WritableDevice, getWritableDevice } from "./fixture";
 import { Effect, EffectTiming } from "@dmx-controller/proto/effect_pb";
 import { LightLayer } from "@dmx-controller/proto/light_layer_pb";
-import { OutputId } from "@dmx-controller/proto/output_id_pb";
 import { Project } from "@dmx-controller/proto/project_pb";
 import { SEQUENCE_BEAT_RESOLUTION } from "../components/UniverseSequenceEditor";
 import { Scene_Component_SequenceComponent } from "@dmx-controller/proto/scene_pb";
@@ -14,7 +13,7 @@ import { strobeEffect } from "./strobeEffect";
 
 export interface RenderContext {
   readonly t: number;
-  readonly outputId: OutputId;
+  readonly output: WritableDevice;
   readonly project: Project;
   readonly universe: DmxUniverse;
 }
@@ -34,15 +33,18 @@ export function renderShowToUniverse(t: number, frame: number, project: Project)
       .assets
       ?.audioFiles[show.audioTrack?.audioFileId]
       ?.beatMetadata;
-    const context: Omit<RenderContext, 'outputId'> = {
+    const context: Omit<RenderContext, 'output'> = {
       t: t,
       project: project,
       universe: universe,
     };
 
     for (const track of show.lightTracks) {
-      const trackContext = Object.assign({}, context, { outputId: track.outputId });
-      renderLayersToUniverse(t, track.layers, trackContext, beatMetadata, frame);
+      const output = getWritableDevice(project, track.outputId);
+      if (output) {
+        const trackContext = Object.assign({}, context, { output });
+        renderLayersToUniverse(t, track.layers, trackContext, beatMetadata, frame);
+      }
     }
   }
 
@@ -121,12 +123,15 @@ export function renderSceneToUniverse(
               }
             }
 
-            applyEffect({
-              t: effectT,
-              outputId: channel.outputId,
-              project: project,
-              universe: after
-            }, beatMetadata, frame, effect);
+            const output = getWritableDevice(project, channel.outputId);
+            if (output != null) {
+              applyEffect({
+                t: effectT,
+                output: output,
+                project: project,
+                universe: after
+              }, beatMetadata, frame, effect);
+            }
           }
           break;
 
@@ -184,23 +189,26 @@ function renderUniverseSequence(
   universe: DmxUniverse,
 ) {
   if (universeSequence) {
-    const context: Omit<RenderContext, 'outputId'> = {
+    const context: Omit<RenderContext, 'output'> = {
       t: t,
       project: project,
       universe: universe,
     };
 
     for (const track of universeSequence.lightTracks) {
-      const trackContext = Object.assign({}, context, { outputId: track.outputId });
-      renderLayersToUniverse(
-        t,
-        track.layers,
-        trackContext,
-        new BeatMetadata({
-          lengthMs: SEQUENCE_BEAT_RESOLUTION,
-          offsetMs: 0n,
-        }),
-        frame);
+      const output = getWritableDevice(project, track.outputId);
+      if (output != null) {
+        const trackContext = Object.assign({}, context, { output });
+        renderLayersToUniverse(
+          t,
+          track.layers,
+          trackContext,
+          new BeatMetadata({
+            lengthMs: SEQUENCE_BEAT_RESOLUTION,
+            offsetMs: 0n,
+          }),
+          frame);
+      }
     }
   }
 }
@@ -293,34 +301,5 @@ function applyEffect(context: RenderContext, beat: BeatMetadata, frame: number, 
       effectT);
   } else if (effect.effect.case === 'strobeEffect') {
     strobeEffect(context, effect.effect.value, frame);
-  }
-}
-
-export function getDevice(
-  { outputId, project, universe }: {
-    outputId: OutputId;
-    project: Project;
-    universe: DmxUniverse;
-  }
-): WritableDevice | undefined {
-  if (!outputId) {
-    throw new Error('Could not find outputId when getting device!');
-  }
-
-  switch (outputId.output.case) {
-    case 'fixtures':
-      return getPhysicalWritableDevice(
-        project,
-        outputId.output.value,
-        universe);
-    case 'group':
-      return getPhysicalWritableDeviceFromGroup(
-        project,
-        outputId.output.value,
-        universe);
-    case undefined:
-      return undefined;
-    default:
-      throw Error('Unknown device!');
   }
 }
