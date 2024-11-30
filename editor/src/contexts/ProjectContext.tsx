@@ -15,6 +15,10 @@ const DEFAULT_PROJECT = new Project({
   timingOffsetMs: 0,
   fixtureDefinitions: {},
   physicalFixtures: {},
+  scenes: [{
+    name: 'Default scene',
+    rows: [],
+  }],
 });
 
 interface Operation {
@@ -134,7 +138,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
       const p = Project.fromBinary(state);
       await saveImpl(p, `Undo: ${description}`);
       setOperationIndex(operationIndex - 1);
-      setProject(Object.assign({}, p, {assets: project.assets}));
+      setProject(Object.assign({}, p, { assets: project.assets }));
       setLastOperation(`Undo: ${description}`);
     }
   }, [operationIndex, operationStack, project, setOperationIndex, setProject, saveImpl]);
@@ -146,7 +150,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
       const p = Project.fromBinary(state);
       await saveImpl(p, `Redo: ${description}`);
       setOperationIndex(operationIndex + 1);
-      setProject(Object.assign({}, p, {assets: project.assets}));
+      setProject(Object.assign({}, p, { assets: project.assets }));
       setLastOperation(`Redo: ${description}`);
     }
   }, [operationIndex, operationStack, project, setOperationIndex, setProject, saveImpl]);
