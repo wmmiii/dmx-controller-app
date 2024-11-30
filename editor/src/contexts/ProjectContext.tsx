@@ -4,10 +4,21 @@ import { Project, Project_Assets } from '@dmx-controller/proto/project_pb';
 import { ShortcutContext } from './ShortcutContext';
 import { escapeForFilesystem } from '../util/fileUtils';
 import { getBlob, storeBlob } from '../util/storageUtil';
+import { Universe } from '@dmx-controller/proto/universe_pb';
+import { randomUint64 } from '../util/numberUtils';
 
 const PROJECT_KEY = "tmp-project-1";
 const ASSETS_KEY = "tmp-assets-1";
 const MAX_UNDO = 100;
+
+const DEFAULT_UNIVERSE = new Universe({
+  name: 'Default Universe',
+});
+
+const DEFAULT_UNIVERSE_MAP: {[id: string]: Universe} = {};
+DEFAULT_UNIVERSE_MAP[randomUint64().toString()] = new Universe({
+  name: 'Default Universe',
+});
 
 const DEFAULT_PROJECT = new Project({
   name: "Untitled Project",
@@ -19,6 +30,7 @@ const DEFAULT_PROJECT = new Project({
     name: 'Default scene',
     rows: [],
   }],
+  universes: DEFAULT_UNIVERSE_MAP,
 });
 
 interface Operation {
