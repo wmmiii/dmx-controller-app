@@ -48,6 +48,12 @@ $handle-size: 30px;
   }
 }
 
+.effect-type {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
 .icon {
   background-color: $col-bg-higher;
   border-radius: 999px;

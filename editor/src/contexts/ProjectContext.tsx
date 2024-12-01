@@ -11,13 +11,11 @@ const PROJECT_KEY = "tmp-project-1";
 const ASSETS_KEY = "tmp-assets-1";
 const MAX_UNDO = 100;
 
-const DEFAULT_UNIVERSE = new Universe({
-  name: 'Default Universe',
-});
-
 const DEFAULT_UNIVERSE_MAP: {[id: string]: Universe} = {};
-DEFAULT_UNIVERSE_MAP[randomUint64().toString()] = new Universe({
+const DEFAULT_UNIVERSE_ID = randomUint64();
+DEFAULT_UNIVERSE_MAP[DEFAULT_UNIVERSE_ID.toString()] = new Universe({
   name: 'Default Universe',
+  fixtures: {},
 });
 
 const DEFAULT_PROJECT = new Project({
@@ -30,6 +28,11 @@ const DEFAULT_PROJECT = new Project({
     name: 'Default scene',
     rows: [],
   }],
+  liveBeat: {
+    lengthMs: Math.floor(60_000 / 120),
+    offsetMs: 0n,
+  },
+  activeUniverse: DEFAULT_UNIVERSE_ID,
   universes: DEFAULT_UNIVERSE_MAP,
 });
 

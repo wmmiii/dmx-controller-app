@@ -1,5 +1,5 @@
 import { BeatMetadata } from "@dmx-controller/proto/beat_pb";
-import { DmxUniverse, WritableDevice, getWritableDevice } from "./fixture";
+import { DmxUniverse, WritableDevice, getWritableDevice, mapDegrees } from "./fixture";
 import { Effect, EffectTiming } from "@dmx-controller/proto/effect_pb";
 import { LightLayer } from "@dmx-controller/proto/light_layer_pb";
 import { Project } from "@dmx-controller/proto/project_pb";
@@ -89,6 +89,10 @@ export function renderSceneToUniverse(
           (component.fadeOutDuration.value || 0) * beatMetadata.lengthMs :
           (component.fadeOutDuration.value || 0);
 
+        if (sinceTransition > fadeOutMs) {
+          continue;
+        }
+
         amount = Math.max(0, 1 - sinceTransition / fadeOutMs);
       }
 
@@ -129,7 +133,7 @@ export function renderSceneToUniverse(
                 t: effectT,
                 output: output,
                 project: project,
-                universe: after
+                universe: after,
               }, beatMetadata, frame, effect);
             }
           }
@@ -213,7 +217,7 @@ function renderUniverseSequence(
   }
 }
 
-export function renderLayersToUniverse(
+function renderLayersToUniverse(
   t: number,
   layers: LightLayer[],
   context: RenderContext,
@@ -238,7 +242,11 @@ function applyDefaults(project: Project, universe: DmxUniverse): void {
 
     for (const channel of Object.entries(fixtureDefinition.channels)) {
       const index = parseInt(channel[0]) - 1 + fixture.channelOffset;
-      universe[index] = channel[1].defaultValue;
+      let value = channel[1].defaultValue;
+      if (channel[1].type === 'pan' || channel[1].type === 'tilt') {
+        value = mapDegrees(value, channel[1].minDegrees, channel[1].maxDegrees);
+      }
+      universe[index] = value;
     }
   }
 }

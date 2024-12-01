@@ -103,73 +103,20 @@ export function EffectState(
             }} />
         </label>
       }
-      {
-        state.brightness != null ?
-          <label className={styles.stateRow}>
-            <span>Brightness</span>
-            <RangeInput
-              className={styles.input}
-              max="1"
-              value={state.brightness}
-              onChange={(v) => {
-                state.brightness = v;
-                onChange(state);
-              }} />&nbsp;
-            <IconButton
-              title="Remove Brightness"
-              onClick={() => {
-                state.brightness = undefined;
-                onChange(state);
-              }}>
-              <IconBxX />
-            </IconButton>
-          </label> :
-          <label className={styles.stateRow}>
-            <span>Brightness</span>
-            <IconButton
-              title="Add Brightness"
-              onClick={() => {
-                state.brightness = 1;
-                onChange(state);
-              }}>
-              <IconBxPlus />
-            </IconButton>
-          </label>
-      }
-      {
-        state.strobe != null ?
-          <label className={styles.stateRow}>
-            <span>Strobe</span>
-            <NumberInput
-              type="float"
-              max={1}
-              min={0}
-              value={state.strobe}
-              onChange={(v) => {
-                state.strobe = v;
-                onChange(state);
-              }} />&nbsp;
-            <IconButton
-              title="Remove Strobe"
-              onClick={() => {
-                state.strobe = undefined;
-                onChange(state);
-              }}>
-              <IconBxX />
-            </IconButton>
-          </label> :
-          <label className={styles.stateRow}>
-            <span>Strobe</span>
-            <IconButton
-              title="Add Strobe"
-              onClick={() => {
-                state.strobe = 0;
-                onChange(state);
-              }}>
-              <IconBxPlus />
-            </IconButton>
-          </label>
-      }
+      <RangeChannel
+        name="Brightness"
+        value={state.brightness}
+        onChange={(v) => {
+          state.brightness = v;
+          onChange(state);
+        }} />
+      <RangeChannel
+        name="Strobe"
+        value={state.strobe}
+        onChange={(v) => {
+          state.strobe = v;
+          onChange(state);
+        }} />
       {
         state.pan != null ?
           <label className={styles.stateRow}>
@@ -238,40 +185,20 @@ export function EffectState(
             </IconButton>
           </label>
       }
-      {
-        state.zoom != null ?
-          <label className={styles.stateRow}>
-            <span>Zoom</span>
-            <NumberInput
-              type="float"
-              max={1}
-              min={0}
-              value={state.zoom}
-              onChange={(v) => {
-                state.zoom = v;
-                onChange(state);
-              }} />&nbsp;
-            <IconButton
-              title="Remove Zoom"
-              onClick={() => {
-                state.zoom = undefined;
-                onChange(state);
-              }}>
-              <IconBxX />
-            </IconButton>
-          </label> :
-          <label className={styles.stateRow}>
-            <span>Zoom</span>
-            <IconButton
-              title="Add Zoom"
-              onClick={() => {
-                state.zoom = 0;
-                onChange(state);
-              }}>
-              <IconBxPlus />
-            </IconButton>
-          </label>
-      }
+      <RangeChannel
+        name="Width"
+        value={state.width}
+        onChange={(v) => {
+          state.width = v;
+          onChange(state);
+        }} />
+      <RangeChannel
+        name="Height"
+        value={state.height}
+        onChange={(v) => {
+          state.height = v;
+          onChange(state);
+        }} />
       <label>Channels:</label>
       {
         state.channels.map((c: FixtureState_Channel, i: number) => (
@@ -317,5 +244,40 @@ export function EffectState(
         Add custom channel
       </Button>
     </>
+  );
+}
+
+interface RangeChannelProps {
+  name: string;
+  value: number | undefined;
+  onChange: (value: number | undefined) => void;
+}
+
+function RangeChannel({ name, value, onChange }: RangeChannelProps) {
+  return (
+    <label className={styles.stateRow}>
+      <span>{name}</span>
+      {
+        value != null ?
+          <>
+            <NumberInput
+              type="float"
+              max={1}
+              min={0}
+              value={value}
+              onChange={onChange} />&nbsp;
+            <IconButton
+              title={`Remove ${name}`}
+              onClick={() => onChange(undefined)}>
+              <IconBxX />
+            </IconButton>
+          </> :
+          <IconButton
+            title="Add Strobe"
+            onClick={() => onChange(0)}>
+            <IconBxPlus />
+          </IconButton>
+      }
+    </label>
   );
 }
