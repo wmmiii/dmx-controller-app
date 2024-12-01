@@ -1,7 +1,7 @@
 // icon:bx-zoom-out | Boxicons https://boxicons.com/ | Atisa
 import * as React from "react";
 
-function IconBxZoomOut(props) {
+function IconBxZoomOut(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       viewBox="0 0 24 24"

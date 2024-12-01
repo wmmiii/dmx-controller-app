@@ -96,8 +96,10 @@ export function EffectState(
             max="255"
             value={state.color.value.white * 255}
             onChange={(v) => {
-              state.color.value.white = v / 255;
-              onChange(state);
+              if (state.color.case === 'rgbw') {
+                state.color.value.white = v / 255;
+                onChange(state);
+              }
             }} />
         </label>
       }

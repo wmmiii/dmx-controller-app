@@ -376,7 +376,7 @@ function EditGroupDialog({
               group.groups.push(newMember.id.output.value);
               name = project.groups[newMember.id.output.value.toString()].name;
             } else {
-              throw new Error(`Unrecognized member type: ${newMember.id.output.case}`);
+              throw new Error(`Unrecognized member type: ${newMember.id.output}`);
             }
 
             setNewMemberIndex(null);

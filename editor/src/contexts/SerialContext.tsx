@@ -3,6 +3,8 @@ import { Modal } from "../components/Modal";
 import { DialogContext } from "./DialogContext";
 import IconBxErrorAlt from "../icons/IconBxErrorAlt";
 
+type SerialPort = any;
+
 const BLACKOUT_UNIVERSE = new Uint8Array(512);
 const FPS_BUFFER_SIZE = 100;
 
@@ -28,7 +30,7 @@ export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
   const [open, setOpen] =
     useState(!dialogContext.isDismissed(SERIAL_MISSING_KEY));
 
-  if (!navigator.serial) {
+  if (!(navigator as any).serial) {
     return (
       <SerialContext.Provider value={EMPTY_CONTEXT}>
         {children}
@@ -80,9 +82,9 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
   const connect = useCallback(async () => {
     try {
       let port: SerialPort;
-      const ports = await navigator.serial.getPorts();
+      const ports = await (navigator as any).serial.getPorts();
       if (ports.length === 0 || port != null) {
-        port = await navigator.serial.requestPort();
+        port = await (navigator as any).serial.requestPort();
       } else {
         port = ports[0];
       }
@@ -106,8 +108,8 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
   }, [port]);
 
   useEffect(() => {
-    navigator.serial.onconnect = connect;
-    navigator.serial.ondisconnect = disconnect;
+    (navigator as any).serial.onconnect = connect;
+    (navigator as any).serial.ondisconnect = disconnect;
   }, [connect, disconnect]);
 
   const resetFps = useCallback(() => {
@@ -131,7 +133,7 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
     let lastFrame = new Date().getTime();
     (async () => {
       while (!closed) {
-        let universe;
+        let universe: Uint8Array;
         if (blackout.current) {
           universe = BLACKOUT_UNIVERSE;
         } else {

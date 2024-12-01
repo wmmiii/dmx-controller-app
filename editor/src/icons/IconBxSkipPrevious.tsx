@@ -1,7 +1,7 @@
 // icon:bx-skip-previous | Boxicons https://boxicons.com/ | Atisa
 import * as React from "react";
 
-function IconBxSkipPrevious(props) {
+function IconBxSkipPrevious(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       viewBox="0 0 24 24"
