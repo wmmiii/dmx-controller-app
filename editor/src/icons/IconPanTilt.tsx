@@ -1,7 +1,7 @@
 // icon:bx-zoom-out | Boxicons https://boxicons.com/ | Atisa
 import * as React from "react";
 
-export default function IconPanTilt(props) {
+export default function IconPanTilt(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       viewBox="0 0 24 24"

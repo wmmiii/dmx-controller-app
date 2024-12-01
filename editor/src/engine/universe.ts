@@ -170,7 +170,7 @@ export function renderSceneToUniverse(
           break;
 
         default:
-          console.error(`Unrecognized description type ${(component.description as any).case}.`);
+          console.error(`Unrecognized description type ${component.description}.`);
           return universe;
       }
 

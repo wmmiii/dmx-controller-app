@@ -1,7 +1,7 @@
 // icon:bx-pulse | Boxicons https://boxicons.com/ | Atisa
 import * as React from "react";
 
-function IconBxPulse(props) {
+function IconBxPulse(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       viewBox="0 0 24 24"

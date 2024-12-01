@@ -6,7 +6,7 @@
     "target": "ESNext",
     "lib": [
       "DOM",
-      "ESNext"
+      "ESNext",
     ],
     "moduleResolution": "node",
     "noImplicitAny": true,
@@ -17,7 +17,10 @@
         "./bazel-bin/*",
         "./*"
       ]
-    }
+    },
+    "types": [
+      "./editor/src/types"
+    ],
   },
   "include": [
     "bazel-bin/*",

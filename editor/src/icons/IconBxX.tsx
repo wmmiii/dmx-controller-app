@@ -1,7 +1,7 @@
 // icon:bx-x | Boxicons https://boxicons.com/ | Atisa
 import * as React from "react";
 
-function IconBxX(props) {
+function IconBxX(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       viewBox="0 0 24 24"

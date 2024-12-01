@@ -1,7 +1,7 @@
 // icon:bx-download | Boxicons https://boxicons.com/ | Atisa
 import * as React from "react";
 
-function IconBxDownload(props) {
+function IconBxDownload(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       viewBox="0 0 24 24"

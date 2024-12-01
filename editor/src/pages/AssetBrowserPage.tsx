@@ -58,7 +58,8 @@ function AudioFileList({ selectAudioFile }: AudioFileListProps): JSX.Element {
           e.stopPropagation();
 
           (async () => {
-            for (const item of e.dataTransfer.items) {
+            for (let i = 0; i < e.dataTransfer.items.length; ++i) {
+              const item = e.dataTransfer.items[i];
               if (item.kind === 'file') {
                 const file = item.getAsFile() as File;
                 if (file.type.startsWith('audio/')) {

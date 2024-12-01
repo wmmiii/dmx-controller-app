@@ -1,7 +1,7 @@
 // icon:bx-upload | Boxicons https://boxicons.com/ | Atisa
 import * as React from "react";
 
-function IconBxUpload(props) {
+function IconBxUpload(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       viewBox="0 0 24 24"

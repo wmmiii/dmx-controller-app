@@ -242,7 +242,7 @@ export function EffectDetails({
       break;
     default:
       details = (
-        <p>Unrecognized effect type: {(effect.effect as any).case}</p>
+        <p>Unrecognized effect type: {JSON.stringify(effect.effect)}</p>
       );
   }
 
@@ -398,7 +398,7 @@ export function EffectDetails({
 function effectColor(effect: FixtureState, alt = false): string {
   const color = effect?.color?.value;
   if (color) {
-    const white = Math.floor((color.white || 0) * 255);
+    const white = Math.floor(('white' in color ? color.white : 0) * 255);
     const r = Math.min(Math.floor(color.red * 255) + white, 255);
     const g = Math.min(Math.floor(color.green * 255) + white, 255);
     const b = Math.min(Math.floor(color.blue * 255) + white, 255);
@@ -412,21 +412,20 @@ function effectColor(effect: FixtureState, alt = false): string {
 
 function effectIcons(effect: FixtureStateProto):
   Array<(props: any) => JSX.Element> {
-  const fixtureEffect = effect as FixtureStateProto;
   const icons: Array<(props: any) => JSX.Element> = [];
-  if (fixtureEffect?.color?.case != null) {
+  if (effect?.color?.case != null) {
     icons.push(IconRgb);
   }
-  if (fixtureEffect?.brightness != null) {
+  if (effect?.brightness != null) {
     icons.push(IconBxsSun);
   }
-  if (fixtureEffect?.pan != null || fixtureEffect?.tilt != null) {
+  if (effect?.pan != null || effect?.tilt != null) {
     icons.push(IconPanTilt);
   }
-  if (fixtureEffect?.zoom != null) {
+  if (effect?.zoom != null) {
     icons.push(IconBxsBinoculars);
   }
-  if (fixtureEffect?.strobe) {
+  if (effect?.strobe) {
     icons.push(IconBxsBolt);
   }
   return icons;
