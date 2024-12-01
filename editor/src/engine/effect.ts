@@ -24,7 +24,7 @@ export function applyState(state: FixtureState, context: RenderContext): void {
   }
 
   if (state.pan != null) {
-    device.setAngle(universe, 'pan', state.tilt);
+    device.setAngle(universe, 'pan', state.pan);
   }
 
   if (state.tilt != null) {
@@ -37,6 +37,14 @@ export function applyState(state: FixtureState, context: RenderContext): void {
 
   if (state.strobe != null) {
     device.setAmount(universe, 'strobe', state.strobe);
+  }
+
+  if (state.width != null) {
+    device.setAmount(universe, 'width', state.width);
+  }
+
+  if (state.height != null) {
+    device.setAmount(universe, 'height', state.height);
   }
 
   if (state.zoom != null) {

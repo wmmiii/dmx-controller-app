@@ -1,21 +1,20 @@
-import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import IconBxCopyAlt from '../icons/IconBxCopy';
 import IconBxX from '../icons/IconBxX';
+import RangeInput from '../components/RangeInput';
 import styles from './UniversePage.module.scss';
 import { Button, IconButton } from '../components/Button';
-import { FixtureDefinition, FixtureDefinition_Channel, PhysicalFixture, PhysicalFixtureGroup } from '@dmx-controller/proto/fixture_pb';
+import { FixtureDefinition, FixtureDefinition_Channel, PhysicalFixture, PhysicalFixtureGroup, PhysicalFixtureGroup_FixtureList } from '@dmx-controller/proto/fixture_pb';
 import { HorizontalSplitPane } from '../components/SplitPane';
 import { Modal } from '../components/Modal';
-import { ProjectContext } from '../contexts/ProjectContext';
-import { idMapToArray } from '../util/mapUtils';
-import { getApplicableMembers } from '../engine/group';
 import { NumberInput, TextInput } from '../components/Input';
-import { deleteFixture, deleteFixtureGroup } from '../engine/fixture';
+import { ProjectContext } from '../contexts/ProjectContext';
 import { SerialContext } from '../contexts/SerialContext';
-import { getActiveUniverse } from '../util/projectUtils';
-import { randomUint64 } from '../util/numberUtils';
 import { Universe } from '@dmx-controller/proto/universe_pb';
-import RangeInput from '../components/RangeInput';
+import { deleteFixture, deleteFixtureGroup } from '../engine/fixture';
+import { getActiveUniverse } from '../util/projectUtils';
+import { getApplicableMembers } from '../engine/group';
+import { randomUint64 } from '../util/numberUtils';
 
 export default function UniversePage(): JSX.Element {
   return (
@@ -225,7 +224,7 @@ function EditFixtureDialog({
             save(`Change fixture definition for ${fixture.name} to ${definitionName}`);
           }}>
           {
-            idMapToArray(project.fixtureDefinitions)
+            Object.entries(project.fixtureDefinitions)
               .sort((a, b) => a[1].name.localeCompare(b[1].name))
               .map(([id, definition]) => (
                 <option key={id} value={id}>
@@ -370,6 +369,11 @@ function EditGroupDialog({
             let name: string;
             if (newMember.id.output.case === 'fixtures') {
               const id = newMember.id.output.value.fixtures[project.activeUniverse.toString()];
+              if (group.fixtures[project.activeUniverse.toString()] == null) {
+                group.fixtures[project.activeUniverse.toString()] = new PhysicalFixtureGroup_FixtureList({
+                  fixtures: [],
+                });
+              }
               group.fixtures[project.activeUniverse.toString()].fixtures.push(id);
               name = getActiveUniverse(project).fixtures[id.toString()].name;
             } else if (newMember.id.output.case === 'group') {
@@ -478,14 +482,14 @@ function EditDefinitionDialog({
     const render = () => {
       const universe = new Uint8Array(512);
       for (let i = 0; i < definition.numChannels; ++i) {
-        universe[i] = testValues[i] || 0;
+        universe[i + testIndex] = testValues[i] || 0;
       }
       return universe;
     };
 
     setRenderUniverse(render);
     return () => clearRenderUniverse(render);
-  }, [definition, testValues, setRenderUniverse, clearRenderUniverse]);
+  }, [definition, testIndex, testValues, setRenderUniverse, clearRenderUniverse]);
 
   return (
     <Modal

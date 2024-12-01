@@ -11,7 +11,7 @@ export type ColorChannel = 'red' | 'green' | 'blue' | 'white';
 
 export type AngleChannel = 'pan' | 'tilt';
 
-export type AmountChannel = 'brightness' | 'strobe' | 'zoom';
+export type AmountChannel = 'brightness' | 'height' | 'strobe' | 'width' | 'zoom';
 
 export type ChannelTypes = ColorChannel | AngleChannel | AmountChannel;
 
@@ -184,23 +184,24 @@ function collectFunctions(fixtureIndex: number, definition: FixtureDefinition, c
         break;
       case 'pan':
       case 'tilt':
-        const angleFunctions = collection.angleFunctions.get(channelType) || [];
-        angleFunctions.push((universe, d) => {
-          universe[index] =
-            (mapDegrees(d, channel.minDegrees, channel.maxDegrees) * 255) % 255;
+        if (collection.angleFunctions.get(channelType) == null) {
+          collection.angleFunctions.set(channelType, []);
+        }
+        collection.angleFunctions.get(channelType).push((universe, d) => {
+          universe[index] = mapDegrees(d, channel.minDegrees, channel.maxDegrees);
         });
-        collection.angleFunctions.set(channelType, angleFunctions);
         break;
       case 'brightness':
       case 'strobe':
       case 'zoom':
-        const amountFunctions = collection.amountFunctions.get(channelType) || [];
-        amountFunctions.push((universe, a) => {
+        if (collection.amountFunctions.get(channelType) == null) {
+          collection.amountFunctions.set(channelType, []);
+        }
+        collection.amountFunctions.get(channelType).push((universe, a) => {
           universe[index] = (
             a * (channel.maxValue - channel.minValue) + channel.minValue
           ) % 256;
         });
-        collection.amountFunctions.set(channelType, amountFunctions);
         break;
       default:
         continue;
@@ -208,7 +209,7 @@ function collectFunctions(fixtureIndex: number, definition: FixtureDefinition, c
   }
 }
 
-function mapDegrees(value: number, minDegrees: number, maxDegrees: number): number {
+export function mapDegrees(value: number, minDegrees: number, maxDegrees: number): number {
   return Math.max(
     Math.min(
       255 * (value - minDegrees) / (maxDegrees - minDegrees),

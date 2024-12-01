@@ -5,7 +5,7 @@ import IconBxsSun from '../icons/IconBxsSun';
 import IconPanTilt from '../icons/IconPanTilt';
 import IconRgb from '../icons/IconRgb';
 import styles from './Effect.module.scss';
-import { Button } from './Button';
+import { Button, IconButton } from './Button';
 import { CSSProperties } from "react";
 import { DEFAULT_EFFECT_COLOR, DEFAULT_EFFECT_COLOR_ALT } from '../util/styleUtils';
 import { Effect as EffectProto, EffectTiming, Effect_RampEffect, Effect_RampEffect_EasingFunction, Effect_StaticEffect, FixtureState, FixtureState as FixtureStateProto, Effect_StrobeEffect } from "@dmx-controller/proto/effect_pb";
@@ -14,6 +14,9 @@ import { NumberInput, ToggleInput } from './Input';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { RenderingContext } from '../contexts/RenderingContext';
 import { ShortcutContext } from '../contexts/ShortcutContext';
+import IconBxCheckbox from '../icons/IconBxCheckbox';
+import IconBxLineChart from '../icons/IconBxLineChart';
+import IconBxMove from '../icons/IconBxMove';
 
 export interface EffectAddress {
   track: number;
@@ -248,55 +251,85 @@ export function EffectDetails({
 
   return (
     <div className={classes.join(' ')}>
-      <label>
+      <div className={styles.effectType}>
         <span>Effect type</span>
-        <select
-          value={effect.effect.case}
-          onChange={(e) => {
-            let type: string;
-            switch (e.target.value) {
-              case 'staticEffect':
-                effect.effect = {
-                  value: new Effect_StaticEffect({
-                    state: {},
-                  }),
-                  case: 'staticEffect',
-                };
-                type = 'static';
-                break;
-              case 'rampEffect':
-                effect.effect = {
-                  value: new Effect_RampEffect({
-                    stateStart: {},
-                    stateEnd: {},
-                  }),
-                  case: 'rampEffect',
-                };
-                type = 'ramp';
-                break;
-              case 'strobeEffect':
-                effect.effect = {
-                  value: new Effect_StrobeEffect({
-                    stateAFames: 1,
-                    stateBFames: 1,
-                    stateA: {},
-                    stateB: {},
-                  }),
-                  case: 'strobeEffect',
-                };
-                type = 'strobe';
-                break;
-              default:
-                console.error('Unrecognized event type: ', e.target.value);
-                return;
+        <IconButton
+          title="Static Effect"
+          variant={effect.effect.case === 'staticEffect' ? 'primary' : 'default'}
+          onClick={() => {
+            if (effect.effect.case === 'rampEffect') {
+              effect.effect = {
+                case: 'staticEffect',
+                value: new Effect_StaticEffect({
+                  state: effect.effect.value.stateStart,
+                }),
+              };
+              save('Change effect type to static.');
+            } else if (effect.effect.case === 'strobeEffect') {
+              effect.effect = {
+                case: 'staticEffect',
+                value: new Effect_StaticEffect({
+                  state: effect.effect.value.stateA,
+                }),
+              };
+              save('Change effect type to static.');
             }
-            save(`Change effect type to ${type}.`);
           }}>
-          <option value="staticEffect">Static Effect</option>
-          <option value="rampEffect">Ramp Effect</option>
-          <option value="strobeEffect">Strobe Effect</option>
-        </select>
-      </label>
+          <IconBxCheckbox />
+        </IconButton>
+        <IconButton
+          title="Ramp Effect"
+          variant={effect.effect.case === 'rampEffect' ? 'primary' : 'default'}
+          onClick={() => {
+            if (effect.effect.case === 'staticEffect') {
+              effect.effect = {
+                case: 'rampEffect',
+                value: new Effect_RampEffect({
+                  stateStart: effect.effect.value.state.clone(),
+                  stateEnd: effect.effect.value.state.clone(),
+                }),
+              };
+              save('Change effect type to ramp.');
+            } else if (effect.effect.case === 'strobeEffect') {
+              effect.effect = {
+                case: 'rampEffect',
+                value: new Effect_RampEffect({
+                  stateStart: effect.effect.value.stateA.clone(),
+                  stateEnd: effect.effect.value.stateB.clone(),
+                }),
+              };
+              save('Change effect type to ramp.');
+            }
+          }}>
+          <IconBxLineChart />
+        </IconButton>
+        <IconButton
+          title="Strobe Effect"
+          variant={effect.effect.case === 'strobeEffect' ? 'primary' : 'default'}
+          onClick={() => {
+            if (effect.effect.case === 'staticEffect') {
+              effect.effect = {
+                case: 'strobeEffect',
+                value: new Effect_StrobeEffect({
+                  stateA: effect.effect.value.state.clone(),
+                  stateB: effect.effect.value.state.clone(),
+                }),
+              };
+              save('Change effect type to strobe.');
+            } else if (effect.effect.case === 'rampEffect') {
+              effect.effect = {
+                case: 'strobeEffect',
+                value: new Effect_StrobeEffect({
+                  stateA: effect.effect.value.stateStart.clone(),
+                  stateB: effect.effect.value.stateEnd.clone(),
+                }),
+              };
+              save('Change effect type to strobe.');
+            }
+          }}>
+          <IconBxsBolt />
+        </IconButton>
+      </div>
 
       {
         effect.effect.case === 'rampEffect' &&
@@ -421,6 +454,9 @@ function effectIcons(effect: FixtureStateProto):
   }
   if (effect?.pan != null || effect?.tilt != null) {
     icons.push(IconPanTilt);
+  }
+  if (effect?.height != null || effect?.width != null) {
+    icons.push(IconBxMove);
   }
   if (effect?.zoom != null) {
     icons.push(IconBxsBinoculars);
