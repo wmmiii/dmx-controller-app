@@ -5,8 +5,9 @@ import { randomUint64 } from "./numberUtils";
 import { Universe } from "@dmx-controller/proto/universe_pb";
 import { OutputId, OutputId_FixtureMapping } from "@dmx-controller/proto/output_id_pb";
 import { LightTrack } from "@dmx-controller/proto/light_track_pb";
-import { PhysicalFixtureGroup, PhysicalFixtureGroup_FixtureList } from "@dmx-controller/proto/fixture_pb";
+import { FixtureDefinition_Channel_AmountMapping, FixtureDefinition_Channel_AngleMapping, PhysicalFixtureGroup, PhysicalFixtureGroup_FixtureList } from "@dmx-controller/proto/fixture_pb";
 import { Scene_Component_EffectGroupComponent_EffectChannel } from "@dmx-controller/proto/scene_pb";
+import { isAmountChannel, isAngleChannel } from "../engine/fixture";
 
 export default function upgradeProject(project: Project): void {
   upgradeIndices(project);
@@ -14,6 +15,7 @@ export default function upgradeProject(project: Project): void {
   upgradeUniverse(project);
   upgradeLiveEffects(project);
   upgradeFixtures(project);
+  updateFixtureDefinitionMapping(project);
 }
 
 function upgradeIndices(project: Project): void {
@@ -267,13 +269,8 @@ function upgradeFixtures(project: Project) {
     const oldId = parseInt(entry[0]);
     const definition = entry[1];
     for (const channel of Object.values(definition.channels)) {
-      if (channel.strobe) {
-        channel.minValue = channel.strobe.slowStrobe;
-        channel.maxValue = channel.strobe.fastStrobe;
-      } else {
-        channel.minValue = 0;
-        channel.maxValue = 255;
-      }
+      channel.deprecatedMinValue = 0;
+      channel.deprecatedMaxValue = 255;
     }
     project.fixtureDefinitions[definitionId.toString()] = definition;
 
@@ -283,8 +280,32 @@ function upgradeFixtures(project: Project) {
           fixture.fixtureDefinitionId = definitionId;
         }
       }
-     }
+    }
   }
 
   delete project.deprecatedFixtureDefinitions;
+}
+
+function updateFixtureDefinitionMapping(project: Project) {
+  Object.values(project.fixtureDefinitions)
+    .flatMap(d => Object.values(d.channels))
+    .forEach(c => {
+      if (isAngleChannel(c.type)) {
+        c.mapping = {
+          case: 'angleMapping',
+          value: new FixtureDefinition_Channel_AngleMapping({
+            minDegrees: c.deprecatedMinDegrees,
+            maxDegrees: c.deprecatedMaxDegrees,
+          }),
+        };
+      } else if (isAmountChannel(c.type)) {
+        c.mapping = {
+          case: 'amountMapping',
+          value: new FixtureDefinition_Channel_AmountMapping({
+            minValue: c.deprecatedMinValue,
+            maxValue: c.deprecatedMaxValue,
+          }),
+        };
+      }
+    });
 }

@@ -1,6 +1,7 @@
 import { BeatMetadata } from "@dmx-controller/proto/beat_pb";
-import { DmxUniverse, WritableDevice, getWritableDevice, mapDegrees } from "./fixture";
+import { DmxUniverse, WritableDevice, getWritableDevice, isAngleChannel, mapDegrees } from "./fixture";
 import { Effect, EffectTiming } from "@dmx-controller/proto/effect_pb";
+import { FixtureDefinition_Channel_AngleMapping } from "@dmx-controller/proto/fixture_pb";
 import { LightLayer } from "@dmx-controller/proto/light_layer_pb";
 import { Project } from "@dmx-controller/proto/project_pb";
 import { SEQUENCE_BEAT_RESOLUTION } from "../components/UniverseSequenceEditor";
@@ -243,8 +244,9 @@ function applyDefaults(project: Project, universe: DmxUniverse): void {
     for (const channel of Object.entries(fixtureDefinition.channels)) {
       const index = parseInt(channel[0]) - 1 + fixture.channelOffset;
       let value = channel[1].defaultValue;
-      if (channel[1].type === 'pan' || channel[1].type === 'tilt') {
-        value = mapDegrees(value, channel[1].minDegrees, channel[1].maxDegrees);
+      if (isAngleChannel(channel[1].type)) {
+        const mapping = channel[1].mapping.value as FixtureDefinition_Channel_AngleMapping;
+        value = mapDegrees(value, mapping.minDegrees, mapping.maxDegrees);
       }
       universe[index] = value;
     }

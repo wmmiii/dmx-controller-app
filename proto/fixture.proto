@@ -31,34 +31,43 @@ message FixtureDefinition {
   }
 
   message Channel {
+    message AngleMapping {
+      /** Minimum number of degrees that a "pan" or "tilt" channel can move. */
+      int32 min_degrees = 1;
+
+      /** Maximm number of degrees that a "pan" or "tilt" channel can move. */
+      int32 max_degrees = 2;
+    }
+
+    message AmountMapping {
+      /*
+       * The minimum value [0, 255] for this channel.
+       * Used to map a sub range of a channel on a fixture.
+       */
+      uint32 min_value = 1;
+
+      /*
+       * The minimum value [0, 255] for this channel.
+       * Used to map a sub range of a channel on a fixture.
+       */
+      uint32 max_value = 2;
+    }
+
     string type = 1;
 
     /* Default value to output for this channel. */
     uint32 default_value = 4;
 
-    /*
-     * The minimum value [0, 255] for this channel.
-     * Used to map a sub range of a channel on a fixture.
-     */
-    uint32 min_value = 6;
+    oneof mapping {
+      AngleMapping angle_mapping = 8;
+      AmountMapping amount_mapping = 9;
+    }
 
-    /*
-     * The minimum value [0, 255] for this channel.
-     * Used to map a sub range of a channel on a fixture.
-     */
-    uint32 max_value = 7;
-
-    /* Minimum number of degrees that a "pan" or "tilt" channel can move.
-     * Also applicable for "fine" variants. */
-    int32 min_degrees = 2;
-
-    /* Maximm number of degrees that a "pan" or "tilt" channel can move.
-     * Also applicable for "fine" variants. */
-    int32 max_degrees = 3;
-
-    /* If this channel type is "strobe" this mapping is set to configure fixture
-     * strobe settings. */
-    StrobeMapping strobe = 5 [deprecated = true];
+    uint32 deprecated_min_value = 6 [ deprecated = true ];
+    uint32 deprecated_max_value = 7 [ deprecated = true ];
+    int32 deprecated_min_degrees = 2 [ deprecated = true ];
+    int32 deprecated_max_degrees = 3 [ deprecated = true ];
+    StrobeMapping deprecated_strobe = 5 [ deprecated = true ];
   }
 
   string name = 1;
@@ -72,7 +81,7 @@ message PhysicalFixture {
   uint64 fixture_definition_id = 4;
   uint32 channel_offset = 3;
 
-  uint32 deprecated_fixture_definition_id = 2 [deprecated = true];
+  uint32 deprecated_fixture_definition_id = 2 [ deprecated = true ];
 }
 
 message PhysicalFixtureGroup {

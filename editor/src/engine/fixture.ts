@@ -7,13 +7,26 @@ import { FixtureDefinition } from "@dmx-controller/proto/fixture_pb";
 
 export type DmxUniverse = number[];
 
-export type ColorChannel = 'red' | 'green' | 'blue' | 'white';
+export const COLOR_CHANNELS = ['red', 'green', 'blue', 'white'] as const;
+export type ColorChannel = typeof COLOR_CHANNELS[number];
+export function isColorChannel(type: string): type is ColorChannel {
+  return COLOR_CHANNELS.includes(type as ColorChannel);
+}
 
-export type AngleChannel = 'pan' | 'tilt';
+export const ANGLE_CHANNEL = ['pan', 'tilt'] as const;
+export type AngleChannel = typeof ANGLE_CHANNEL[number];
+export function isAngleChannel(type: string): type is AngleChannel {
+  return ANGLE_CHANNEL.includes(type as AngleChannel);
+}
 
-export type AmountChannel = 'brightness' | 'height' | 'strobe' | 'width' | 'zoom';
+export const AMOUNT_CHANNEL = ['brightness', 'height', 'strobe', 'width', 'zoom'] as const;
+export type AmountChannel = typeof AMOUNT_CHANNEL[number];
+export function isAmountChannel(type: string): type is AmountChannel {
+  return AMOUNT_CHANNEL.includes(type as AmountChannel);
+}
 
 export type ChannelTypes = ColorChannel | AngleChannel | AmountChannel;
+
 
 export interface WritableDevice {
   /**
@@ -182,29 +195,32 @@ function collectFunctions(fixtureIndex: number, definition: FixtureDefinition, c
           }
         });
         break;
-      case 'pan':
-      case 'tilt':
-        if (collection.angleFunctions.get(channelType) == null) {
-          collection.angleFunctions.set(channelType, []);
-        }
-        collection.angleFunctions.get(channelType).push((universe, d) => {
-          universe[index] = mapDegrees(d, channel.minDegrees, channel.maxDegrees);
-        });
-        break;
-      case 'brightness':
-      case 'strobe':
-      case 'zoom':
-        if (collection.amountFunctions.get(channelType) == null) {
-          collection.amountFunctions.set(channelType, []);
-        }
-        collection.amountFunctions.get(channelType).push((universe, a) => {
-          universe[index] = (
-            a * (channel.maxValue - channel.minValue) + channel.minValue
-          ) % 256;
-        });
-        break;
       default:
-        continue;
+        if (isAngleChannel(channelType)) {
+          if (collection.angleFunctions.get(channelType) == null) {
+            collection.angleFunctions.set(channelType, []);
+          }
+          collection.angleFunctions.get(channelType).push((universe, d) => {
+            if (channel.mapping.case === 'angleMapping') {
+              universe[index] = mapDegrees(
+                d,
+                channel.mapping.value.minDegrees,
+                channel.mapping.value.maxDegrees);
+            }
+
+          });
+        } else if (isAmountChannel(channelType)) {
+          if (collection.amountFunctions.get(channelType) == null) {
+            collection.amountFunctions.set(channelType, []);
+          }
+          collection.amountFunctions.get(channelType).push((universe, a) => {
+            if (channel.mapping.case === 'amountMapping') {
+              universe[index] = (
+                a * (channel.mapping.value.maxValue - channel.mapping.value.minValue) + channel.mapping.value.minValue
+              ) % 256;
+            }
+          });
+        }
     }
   }
 }

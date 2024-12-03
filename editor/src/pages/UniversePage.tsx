@@ -4,14 +4,14 @@ import IconBxX from '../icons/IconBxX';
 import RangeInput from '../components/RangeInput';
 import styles from './UniversePage.module.scss';
 import { Button, IconButton } from '../components/Button';
-import { FixtureDefinition, FixtureDefinition_Channel, PhysicalFixture, PhysicalFixtureGroup, PhysicalFixtureGroup_FixtureList } from '@dmx-controller/proto/fixture_pb';
+import { FixtureDefinition, FixtureDefinition_Channel, FixtureDefinition_Channel_AmountMapping, FixtureDefinition_Channel_AngleMapping, PhysicalFixture, PhysicalFixtureGroup, PhysicalFixtureGroup_FixtureList } from '@dmx-controller/proto/fixture_pb';
 import { HorizontalSplitPane } from '../components/SplitPane';
 import { Modal } from '../components/Modal';
 import { NumberInput, TextInput } from '../components/Input';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { SerialContext } from '../contexts/SerialContext';
 import { Universe } from '@dmx-controller/proto/universe_pb';
-import { deleteFixture, deleteFixtureGroup } from '../engine/fixture';
+import { AMOUNT_CHANNEL, ANGLE_CHANNEL, ChannelTypes, COLOR_CHANNELS, deleteFixture, deleteFixtureGroup, isAmountChannel, isAngleChannel, isColorChannel } from '../engine/fixture';
 import { getActiveUniverse } from '../util/projectUtils';
 import { getApplicableMembers } from '../engine/group';
 import { randomUint64 } from '../util/numberUtils';
@@ -578,39 +578,58 @@ function EditDefinitionDialog({
                     <select
                       value={channel?.type || 'unset'}
                       onChange={(e) => {
-                        if (channel == null) {
-                          definition.channels[index] = new FixtureDefinition_Channel({
-                            type: e.target.value,
-                            minValue: 0,
-                            maxValue: 255,
-                          });
-                          save(`Add mapping for channel ${index}.`);
-                        } else if (e.target.value === 'unset') {
+                        if (e.target.value === 'unset') {
                           delete definition.channels[index];
                           save(`Delete mapping for channel ${index}.`);
-                        } else {
-                          channel.type = e.target.value;
-                          save(`Change type of mapping for channel ${index}.`);
+                          return;
                         }
+
+                        const newType = e.target.value as ChannelTypes;
+                        if (definition.channels[index] == null) {
+                          definition.channels[index] = new FixtureDefinition_Channel({
+                            type: newType,
+                            mapping: {
+                              case: undefined,
+                              value: undefined,
+                            },
+                          });
+                        }
+
+                        const channel = definition.channels[index];
+                        if (isAngleChannel(newType) && channel.mapping.case !== 'angleMapping') {
+                          definition.channels[index].mapping = {
+                            case: 'angleMapping',
+                            value: new FixtureDefinition_Channel_AngleMapping({
+                              minDegrees: 0,
+                              maxDegrees: 360,
+                            }),
+                          };
+                        } else if (isAmountChannel(newType) && channel.mapping.case !== 'amountMapping') {
+                          definition.channels[index].mapping = {
+                            case: 'amountMapping',
+                            value: new FixtureDefinition_Channel_AmountMapping({
+                              minValue: 0,
+                              maxValue: 255,
+                            }),
+                          };
+                        } else if (channel.mapping.case != undefined) {
+                          definition.channels[index].mapping = {
+                            case: undefined,
+                            value: undefined,
+                          };
+                        }
+                        channel.type = newType;
+                        save(`Change type of mapping for channel ${index}.`);
                       }}>
                       <option value="unset">Unset</option>
                       <option value="other">Other</option>
-                      <option value="red">Red</option>
-                      <option value="red-fine">Red Fine</option>
-                      <option value="green">Green</option>
-                      <option value="green-fine">Green Fine</option>
-                      <option value="blue">Blue</option>
-                      <option value="blue-fine">Blue Fine</option>
-                      <option value="white">White</option>
-                      <option value="white-fine">White Fine</option>
-                      <option value="brightness">Brightness</option>
-                      <option value="brightness-fine">Brightness Fine</option>
-                      <option value="strobe">Strobe</option>
-                      <option value="pan">Pan</option>
-                      <option value="pan-fine">Pan Fine</option>
-                      <option value="tilt">Tilt</option>
-                      <option value="tilt-fine">Tilt Fine</option>
-                      <option value="zoom">Zoom</option>
+                      {
+                        [...COLOR_CHANNELS, ...AMOUNT_CHANNEL, ...ANGLE_CHANNEL]
+                          .flatMap(t => [t, `${t}-fine`])
+                          .map((t, i) => (
+                            <option key={i} value={t}>{t}</option>
+                          ))
+                      }
                     </select>
                   </td>
                   <td>
@@ -627,18 +646,15 @@ function EditDefinitionDialog({
                     }
                   </td>
                   {
-                    (
-                      channel?.type === 'pan' || channel?.type === 'pan-fine' ||
-                      channel?.type === 'tilt' || channel?.type === 'tilt-fine'
-                    ) ?
+                    isAngleChannel(channel?.type) ?
                       <>
                         <td>
                           <NumberInput
                             min={-720}
                             max={720}
-                            value={channel.minDegrees}
+                            value={(channel.mapping.value as FixtureDefinition_Channel_AngleMapping).minDegrees}
                             onChange={(v) => {
-                              channel.minDegrees = v;
+                              (channel.mapping.value as FixtureDefinition_Channel_AngleMapping).minDegrees = v;
                               save(`Set channel ${index} min degrees to ${v}.`);
                             }} />
                         </td>
@@ -646,9 +662,9 @@ function EditDefinitionDialog({
                           <NumberInput
                             min={-720}
                             max={720}
-                            value={channel.maxDegrees}
+                            value={(channel.mapping.value as FixtureDefinition_Channel_AngleMapping).maxDegrees}
                             onChange={(v) => {
-                              channel.maxDegrees = v;
+                              (channel.mapping.value as FixtureDefinition_Channel_AngleMapping).maxDegrees = v;
                               save(`Set channel ${index} max degrees to ${v}.`);
                             }} />
                         </td>
@@ -659,22 +675,26 @@ function EditDefinitionDialog({
                       </>
                   }
                   {
-                    channel?.type === 'brightness' ||
-                      channel?.type === 'strobe' ||
-                      channel?.type === 'zoom' ?
+                    isAmountChannel(channel?.type) ?
                       <>
                         <td>
                           <RangeInput
                             title={`Minimum value for ${channel?.type} channel.`}
-                            value={channel.minValue}
-                            onChange={(value) => { channel.minValue = value; }}
+                            value={(channel.mapping.value as FixtureDefinition_Channel_AmountMapping).minValue}
+                            onChange={(value) => {
+                              (channel.mapping.value as FixtureDefinition_Channel_AmountMapping).minValue = value;
+                              save(`Set channel ${index} min value to ${value}.`);
+                            }}
                             max="255" />
                         </td>
                         <td>
                           <RangeInput
                             title={`Maximum value for ${channel?.type} channel.`}
-                            value={channel.maxValue}
-                            onChange={(value) => { channel.maxValue = value; }}
+                            value={(channel.mapping.value as FixtureDefinition_Channel_AmountMapping).maxValue}
+                            onChange={(value) => {
+                              (channel.mapping.value as FixtureDefinition_Channel_AmountMapping).maxValue = value;
+                              save(`Set channel ${index} max value to ${value}.`);
+                            }}
                             max="255" />
                         </td>
                       </> :
