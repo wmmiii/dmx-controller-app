@@ -3,7 +3,7 @@ import { getAllFixtures } from "./group";
 import { OutputId, OutputId_FixtureMapping } from "@dmx-controller/proto/output_id_pb";
 import { getActiveUniverse } from "../util/projectUtils";
 import { LightTrack } from "@dmx-controller/proto/light_track_pb";
-import { FixtureDefinition } from "@dmx-controller/proto/fixture_pb";
+import { FixtureDefinition, PhysicalFixture } from "@dmx-controller/proto/fixture_pb";
 
 export type DmxUniverse = number[];
 
@@ -84,7 +84,7 @@ function getPhysicalWritableDevice(
     amountFunctions: new Map(),
   };
 
-  collectFunctions(physicalFixture.channelOffset, definition, functionCollection);
+  collectFunctions(physicalFixture, definition, functionCollection);
   return functionCollectionToDevice(functionCollection);
 }
 
@@ -108,7 +108,7 @@ function getPhysicalWritableDeviceFromGroup(
       const physicalFixture = getActiveUniverse(project).fixtures[id.toString()];
       const definition =
         project.fixtureDefinitions[physicalFixture.fixtureDefinitionId.toString()];
-      collectFunctions(physicalFixture.channelOffset, definition, functionCollection);
+      collectFunctions(physicalFixture, definition, functionCollection);
     });
 
   return functionCollectionToDevice(functionCollection);
@@ -163,14 +163,14 @@ interface FunctionCollection {
   amountFunctions: Map<AmountChannel, Array<(universe: DmxUniverse, a: number) => void>>;
 }
 
-function collectFunctions(fixtureIndex: number, definition: FixtureDefinition, collection: FunctionCollection) {
+function collectFunctions(fixture: PhysicalFixture, definition: FixtureDefinition, collection: FunctionCollection) {
   collection.manualFunctions.push((universe, index, value) => {
-    universe[fixtureIndex + index] = value;
+    universe[fixture.channelOffset + index] = value;
   });
 
   for (const stringIndex in definition.channels) {
     const channel = definition.channels[stringIndex];
-    const index = fixtureIndex + parseInt(stringIndex) - 1;
+    const index = fixture.channelOffset + parseInt(stringIndex) - 1;
     const channelType = channel.type as ChannelTypes;
     switch (channelType) {
       case 'red':
@@ -200,10 +200,11 @@ function collectFunctions(fixtureIndex: number, definition: FixtureDefinition, c
           if (collection.angleFunctions.get(channelType) == null) {
             collection.angleFunctions.set(channelType, []);
           }
+          const offset = fixture.channelOffsets[channelType] || 0;
           collection.angleFunctions.get(channelType).push((universe, d) => {
             if (channel.mapping.case === 'angleMapping') {
               universe[index] = mapDegrees(
-                d,
+                d + offset,
                 channel.mapping.value.minDegrees,
                 channel.mapping.value.maxDegrees);
             }

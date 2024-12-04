@@ -186,6 +186,10 @@ function EditFixtureDialog({
 }: EditFixtureDialogProps): JSX.Element {
   const { project, save } = useContext(ProjectContext);
 
+  const definition = useMemo(
+    () => project.fixtureDefinitions[fixture.fixtureDefinitionId.toString()],
+    [project, fixture])
+
   return (
     <Modal
       title={"Edit " + fixture.name}
@@ -245,6 +249,23 @@ function EditFixtureDialog({
             save(`Change channel offset of ${fixture.name} to ${v}.`);
           }} />
       </label>
+      {
+        ANGLE_CHANNEL
+          .filter(t => Object.values(definition.channels).some(c => c.type === t))
+          .map((t, i) => (
+            <label key={i}>
+              <span>{String(t).charAt(0).toUpperCase() + String(t).slice(1)} Offset</span>
+              <NumberInput
+                min={-360}
+                max={360}
+                value={fixture.channelOffsets[t] || 0}
+                onChange={(v) => {
+                  fixture.channelOffsets[t] = v;
+                  save(`Change ${t} offset of ${fixture.name} to ${v}.`);
+                }} />
+            </label>
+          ))
+      }
     </Modal>
   );
 }

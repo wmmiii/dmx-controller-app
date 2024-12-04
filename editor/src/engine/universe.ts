@@ -246,6 +246,7 @@ function applyDefaults(project: Project, universe: DmxUniverse): void {
       let value = channel[1].defaultValue;
       if (isAngleChannel(channel[1].type)) {
         const mapping = channel[1].mapping.value as FixtureDefinition_Channel_AngleMapping;
+        value += fixture.channelOffsets[channel[1].type] || 0;
         value = mapDegrees(value, mapping.minDegrees, mapping.maxDegrees);
       }
       universe[index] = value;

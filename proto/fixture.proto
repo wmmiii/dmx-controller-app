@@ -81,6 +81,9 @@ message PhysicalFixture {
   uint64 fixture_definition_id = 4;
   uint32 channel_offset = 3;
 
+  reserved 5 to 6;
+  map<string, double> channel_offsets = 7;
+
   uint32 deprecated_fixture_definition_id = 2 [ deprecated = true ];
 }
 
