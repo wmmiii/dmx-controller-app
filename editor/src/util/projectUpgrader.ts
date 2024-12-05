@@ -283,7 +283,7 @@ function upgradeFixtures(project: Project) {
     }
   }
 
-  delete project.deprecatedFixtureDefinitions;
+  project.deprecatedFixtureDefinitions = {};
 }
 
 function updateFixtureDefinitionMapping(project: Project) {
