@@ -7,6 +7,9 @@ import styles from './EffectState.module.scss';
 import { Button, IconButton } from './Button';
 import { FixtureState as FixtureStateProto, FixtureState_Channel, RGB, RGBW } from "@dmx-controller/proto/effect_pb";
 import { NumberInput } from './Input';
+import { Color, PaletteColor } from '@dmx-controller/proto/color_pb';
+
+type ColorSelectorType = 'none' | 'color' | PaletteColor;
 
 interface EffectStateProps {
   state: FixtureStateProto;
@@ -17,68 +20,74 @@ export function EffectState(
   { state, onChange }: EffectStateProps):
   JSX.Element {
 
-  const onColorTypeChange = useCallback((type: string) => {
+  const onColorTypeChange = useCallback((type: ColorSelectorType) => {
     if (type === 'none') {
-      state.color.case = undefined;
-      state.color.value = undefined;
-      onChange(state);
-      return;
-    }
-    const r = state.color.value?.red || 0;
-    const g = state.color.value?.green || 0;
-    const b = state.color.value?.blue || 0;
-    const w = (state.color.value as RGBW)?.white || 0;
-    if (type === 'rgb') {
-      state.color = {
-        case: 'rgb',
-        value: new RGB({
-          red: r,
-          green: g,
-          blue: b,
-        }),
+      state.lightColor = {
+        case: undefined,
+        value: undefined,
       };
-    } else if (type === 'rgbw') {
-      state.color = {
-        case: 'rgbw',
-        value: new RGBW({
-          red: r,
-          green: g,
-          blue: b,
-          white: w,
+    } else if (type === 'color') {
+      state.lightColor = {
+        case: 'color',
+        value: new Color({
+          red: 1,
+          green: 1,
+          blue: 1,
+          white: 0,
         }),
       };
     } else {
-      throw Error('Unrecognized color profile: ' + type);
+      state.lightColor = {
+        case: 'paletteColor',
+        value: parseInt(type as any),
+      };
     }
     onChange(state);
   }, [state, onChange]);
+
+  let colorType: ColorSelectorType;
+  if (state.lightColor.case === undefined) {
+    colorType = 'none';
+  } else if (state.lightColor.case === 'color') {
+    colorType = 'color';
+  } else if (state.lightColor.case === 'paletteColor') {
+    colorType = state.lightColor.value;
+  } else {
+    throw new Error(`Unrecognized light color type! ${state.lightColor}`);
+  }
 
   return (
     <>
       <label>
         <span>Color mode</span>
         <select
-          value={state.color.case}
-          onChange={(e) => onColorTypeChange(e.target.value)}>
+          value={colorType}
+          onChange={(e) => onColorTypeChange(e.target.value as ColorSelectorType)}>
           <option value="none">None</option>
-          <option value="rgb">RGB</option>
-          <option value="rgbw">RGBW</option>
+          <option value="color">Custom Color</option>
+          <option value={PaletteColor.PRIMARY}>Primary</option>
+          <option value={PaletteColor.SECONDARY}>Secondary</option>
+          <option value={PaletteColor.TERTIARY}>Tertiary</option>
+          <option value={PaletteColor.WHITE}>White</option>
+          <option value={PaletteColor.BLACK}>Black</option>
         </select>
       </label>
       {
-        state.color.case &&
+        state.lightColor.case === 'color' &&
         <ColorPicker
           hideAlpha={true}
           color={{
-            r: state.color.value.red * 255,
-            g: state.color.value.green * 255,
-            b: state.color.value.blue * 255,
+            r: state.lightColor.value.red * 255,
+            g: state.lightColor.value.green * 255,
+            b: state.lightColor.value.blue * 255,
             a: 1,
           }}
           onChange={({ rgb }) => {
-            state.color.value.red = rgb.r / 255;
-            state.color.value.green = rgb.g / 255;
-            state.color.value.blue = rgb.b / 255;
+            if (state.lightColor.case === 'color') {
+              state.lightColor.value.red = rgb.r / 255;
+              state.lightColor.value.green = rgb.g / 255;
+              state.lightColor.value.blue = rgb.b / 255;
+            }
             onChange(state);
           }}
           theme={{
@@ -88,20 +97,16 @@ export function EffectState(
           }} />
       }
       {
-        state.color.case === 'rgbw' &&
-        <label className={styles.stateRow}>
-          <span>White</span>
-          <RangeInput
-            className={styles.input}
-            max="255"
-            value={state.color.value.white * 255}
-            onChange={(v) => {
-              if (state.color.case === 'rgbw') {
-                state.color.value.white = v / 255;
-                onChange(state);
-              }
-            }} />
-        </label>
+        state.lightColor.case === 'color' &&
+        <RangeChannel
+          name="White"
+          value={state.lightColor.value.white}
+          onChange={(v) => {
+            if (state.lightColor.case === 'color') {
+              state.lightColor.value.white = v;
+              onChange(state);
+            }
+          }} />
       }
       <RangeChannel
         name="Brightness"

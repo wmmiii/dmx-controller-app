@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package dmx_controller;
+
+message Color {
+  double red = 1;
+  double green = 2;
+  double blue = 3;
+  optional double white = 4;
+}
+
+enum PaletteColor {
+  BLACK = 0;
+  WHITE = 1;
+  PRIMARY = 2;
+  SECONDARY = 3;
+  TERTIARY = 4;
+}
+
+message ColorPalette {
+  message ColorDescription {
+    Color color = 1;
+  }
+
+  ColorDescription primary = 1;
+  ColorDescription secondary = 2;
+  ColorDescription tertiary = 3;
+}

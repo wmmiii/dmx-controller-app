@@ -1,6 +1,6 @@
 import { Project } from "@dmx-controller/proto/project_pb";
 import { idMapToArray } from "./mapUtils";
-import { Effect } from "@dmx-controller/proto/effect_pb";
+import { Effect, FixtureState } from "@dmx-controller/proto/effect_pb";
 import { randomUint64 } from "./numberUtils";
 import { Universe } from "@dmx-controller/proto/universe_pb";
 import { OutputId, OutputId_FixtureMapping } from "@dmx-controller/proto/output_id_pb";
@@ -16,6 +16,7 @@ export default function upgradeProject(project: Project): void {
   upgradeLiveEffects(project);
   upgradeFixtures(project);
   updateFixtureDefinitionMapping(project);
+  upgradeColorTypes(project);
 }
 
 function upgradeIndices(project: Project): void {
@@ -308,4 +309,49 @@ function updateFixtureDefinitionMapping(project: Project) {
         };
       }
     });
+}
+
+function upgradeColorTypes(project: Project) {
+  const upgradeState = (state: FixtureState) => {
+    if (state?.lightColor.case === 'rgb' || state?.lightColor.case === 'rgbw') {
+      state.lightColor = {
+        case: 'color',
+        value: state.lightColor.value,
+      };
+    }
+  };
+
+  const upgradeEffect = (effect: Effect) => {
+    switch (effect.effect.case) {
+      case "staticEffect":
+        upgradeState(effect.effect.value.state);
+        break;
+      case "rampEffect":
+        upgradeState(effect.effect.value.stateStart);
+        upgradeState(effect.effect.value.stateEnd);
+        break;
+      case "strobeEffect":
+        upgradeState(effect.effect.value.stateA);
+        upgradeState(effect.effect.value.stateB);
+        break;
+    }
+  };
+
+  project.scenes
+    .flatMap(s => s.rows)
+    .flatMap(r => r.components)
+    .flatMap(c => {
+      if (c.description.case === 'sequence') {
+        return c.description.value.lightTracks.flatMap(t => t.layers).flatMap(l => l.effects);
+      } else if (c.description.case === 'effectGroup') {
+        return c.description.value.channels.map(c => c.effect);
+      }
+    })
+    .forEach(upgradeEffect);
+
+  project.shows
+    .flatMap(s => s.lightTracks)
+    .flatMap(t => t.layers)
+    .flatMap(l => l.effects)
+    .forEach(upgradeEffect);
 }

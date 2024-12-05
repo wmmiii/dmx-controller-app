@@ -17,6 +17,7 @@ import { ShortcutContext } from '../contexts/ShortcutContext';
 import IconBxCheckbox from '../icons/IconBxCheckbox';
 import IconBxLineChart from '../icons/IconBxLineChart';
 import IconBxMove from '../icons/IconBxMove';
+import IconBxPalette from '../icons/IconBxPalette';
 
 export interface EffectAddress {
   track: number;
@@ -429,8 +430,9 @@ export function EffectDetails({
 }
 
 function effectColor(effect: FixtureState, alt = false): string {
-  const color = effect?.color?.value;
-  if (color) {
+  const color = effect?.lightColor?.value;
+  if (effect.lightColor.case === 'color') {
+    const color = effect.lightColor.value;
     const white = Math.floor(('white' in color ? color.white : 0) * 255);
     const r = Math.min(Math.floor(color.red * 255) + white, 255);
     const g = Math.min(Math.floor(color.green * 255) + white, 255);
@@ -446,8 +448,10 @@ function effectColor(effect: FixtureState, alt = false): string {
 function effectIcons(effect: FixtureStateProto):
   Array<(props: any) => JSX.Element> {
   const icons: Array<(props: any) => JSX.Element> = [];
-  if (effect?.color?.case != null) {
+  if (effect.lightColor.case === 'color') {
     icons.push(IconRgb);
+  } else if (effect.lightColor.case === 'paletteColor') {
+    icons.push(IconBxPalette);
   }
   if (effect?.brightness != null) {
     icons.push(IconBxsSun);

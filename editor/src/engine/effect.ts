@@ -8,16 +8,10 @@ export function applyState(state: FixtureState, context: RenderContext): void {
   }
 
   const universe = context.universe;
-  switch (state.color.case) {
-    case 'rgb':
+  switch (state.lightColor.case) {
+    case 'color':
       {
-        const color = state.color.value;
-        device.setColor(universe, color.red, color.green, color.blue);
-      }
-      break;
-    case 'rgbw':
-      {
-        const color = state.color.value;
+        const color = state.lightColor.value;
         device.setColor(universe, color.red, color.green, color.blue, color.white);
       }
       break;

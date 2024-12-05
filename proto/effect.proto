@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package dmx_controller;
 
+import "proto/color.proto";
+
 message RGB {
   double red = 1;
   double green = 2;
@@ -28,9 +30,12 @@ message FixtureState {
   }
 
   repeated Channel channels = 1;
-  oneof color {
-    RGB rgb = 2;
-    RGBW rgbw = 3;
+  oneof light_color {
+    Color color = 12;
+    PaletteColor palette_color = 13;
+
+    RGB rgb = 2 [deprecated = true];
+    RGBW rgbw = 3 [deprecated = true];
   }
 
   optional double brightness = 4;

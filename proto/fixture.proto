@@ -2,27 +2,6 @@ syntax = "proto3";
 
 package dmx_controller;
 
-enum FixtureChannelType {
-  FIXTURE_CHANNEL_TYPE_UNSPECIFIED = 0;
-  OTHER = 1;
-  RED = 2;
-  RED_FINE = 3;
-  GREEN = 4;
-  GREEN_FINE = 5;
-  BLUE = 6;
-  BLUE_FINE = 7;
-  WHITE = 8;
-  WHITE_FINE = 9;
-  BRIGHTNESS = 10;
-  BRIGHTNESS_FINE = 11;
-  STROBE = 12;
-  PAN = 13;
-  PAN_FINE = 14;
-  TILT = 15;
-  TILT_FINE = 16;
-  ZOOM = 17;
-}
-
 message FixtureDefinition {
   message StrobeMapping {
     int32 no_strobe = 1;

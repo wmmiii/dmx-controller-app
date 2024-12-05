@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { DragEventHandler, ReactEventHandler, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import IconBxArrowToRight from '../icons/IconBxArrowToRight';
 import IconBxCategory from '../icons/IconBxCategory';
 import IconBxCheckbox from '../icons/IconBxCheckbox';
@@ -273,6 +273,12 @@ function Component({ component, dragging, onDragComponent, onDragComponentOver, 
     classes.push(styles.dragging);
   }
 
+  const drop = (e: any) => {
+    onDropComponent();
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
   return (
     <div
       className={classes.join(' ')}
@@ -291,11 +297,8 @@ function Component({ component, dragging, onDragComponent, onDragComponentOver, 
         e.stopPropagation();
         e.preventDefault();
       }}
-      onDrop={(e) => {
-        onDropComponent();
-        e.preventDefault();
-        e.stopPropagation();
-      }}>
+      onDrop={drop}
+      onMouseUp={drop}>
       <div
         className={styles.icon}
         title={component.oneShot ? 'One-shot' : 'Loop'}>
