@@ -11,11 +11,37 @@ import { getActiveUniverse, getComponentDurationMs } from "../util/projectUtils"
 import { interpolateUniverses } from "./utils";
 import { rampEffect } from "./rampEffect";
 import { strobeEffect } from "./strobeEffect";
+import { ColorPalette } from "@dmx-controller/proto/color_pb";
+
+export const DEFAULT_COLOR_PALETTE = new ColorPalette({
+  primary: {
+    color: {
+      red: 1,
+      green: 0,
+      blue: 1,
+    },
+  },
+  secondary: {
+    color: {
+      red: 0,
+      green: 1,
+      blue: 1,
+    },
+  },
+  tertiary: {
+    color: {
+      red: 1,
+      green: 1,
+      blue: 0,
+    },
+  },
+});
 
 export interface RenderContext {
   readonly t: number;
   readonly output: WritableDevice;
   readonly project: Project;
+  readonly colorPalette: ColorPalette;
   readonly universe: DmxUniverse;
 }
 
@@ -37,6 +63,7 @@ export function renderShowToUniverse(t: number, frame: number, project: Project)
     const context: Omit<RenderContext, 'output'> = {
       t: t,
       project: project,
+      colorPalette: show.colorPalette || DEFAULT_COLOR_PALETTE,
       universe: universe,
     };
 
@@ -134,6 +161,7 @@ export function renderSceneToUniverse(
                 t: effectT,
                 output: output,
                 project: project,
+                colorPalette: scene.colorPalette || DEFAULT_COLOR_PALETTE,
                 universe: after,
               }, beatMetadata, frame, effect);
             }
@@ -171,6 +199,7 @@ export function renderSceneToUniverse(
             frame,
             sequence,
             project,
+            scene.colorPalette || DEFAULT_COLOR_PALETTE,
             after);
           break;
 
@@ -191,12 +220,14 @@ function renderUniverseSequence(
   frame: number,
   universeSequence: Scene_Component_SequenceComponent,
   project: Project,
+  colorPalette: ColorPalette,
   universe: DmxUniverse,
 ) {
   if (universeSequence) {
     const context: Omit<RenderContext, 'output'> = {
       t: t,
       project: project,
+      colorPalette: colorPalette,
       universe: universe,
     };
 

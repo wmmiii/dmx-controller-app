@@ -2,14 +2,15 @@ import React, { JSX, useContext, useEffect, useMemo, useRef, useState } from 're
 import LightTimeline from '../components/LightTimeline';
 import styles from "./ShowPage.module.scss";
 import { Button } from '../components/Button';
+import { DEFAULT_COLOR_PALETTE, renderShowToUniverse } from '../engine/universe';
 import { LightTrack as LightTrackProto } from '@dmx-controller/proto/light_track_pb';
 import { Modal } from '../components/Modal';
+import { PaletteContext } from '../contexts/PaletteContext';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { SerialContext } from '../contexts/SerialContext';
 import { Show, Show_AudioTrack } from '@dmx-controller/proto/show_pb';
 import { TextInput } from '../components/Input';
 import { UNSET_INDEX, idMapToArray } from '../util/mapUtils';
-import { renderShowToUniverse } from '../engine/universe';
 import { universeToUint8Array } from '../engine/utils';
 
 const DEFAULT_SHOW = new Show({
@@ -92,7 +93,9 @@ export default function ShowPage(): JSX.Element {
   }
 
   return (
-    <>
+    <PaletteContext.Provider value={{
+      palette: show.colorPalette || DEFAULT_COLOR_PALETTE
+    }}>
       <LightTimeline
         audioBlob={audioBlob}
         audioDuration={audioDuration}
@@ -197,6 +200,6 @@ export default function ShowPage(): JSX.Element {
           </div>
         </Modal>
       }
-    </>
+    </PaletteContext.Provider>
   );
 }

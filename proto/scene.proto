@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package dmx_controller;
 
+import "proto/color.proto";
 import "proto/effect.proto";
 import "proto/light_track.proto";
 import "proto/output_id.proto";
@@ -77,7 +78,8 @@ message Scene {
   }
 
   string name = 1;
-  reserved 2 to 10;
+  ColorPalette color_palette = 2;
+  reserved 3 to 10;
 
   repeated Component components = 11 [deprecated = true];
   repeated ComponentRow rows = 12;

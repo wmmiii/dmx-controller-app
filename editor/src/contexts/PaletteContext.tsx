@@ -1,7 +1,6 @@
-import { Color, PaletteColor } from "@dmx-controller/proto/color_pb";
 import { createContext } from "react";
+import { DEFAULT_COLOR_PALETTE } from "../engine/universe";
 
-const PaletteContext = createContext({
-  palette: new Map<PaletteColor, Color>(),
+export const PaletteContext = createContext({
+  palette: DEFAULT_COLOR_PALETTE,
 });
-

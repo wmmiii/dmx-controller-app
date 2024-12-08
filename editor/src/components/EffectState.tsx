@@ -65,11 +65,11 @@ export function EffectState(
           onChange={(e) => onColorTypeChange(e.target.value as ColorSelectorType)}>
           <option value="none">None</option>
           <option value="color">Custom Color</option>
-          <option value={PaletteColor.PRIMARY}>Primary</option>
-          <option value={PaletteColor.SECONDARY}>Secondary</option>
-          <option value={PaletteColor.TERTIARY}>Tertiary</option>
-          <option value={PaletteColor.WHITE}>White</option>
-          <option value={PaletteColor.BLACK}>Black</option>
+          <option value={PaletteColor.PALETTE_PRIMARY}>Primary</option>
+          <option value={PaletteColor.PALETTE_SECONDARY}>Secondary</option>
+          <option value={PaletteColor.PALETTE_TERTIARY}>Tertiary</option>
+          <option value={PaletteColor.PALETTE_WHITE}>White</option>
+          <option value={PaletteColor.PALETTE_BLACK}>Black</option>
         </select>
       </label>
       {

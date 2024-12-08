@@ -10,11 +10,11 @@ message Color {
 }
 
 enum PaletteColor {
-  BLACK = 0;
-  WHITE = 1;
-  PRIMARY = 2;
-  SECONDARY = 3;
-  TERTIARY = 4;
+  PALETTE_BLACK = 0;
+  PALETTE_WHITE = 1;
+  PALETTE_PRIMARY = 2;
+  PALETTE_SECONDARY = 3;
+  PALETTE_TERTIARY = 4;
 }
 
 message ColorPalette {

@@ -16,9 +16,10 @@ import { Scene, Scene_Component, Scene_Component_EffectGroupComponent, Scene_Com
 import { SerialContext } from '../contexts/SerialContext';
 import { UniverseSequenceEditor } from '../components/UniverseSequenceEditor';
 import { getOutputName, OutputSelector } from '../components/OutputSelector';
-import { renderSceneToUniverse as renderActiveSceneToUniverse } from '../engine/universe';
+import { DEFAULT_COLOR_PALETTE, renderSceneToUniverse as renderActiveSceneToUniverse } from '../engine/universe';
 import { universeToUint8Array } from '../engine/utils';
 import { Project } from '@dmx-controller/proto/project_pb';
+import { PaletteContext } from '../contexts/PaletteContext';
 
 
 export function LivePage(): JSX.Element {
@@ -64,7 +65,9 @@ function LivePageImpl(): JSX.Element {
   }, [beatMetadata, projectRef]);
 
   return (
-    <BeatProvider>
+    <PaletteContext.Provider value={{
+      palette: project?.scenes[0].colorPalette || DEFAULT_COLOR_PALETTE
+    }}>
       <div className={styles.wrapper}>
         <div className={styles.header}>
           <LiveBeat className={styles.beat} />
@@ -95,7 +98,7 @@ function LivePageImpl(): JSX.Element {
         selected &&
         <ComponentEditor component={selected} onClose={() => setSelected(null)} />
       }
-    </BeatProvider>
+    </PaletteContext.Provider>
   );
 }
 

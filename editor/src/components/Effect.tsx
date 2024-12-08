@@ -18,6 +18,8 @@ import IconBxCheckbox from '../icons/IconBxCheckbox';
 import IconBxLineChart from '../icons/IconBxLineChart';
 import IconBxMove from '../icons/IconBxMove';
 import IconBxPalette from '../icons/IconBxPalette';
+import { Color, ColorPalette, PaletteColor } from '@dmx-controller/proto/color_pb';
+import { PaletteContext } from '../contexts/PaletteContext';
 
 export interface EffectAddress {
   track: number;
@@ -54,6 +56,7 @@ export function Effect({
   snapToBeat,
 }: EffectProps): JSX.Element {
   const { copyEffect, selectedEffect, selectEffect } = useContext(EffectSelectContext);
+  const { palette } = useContext(PaletteContext);
   const { save, update } = useContext(ProjectContext);
   const { beatWidthPx, msWidthToPxWidth } = useContext(RenderingContext);
   const { setShortcuts } = useContext(ShortcutContext);
@@ -85,11 +88,11 @@ export function Effect({
 
   const icons: Set<(props: any) => JSX.Element> = new Set();
   if (effect.effect.case === 'staticEffect') {
-    style.background = effectColor(effect.effect.value.state);
+    style.background = effectColor(effect.effect.value.state, palette);
     effectIcons(effect.effect.value.state).forEach(i => icons.add(i));
   } else if (effect.effect.case === 'rampEffect') {
-    const start = effectColor(effect.effect.value.stateStart);
-    const end = effectColor(effect.effect.value.stateEnd, true);
+    const start = effectColor(effect.effect.value.stateStart, palette);
+    const end = effectColor(effect.effect.value.stateEnd, palette, true);
     let width: number;
     if (effect.timingMode === EffectTiming.BEAT) {
       width = beatWidthPx / (effect.timingMultiplier || 1);
@@ -105,8 +108,8 @@ export function Effect({
     effectIcons(effect.effect.value.stateStart).forEach(i => icons.add(i));
     effectIcons(effect.effect.value.stateEnd).forEach(i => icons.add(i));
   } else if (effect.effect.case === 'strobeEffect') {
-    const start = effectColor(effect.effect.value.stateA);
-    const end = effectColor(effect.effect.value.stateB, true);
+    const start = effectColor(effect.effect.value.stateA, palette);
+    const end = effectColor(effect.effect.value.stateB, palette, true);
     const aWidth = effect.effect.value.stateAFames * 2;
     const bWidth = effect.effect.value.stateBFames * 2;
     style.background = `repeating-linear-gradient(-45deg, ${start} 0, ${start} ${aWidth}px, ${end} ${aWidth}px, ${end} ${aWidth + bWidth}px)`;
@@ -429,10 +432,33 @@ export function EffectDetails({
   )
 }
 
-function effectColor(effect: FixtureState, alt = false): string {
-  const color = effect?.lightColor?.value;
+function effectColor(effect: FixtureState, palette: ColorPalette, alt = false): string {
   if (effect.lightColor.case === 'color') {
     const color = effect.lightColor.value;
+    const white = Math.floor(('white' in color ? color.white : 0) * 255);
+    const r = Math.min(Math.floor(color.red * 255) + white, 255);
+    const g = Math.min(Math.floor(color.green * 255) + white, 255);
+    const b = Math.min(Math.floor(color.blue * 255) + white, 255);
+    return `rgb(${r}, ${g}, ${b})`;
+  } else if (effect.lightColor.case === 'paletteColor') {
+    let color: Color;
+    switch (effect.lightColor.value) {
+      case PaletteColor.PALETTE_BLACK:
+        return 'rgb(0, 0, 0)';
+      case PaletteColor.PALETTE_WHITE:
+        return 'rgb(255, 255, 255)';
+      case PaletteColor.PALETTE_PRIMARY:
+        color = palette.primary.color;
+        break;
+      case PaletteColor.PALETTE_SECONDARY:
+        color = palette.secondary.color;
+        break;
+      case PaletteColor.PALETTE_TERTIARY:
+        color = palette.tertiary.color;
+        break;
+      default:
+        throw new Error(`Unrecognized palette color type! ${effect.lightColor}`);
+    }
     const white = Math.floor(('white' in color ? color.white : 0) * 255);
     const r = Math.min(Math.floor(color.red * 255) + white, 255);
     const g = Math.min(Math.floor(color.green * 255) + white, 255);

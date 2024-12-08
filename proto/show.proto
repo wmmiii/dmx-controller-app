@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package dmx_controller;
 
+import "proto/color.proto";
 import "proto/light_track.proto";
 
 message Show {
@@ -10,7 +11,8 @@ message Show {
   }
 
   string name = 1;
-  reserved 2 to 10;
+  ColorPalette color_palette = 2;
+  reserved 3 to 10;
 
   AudioTrack audio_track = 11;
   reserved 12; // default_channel_values

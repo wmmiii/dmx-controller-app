@@ -1,5 +1,9 @@
 import { FixtureState } from "@dmx-controller/proto/effect_pb";
 import { RenderContext } from "./universe";
+import { Color, PaletteColor } from "@dmx-controller/proto/color_pb";
+
+const COLOR_BLACK = new Color({ red: 0, green: 0, blue: 0, white: 0 });
+const COLOR_WHITE = new Color({ red: 0, green: 0, blue: 0, white: 1 });
 
 export function applyState(state: FixtureState, context: RenderContext): void {
   const device = context.output;
@@ -15,6 +19,30 @@ export function applyState(state: FixtureState, context: RenderContext): void {
         device.setColor(universe, color.red, color.green, color.blue, color.white);
       }
       break;
+    case 'paletteColor':
+      {
+        let color: Color;
+        switch (state.lightColor.value) {
+          case PaletteColor.PALETTE_BLACK:
+            color = COLOR_BLACK;
+            break;
+          case PaletteColor.PALETTE_WHITE:
+            color = COLOR_WHITE;
+            break;
+          case PaletteColor.PALETTE_PRIMARY:
+            color = context.colorPalette.primary.color;
+            break;
+          case PaletteColor.PALETTE_SECONDARY:
+            color = context.colorPalette.secondary.color;
+            break;
+          case PaletteColor.PALETTE_TERTIARY:
+            color = context.colorPalette.tertiary.color;
+            break;
+          default:
+            throw new Error(`Unrecognized palette color type! ${state.lightColor}`);
+        }
+        device.setColor(universe, color.red, color.green, color.blue, color.white);
+      }
   }
 
   if (state.pan != null) {
