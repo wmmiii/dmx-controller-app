@@ -12,8 +12,10 @@ import { interpolateUniverses } from "./utils";
 import { rampEffect } from "./rampEffect";
 import { strobeEffect } from "./strobeEffect";
 import { ColorPalette } from "@dmx-controller/proto/color_pb";
+import { interpolatePalettes } from "../util/colorUtil";
 
 export const DEFAULT_COLOR_PALETTE = new ColorPalette({
+  name: 'Unset palette',
   primary: {
     color: {
       red: 1,
@@ -97,6 +99,12 @@ export function renderSceneToUniverse(
     return;
   }
 
+  const colorPaletteT = Math.min(1, Number(BigInt(t) - scene.colorPaletteStartTransition) / scene.colorPaletteTransitionDurationMs);
+  const colorPalette = interpolatePalettes(
+    scene.colorPalettes[scene.lastActiveColorPalette],
+    scene.colorPalettes[scene.activeColorPalette],
+    colorPaletteT)
+
   for (const row of scene.rows.slice().reverse()) {
     for (const component of row.components.slice().reverse()) {
       if (component.oneShot && component.transition.case === 'startFadeOutMs') {
@@ -161,7 +169,7 @@ export function renderSceneToUniverse(
                 t: effectT,
                 output: output,
                 project: project,
-                colorPalette: scene.colorPalette || DEFAULT_COLOR_PALETTE,
+                colorPalette: colorPalette,
                 universe: after,
               }, beatMetadata, frame, effect);
             }
@@ -199,7 +207,7 @@ export function renderSceneToUniverse(
             frame,
             sequence,
             project,
-            scene.colorPalette || DEFAULT_COLOR_PALETTE,
+            colorPalette,
             after);
           break;
 

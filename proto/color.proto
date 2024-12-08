@@ -22,6 +22,7 @@ message ColorPalette {
     Color color = 1;
   }
 
+  string name = 4;
   ColorDescription primary = 1;
   ColorDescription secondary = 2;
   ColorDescription tertiary = 3;

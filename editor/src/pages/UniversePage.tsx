@@ -1,8 +1,11 @@
 import React, { createRef, useContext, useEffect, useMemo, useState } from 'react';
 import IconBxCopyAlt from '../icons/IconBxCopy';
+import IconBxDownload from '../icons/IconBxDownload';
+import IconBxUpload from '../icons/IconBxUpload';
 import IconBxX from '../icons/IconBxX';
 import RangeInput from '../components/RangeInput';
 import styles from './UniversePage.module.scss';
+import { AMOUNT_CHANNEL, ANGLE_CHANNEL, ChannelTypes, COLOR_CHANNELS, deleteFixture, deleteFixtureGroup, isAmountChannel, isAngleChannel, isColorChannel } from '../engine/fixture';
 import { Button, IconButton } from '../components/Button';
 import { FixtureDefinition, FixtureDefinition_Channel, FixtureDefinition_Channel_AmountMapping, FixtureDefinition_Channel_AngleMapping, PhysicalFixture, PhysicalFixtureGroup, PhysicalFixtureGroup_FixtureList } from '@dmx-controller/proto/fixture_pb';
 import { HorizontalSplitPane } from '../components/SplitPane';
@@ -11,13 +14,10 @@ import { NumberInput, TextInput } from '../components/Input';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { SerialContext } from '../contexts/SerialContext';
 import { SerializedUniverse, Universe } from '@dmx-controller/proto/universe_pb';
-import { AMOUNT_CHANNEL, ANGLE_CHANNEL, ChannelTypes, COLOR_CHANNELS, deleteFixture, deleteFixtureGroup, isAmountChannel, isAngleChannel, isColorChannel } from '../engine/fixture';
+import { downloadBlob, escapeForFilesystem } from '../util/fileUtils';
 import { getActiveUniverse } from '../util/projectUtils';
 import { getApplicableMembers } from '../engine/group';
 import { randomUint64 } from '../util/numberUtils';
-import IconBxDownload from '../icons/IconBxDownload';
-import { downloadBlob, escapeForFilesystem } from '../util/fileUtils';
-import IconBxUpload from '../icons/IconBxUpload';
 
 export default function UniversePage(): JSX.Element {
   return (

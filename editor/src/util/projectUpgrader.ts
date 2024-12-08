@@ -8,6 +8,7 @@ import { LightTrack } from "@dmx-controller/proto/light_track_pb";
 import { FixtureDefinition_Channel_AmountMapping, FixtureDefinition_Channel_AngleMapping, PhysicalFixtureGroup, PhysicalFixtureGroup_FixtureList } from "@dmx-controller/proto/fixture_pb";
 import { Scene_Component_EffectGroupComponent_EffectChannel } from "@dmx-controller/proto/scene_pb";
 import { isAmountChannel, isAngleChannel } from "../engine/fixture";
+import { DEFAULT_COLOR_PALETTE } from "../engine/universe";
 
 export default function upgradeProject(project: Project): void {
   upgradeIndices(project);
@@ -354,4 +355,13 @@ function upgradeColorTypes(project: Project) {
     .flatMap(t => t.layers)
     .flatMap(l => l.effects)
     .forEach(upgradeEffect);
+
+    project.scenes.forEach(s => {
+      if (!s.colorPalettes || s.colorPalettes.length < 1) {
+        s.colorPalettes = [DEFAULT_COLOR_PALETTE.clone()];
+      }
+      if (!s.colorPaletteTransitionDurationMs) {
+        s.colorPaletteTransitionDurationMs = 2_000;
+      }
+    });
 }

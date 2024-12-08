@@ -165,7 +165,7 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
 
         // This is needed because sometimes the micro-controller gets
         // overwhelmed. I don't know why and don't have time to debug.
-        await new Promise((r) => setTimeout(r, 20));
+        await new Promise((r) => setTimeout(r, 25));
       }
     })();
 

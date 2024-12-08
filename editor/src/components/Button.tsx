@@ -29,7 +29,11 @@ export function Button(
   return (
     <button
       className={classes.join(' ')}
-      onClick={onClick}
+      onClick={(e) => {
+        onClick();
+        e.stopPropagation();
+        e.preventDefault();
+      }}
       disabled={disabled}>
       {icon && <div className={styles.icon}>{icon}</div>}
       {children}

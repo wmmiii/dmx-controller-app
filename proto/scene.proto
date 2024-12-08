@@ -78,8 +78,12 @@ message Scene {
   }
 
   string name = 1;
-  ColorPalette color_palette = 2;
-  reserved 3 to 10;
+  repeated ColorPalette color_palettes = 2;
+  uint32 active_color_palette = 3;
+  uint32 last_active_color_palette = 4;
+  uint32 color_palette_transition_duration_ms = 5;
+  uint64 color_palette_start_transition = 6;
+  reserved 7 to 10;
 
   repeated Component components = 11 [deprecated = true];
   repeated ComponentRow rows = 12;

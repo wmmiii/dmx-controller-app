@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import IconBxBrushAlt from '../icons/IconBxBrush';
 import IconBxPlus from '../icons/IconBxPlus';
 import IconBxX from '../icons/IconBxX';
@@ -20,6 +20,7 @@ import { DEFAULT_COLOR_PALETTE, renderSceneToUniverse as renderActiveSceneToUniv
 import { universeToUint8Array } from '../engine/utils';
 import { Project } from '@dmx-controller/proto/project_pb';
 import { PaletteContext } from '../contexts/PaletteContext';
+import { PaletteSwatch } from '../components/Palette';
 
 
 export function LivePage(): JSX.Element {
@@ -39,6 +40,8 @@ function LivePageImpl(): JSX.Element {
 
   const [selected, setSelected] = useState<Scene_Component | null>(null);
 
+  const scene = project?.scenes[0];
+
   useEffect(() => {
     projectRef.current = project;
   }, [project]);
@@ -47,14 +50,14 @@ function LivePageImpl(): JSX.Element {
     const render = (frame: number) => {
       const project = projectRef.current;
       if (project != null) {
-      return universeToUint8Array(
-        projectRef.current,
-        renderActiveSceneToUniverse(
-          new Date().getTime(),
-          beatMetadata,
-          frame,
-          project,
-        ));
+        return universeToUint8Array(
+          projectRef.current,
+          renderActiveSceneToUniverse(
+            new Date().getTime(),
+            beatMetadata,
+            frame,
+            project,
+          ));
       } else {
         return new Uint8Array(512);
       }
@@ -66,7 +69,7 @@ function LivePageImpl(): JSX.Element {
 
   return (
     <PaletteContext.Provider value={{
-      palette: project?.scenes[0].colorPalette || DEFAULT_COLOR_PALETTE
+      palette: scene?.colorPalettes[scene.activeColorPalette] || DEFAULT_COLOR_PALETTE
     }}>
       <div className={styles.wrapper}>
         <div className={styles.header}>
@@ -80,11 +83,50 @@ function LivePageImpl(): JSX.Element {
             <IconBxBrushAlt />
           </IconButton>
         </div>
-        <ComponentGrid
-          className={styles.sceneEditor}
-          sceneId={0}
-          onSelect={setSelected}
-          setAddRowIndex={setAddRowIndex} />
+        <div className={styles.body}>
+          <ComponentGrid
+            className={styles.sceneEditor}
+            sceneId={0}
+            onSelect={setSelected}
+            setAddRowIndex={setAddRowIndex} />
+          <div className={styles.palettes}>
+            {
+              scene?.colorPalettes.map((p, i) => (
+                <PaletteSwatch
+                  key={i}
+                  palette={p}
+                  active={scene.activeColorPalette === i}
+                  onClick={() => {
+                    scene.lastActiveColorPalette = scene.activeColorPalette;
+                    scene.activeColorPalette = i;
+                    scene.colorPaletteStartTransition = BigInt(new Date().getTime());
+                    save(`Set color palette to ${p.name}.`);
+                  }}
+                  onDelete={() => {
+                    if (scene.colorPalettes.length <= 1) {
+                      return;
+                    }
+
+                    scene.activeColorPalette = 0;
+                    scene.lastActiveColorPalette = 0;
+                    scene.colorPalettes.splice(i, 1);
+
+                    save(`Delete color palette ${p.name}`)
+                  }} />
+              ))
+            }
+            <Button
+              icon={<IconBxPlus />}
+              onClick={() => {
+                const newPalette = DEFAULT_COLOR_PALETTE.clone();
+                newPalette.name = 'New color palette';
+                scene.colorPalettes.push(newPalette);
+                save('Add new color palette');
+              }}>
+              Palette
+            </Button>
+          </div>
+        </div>
       </div>
       {
         addRowIndex != null &&
@@ -109,7 +151,6 @@ interface ComponentEditorProps {
 
 function ComponentEditor({ component, onClose }: ComponentEditorProps) {
   const { project, save } = useContext(ProjectContext);
-  const { beat } = useContext(BeatContext);
 
   return (
     <Modal

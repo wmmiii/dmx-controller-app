@@ -34,6 +34,7 @@
   align-items: center;
   display: flex;
   flex-direction: row;
+  flex-shrink: 0;
   gap: spacing(2);
   justify-content: flex-start;
   padding: spacing(1) spacing(2) 0;
@@ -43,9 +44,22 @@
   flex-shrink: 0;
 }
 
+.body {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  min-height: 0;
+}
+
 .scene-editor {
   flex: 1;
   position: relative;
+}
+
+.palettes {
+  border-left: 1px solid $col-border;
+  flex-shrink: 0;
+  overflow-y: auto;
 }
 
 .split-pane {
