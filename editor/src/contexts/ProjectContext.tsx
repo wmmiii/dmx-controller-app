@@ -2,7 +2,7 @@ import React, { PropsWithChildren, createContext, useCallback, useContext, useEf
 import upgradeProject from '../util/projectUpgrader';
 import { Project, Project_Assets } from '@dmx-controller/proto/project_pb';
 import { ShortcutContext } from './ShortcutContext';
-import { escapeForFilesystem } from '../util/fileUtils';
+import { downloadBlob, escapeForFilesystem } from '../util/fileUtils';
 import { getBlob, storeBlob } from '../util/storageUtil';
 import { Universe } from '@dmx-controller/proto/universe_pb';
 import { randomUint64 } from '../util/numberUtils';
@@ -175,19 +175,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
       type: 'application/protobuf',
     });
 
-    let url = '';
-    try {
-      url = URL.createObjectURL(blob);
-
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = escapeForFilesystem(project.name) + '.dmxapp';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    } finally {
-      URL.revokeObjectURL(url);
-    }
+    downloadBlob(blob, escapeForFilesystem(project.name) + '.dmxapp');
   }, [project]);
 
   const openProject = useCallback(async (projectBlob: Uint8Array) => {

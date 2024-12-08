@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useMemo, useState } from 'react';
+import React, { createRef, useContext, useEffect, useMemo, useState } from 'react';
 import IconBxCopyAlt from '../icons/IconBxCopy';
 import IconBxX from '../icons/IconBxX';
 import RangeInput from '../components/RangeInput';
@@ -10,11 +10,14 @@ import { Modal } from '../components/Modal';
 import { NumberInput, TextInput } from '../components/Input';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { SerialContext } from '../contexts/SerialContext';
-import { Universe } from '@dmx-controller/proto/universe_pb';
+import { SerializedUniverse, Universe } from '@dmx-controller/proto/universe_pb';
 import { AMOUNT_CHANNEL, ANGLE_CHANNEL, ChannelTypes, COLOR_CHANNELS, deleteFixture, deleteFixtureGroup, isAmountChannel, isAngleChannel, isColorChannel } from '../engine/fixture';
 import { getActiveUniverse } from '../util/projectUtils';
 import { getApplicableMembers } from '../engine/group';
 import { randomUint64 } from '../util/numberUtils';
+import IconBxDownload from '../icons/IconBxDownload';
+import { downloadBlob, escapeForFilesystem } from '../util/fileUtils';
+import IconBxUpload from '../icons/IconBxUpload';
 
 export default function UniversePage(): JSX.Element {
   return (
@@ -33,6 +36,7 @@ function FixtureList(): JSX.Element {
   const [selectedFixtureId, setSelectedFixtureId] =
     useState<bigint | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<bigint | null>(null);
+  const uploadButtonRef = createRef<HTMLInputElement>();
 
   const selectedFixture = useMemo(
     () => getActiveUniverse(project)?.fixtures[String(selectedFixtureId)],
@@ -40,6 +44,24 @@ function FixtureList(): JSX.Element {
   const selectedGroup = useMemo(
     () => project?.groups[String(selectedGroupId)],
     [project, selectedGroupId]);
+
+  useEffect(() => {
+    if (uploadButtonRef.current) {
+      const button = uploadButtonRef.current;
+      const handleUpload = async () => {
+        const file = button.files[0];
+        const body = new Uint8Array(await file.arrayBuffer())
+        const serialized = SerializedUniverse.fromBinary(body);
+        project.fixtureDefinitions =
+            Object.assign({}, serialized.fixtureDefinitions, project.fixtureDefinitions);
+        project.universes[serialized.id.toString()] = serialized.universe;
+        project.activeUniverse = serialized.id;
+        save(`Upload universe ${serialized.universe.name}.`);
+      };
+      button.addEventListener('change', handleUpload);
+      return () => button.removeEventListener('change', handleUpload);
+    }
+  }, [uploadButtonRef.current, project, save]);
 
   if (!project) {
     return null;
@@ -68,6 +90,36 @@ function FixtureList(): JSX.Element {
           save(`Set universe name to "${v}".`);
         }}
       />
+      <IconButton
+        title={`Download universe ${getActiveUniverse(project).name}`}
+        onClick={() => {
+          const fixtures: { [id: string]: FixtureDefinition } = {};
+          const universe = getActiveUniverse(project);
+          Object.values(universe.fixtures)
+            .map(f => {
+              const id = f.fixtureDefinitionId.toString();
+              fixtures[id] = project.fixtureDefinitions[id];
+            });
+          const serialized = new SerializedUniverse({
+            id: project.activeUniverse,
+            universe: universe,
+            fixtureDefinitions: fixtures,
+          });
+
+          const blob = new Blob([serialized.toBinary()], {
+            type: 'application/protobuf',
+          });
+
+          downloadBlob(blob, escapeForFilesystem(universe.name) + '.universe.dmxapp');
+        }}>
+        <IconBxDownload />
+      </IconButton>
+      <IconButton
+        title="Upload universe"
+        onClick={() => uploadButtonRef.current?.click()}>
+        <IconBxUpload />
+      </IconButton>
+      <input ref={uploadButtonRef} type="file" hidden></input>
       <Button onClick={() => {
         const id = randomUint64();
         project.universes[id.toString()] = new Universe({

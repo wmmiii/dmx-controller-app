@@ -9,3 +9,9 @@ message Universe {
 
   map<uint64, PhysicalFixture> fixtures = 2;
 }
+
+message SerializedUniverse {
+  uint64 id = 1;
+  Universe universe = 2;
+  map<uint64, FixtureDefinition> fixture_definitions = 3;
+}
