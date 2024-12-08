@@ -3,9 +3,11 @@ import { getAllFixtures } from "./group";
 import { OutputId, OutputId_FixtureMapping } from "@dmx-controller/proto/output_id_pb";
 import { getActiveUniverse } from "../util/projectUtils";
 import { LightTrack } from "@dmx-controller/proto/light_track_pb";
-import { FixtureDefinition, PhysicalFixture } from "@dmx-controller/proto/fixture_pb";
+import { FixtureDefinition, PhysicalFixture, PhysicalFixtureGroup } from "@dmx-controller/proto/fixture_pb";
 
 export type DmxUniverse = number[];
+
+export const GROUP_ALL_ID = 0n;
 
 export const COLOR_CHANNELS = ['red', 'green', 'blue', 'white'] as const;
 export type ColorChannel = typeof COLOR_CHANNELS[number];
@@ -91,11 +93,6 @@ function getPhysicalWritableDevice(
 function getPhysicalWritableDeviceFromGroup(
   project: Project,
   groupId: bigint): WritableDevice | undefined {
-  const group = project.groups[groupId.toString()];
-  if (!group) {
-    return undefined;
-  }
-
   const functionCollection: FunctionCollection = {
     manualFunctions: [],
     colorFunctions: [],
@@ -103,13 +100,23 @@ function getPhysicalWritableDeviceFromGroup(
     amountFunctions: new Map(),
   };
 
-  getAllFixtures(project, groupId)
-    .forEach(id => {
-      const physicalFixture = getActiveUniverse(project).fixtures[id.toString()];
-      const definition =
-        project.fixtureDefinitions[physicalFixture.fixtureDefinitionId.toString()];
-      collectFunctions(physicalFixture, definition, functionCollection);
-    });
+  if (groupId === GROUP_ALL_ID) {
+    Object.values(getActiveUniverse(project).fixtures)
+      .forEach(f => collectFunctions(f, project.fixtureDefinitions[f.fixtureDefinitionId.toString()], functionCollection));
+  } else {
+    const group = project.groups[groupId.toString()];
+    if (!group) {
+      return undefined;
+    }
+
+    getAllFixtures(project, groupId)
+      .forEach(id => {
+        const physicalFixture = getActiveUniverse(project).fixtures[id.toString()];
+        const definition =
+          project.fixtureDefinitions[physicalFixture.fixtureDefinitionId.toString()];
+        collectFunctions(physicalFixture, definition, functionCollection);
+      });
+  }
 
   return functionCollectionToDevice(functionCollection);
 }
@@ -248,6 +255,10 @@ function functionCollectionToDevice(collection: FunctionCollection): WritableDev
 }
 
 export function deleteFixtureGroup(project: Project, fixtureGroupId: bigint) {
+  if (fixtureGroupId === GROUP_ALL_ID) {
+    return;
+  }
+
   // Delete from groups.
   for (const group of Object.values(project.groups)) {
     group.groups =
@@ -275,7 +286,7 @@ export function deleteFixtureGroup(project: Project, fixtureGroupId: bigint) {
       const description = c.description;
       if (description.case === 'effectGroup') {
         description.value.channels.forEach(c => {
-          if (c.outputId.output.case === 'group' && description.value.outputId.output.value === fixtureGroupId) {
+          if (c.outputId.output.case === 'group' && c.outputId.output.value === fixtureGroupId) {
             delete c.outputId;
           }
         });

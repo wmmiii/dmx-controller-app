@@ -4,6 +4,7 @@ import { Project } from '@dmx-controller/proto/project_pb';
 import { OutputId, OutputId_FixtureMapping } from '@dmx-controller/proto/output_id_pb';
 import { getActiveUniverse } from '../util/projectUtils';
 import styles from './OutputSelector.module.scss';
+import { GROUP_ALL_ID } from '../engine/fixture';
 
 interface OutputSelectorProps {
   value: OutputId;
@@ -26,6 +27,11 @@ export function OutputSelector({ value, setValue }: OutputSelectorProps):
     }
 
     const outputs: InternalOutput[] = [];
+    outputs.push({
+      type: 'group',
+      id: GROUP_ALL_ID,
+      name: 'All Fixtures',
+    });
     for (const [id, group] of Object.entries(project.groups)) {
       outputs.push({
         type: 'group',
@@ -56,10 +62,16 @@ export function OutputSelector({ value, setValue }: OutputSelectorProps):
           name: project.universes[project.activeUniverse.toString()].fixtures[fixtureId.toString()].name,
         };
       case 'group':
+        let name: string;
+        if (value.output.value === GROUP_ALL_ID) {
+          name = 'All Fixtures';
+        } else {
+          project.groups[value.output.value.toString()].name;
+        }
         return {
           type: 'group',
           id: value.output.value,
-          name: project.groups[value.output.value.toString()].name,
+          name: name,
         };
       default:
         return undefined;
@@ -132,6 +144,9 @@ export function getOutputName(project: Project, outputId: OutputId) {
         return getActiveUniverse(project).fixtures[fixtureId.toString()].name;
       }
     case 'group':
+      if (outputId.output.value === GROUP_ALL_ID) {
+        return 'All Fixtures';
+      }
       return project.groups[outputId.output.value.toString()].name;
     default:
       return '<Unset>';
