@@ -98,7 +98,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
     try {
       const minProject = new Project(project);
       minProject.assets = undefined;
-      await storeBlob(PROJECT_KEY, minProject.toBinary());
+      await storeBlob(PROJECT_KEY, minProject.toBinary({writeUnknownFields: false}));
     } catch (t) {
       throw t;
     } finally {
@@ -120,7 +120,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
       operationStack.current.splice(operationIndex + 1, operationStack.current.length - operationIndex - 1);
 
       operationStack.current.push({
-        projectState: minProject.toBinary(),
+        projectState: minProject.toBinary({writeUnknownFields: false}),
         description: changeDescription,
       });
       // Truncate operation stack to MAX_UNDO length.
@@ -137,7 +137,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
   const saveAssetsImpl = useCallback(async (project: Project) => {
     console.time('save assets');
     const assets = new Project_Assets(project.assets);
-    await storeBlob(ASSETS_KEY, assets.toBinary());
+    await storeBlob(ASSETS_KEY, assets.toBinary({writeUnknownFields: false}));
     console.timeEnd('save assets');
   }, []);
 

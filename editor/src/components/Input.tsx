@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import styles from './Input.module.scss';
 
@@ -9,6 +9,7 @@ interface TextInputProps {
 
 export function TextInput({ value, onChange }: TextInputProps): JSX.Element {
   const [input, setInput] = useState(String(value));
+  const inputRef = useRef<HTMLInputElement>();
 
   useEffect(() => setInput(String(value)), [value]);
 
@@ -25,6 +26,7 @@ export function TextInput({ value, onChange }: TextInputProps): JSX.Element {
 
   return (
     <input
+      ref={inputRef}
       className={classes.join(' ')}
       onKeyDown={(e) => {
         switch (e.code) {
@@ -65,6 +67,7 @@ export function NumberInput({
   max,
 }: NumberInputProps): JSX.Element {
   const [input, setInput] = useState(String(value));
+  const inputRef = useRef<HTMLInputElement>();
 
   const step = useMemo(() => max > 1 ? 1 : 1 / 16, [max]);
 
@@ -107,6 +110,7 @@ export function NumberInput({
 
   return (
     <input
+      ref={inputRef}
       className={classes.join(' ')}
       title={title}
       disabled={disabled}
@@ -114,9 +118,11 @@ export function NumberInput({
         switch (e.code) {
           case 'Enter':
             flushValue();
+            inputRef.current.blur();
             break;
           case 'Escape':
             setInput(String(value));
+            inputRef.current.blur();
             break;
           case 'ArrowUp':
             if (parsed != null) {

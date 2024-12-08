@@ -287,12 +287,12 @@ function applyDefaults(project: Project, universe: DmxUniverse): void {
 
 function applyEffect(context: RenderContext, beat: BeatMetadata, frame: number, effect: Effect): void {
   let offsetMs: number;
-  switch (effect.offset.case) {
-    case 'offsetBeat':
-      offsetMs = effect.offset.value * beat.lengthMs;
+  switch (effect.timingMode) {
+    case EffectTiming.BEAT:
+      offsetMs = effect.offsetAmount * beat.lengthMs;
       break;
-    case 'offsetMs':
-      offsetMs = effect.offset.value;
+    case EffectTiming.ONE_SHOT:
+      offsetMs = effect.offsetAmount * (effect.endMs - effect.startMs);
       break;
     default:
       offsetMs = 0;
@@ -300,7 +300,7 @@ function applyEffect(context: RenderContext, beat: BeatMetadata, frame: number, 
 
   // Calculate beat
   const virtualBeat = (context.t + offsetMs - Number(beat.offsetMs)) *
-    (effect.timingMultiplier || 1);
+    (effect.timingMultiplier || 1) * (effect.mirrored ? 2 : 1);
   const beatIndex = Math.floor(virtualBeat / beat.lengthMs);
   const beatT = ((virtualBeat % beat.lengthMs) / beat.lengthMs) % 1;
 
@@ -309,11 +309,10 @@ function applyEffect(context: RenderContext, beat: BeatMetadata, frame: number, 
   let effectT: number;
   switch (effect.timingMode) {
     case EffectTiming.ONE_SHOT:
-      // TODO: Implement mirrored for one-shots.
       const relativeT =
         (context.t + offsetMs - effect.startMs) /
         (effect.endMs - effect.startMs) *
-        (effect.timingMultiplier || 1);
+        (effect.timingMultiplier || 1) * (effect.mirrored ? 2 : 1);
       effectT = relativeT % 1;
       if (effect.mirrored && Math.floor(relativeT) % 2) {
         effectT = 1 - effectT;

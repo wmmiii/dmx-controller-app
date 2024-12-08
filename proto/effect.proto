@@ -49,14 +49,6 @@ message FixtureState {
   optional StrobeSpeed deprecated_strobe = 8 [deprecated = true];
 }
 
-message FixtureSequenceMapping {
-  uint32 fixture_sequence_id = 1;
-  reserved 2 to 10;
-  EffectTiming timing_mode = 11;
-  uint32 offset_ms = 12;
-  double timing_multiplier = 13;
-}
-
 enum EffectTiming {
   // The `t` value passed in corresponds to the [0, 1] value of where we are in
   // the effect itself.
@@ -72,7 +64,7 @@ message Effect {
   message StaticEffect {
     FixtureState state = 1;
 
-    FixtureSequenceMapping fixture_sequence = 2 [ deprecated = true ];
+    reserved 2; // Deprecated fixture_sequence
   }
 
   message RampEffect {
@@ -88,10 +80,7 @@ message Effect {
     FixtureState state_start = 2;
     FixtureState state_end = 3;
 
-    FixtureSequenceMapping fixture_sequence_mapping_start = 4
-        [ deprecated = true ];
-    FixtureSequenceMapping fixture_sequence_mapping_end = 5
-        [ deprecated = true ];
+    reserved 4 to 5; // Deprecated fixture_sequence_mapping
   }
 
   message StrobeEffect {
@@ -111,12 +100,11 @@ message Effect {
   reserved 12; // Deprecated offset_ms
   double timing_multiplier = 13;
   bool mirrored = 14;
-  reserved 15; // Deprecated
-  oneof offset {
-    int32 offset_ms = 16;
-    double offset_beat = 17;
-  }
-  reserved 18 to 100;
+  reserved 15 to 17; // Deprecated
+  double offset_amount = 18;
+  reserved 19 to 100;
+
+
 
   oneof effect {
     StaticEffect static_effect = 101;

@@ -369,48 +369,17 @@ export function EffectDetails({
           <hr />
 
           <label>
-            <span>Offset</span>
+            <span>Offset %</span>
             <NumberInput
               type="float"
-              max={128}
-              min={-128}
-              value={
-                effect.offset.case === 'offsetMs' ?
-                  effect.offset.value / 1000 :
-                  effect.offset.value || 0
-              }
+              max={100}
+              min={0}
+              value={(effect.offsetAmount || 0) * 100}
               onChange={(v) => {
-                if (effect.offset.case === 'offsetMs') {
-                  v = Math.floor(v * 1000);
-                }
-                effect.offset.case = effect.offset.case || 'offsetBeat';
-                effect.offset.value = v;
+                effect.offsetAmount = v / 100;
                 save('Change effect offset.');
               }} />
           </label>
-
-          {
-            effect.offset.value ?
-              <ToggleInput
-                className={styles.toggle}
-                value={effect.offset.case !== 'offsetBeat'}
-                onChange={(value) => {
-                  if (value && effect.offset.case === 'offsetBeat') {
-                    effect.offset = {
-                      case: 'offsetMs',
-                      value: effect.offset.value * 1000,
-                    };
-                  } else if (!value && effect.offset.case === 'offsetMs') {
-                    effect.offset = {
-                      case: 'offsetBeat',
-                      value: effect.offset.value / 1000,
-                    };
-                  }
-                  save('Change effect offset type.');
-                }}
-                labels={{ left: 'Beat', right: 'Seconds' }} /> :
-              <></>
-          }
 
           <hr />
 
@@ -432,17 +401,17 @@ export function EffectDetails({
   )
 }
 
-function effectColor(effect: FixtureState, palette: ColorPalette, alt = false): string {
-  if (effect.lightColor.case === 'color') {
-    const color = effect.lightColor.value;
+function effectColor(state: FixtureState, palette: ColorPalette, alt = false): string {
+  if (state.lightColor.case === 'color') {
+    const color = state.lightColor.value;
     const white = Math.floor(('white' in color ? color.white : 0) * 255);
     const r = Math.min(Math.floor(color.red * 255) + white, 255);
     const g = Math.min(Math.floor(color.green * 255) + white, 255);
     const b = Math.min(Math.floor(color.blue * 255) + white, 255);
     return `rgb(${r}, ${g}, ${b})`;
-  } else if (effect.lightColor.case === 'paletteColor') {
+  } else if (state.lightColor.case === 'paletteColor') {
     let color: Color;
-    switch (effect.lightColor.value) {
+    switch (state.lightColor.value) {
       case PaletteColor.PALETTE_BLACK:
         return 'rgb(0, 0, 0)';
       case PaletteColor.PALETTE_WHITE:
@@ -457,7 +426,7 @@ function effectColor(effect: FixtureState, palette: ColorPalette, alt = false): 
         color = palette.tertiary.color;
         break;
       default:
-        throw new Error(`Unrecognized palette color type! ${effect.lightColor}`);
+        throw new Error(`Unrecognized palette color type! ${state.lightColor}`);
     }
     const white = Math.floor(('white' in color ? color.white : 0) * 255);
     const r = Math.min(Math.floor(color.red * 255) + white, 255);
