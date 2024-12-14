@@ -93,8 +93,10 @@ export function ComponentGrid({
 
   const onDropComponent = useCallback(() => {
     setDraggingComponent(null);
-    save(`Rearrange components in scene ${scene.name}.`);
-  }, [save]);
+    if (draggingComponent) {
+      save(`Rearrange components in scene ${scene.name}.`);
+    }
+  }, [draggingComponent, save]);
 
   // Setup shortcuts.
   useEffect(() => {

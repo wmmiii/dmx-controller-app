@@ -94,6 +94,7 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
         flowControl: 'none',
         parity: 'none',
         stopBits: 2,
+        bufferSize: 512,
       });
 
       setPort(port);
@@ -162,10 +163,6 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
         average /= fpsBuffer.current.length;
         fpsSubscribers.current.forEach((s) => s(Math.floor(1000 / average)));
         lastFrame = now;
-
-        // This is needed because sometimes the micro-controller gets
-        // overwhelmed. I don't know why and don't have time to debug.
-        await new Promise((r) => setTimeout(r, 25));
       }
     })();
 

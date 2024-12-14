@@ -147,11 +147,11 @@ export function renderSceneToUniverse(
               if (component.duration.case === 'durationBeat') {
                 effectT = (sinceTransition * effectLength) / beatMetadata.lengthMs;
               } else {
-                effectT = sinceTransition;
+                effectT = (sinceTransition * effectLength) / durationEffect;
               }
 
               // Only play once
-              if (effectT > durationEffect) {
+              if (effectT > effectLength) {
                 break;
               }
 

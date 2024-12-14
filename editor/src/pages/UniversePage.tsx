@@ -143,7 +143,7 @@ function FixtureList(): JSX.Element {
             }
           }} />
       </div>
-      <h2>Fixtures</h2>
+      <h2>□ Fixtures</h2>
       <ol>
         {
           Object.entries(getActiveUniverse(project).fixtures)
@@ -177,7 +177,7 @@ function FixtureList(): JSX.Element {
       }}>
         + Add New Fixture
       </Button>
-      <h2>Groups</h2>
+      <h2>⧉ Groups</h2>
       <ul>
         {
           Object.entries(project.groups)
@@ -381,7 +381,7 @@ function EditGroupDialog({
       {
         group.groups.map((id, i) => (
           <div key={id} className={styles.row}>
-            {project.groups[id.toString()]?.name}
+            ⧉ {project.groups[id.toString()]?.name}
             <IconButton
               title="Remove Group"
               onClick={() => {
@@ -397,7 +397,7 @@ function EditGroupDialog({
       {
         group.fixtures?.[project.activeUniverse.toString()]?.fixtures.map((id, i) => (
           <div key={id} className={styles.row}>
-            {getActiveUniverse(project).fixtures[id.toString()].name}
+            □ {getActiveUniverse(project).fixtures[id.toString()].name}
             <IconButton
               title="Remove Fixture"
               onClick={() => {
@@ -426,6 +426,8 @@ function EditGroupDialog({
           {
             applicableMembers.map((m, i) => (
               <option key={i} value={i}>
+                {m.id.output.case === 'group' ? '⧉' : '□'}
+                &nbsp;
                 {m.name}
               </option>
             ))

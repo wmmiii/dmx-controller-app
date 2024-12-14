@@ -30,20 +30,20 @@ export function OutputSelector({ value, setValue }: OutputSelectorProps):
     outputs.push({
       type: 'group',
       id: GROUP_ALL_ID,
-      name: 'All Fixtures',
+      name: '⧉ All Fixtures',
     });
     for (const [id, group] of Object.entries(project.groups)) {
       outputs.push({
         type: 'group',
         id: BigInt(id),
-        name: group.name,
+        name: '⧉ ' + group.name,
       });
     }
     for (const [id, fixture] of Object.entries(getActiveUniverse(project).fixtures)) {
       outputs.push({
         type: 'fixture',
         id: BigInt(id),
-        name: fixture.name,
+        name: '□ ' + fixture.name,
       });
     }
     return outputs;
@@ -141,13 +141,13 @@ export function getOutputName(project: Project, outputId: OutputId) {
       if (fixtureId == null) {
         return '<Unset>';
       } else {
-        return getActiveUniverse(project).fixtures[fixtureId.toString()].name;
+        return '□ ' + getActiveUniverse(project).fixtures[fixtureId.toString()].name;
       }
     case 'group':
       if (outputId.output.value === GROUP_ALL_ID) {
-        return 'All Fixtures';
+        return '⧉ All Fixtures';
       }
-      return project.groups[outputId.output.value.toString()].name;
+      return '□ ' + project.groups[outputId.output.value.toString()].name;
     default:
       return '<Unset>';
   }
