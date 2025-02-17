@@ -3,13 +3,13 @@ import { getAllFixtures } from "./group";
 import { OutputId, OutputId_FixtureMapping } from "@dmx-controller/proto/output_id_pb";
 import { getActiveUniverse } from "../util/projectUtils";
 import { LightTrack } from "@dmx-controller/proto/light_track_pb";
-import { FixtureDefinition, PhysicalFixture, PhysicalFixtureGroup } from "@dmx-controller/proto/fixture_pb";
+import { FixtureDefinition, PhysicalFixture } from "@dmx-controller/proto/fixture_pb";
 
 export type DmxUniverse = number[];
 
 export const GROUP_ALL_ID = 0n;
 
-export const COLOR_CHANNELS = ['red', 'green', 'blue', 'white'] as const;
+export const COLOR_CHANNELS = ['red', 'green', 'blue', 'cyan', 'magenta', 'yellow', 'white'] as const;
 export type ColorChannel = typeof COLOR_CHANNELS[number];
 export function isColorChannel(type: string): type is ColorChannel {
   return COLOR_CHANNELS.includes(type as ColorChannel);
@@ -193,6 +193,21 @@ function collectFunctions(fixture: PhysicalFixture, definition: FixtureDefinitio
       case 'blue':
         collection.colorFunctions.push((universe, _r, _g, b, _w) => {
           universe[index] = b * 255;
+        });
+        break;
+      case 'cyan':
+        collection.colorFunctions.push((universe, r, _g, _b, _w) => {
+          universe[index] = (1 - r) * 255;
+        });
+        break;
+      case 'magenta':
+        collection.colorFunctions.push((universe, _r, g, _b, _w) => {
+          universe[index] = (1 - g) * 255;
+        });
+        break;
+      case 'yellow':
+        collection.colorFunctions.push((universe, _r, _g, b, _w) => {
+          universe[index] = (1 - b) * 255;
         });
         break;
       case 'white':
