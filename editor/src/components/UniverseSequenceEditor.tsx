@@ -1,4 +1,4 @@
-import { createRef, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import LightTimeline from './LightTimeline';
 import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
 import { LightTrack as LightTrackProto } from '@dmx-controller/proto/light_track_pb';
@@ -22,8 +22,6 @@ export function UniverseSequenceEditor({
   sequence,
 }: UniverseSequenceEditorProps): JSX.Element {
   const { save } = useContext(ProjectContext);
-
-  const panelRef = createRef<HTMLDivElement>();
 
   const t = useRef<number>(0);
 
@@ -93,7 +91,6 @@ export function UniverseSequenceEditor({
           }));
           save(`Add new light track to sequence ${sequence.name}.`);
         }}
-        panelRef={panelRef}
         audioToTrack={wsMsToSceneMs}
         t={t} />
     </div>

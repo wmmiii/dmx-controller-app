@@ -47,7 +47,7 @@ interface EffectProps {
 
 export function Effect({
   className,
-  style,
+  style: originalStyle,
   address,
   effect,
   minMs,
@@ -87,6 +87,9 @@ export function Effect({
     return undefined;
   }, [copyEffect, effect, selectedEffect, save]);
 
+
+  // React makes the original style immutable so we clone it to modify it.
+  const style = Object.assign({}, originalStyle);
   const icons: Set<(props: any) => JSX.Element> = new Set();
   if (effect.effect.case === 'staticEffect') {
     if (effect.effect.value.state) {

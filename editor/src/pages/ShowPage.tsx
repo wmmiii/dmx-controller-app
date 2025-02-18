@@ -1,4 +1,4 @@
-import { createRef, JSX, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { JSX, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import LightTimeline from '../components/LightTimeline';
 import styles from "./ShowPage.module.scss";
 import { Button } from '../components/Button';
@@ -27,8 +27,6 @@ const DEFAULT_SHOW = new Show({
 export default function ShowPage(): JSX.Element {
   const { project, save } = useContext(ProjectContext);
   const { setRenderUniverse, clearRenderUniverse } = useContext(SerialContext);
-
-  const panelRef = createRef<HTMLDivElement>();
 
   let t = useRef<number>(0);
   const [audioDuration, setAudioDuration] = useState(1);
@@ -170,7 +168,6 @@ export default function ShowPage(): JSX.Element {
           show?.lightTracks.push(new LightTrackProto());
           save(`Add layer to show ${show.name}.`);
         }}
-        panelRef={panelRef}
         t={t} />
       {
         showDetailsModal &&

@@ -102,7 +102,6 @@ interface TracksProps {
   lightTracks: LightTrackProto[];
   swap?: (a: number, b: number) => void;
   addLayer?: () => void;
-  panelRef: React.RefObject<HTMLDivElement>;
   audioToTrack?: (t: number) => number;
   t: React.MutableRefObject<number>;
 }
@@ -121,7 +120,6 @@ function Tracks({
   lightTracks,
   swap,
   addLayer,
-  panelRef,
   audioToTrack,
   t,
 }: TracksProps): JSX.Element {
@@ -130,6 +128,7 @@ function Tracks({
 
   const [visible, setVisible] = useState({ startMs: 0, endMs: 1000 });
   const [playing, setPlaying] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
   const audioController = useRef<AudioController>();
   const [tState, setTState] = useState(0);
 
