@@ -153,7 +153,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
     if (project == null) {
       throw new Error('Tried to save assets without project loaded!');
     }
-    saveAssetsImpl(project);
+    await saveAssetsImpl(project);
     await saveImpl(project, 'Updating assets.');
   }, [project, save]);
 

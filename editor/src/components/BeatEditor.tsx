@@ -229,6 +229,7 @@ export function BeatEditor({ file, onCancel }: BeatEditorProps):
       offsetMs: BigInt(Math.floor(firstBeat)),
     });
     saveAssets();
+    onCancel();
   }, [file, beatDuration, firstBeat]);
 
   return (

@@ -104,8 +104,6 @@ message Effect {
   double offset_amount = 18;
   reserved 19 to 100;
 
-
-
   oneof effect {
     StaticEffect static_effect = 101;
     RampEffect ramp_effect = 102;

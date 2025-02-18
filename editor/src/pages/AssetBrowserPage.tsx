@@ -31,59 +31,55 @@ function AudioFileList({ selectAudioFile }: AudioFileListProps): JSX.Element | n
   const { project, saveAssets } = useContext(ProjectContext);
   const [highlightDrop, setHighlightDrop] = useState(false);
 
-  if (!project) {
-    return null;
-  }
-
   const classes = [styles.audioFileList];
   if (highlightDrop) {
     classes.push(styles.highlightDrop);
   }
 
   return (
-    <div className={styles.audioFileList}>
-      <ol
-        onDragOver={(e) => {
-          setHighlightDrop(true);
-          e.preventDefault();
-          e.stopPropagation();
-        }}
-        onDragLeave={(e) => {
-          setHighlightDrop(false);
-          e.preventDefault();
-          e.stopPropagation();
-        }}
-        onDrop={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
+    <div className={classes.join(' ')}
+      onDragOver={(e) => {
+        setHighlightDrop(true);
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+      onDragLeave={(e) => {
+        setHighlightDrop(false);
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
 
-          (async () => {
-            for (let i = 0; i < e.dataTransfer.items.length; ++i) {
-              const item = e.dataTransfer.items[i];
-              if (item.kind === 'file') {
-                const file = item.getAsFile() as File;
-                if (file.type.startsWith('audio/')) {
-                  const audioFile = new AudioFile({
-                    name: file.name,
-                    contents: new Uint8Array(await file.arrayBuffer()),
-                    mime: file.type,
-                  });
+        (async () => {
+          for (let i = 0; i < e.dataTransfer.items.length; ++i) {
+            const item = e.dataTransfer.items[i];
+            if (item.kind === 'file') {
+              const file = item.getAsFile() as File;
+              if (file.type.startsWith('audio/')) {
+                const audioFile = new AudioFile({
+                  name: file.name,
+                  contents: new Uint8Array(await file.arrayBuffer()),
+                  mime: file.type,
+                });
 
-                  if (!project.assets) {
-                    project.assets = new Project_Assets();
-                  }
-
-                  const newId = nextId(project.assets.audioFiles);
-                  project.assets.audioFiles[newId] = audioFile;
+                if (!project.assets) {
+                  project.assets = new Project_Assets();
                 }
+
+                const newId = nextId(project.assets.audioFiles);
+                project.assets.audioFiles[newId] = audioFile;
               }
             }
+          }
 
-            saveAssets();
-          })();
+          saveAssets();
+        })();
 
-          setHighlightDrop(false);
-        }}>
+        setHighlightDrop(false);
+      }}>
+      <ol>
         {
           idMapToArray(project.assets?.audioFiles)
             .map(([id, f]) => (

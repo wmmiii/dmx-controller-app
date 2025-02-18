@@ -7,14 +7,6 @@ import { escapeForFilesystem } from '../util/fileUtils';
 export default function ProjectPage(): JSX.Element {
   const { project, save } = useContext(ProjectContext);
 
-  if (!project) {
-    return (
-      <div>
-        Loading...
-      </div>
-    );
-  }
-
   return (
     <div className={styles.browser}>
       <TextInput

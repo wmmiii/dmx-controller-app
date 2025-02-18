@@ -73,10 +73,6 @@ function FixtureList(): JSX.Element | null {
     return undefined;
   }, [uploadButtonRef.current, project, save]);
 
-  if (!project) {
-    return null;
-  }
-
   return (
     <div className={styles.pane}>
       <select
@@ -512,10 +508,6 @@ function FixtureDefinitionList(): JSX.Element | null {
       return project?.fixtureDefinitions[id];
     },
     [project, selectedDefinitionId]);
-
-  if (!project) {
-    return null;
-  }
 
   return (
     <div className={styles.pane}>

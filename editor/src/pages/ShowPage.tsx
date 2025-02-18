@@ -40,10 +40,6 @@ export default function ShowPage(): JSX.Element {
     useMemo(() => project?.shows[project.selectedShow || 0], [project]);
 
   useEffect(() => {
-    if (!project) {
-      return;
-    }
-
     const render = (frame: number) => universeToUint8Array(
       project,
       renderShowToUniverse(t.current, frame, project));

@@ -45,10 +45,6 @@ export function LightTrack({
   const { project, save } = useContext(ProjectContext);
   const trackRef = createRef<HTMLDivElement>();
 
-  if (track.outputId == null) {
-    throw new Error('Track output ID not set!');
-  }
-
   return (
     <div className={styles.lightTrack}>
       <div className={styles.left} style={{ width: leftWidth }}>
