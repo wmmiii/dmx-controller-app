@@ -143,7 +143,7 @@ function FixtureList(): JSX.Element {
             }
           }} />
       </div>
-      <h2>□ Fixtures</h2>
+      <h2>⧇ Fixtures</h2>
       <ol>
         {
           Object.entries(getActiveUniverse(project).fixtures)
@@ -303,7 +303,8 @@ function EditFixtureDialog({
       </label>
       {
         ANGLE_CHANNEL
-          .filter(t => Object.values(definition.channels).some(c => c.type === t))
+          .filter(t => Object.values(definition.channels)
+          .some(c => c.type === t))
           .map((t, i) => (
             <label key={i}>
               <span>{String(t).charAt(0).toUpperCase() + String(t).slice(1)} Offset</span>
@@ -397,7 +398,7 @@ function EditGroupDialog({
       {
         group.fixtures?.[project.activeUniverse.toString()]?.fixtures.map((id, i) => (
           <div key={id} className={styles.row}>
-            □ {getActiveUniverse(project).fixtures[id.toString()].name}
+            ⧇ {getActiveUniverse(project).fixtures[id.toString()].name}
             <IconButton
               title="Remove Fixture"
               onClick={() => {
@@ -426,7 +427,7 @@ function EditGroupDialog({
           {
             applicableMembers.map((m, i) => (
               <option key={i} value={i}>
-                {m.id.output.case === 'group' ? '⧉' : '□'}
+                {m.id.output.case === 'group' ? '⧉' : '⧇'}
                 &nbsp;
                 {m.name}
               </option>
