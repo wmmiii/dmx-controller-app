@@ -38,7 +38,7 @@ export function EffectState(
     } else {
       state.lightColor = {
         case: 'paletteColor',
-        value: parseInt(type as any),
+        value: parseInt(type.toString()),
       };
     }
     onChange(state);

@@ -763,26 +763,30 @@ function EditDefinitionDialog({
                     }
                   </td>
                   {
-                    isAngleChannel(channel?.type) ?
+                    channel.mapping.case === 'angleMapping' ?
                       <>
                         <td>
                           <NumberInput
                             min={-720}
                             max={720}
-                            value={(channel.mapping.value as FixtureDefinition_Channel_AngleMapping).minDegrees}
+                            value={channel.mapping.value.minDegrees}
                             onChange={(v) => {
-                              (channel.mapping.value as FixtureDefinition_Channel_AngleMapping).minDegrees = v;
-                              save(`Set channel ${index} min degrees to ${v}.`);
+                              if (channel.mapping.case === 'angleMapping') {
+                                channel.mapping.value.minDegrees = v;
+                                save(`Set channel ${index} min degrees to ${v}.`);
+                              }
                             }} />
                         </td>
                         <td>
                           <NumberInput
                             min={-720}
                             max={720}
-                            value={(channel.mapping.value as FixtureDefinition_Channel_AngleMapping).maxDegrees}
+                            value={channel.mapping.value.maxDegrees}
                             onChange={(v) => {
-                              (channel.mapping.value as FixtureDefinition_Channel_AngleMapping).maxDegrees = v;
-                              save(`Set channel ${index} max degrees to ${v}.`);
+                              if (channel.mapping.case === 'angleMapping') {
+                                channel.mapping.value.maxDegrees = v;
+                                save(`Set channel ${index} max degrees to ${v}.`);
+                              }
                             }} />
                         </td>
                       </> :
@@ -792,25 +796,29 @@ function EditDefinitionDialog({
                       </>
                   }
                   {
-                    isAmountChannel(channel?.type) ?
+                    channel.mapping.case === 'amountMapping' ?
                       <>
                         <td>
                           <RangeInput
                             title={`Minimum value for ${channel?.type} channel.`}
-                            value={(channel.mapping.value as FixtureDefinition_Channel_AmountMapping).minValue}
+                            value={channel.mapping.value.minValue}
                             onChange={(value) => {
-                              (channel.mapping.value as FixtureDefinition_Channel_AmountMapping).minValue = value;
-                              save(`Set channel ${index} min value to ${value}.`);
+                              if (channel.mapping.case === 'amountMapping') {
+                                channel.mapping.value.minValue = value;
+                                save(`Set channel ${index} min value to ${value}.`);
+                              }
                             }}
                             max="255" />
                         </td>
                         <td>
                           <RangeInput
                             title={`Maximum value for ${channel?.type} channel.`}
-                            value={(channel.mapping.value as FixtureDefinition_Channel_AmountMapping).maxValue}
+                            value={channel.mapping.value.maxValue}
                             onChange={(value) => {
-                              (channel.mapping.value as FixtureDefinition_Channel_AmountMapping).maxValue = value;
-                              save(`Set channel ${index} max value to ${value}.`);
+                              if (channel.mapping.case === 'amountMapping') {
+                                channel.mapping.value.maxValue = value;
+                                save(`Set channel ${index} max value to ${value}.`);
+                              }
                             }}
                             max="255" />
                         </td>
