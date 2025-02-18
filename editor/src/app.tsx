@@ -1,4 +1,4 @@
-import React, { StrictMode } from 'react';
+import { StrictMode } from 'react';
 import Index from './Index';
 import { BrowserRouter } from 'react-router-dom';
 import { DialogProvider } from './contexts/DialogContext';
@@ -14,7 +14,7 @@ import { createRoot } from 'react-dom/client';
 //   console.log(hello_world());
 // });
 
-const root = createRoot(document.getElementById('root'));
+const root = createRoot(document.getElementById('root')!);
 root.render(
   <StrictMode>
     <BrowserRouter basename="/">

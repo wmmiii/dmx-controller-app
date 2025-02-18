@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createRef, useCallback, useEffect, useMemo, useState } from "react";
 
 import styles from './Input.module.scss';
 
@@ -9,7 +9,7 @@ interface TextInputProps {
 
 export function TextInput({ value, onChange }: TextInputProps): JSX.Element {
   const [input, setInput] = useState(String(value));
-  const inputRef = useRef<HTMLInputElement>();
+  const inputRef = createRef<HTMLInputElement>();
 
   useEffect(() => setInput(String(value)), [value]);
 
@@ -67,7 +67,7 @@ export function NumberInput({
   max,
 }: NumberInputProps): JSX.Element {
   const [input, setInput] = useState(String(value));
-  const inputRef = useRef<HTMLInputElement>();
+  const inputRef = createRef<HTMLInputElement>();
 
   const step = useMemo(() => max > 1 ? 1 : 1 / 16, [max]);
 
@@ -118,11 +118,11 @@ export function NumberInput({
         switch (e.code) {
           case 'Enter':
             flushValue();
-            inputRef.current.blur();
+            inputRef.current?.blur();
             break;
           case 'Escape':
             setInput(String(value));
-            inputRef.current.blur();
+            inputRef.current?.blur();
             break;
           case 'ArrowUp':
             if (parsed != null) {

@@ -9,7 +9,10 @@
       "ESNext",
     ],
     "moduleResolution": "node",
+    "strict": true,
     "noImplicitAny": true,
+    "noUnusedLocals": true,
+    "noImplicitReturns": true,
     "noUnusedParameters": true,
     "allowSyntheticDefaultImports": true,
     "paths": {

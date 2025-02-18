@@ -1,4 +1,4 @@
-import React, { PropsWithChildren, createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { PropsWithChildren, createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { Modal } from "../components/Modal";
 import { SerialContext } from "./SerialContext";
 

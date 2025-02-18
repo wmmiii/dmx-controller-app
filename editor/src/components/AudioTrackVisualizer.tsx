@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { createRef, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import MinimapPlugin from "wavesurfer.js/dist/plugins/minimap.js";
 import RegionsPlugin from "wavesurfer.js/dist/plugins/regions.js";
 import WaveSurfer from 'wavesurfer.js';
@@ -12,8 +12,8 @@ export interface AudioController {
 }
 
 interface AudioTrackVisualizerProps {
-  audioBlob: Blob;
-  beatMetadata: BeatMetadata;
+  audioBlob: Blob | undefined;
+  beatMetadata: BeatMetadata | undefined;
   setController: (controller: AudioController) => void;
   setPlaying: (playing: boolean) => void;
   onProgress: (t: number) => void;
@@ -39,7 +39,7 @@ export function AudioTrackVisualizer({
   className,
 }: AudioTrackVisualizerProps): JSX.Element {
   const { setShortcuts } = useContext(ShortcutContext);
-  const containerRef = useRef<HTMLDivElement>();
+  const containerRef = createRef<HTMLDivElement>();
   const [ws, setWs] = useState<WaveSurfer | null>(null);
   const [regions, setRegions] = useState<RegionsPlugin | null>(null);
   const visibleDuration = useRef<number>();
@@ -68,7 +68,7 @@ export function AudioTrackVisualizer({
       ws.on('pause', () => setPlaying(false));
       ws.on('decode', (seconds: number) => {
         const ms = seconds * 1000;
-        setVisible(0, ms);
+        setVisible && setVisible(0, ms);
         if (setTotalDuration) {
           setTotalDuration(ms);
         }
@@ -84,6 +84,7 @@ export function AudioTrackVisualizer({
         ws.destroy();
       };
     }
+    return undefined;
   }, [containerRef.current, audioBlob, onProgress, setPlaying]);
 
   const audioController: AudioController = useMemo(() => {
@@ -213,6 +214,7 @@ export function AudioTrackVisualizer({
         },
       ]);
     }
+    return undefined;
   }, [ws]);
 
   return (

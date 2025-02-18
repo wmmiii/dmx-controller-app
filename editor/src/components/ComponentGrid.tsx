@@ -1,4 +1,4 @@
-import React, { DragEventHandler, ReactEventHandler, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import IconBxArrowToRight from '../icons/IconBxArrowToRight';
 import IconBxCategory from '../icons/IconBxCategory';
 import IconBxCheckbox from '../icons/IconBxCheckbox';
@@ -52,6 +52,9 @@ export function ComponentGrid({
   }, [scene, save]);
 
   const dragOverRow = useCallback((dropIndex: number) => {
+    if (draggingRow == null) {
+      return;
+    }
     const draggingIndex = scene.rows.indexOf(draggingRow);
     if (draggingIndex < 0) {
       return;
@@ -69,8 +72,11 @@ export function ComponentGrid({
   }, [save]);
 
   const dragComponentOver = useCallback((dropRow: number, dropIndex: number) => {
-    let draggingRow: number;
-    let draggingIndex: number;
+    if (draggingComponent == null) {
+      return;
+    }
+    let draggingRow: number | undefined;
+    let draggingIndex: number | undefined;
     for (const rowIndex in scene.rows) {
       const row = scene.rows[rowIndex];
       const index = row.components.indexOf(draggingComponent);
@@ -173,7 +179,7 @@ interface ComponentRowProps {
   onDragRow: (row: Scene_ComponentRow) => void;
   onDragRowOver: () => void;
   onDropRow: () => void;
-  draggingComponent: Scene_Component | undefined;
+  draggingComponent: Scene_Component | null;
   onDragComponent: (component: Scene_Component) => void;
   onDragComponentOver: (index: number) => void;
   onDropComponent: () => void;

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import IconBxsBinoculars from '../icons/IconBxsBinoculars';
 import IconBxsBolt from '../icons/IconBxsBolt';
 import IconBxsSun from '../icons/IconBxsSun';
@@ -10,7 +10,7 @@ import { CSSProperties } from "react";
 import { DEFAULT_EFFECT_COLOR, DEFAULT_EFFECT_COLOR_ALT } from '../util/styleUtils';
 import { Effect as EffectProto, EffectTiming, Effect_RampEffect, Effect_RampEffect_EasingFunction, Effect_StaticEffect, FixtureState, FixtureState as FixtureStateProto, Effect_StrobeEffect } from "@dmx-controller/proto/effect_pb";
 import { EffectState } from './EffectState';
-import { NumberInput, ToggleInput } from './Input';
+import { NumberInput } from './Input';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { RenderingContext } from '../contexts/RenderingContext';
 import { ShortcutContext } from '../contexts/ShortcutContext';
@@ -84,38 +84,45 @@ export function Effect({
         },
       ]);
     }
+    return undefined;
   }, [copyEffect, effect, selectedEffect, save]);
 
   const icons: Set<(props: any) => JSX.Element> = new Set();
   if (effect.effect.case === 'staticEffect') {
-    style.background = effectColor(effect.effect.value.state, palette);
-    effectIcons(effect.effect.value.state).forEach(i => icons.add(i));
+    if (effect.effect.value.state) {
+      style.background = effectColor(effect.effect.value.state, palette);
+      effectIcons(effect.effect.value.state).forEach(i => icons.add(i));
+    }
   } else if (effect.effect.case === 'rampEffect') {
-    const start = effectColor(effect.effect.value.stateStart, palette);
-    const end = effectColor(effect.effect.value.stateEnd, palette, true);
-    let width: number;
-    if (effect.timingMode === EffectTiming.BEAT) {
-      width = beatWidthPx / (effect.timingMultiplier || 1);
-    } else {
-      width = msWidthToPxWidth(effect.endMs - effect.startMs) / (effect.timingMultiplier || 1);
-    }
-    if (effect.mirrored) {
-      style.background = `repeating-linear-gradient(90deg, ${end} 0, ${start} ${width}px, ${end} ${width * 2}px)`;
-    } else {
-      style.background = `repeating-linear-gradient(90deg, ${start} 0, ${end} ${width}px)`;
-    }
+    if (effect.effect.value.stateStart != null && effect.effect.value.stateEnd) {
+      const start = effectColor(effect.effect.value.stateStart, palette);
+      const end = effectColor(effect.effect.value.stateEnd, palette, true);
+      let width: number;
+      if (effect.timingMode === EffectTiming.BEAT) {
+        width = beatWidthPx / (effect.timingMultiplier || 1);
+      } else {
+        width = msWidthToPxWidth(effect.endMs - effect.startMs) / (effect.timingMultiplier || 1);
+      }
+      if (effect.mirrored) {
+        style.background = `repeating-linear-gradient(90deg, ${end} 0, ${start} ${width}px, ${end} ${width * 2}px)`;
+      } else {
+        style.background = `repeating-linear-gradient(90deg, ${start} 0, ${end} ${width}px)`;
+      }
 
-    effectIcons(effect.effect.value.stateStart).forEach(i => icons.add(i));
-    effectIcons(effect.effect.value.stateEnd).forEach(i => icons.add(i));
+      effectIcons(effect.effect.value.stateStart).forEach(i => icons.add(i));
+      effectIcons(effect.effect.value.stateEnd).forEach(i => icons.add(i));
+    }
   } else if (effect.effect.case === 'strobeEffect') {
-    const start = effectColor(effect.effect.value.stateA, palette);
-    const end = effectColor(effect.effect.value.stateB, palette, true);
-    const aWidth = effect.effect.value.stateAFames * 2;
-    const bWidth = effect.effect.value.stateBFames * 2;
-    style.background = `repeating-linear-gradient(-45deg, ${start} 0, ${start} ${aWidth}px, ${end} ${aWidth}px, ${end} ${aWidth + bWidth}px)`;
+    if (effect.effect.value.stateA != null && effect.effect.value.stateB != null) {
+      const start = effectColor(effect.effect.value.stateA, palette);
+      const end = effectColor(effect.effect.value.stateB, palette, true);
+      const aWidth = effect.effect.value.stateAFames * 2;
+      const bWidth = effect.effect.value.stateBFames * 2;
+      style.background = `repeating-linear-gradient(-45deg, ${start} 0, ${start} ${aWidth}px, ${end} ${aWidth}px, ${end} ${aWidth + bWidth}px)`;
 
-    effectIcons(effect.effect.value.stateA).forEach(i => icons.add(i));
-    effectIcons(effect.effect.value.stateB).forEach(i => icons.add(i));
+      effectIcons(effect.effect.value.stateA).forEach(i => icons.add(i));
+      effectIcons(effect.effect.value.stateB).forEach(i => icons.add(i));
+    }
   }
 
   const containerClasses = [styles.effect, className];
@@ -286,22 +293,42 @@ export function EffectDetails({
           variant={effect.effect.case === 'rampEffect' ? 'primary' : 'default'}
           onClick={() => {
             if (effect.effect.case === 'staticEffect') {
-              effect.effect = {
-                case: 'rampEffect',
-                value: new Effect_RampEffect({
-                  stateStart: effect.effect.value.state.clone(),
-                  stateEnd: effect.effect.value.state.clone(),
-                }),
-              };
+              if (effect.effect.value.state) {
+                effect.effect = {
+                  case: 'rampEffect',
+                  value: new Effect_RampEffect({
+                    stateStart: effect.effect.value.state.clone(),
+                    stateEnd: effect.effect.value.state.clone(),
+                  }),
+                };
+              } else {
+                effect.effect = {
+                  case: 'rampEffect',
+                  value: new Effect_RampEffect({
+                    stateStart: new FixtureState(),
+                    stateEnd: new FixtureState(),
+                  }),
+                }
+              }
               save('Change effect type to ramp.');
             } else if (effect.effect.case === 'strobeEffect') {
-              effect.effect = {
-                case: 'rampEffect',
-                value: new Effect_RampEffect({
-                  stateStart: effect.effect.value.stateA.clone(),
-                  stateEnd: effect.effect.value.stateB.clone(),
-                }),
-              };
+              if (effect.effect.value.stateA != null && effect.effect.value.stateB != null) {
+                effect.effect = {
+                  case: 'rampEffect',
+                  value: new Effect_RampEffect({
+                    stateStart: effect.effect.value.stateA.clone(),
+                    stateEnd: effect.effect.value.stateB.clone(),
+                  }),
+                };
+              } else {
+                effect.effect = {
+                  case: 'rampEffect',
+                  value: new Effect_RampEffect({
+                    stateStart: new FixtureState(),
+                    stateEnd: new FixtureState(),
+                  }),
+                };
+              }
               save('Change effect type to ramp.');
             }
           }}>
@@ -312,22 +339,42 @@ export function EffectDetails({
           variant={effect.effect.case === 'strobeEffect' ? 'primary' : 'default'}
           onClick={() => {
             if (effect.effect.case === 'staticEffect') {
-              effect.effect = {
-                case: 'strobeEffect',
-                value: new Effect_StrobeEffect({
-                  stateA: effect.effect.value.state.clone(),
-                  stateB: effect.effect.value.state.clone(),
-                }),
-              };
+              if (effect.effect.value.state) {
+                effect.effect = {
+                  case: 'strobeEffect',
+                  value: new Effect_StrobeEffect({
+                    stateA: effect.effect.value.state.clone(),
+                    stateB: effect.effect.value.state.clone(),
+                  }),
+                };
+              } else {
+                effect.effect = {
+                  case: 'strobeEffect',
+                  value: new Effect_StrobeEffect({
+                    stateA: new FixtureState(),
+                    stateB: new FixtureState(),
+                  }),
+                };
+              }
               save('Change effect type to strobe.');
             } else if (effect.effect.case === 'rampEffect') {
-              effect.effect = {
-                case: 'strobeEffect',
-                value: new Effect_StrobeEffect({
-                  stateA: effect.effect.value.stateStart.clone(),
-                  stateB: effect.effect.value.stateEnd.clone(),
-                }),
-              };
+              if (effect.effect.value.stateStart != null && effect.effect.value.stateEnd != null) {
+                effect.effect = {
+                  case: 'strobeEffect',
+                  value: new Effect_StrobeEffect({
+                    stateA: effect.effect.value.stateStart.clone(),
+                    stateB: effect.effect.value.stateEnd.clone(),
+                  }),
+                };
+              } else {
+                effect.effect = {
+                  case: 'strobeEffect',
+                  value: new Effect_StrobeEffect({
+                    stateA: new FixtureState(),
+                    stateB: new FixtureState(),
+                  }),
+                };
+              }
               save('Change effect type to strobe.');
             }
           }}>
@@ -404,7 +451,7 @@ export function EffectDetails({
 function effectColor(state: FixtureState, palette: ColorPalette, alt = false): string {
   if (state.lightColor.case === 'color') {
     const color = state.lightColor.value;
-    const white = Math.floor(('white' in color ? color.white : 0) * 255);
+    const white = Math.floor((color.white || 0) * 255);
     const r = Math.min(Math.floor(color.red * 255) + white, 255);
     const g = Math.min(Math.floor(color.green * 255) + white, 255);
     const b = Math.min(Math.floor(color.blue * 255) + white, 255);
@@ -417,18 +464,36 @@ function effectColor(state: FixtureState, palette: ColorPalette, alt = false): s
       case PaletteColor.PALETTE_WHITE:
         return 'rgb(255, 255, 255)';
       case PaletteColor.PALETTE_PRIMARY:
+        if (palette.primary == null) {
+          throw new Error('Tried to fetch primary color from undefined palette!')
+        }
+        if (palette.primary.color == null) {
+          throw new Error('Primary color does not have a "color" field!');
+        }
         color = palette.primary.color;
         break;
       case PaletteColor.PALETTE_SECONDARY:
+        if (palette.secondary == null) {
+          throw new Error('Tried to fetch secondary color from undefined palette!')
+        }
+        if (palette.secondary.color == null) {
+          throw new Error('Primary color does not have a "color" field!');
+        }
         color = palette.secondary.color;
         break;
       case PaletteColor.PALETTE_TERTIARY:
+        if (palette.tertiary == null) {
+          throw new Error('Tried to fetch tertiary color from undefined palette!')
+        }
+        if (palette.tertiary.color == null) {
+          throw new Error('Primary color does not have a "color" field!');
+        }
         color = palette.tertiary.color;
         break;
       default:
         throw new Error(`Unrecognized palette color type! ${state.lightColor}`);
     }
-    const white = Math.floor(('white' in color ? color.white : 0) * 255);
+    const white = Math.floor((color.white || 0) * 255);
     const r = Math.min(Math.floor(color.red * 255) + white, 255);
     const g = Math.min(Math.floor(color.green * 255) + white, 255);
     const b = Math.min(Math.floor(color.blue * 255) + white, 255);
@@ -469,6 +534,10 @@ function effectIcons(effect: FixtureStateProto):
 function StaticEffectDetails({ effect }: EffectDetailsBaseProps<Effect_StaticEffect>): JSX.Element {
   const { save } = useContext(ProjectContext);
 
+  if (effect.state == null) {
+    throw new Error('Static effect does not have a state!');
+  }
+
   return (
     <>
       <hr />
@@ -484,6 +553,9 @@ function StaticEffectDetails({ effect }: EffectDetailsBaseProps<Effect_StaticEff
 
 function RampEffectDetails({ effect }: EffectDetailsBaseProps<Effect_RampEffect>): JSX.Element {
   const { save } = useContext(ProjectContext);
+  if (effect.stateStart == null || effect.stateEnd == null) {
+    throw new Error('Ramp effect does not have a state!');
+  }
 
   return (
     <>
@@ -532,6 +604,10 @@ function RampEffectDetails({ effect }: EffectDetailsBaseProps<Effect_RampEffect>
 
 function StrobeEffectDetails({ effect }: EffectDetailsBaseProps<Effect_StrobeEffect>): JSX.Element {
   const { save } = useContext(ProjectContext);
+
+  if (effect.stateA == null || effect.stateB == null) {
+    throw new Error('Ramp effect does not have a state!');
+  }
 
   return (
     <>

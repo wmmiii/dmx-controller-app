@@ -1,4 +1,4 @@
-import React, { JSX, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { createRef, JSX, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import LightTimeline from '../components/LightTimeline';
 import styles from "./ShowPage.module.scss";
 import { Button } from '../components/Button';
@@ -28,7 +28,7 @@ export default function ShowPage(): JSX.Element {
   const { project, save } = useContext(ProjectContext);
   const { setRenderUniverse, clearRenderUniverse } = useContext(SerialContext);
 
-  const panelRef = useRef<HTMLDivElement>();
+  const panelRef = createRef<HTMLDivElement>();
 
   let t = useRef<number>(0);
   const [audioDuration, setAudioDuration] = useState(1);
@@ -53,8 +53,14 @@ export default function ShowPage(): JSX.Element {
   }, [project, t]);
 
   const audioFile = useMemo(
-    () => project?.assets?.audioFiles[show?.audioTrack.audioFileId],
-    [show?.audioTrack.audioFileId, project]);
+    () => {
+      if (show?.audioTrack?.audioFileId != null) {
+        return project?.assets?.audioFiles[show?.audioTrack.audioFileId]
+      } else {
+        return undefined;
+      }
+    },
+    [show?.audioTrack?.audioFileId, project]);
   const audioBlob = useMemo(() => {
     if (!audioFile) {
       return undefined;
@@ -143,7 +149,7 @@ export default function ShowPage(): JSX.Element {
                 });
                 save(`Set audio track for show ${show.name}.`);
               }}
-              value={show?.audioTrack.audioFileId}>
+              value={show?.audioTrack?.audioFileId}>
               <option value={UNSET_INDEX}>
                 &lt;Unset&gt;
               </option>

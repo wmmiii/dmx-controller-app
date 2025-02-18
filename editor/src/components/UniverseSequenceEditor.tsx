@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { createRef, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import LightTimeline from './LightTimeline';
 import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
 import { LightTrack as LightTrackProto } from '@dmx-controller/proto/light_track_pb';
@@ -23,12 +23,12 @@ export function UniverseSequenceEditor({
 }: UniverseSequenceEditorProps): JSX.Element {
   const { save } = useContext(ProjectContext);
 
-  const panelRef = useRef<HTMLDivElement>();
+  const panelRef = createRef<HTMLDivElement>();
 
   const t = useRef<number>(0);
 
   const [beatSubdivisions, setBeatSubdivisions] = useState(4);
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [audioBlob, setAudioBlob] = useState<Blob | undefined>();
   const [audioDuration, setAudioDuration] = useState<number>(SEQUENCE_BEAT_RESOLUTION);
 
   const beats = sequence?.nativeBeats;

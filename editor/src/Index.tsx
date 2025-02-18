@@ -1,4 +1,4 @@
-import React, { JSX, createRef, useContext, useEffect, useState } from 'react';
+import { JSX, createRef, useContext, useEffect, useState } from 'react';
 import AssetBrowserPage from './pages/AssetBrowserPage';
 import IconBxBulb from './icons/IconBxBulb';
 import IconBxDownload from './icons/IconBxDownload';
@@ -38,6 +38,9 @@ export default function Index(): JSX.Element {
     if (uploadButtonRef.current) {
       const button = uploadButtonRef.current;
       const handleUpload = async () => {
+        if (button?.files == null) {
+          throw new Error('Cannot find input button files!');
+        }
         const file = button.files[0];
         const body = new Uint8Array(await file.arrayBuffer())
         openProject(body);
@@ -45,6 +48,7 @@ export default function Index(): JSX.Element {
       button.addEventListener('change', handleUpload);
       return () => button.removeEventListener('change', handleUpload);
     }
+    return undefined;
   }, [uploadButtonRef.current]);
 
   return (
@@ -161,12 +165,6 @@ function FpsIndicator() {
       }
     </div>
   );
-}
-
-interface PageLinkProps {
-  to: string;
-  default?: true;
-  children: string;
 }
 
 const WARNING_DIALOG_KEY = 'instability-warning';

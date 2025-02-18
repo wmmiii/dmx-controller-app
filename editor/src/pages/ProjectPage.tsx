@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import { useContext } from 'react';
 import styles from './ProjectPage.module.scss';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { TextInput } from '../components/Input';
@@ -14,8 +14,6 @@ export default function ProjectPage(): JSX.Element {
       </div>
     );
   }
-
-  const fileName = escapeForFilesystem(project.name) + '.dmxapp';
 
   return (
     <div className={styles.browser}>

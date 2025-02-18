@@ -5,6 +5,12 @@ export function stringifyColor(color: Color) {
 }
 
 export function interpolatePalettes(a: ColorPalette, b: ColorPalette, t: number) {
+  if (a.primary?.color == null || a.secondary?.color == null || a.tertiary?.color == null) {
+    throw new Error('Tried to interpolate palette but palette "a" does not have color set!');
+  }
+  if (b.primary?.color == null || b.secondary?.color == null || b.tertiary?.color == null) {
+    throw new Error('Tried to interpolate palette but palette "b" does not have color set!');
+  }
   return new ColorPalette({
     primary: {
       color: {

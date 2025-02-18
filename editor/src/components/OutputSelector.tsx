@@ -1,4 +1,4 @@
-import React, { useContext, useMemo } from 'react';
+import { useContext, useMemo } from 'react';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { Project } from '@dmx-controller/proto/project_pb';
 import { OutputId, OutputId_FixtureMapping } from '@dmx-controller/proto/output_id_pb';
@@ -7,7 +7,7 @@ import styles from './OutputSelector.module.scss';
 import { GROUP_ALL_ID } from '../engine/fixture';
 
 interface OutputSelectorProps {
-  value: OutputId;
+  value: OutputId | undefined;
   setValue: (value: OutputId | undefined) => void;
 }
 
@@ -50,6 +50,9 @@ export function OutputSelector({ value, setValue }: OutputSelectorProps):
   }, [project]);
 
   const internalValue: InternalOutput | undefined = useMemo(() => {
+    if (value == null) {
+      return undefined;
+    }
     switch (value.output.case) {
       case 'fixtures':
         const fixtureId = value.output.value.fixtures[project.activeUniverse.toString()];
@@ -66,7 +69,7 @@ export function OutputSelector({ value, setValue }: OutputSelectorProps):
         if (value.output.value === GROUP_ALL_ID) {
           name = 'All Fixtures';
         } else {
-          project.groups[value.output.value.toString()].name;
+          name = project.groups[value.output.value.toString()].name;
         }
         return {
           type: 'group',
@@ -92,7 +95,7 @@ export function OutputSelector({ value, setValue }: OutputSelectorProps):
 
         // Handle case where output is unset.
         if (newInput === ' ') {
-          if (value.output.case === 'fixtures') {
+          if (value?.output.case === 'fixtures') {
             delete value.output.value.fixtures[project.activeUniverse.toString()];
             setValue(value);
           } else {
@@ -133,7 +136,10 @@ export function OutputSelector({ value, setValue }: OutputSelectorProps):
   );
 }
 
-export function getOutputName(project: Project, outputId: OutputId) {
+export function getOutputName(project: Project, outputId: OutputId | undefined) {
+  if (outputId == null) {
+    return '<Unset>';
+  }
   const universeId = project.activeUniverse.toString();
   switch (outputId.output.case) {
     case 'fixtures':

@@ -1,4 +1,4 @@
-import React, { PropsWithChildren, createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { PropsWithChildren, createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
 import { ProjectContext } from './ProjectContext';
 import { createRealTimeBpmProcessor } from 'realtime-bpm-analyzer';
@@ -43,6 +43,9 @@ export function BeatProvider({ children }: PropsWithChildren): JSX.Element {
           if (event.data.message === 'BPM_STABLE') {
             const bpm = event.data.data.bpm[0].tempo;
             console.log('Found stable bpm', bpm);
+            if (project.liveBeat == null) {
+              throw new Error('Project does not have live beat!');
+            }
             project.liveBeat.lengthMs = 60_000 / bpm;
             save(`Auto set BPM to ${bpm}.`, false);
           }
@@ -55,9 +58,10 @@ export function BeatProvider({ children }: PropsWithChildren): JSX.Element {
         }
       };
     }
+    return undefined;
   }, [strategy]);
 
-  const beat = useMemo(() => project?.liveBeat, [project]);
+  const beat = useMemo(() => project?.liveBeat || new BeatMetadata({ lengthMs: Number.MAX_SAFE_INTEGER, offsetMs: BigInt(0) }), [project]);
 
   const addBeatSample = useCallback((t: number) => {
     setBeatSamples([...beatSamples, t]);
@@ -118,6 +122,9 @@ export function BeatProvider({ children }: PropsWithChildren): JSX.Element {
       });
       save(`Set beat to ${Math.round(bpm)} BPM.`);
     } else {
+      if (project.liveBeat == null) {
+        throw new Error('Project does not have live beat!');
+      }
       project.liveBeat.offsetMs = offset;
       save(`Set beat offset to ${offset}.`);
     }

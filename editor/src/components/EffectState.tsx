@@ -1,11 +1,10 @@
-import React, { useCallback } from 'react';
+import { useCallback } from 'react';
 import ColorPicker from 'react-pick-color';
 import IconBxPlus from '../icons/IconBxPlus';
 import IconBxX from '../icons/IconBxX';
-import RangeInput from './RangeInput';
 import styles from './EffectState.module.scss';
 import { Button, IconButton } from './Button';
-import { FixtureState as FixtureStateProto, FixtureState_Channel, RGB, RGBW } from "@dmx-controller/proto/effect_pb";
+import { FixtureState as FixtureStateProto, FixtureState_Channel } from "@dmx-controller/proto/effect_pb";
 import { NumberInput } from './Input';
 import { Color, PaletteColor } from '@dmx-controller/proto/color_pb';
 

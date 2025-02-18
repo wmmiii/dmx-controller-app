@@ -59,6 +59,8 @@ export function getWritableDevice(project: Project, outputId: OutputId) {
       return getPhysicalWritableDevice(project, outputId.output.value);
     case 'group':
       return getPhysicalWritableDeviceFromGroup(project, outputId.output.value);
+    default:
+      throw new Error('Unknown writable device: ' + outputId.output.case);
   }
 }
 
@@ -130,6 +132,9 @@ export function deleteFixture(project: Project, fixtureId: bigint) {
   }
 
   const deleteFromLightTrack = (t: LightTrack) => {
+    if (t.outputId == null) {
+      return;
+    }
     if (t.outputId.output.case === 'fixtures') {
       if (t.outputId.output.value.fixtures[project.activeUniverse.toString()] === fixtureId) {
         delete t.outputId.output.value.fixtures[project.activeUniverse.toString()];
@@ -150,6 +155,9 @@ export function deleteFixture(project: Project, fixtureId: bigint) {
       const description = c.description;
       if (description.case === 'effectGroup') {
         description.value.channels.forEach(c => {
+          if (c.outputId == null) {
+            return;
+          }
           if (c.outputId.output.case === 'fixtures') {
             const fixtures = c.outputId.output.value.fixtures;
             delete fixtures[project.activeUniverse.toString()];
@@ -223,7 +231,11 @@ function collectFunctions(fixture: PhysicalFixture, definition: FixtureDefinitio
             collection.angleFunctions.set(channelType, []);
           }
           const offset = fixture.channelOffsets[channelType] || 0;
-          collection.angleFunctions.get(channelType).push((universe, d) => {
+          const functions = collection.angleFunctions.get(channelType);
+          if (functions == null) {
+            throw new Error('Angle channel does not have function map defined!');
+          }
+          functions.push((universe, d) => {
             if (channel.mapping.case === 'angleMapping') {
               universe[index] = mapDegrees(
                 d + offset,
@@ -235,8 +247,11 @@ function collectFunctions(fixture: PhysicalFixture, definition: FixtureDefinitio
         } else if (isAmountChannel(channelType)) {
           if (collection.amountFunctions.get(channelType) == null) {
             collection.amountFunctions.set(channelType, []);
+          } const functions = collection.amountFunctions.get(channelType);
+          if (functions == null) {
+            throw new Error('Amount channel does not have function map defined!');
           }
-          collection.amountFunctions.get(channelType).push((universe, a) => {
+          functions.push((universe, a) => {
             if (channel.mapping.case === 'amountMapping') {
               universe[index] = (
                 a * (channel.mapping.value.maxValue - channel.mapping.value.minValue) + channel.mapping.value.minValue
@@ -261,7 +276,7 @@ function functionCollectionToDevice(collection: FunctionCollection): WritableDev
     setChannel: (universe, index, value) =>
       collection.manualFunctions.forEach(f => f(universe, index, value)),
     setColor: (universe, red, green, blue, white) =>
-      collection.colorFunctions.forEach(f => f(universe, red, green, blue, white)),
+      collection.colorFunctions.forEach(f => f(universe, red, green, blue, white || 0)),
     setAngle: (universe, type, angle) =>
       collection.angleFunctions.get(type)?.forEach(f => f(universe, angle)),
     setAmount: (universe, type, amount) =>
@@ -281,6 +296,9 @@ export function deleteFixtureGroup(project: Project, fixtureGroupId: bigint) {
   }
 
   const deleteFromLightTrack = (t: LightTrack) => {
+    if (t.outputId == null) {
+      throw new Error("Tried to delete track without output ID!");
+    }
     if (t.outputId.output.case === 'group') {
       if (t.outputId.output.value === fixtureGroupId) {
         delete t.outputId;
@@ -301,6 +319,9 @@ export function deleteFixtureGroup(project: Project, fixtureGroupId: bigint) {
       const description = c.description;
       if (description.case === 'effectGroup') {
         description.value.channels.forEach(c => {
+          if (c.outputId == null) {
+            throw new Error('Tried to delete channel without output ID!');
+          }
           if (c.outputId.output.case === 'group' && c.outputId.output.value === fixtureGroupId) {
             delete c.outputId;
           }

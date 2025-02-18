@@ -30,12 +30,21 @@ export function applyState(state: FixtureState, context: RenderContext): void {
             color = COLOR_WHITE;
             break;
           case PaletteColor.PALETTE_PRIMARY:
+            if (context.colorPalette.primary?.color == null) {
+              throw new Error('Tried to fetch primary color from undefined palette!')
+            }
             color = context.colorPalette.primary.color;
             break;
           case PaletteColor.PALETTE_SECONDARY:
+            if (context.colorPalette.secondary?.color == null) {
+              throw new Error('Tried to fetch secondary color from undefined palette!')
+            }
             color = context.colorPalette.secondary.color;
             break;
           case PaletteColor.PALETTE_TERTIARY:
+            if (context.colorPalette.tertiary?.color == null) {
+              throw new Error('Tried to fetch tertiary color from undefined palette!')
+            }
             color = context.colorPalette.tertiary.color;
             break;
           default:

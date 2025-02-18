@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import { useContext, useState } from 'react';
 import styles from './AssetBrowserPage.module.scss';
 import { AudioFile } from '@dmx-controller/proto/audio_pb';
 import { BeatEditor } from '../components/BeatEditor';
@@ -27,7 +27,7 @@ interface AudioFileListProps {
   selectAudioFile: (f: AudioFile) => void;
 }
 
-function AudioFileList({ selectAudioFile }: AudioFileListProps): JSX.Element {
+function AudioFileList({ selectAudioFile }: AudioFileListProps): JSX.Element | null {
   const { project, saveAssets } = useContext(ProjectContext);
   const [highlightDrop, setHighlightDrop] = useState(false);
 
@@ -109,7 +109,6 @@ interface AudioDetailsProps {
 }
 
 function AudioDetails({ file }: AudioDetailsProps): JSX.Element {
-  const { saveAssets } = useContext(ProjectContext);
   const [beatFile, setBeatFile] = useState<AudioFile | null>(null);
 
   if (!file) {

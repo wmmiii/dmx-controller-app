@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import IconBxBrushAlt from '../icons/IconBxBrush';
 import IconBxPlus from '../icons/IconBxPlus';
 import IconBxX from '../icons/IconBxX';
@@ -35,7 +35,7 @@ function LivePageImpl(): JSX.Element {
   const { project, save } = useContext(ProjectContext);
   const projectRef = useRef<Project>(project);
   const { beat: beatMetadata } = useContext(BeatContext);
-  const [addRowIndex, setAddRowIndex] = useState<number>(null);
+  const [addRowIndex, setAddRowIndex] = useState<number | null>(null);
   const { setRenderUniverse, clearRenderUniverse } = useContext(SerialContext);
 
   const [selected, setSelected] = useState<Scene_Component | null>(null);
@@ -284,11 +284,16 @@ function ComponentEditor({ component, onClose }: ComponentEditorProps) {
             </Button>
           </div>
         }
-        right={
-          component.description.case === 'effectGroup' ?
-            <EffectGroupEditor effect={component.description.value} name={component.name} /> :
+        right={<>
+          {
+            component.description.case === 'effectGroup' &&
+            <EffectGroupEditor effect={component.description.value} name={component.name} />
+          }
+          {
+            component.description.case === 'sequence' &&
             <SequenceEditor sequence={component.description.value} />
-        } />
+          }
+        </>} />
     </Modal>
   );
 }
@@ -304,29 +309,34 @@ function EffectGroupEditor({ effect, name }: EffectGroupEditorProps) {
   return (
     <div className={`${styles.detailsPane} ${styles.effectGroup}`}>
       {
-        effect.channels.map((c, i) => (
-          <div key={i} className={styles.effect}>
-            <IconButton
-              className={styles.deleteEffect}
-              title="Delete Channel"
-              onClick={() => {
-                effect.channels.splice(i, 1);
-                save(`Delete channel from ${name}`)
-              }}>
-              <IconBxX />
-            </IconButton>
-            <label className={styles.stateHeader}>
-              <span>Output</span>
-              <OutputSelector
-                value={c.outputId}
-                setValue={(o) => {
-                  c.outputId = o;
-                  save(`Set effect output to ${getOutputName(project, o)}.`);
-                }} />
-            </label>
-            <EffectDetails effect={c.effect} showTiming={false} />
-          </div>
-        ))
+        effect.channels.map((c, i) => {
+          if (c.effect == null) {
+            throw new Error('Channel effect is not defined!');
+          }
+          return (
+            <div key={i} className={styles.effect}>
+              <IconButton
+                className={styles.deleteEffect}
+                title="Delete Channel"
+                onClick={() => {
+                  effect.channels.splice(i, 1);
+                  save(`Delete channel from ${name}`)
+                }}>
+                <IconBxX />
+              </IconButton>
+              <label className={styles.stateHeader}>
+                <span>Output</span>
+                <OutputSelector
+                  value={c.outputId}
+                  setValue={(o) => {
+                    c.outputId = o;
+                    save(`Set effect output to ${getOutputName(project, o)}.`);
+                  }} />
+              </label>
+              <EffectDetails effect={c.effect} showTiming={false} />
+            </div>
+          )
+        })
       }
       <div className={styles.newEffect}>
         <IconButton

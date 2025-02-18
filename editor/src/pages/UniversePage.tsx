@@ -1,11 +1,11 @@
-import React, { createRef, useContext, useEffect, useMemo, useState } from 'react';
+import { createRef, useContext, useEffect, useMemo, useState } from 'react';
 import IconBxCopyAlt from '../icons/IconBxCopy';
 import IconBxDownload from '../icons/IconBxDownload';
 import IconBxUpload from '../icons/IconBxUpload';
 import IconBxX from '../icons/IconBxX';
 import RangeInput from '../components/RangeInput';
 import styles from './UniversePage.module.scss';
-import { AMOUNT_CHANNEL, ANGLE_CHANNEL, ChannelTypes, COLOR_CHANNELS, deleteFixture, deleteFixtureGroup, isAmountChannel, isAngleChannel, isColorChannel } from '../engine/fixture';
+import { AMOUNT_CHANNEL, ANGLE_CHANNEL, ChannelTypes, COLOR_CHANNELS, deleteFixture, deleteFixtureGroup, isAmountChannel, isAngleChannel } from '../engine/fixture';
 import { Button, IconButton } from '../components/Button';
 import { FixtureDefinition, FixtureDefinition_Channel, FixtureDefinition_Channel_AmountMapping, FixtureDefinition_Channel_AngleMapping, PhysicalFixture, PhysicalFixtureGroup, PhysicalFixtureGroup_FixtureList } from '@dmx-controller/proto/fixture_pb';
 import { HorizontalSplitPane } from '../components/SplitPane';
@@ -31,7 +31,7 @@ export default function UniversePage(): JSX.Element {
   );
 }
 
-function FixtureList(): JSX.Element {
+function FixtureList(): JSX.Element | null {
   const { project, save } = useContext(ProjectContext);
   const [selectedFixtureId, setSelectedFixtureId] =
     useState<bigint | null>(null);
@@ -49,11 +49,20 @@ function FixtureList(): JSX.Element {
     if (uploadButtonRef.current) {
       const button = uploadButtonRef.current;
       const handleUpload = async () => {
-        const file = button.files[0];
+        if (button == null) {
+          return;
+        }
+        const file = button.files![0];
         const body = new Uint8Array(await file.arrayBuffer())
         const serialized = SerializedUniverse.fromBinary(body);
         project.fixtureDefinitions =
-            Object.assign({}, serialized.fixtureDefinitions, project.fixtureDefinitions);
+          Object.assign({}, serialized.fixtureDefinitions, project.fixtureDefinitions);
+        if (project.universes == null) {
+          throw new Error('Project universe array was not set!');
+        }
+        if (serialized.universe == null) {
+          throw new Error('Serialized universes was not set!');
+        }
         project.universes[serialized.id.toString()] = serialized.universe;
         project.activeUniverse = serialized.id;
         save(`Upload universe ${serialized.universe.name}.`);
@@ -61,6 +70,7 @@ function FixtureList(): JSX.Element {
       button.addEventListener('change', handleUpload);
       return () => button.removeEventListener('change', handleUpload);
     }
+    return undefined;
   }, [uploadButtonRef.current, project, save]);
 
   if (!project) {
@@ -152,14 +162,20 @@ function FixtureList(): JSX.Element {
               const definition =
                 project.fixtureDefinitions[fixture.fixtureDefinitionId.toString()];
 
+              let numChannels = fixture.channelOffset + definition?.numChannels;
+              if (isNaN(numChannels)) {
+                numChannels = fixture.channelOffset + 1;
+              }
+
               return (
                 <li key={id} onClick={() => {
                   setSelectedFixtureId(BigInt(id));
                 }}>
+                  {definition == null && '⚠️ '}
                   (
                   {fixture.channelOffset + 1}
                   &nbsp;—&nbsp;
-                  {fixture.channelOffset + definition?.numChannels}
+                  {numChannels}
                   ) {fixture.name}
                 </li>
               );
@@ -204,22 +220,26 @@ function FixtureList(): JSX.Element {
           fixture={selectedFixture}
           close={() => setSelectedFixtureId(null)}
           onDelete={() => {
+            if (selectedFixtureId == null) {
+              throw new Error('SelectedFixture ID was not set!');
+            }
             const name = getActiveUniverse(project).fixtures[selectedFixtureId.toString()].name;
             deleteFixture(project, selectedFixtureId);
             save(`Delete fixture ${name}.`);
           }} />
       }
       {
-        selectedGroup &&
-        <EditGroupDialog
-          groupId={selectedGroupId}
-          group={selectedGroup}
-          close={() => setSelectedGroupId(null)}
-          onDelete={() => {
-            const name = project.groups[selectedGroupId.toString()].name;
-            deleteFixtureGroup(project, selectedGroupId);
-            save(`Delete fixture group ${name}.`);
-          }} />
+        selectedGroup != null && selectedGroupId != null ?
+          <EditGroupDialog
+            groupId={selectedGroupId}
+            group={selectedGroup}
+            close={() => setSelectedGroupId(null)}
+            onDelete={() => {
+              const name = project.groups[selectedGroupId.toString()].name;
+              deleteFixtureGroup(project, selectedGroupId);
+              save(`Delete fixture group ${name}.`);
+            }} />
+          : null
       }
     </div>
   );
@@ -238,9 +258,9 @@ function EditFixtureDialog({
 }: EditFixtureDialogProps): JSX.Element {
   const { project, save } = useContext(ProjectContext);
 
-  const definition = useMemo(
+  const definition: FixtureDefinition | undefined = useMemo(
     () => project.fixtureDefinitions[fixture.fixtureDefinitionId.toString()],
-    [project, fixture])
+    [project, fixture]);
 
   return (
     <Modal
@@ -276,9 +296,15 @@ function EditFixtureDialog({
           value={fixture.fixtureDefinitionId.toString()}
           onChange={(e) => {
             fixture.fixtureDefinitionId = BigInt(e.target.value);
-            const definitionName = project.fixtureDefinitions[fixture.fixtureDefinitionId.toString()].name;
+            let definitionName = "<unset>";
+            if (fixture.fixtureDefinitionId !== 0n) {
+              definitionName = project.fixtureDefinitions[fixture.fixtureDefinitionId.toString()].name;
+            }
             save(`Change fixture definition for ${fixture.name} to ${definitionName}`);
           }}>
+          <option key="unset" value={0n.toString()}>
+            &lt;unset&gt;
+          </option>
           {
             Object.entries(project.fixtureDefinitions)
               .sort((a, b) => a[1].name.localeCompare(b[1].name))
@@ -289,6 +315,7 @@ function EditFixtureDialog({
               ))
           }
         </select>
+        {fixture.fixtureDefinitionId == 0n && ' ⚠️'}
       </label>
       <label>
         <span>Channel</span>
@@ -302,9 +329,10 @@ function EditFixtureDialog({
           }} />
       </label>
       {
+        definition != null &&
         ANGLE_CHANNEL
           .filter(t => Object.values(definition.channels)
-          .some(c => c.type === t))
+            .some(c => c.type === t))
           .map((t, i) => (
             <label key={i}>
               <span>{String(t).charAt(0).toUpperCase() + String(t).slice(1)} Offset</span>
@@ -470,17 +498,23 @@ function EditGroupDialog({
   );
 }
 
-function FixtureDefinitionList(): JSX.Element {
+function FixtureDefinitionList(): JSX.Element | null {
   const { project, save } = useContext(ProjectContext);
   const [selectedDefinitionId, setSelectedDefinitionId] =
     useState<bigint | null>(null);
 
   const selectedDefinition = useMemo(
-    () => project?.fixtureDefinitions[selectedDefinitionId?.toString()],
+    () => {
+      const id = selectedDefinitionId?.toString();
+      if (id == null) {
+        return undefined;
+      }
+      return project?.fixtureDefinitions[id];
+    },
     [project, selectedDefinitionId]);
 
   if (!project) {
-    return;
+    return null;
   }
 
   return (
@@ -511,6 +545,9 @@ function FixtureDefinitionList(): JSX.Element {
         <EditDefinitionDialog definition={selectedDefinition}
           close={() => setSelectedDefinitionId(null)}
           copy={() => {
+            if (selectedDefinition == null) {
+              return;
+            }
             const newId = randomUint64();
             const definition = new FixtureDefinition(selectedDefinition);
             definition.name = "Copy of " + selectedDefinition.name;
@@ -519,8 +556,12 @@ function FixtureDefinitionList(): JSX.Element {
             save(`Copy fixture definition ${selectedDefinition.name}.`);
           }}
           deleteDefinition={() => {
-            const name = project.fixtureDefinitions[selectedDefinitionId.toString()].name;
-            delete project.fixtureDefinitions[selectedDefinitionId.toString()];
+            const id = selectedDefinitionId?.toString();
+            if (id == null) {
+              return;
+            }
+            const name = project.fixtureDefinitions[id].name;
+            delete project.fixtureDefinitions[id];
             save(`Delete fixture definition ${name}.`);
           }} />
       }
@@ -544,7 +585,7 @@ function EditDefinitionDialog({
   const { save } = useContext(ProjectContext);
   const { setRenderUniverse, clearRenderUniverse } = useContext(SerialContext);
   const [testIndex, setTestIndex] = useState(0);
-  const [testValues, setTestValues] = useState([]);
+  const [testValues, setTestValues] = useState([] as number[]);
 
   useEffect(() => {
     const testValues: number[] = [];

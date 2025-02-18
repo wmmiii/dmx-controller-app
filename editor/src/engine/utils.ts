@@ -18,14 +18,19 @@ export function universeToUint8Array(project: Project, universe: DmxUniverse) {
   Object.values(getActiveUniverse(project).fixtures)
     .forEach(f => {
       const d = project.fixtureDefinitions[f.fixtureDefinitionId.toString()];
+      if (d == null) {
+        return;
+      }
       for (const channel of Object.entries(d.channels)) {
         const type = channel[1].type;
         if (type.indexOf('-fine') > -1) {
           const fineIndex = parseInt(channel[0]) + f.channelOffset - 1;
           const coarseType = type.substring(0, type.length - 5) as ChannelTypes;
-          const coarseIndex = parseInt(
-            Object.entries(d.channels).find(c => c[1].type === coarseType)[0]
-          ) + f.channelOffset - 1;
+          const courseEntry = Object.entries(d.channels).find(c => c[1].type === coarseType);
+          if (courseEntry == null) {
+            continue;
+          }
+          const coarseIndex = parseInt(courseEntry[0]) + f.channelOffset - 1;
           const coarseValue = universe[coarseIndex];
           out[fineIndex] = Math.floor(coarseValue * 255) % 255;
         }

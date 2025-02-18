@@ -1,4 +1,4 @@
-import React, { PropsWithChildren, createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { PropsWithChildren, createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import upgradeProject from '../util/projectUpgrader';
 import { Project, Project_Assets } from '@dmx-controller/proto/project_pb';
 import { ShortcutContext } from './ShortcutContext';
@@ -11,7 +11,7 @@ const PROJECT_KEY = "tmp-project-1";
 const ASSETS_KEY = "tmp-assets-1";
 const MAX_UNDO = 100;
 
-const DEFAULT_UNIVERSE_MAP: {[id: string]: Universe} = {};
+const DEFAULT_UNIVERSE_MAP: { [id: string]: Universe } = {};
 const DEFAULT_UNIVERSE_ID = randomUint64();
 DEFAULT_UNIVERSE_MAP[DEFAULT_UNIVERSE_ID.toString()] = new Universe({
   name: 'Default Universe',
@@ -42,7 +42,7 @@ interface Operation {
 }
 
 export const ProjectContext = createContext({
-  project: null as (Project | null),
+  project: new Project(),
   save: (_changeDescription: string, _undoable?: boolean) => { },
   update: () => { },
   saveAssets: () => { },
@@ -98,7 +98,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
     try {
       const minProject = new Project(project);
       minProject.assets = undefined;
-      await storeBlob(PROJECT_KEY, minProject.toBinary({writeUnknownFields: false}));
+      await storeBlob(PROJECT_KEY, minProject.toBinary({ writeUnknownFields: false }));
     } catch (t) {
       throw t;
     } finally {
@@ -107,10 +107,18 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
   }, []);
 
   const update = useCallback(
-    () => setProject(new Project(project)),
+    () => {
+      if (project == null) {
+        throw new Error('Tried to update without project loaded!');
+      }
+      setProject(new Project(project));
+    },
     [project, setProject]);
 
   const save = useCallback(async (changeDescription: string, undoable?: boolean) => {
+    if (project == null) {
+      throw new Error('Tried to save without project loaded!');
+    }
     await saveImpl(project, changeDescription);
     const minProject = new Project(project);
     minProject.assets = undefined;
@@ -120,7 +128,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
       operationStack.current.splice(operationIndex + 1, operationStack.current.length - operationIndex - 1);
 
       operationStack.current.push({
-        projectState: minProject.toBinary({writeUnknownFields: false}),
+        projectState: minProject.toBinary({ writeUnknownFields: false }),
         description: changeDescription,
       });
       // Truncate operation stack to MAX_UNDO length.
@@ -137,16 +145,22 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
   const saveAssetsImpl = useCallback(async (project: Project) => {
     console.time('save assets');
     const assets = new Project_Assets(project.assets);
-    await storeBlob(ASSETS_KEY, assets.toBinary({writeUnknownFields: false}));
+    await storeBlob(ASSETS_KEY, assets.toBinary({ writeUnknownFields: false }));
     console.timeEnd('save assets');
   }, []);
 
   const saveAssets = useCallback(async () => {
+    if (project == null) {
+      throw new Error('Tried to save assets without project loaded!');
+    }
     saveAssetsImpl(project);
     await saveImpl(project, 'Updating assets.');
   }, [project, save]);
 
   const undo = useCallback(async () => {
+    if (project == null) {
+      throw new Error('Tried to undo without project loaded!');
+    }
     if (operationIndex > 0) {
       const state = operationStack.current[operationIndex - 1].projectState;
       const description = operationStack.current[operationIndex].description;
@@ -159,6 +173,9 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
   }, [operationIndex, operationStack, project, setOperationIndex, setProject, saveImpl]);
 
   const redo = useCallback(async () => {
+    if (project == null) {
+      throw new Error('Tried to redo without project loaded!');
+    }
     if (operationIndex < operationStack.current.length - 1) {
       const state = operationStack.current[operationIndex + 1].projectState;
       const description = operationStack.current[operationIndex + 1].description;
@@ -171,6 +188,9 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
   }, [operationIndex, operationStack, project, setOperationIndex, setProject, saveImpl]);
 
   const downloadProject = useCallback(() => {
+    if (project == null) {
+      throw new Error('Tried to download without project loaded!');
+    }
     const blob = new Blob([project.toBinary()], {
       type: 'application/protobuf',
     });
@@ -210,6 +230,14 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
     }
     return setShortcuts(shortcuts)
   }, [operationStack, operationIndex, redo, undo]);
+
+  if (project == null) {
+    return (
+      <>
+        Loading...
+      </>
+    );
+  }
 
   return (
     <ProjectContext.Provider value={{

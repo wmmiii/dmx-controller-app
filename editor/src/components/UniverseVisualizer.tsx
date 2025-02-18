@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useMemo, useState } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 
 import styles from "./UniverseVisualizer.module.scss";
 import { ChannelTypes } from '../engine/fixture';
@@ -31,10 +31,12 @@ export function UniverseVisualizer() {
 
           const getChannel = (type: ChannelTypes): number | undefined => {
             try {
-              return parseInt(
-                Object.entries(definition.channels)
-                  .find(e => e[1].type === type)[0]
-              ) + f.channelOffset - 1;
+              const entry = Object.entries(definition.channels)
+              .find(e => e[1].type === type);
+              if (entry == null) {
+                return undefined;
+              }
+              return parseInt(entry[0]) + f.channelOffset - 1;
             } catch {
               return undefined;
             }
@@ -58,8 +60,6 @@ export function UniverseVisualizer() {
       return universe[index];
     }
   };
-
-  const t = new Date().getTime();
 
   return (
     <ol className={styles.visualizer}>

@@ -27,6 +27,9 @@ export function PaletteSwatch({ palette, active, onClick, onDelete, className }:
   if (className) {
     classes.push(className);
   }
+  if (palette.primary?.color == null || palette.secondary?.color == null || palette.tertiary?.color == null) {
+    throw new Error('Palette color not set!');
+  }
 
   return (
     <div
@@ -64,6 +67,10 @@ interface EditPaletteDialogProps {
 
 function EditPaletteDialog({ palette, onDelete, onClose }: EditPaletteDialogProps) {
   const { save, update } = useContext(ProjectContext);
+
+  if (palette.primary?.color == null || palette.secondary?.color == null || palette.tertiary?.color == null) {
+    throw new Error('Palette color not set!');
+  }
 
   const done = () => {
     save(`Edit color palette ${palette.name}.`)
@@ -106,6 +113,10 @@ interface EditColorProps {
 function EditColor({ name, color }: EditColorProps) {
   const { update } = useContext(ProjectContext);
 
+  if (color?.color == null) {
+    throw new Error('Color not defined!');
+  }
+
   return (
     <div>
       {name}
@@ -117,6 +128,10 @@ function EditColor({ name, color }: EditColorProps) {
           a: 1,
         }}
         onChange={({ rgb }) => {
+          if (color?.color == null) {
+            throw new Error('Color not defined!');
+          }
+
           color.color.red = rgb.r / 255;
           color.color.green = rgb.g / 255;
           color.color.blue = rgb.b / 255;

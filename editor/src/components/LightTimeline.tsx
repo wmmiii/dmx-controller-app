@@ -1,5 +1,5 @@
 
-import React, { JSX, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { JSX, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import IconBxPulse from '../icons/IconBxPulse';
 import IconBxZoomIn from '../icons/IconBxZoomin';
@@ -89,11 +89,11 @@ export default function LightTimeline(props: TracksProps): JSX.Element {
 }
 
 interface TracksProps {
-  audioBlob: Blob;
+  audioBlob: Blob | undefined;
   audioDuration: number;
   setAudioDuration: (duration: number) => void;
   loop?: boolean;
-  beatMetadata: BeatMetadata;
+  beatMetadata: BeatMetadata | undefined;
   beatSubdivisions: number;
   setBeatSubdivisions: (subdivisions: number) => void;
   headerOptions: JSX.Element;
@@ -102,7 +102,7 @@ interface TracksProps {
   lightTracks: LightTrackProto[];
   swap?: (a: number, b: number) => void;
   addLayer?: () => void;
-  panelRef: React.MutableRefObject<HTMLDivElement>;
+  panelRef: React.RefObject<HTMLDivElement>;
   audioToTrack?: (t: number) => number;
   t: React.MutableRefObject<number>;
 }
@@ -152,7 +152,7 @@ function Tracks({
 
 
   const nearestBeat = useCallback((t: number) => {
-    if (beatMetadata) {
+    if (beatMetadata != null) {
       const lengthMs = beatMetadata.lengthMs / beatSubdivisions;
       // WARNING: Converting BigInt to Number looses 7 bits of precision!
       const beatNumber = Math.round((t - Number(beatMetadata.offsetMs)) / lengthMs);
@@ -192,10 +192,13 @@ function Tracks({
 
       snapToBeat = (t: number) => {
         const beat = nearestBeat(t);
-        if (Math.abs(beat - t) < beatSnapRangeMs) {
+        if (beat == null) {
+          return t;
+        } else if (Math.abs(beat - t) < beatSnapRangeMs) {
           return beat;
+        } else {
+          return t;
         }
-        return t;
       };
     }
 
@@ -211,10 +214,12 @@ function Tracks({
     {
       shortcut: { key: 'Space' },
       action: () => {
-        if (playing) {
-          audioController?.current.pause();
-        } else {
-          audioController?.current.play();
+        if (audioController.current != null) {
+          if (playing) {
+            audioController?.current.pause();
+          } else {
+            audioController?.current.play();
+          }
         }
       },
       description: 'Play/pause show.',
@@ -301,7 +306,7 @@ function Tracks({
           style={{ left: mappingFunctions.msToPx(tState) + LEFT_WIDTH }}>
         </div>
         <RenderingContext.Provider value={{
-          beatWidthPx: mappingFunctions.msWidthToPxWidth(beatMetadata.lengthMs),
+          beatWidthPx: beatMetadata ? mappingFunctions.msWidthToPxWidth(beatMetadata.lengthMs) : 64,
           msWidthToPxWidth: mappingFunctions.msWidthToPxWidth,
         }}>
           <div className={styles.tracks}>

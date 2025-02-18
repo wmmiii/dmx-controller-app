@@ -1,4 +1,4 @@
-import React, { createRef, useEffect, useState } from 'react';
+import { createRef, useEffect, useState } from 'react';
 
 import styles from "./SplitPane.module.scss";
 
@@ -26,7 +26,11 @@ export function HorizontalSplitPane(
   useEffect(() => {
     if (dragging) {
       document.body.style.userSelect = 'none';
-      return () => document.body.style.userSelect = undefined;
+      return () => {
+        document.body.style.userSelect = '';
+      };
+    } else {
+      return undefined;
     }
   }, [dragging]);
 
@@ -36,6 +40,9 @@ export function HorizontalSplitPane(
         dragging &&
         <div className={styles.overlay}
           onMouseMove={(e) => {
+            if (containerRef.current == null) {
+              throw new Error('Cannot find split pane container reference!');
+            }
             const boundingRect = containerRef.current.getBoundingClientRect();
             const containerX = e.clientX - boundingRect.left;
             const amount = containerX / boundingRect.width;

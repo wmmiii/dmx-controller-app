@@ -22,15 +22,23 @@ export default function upgradeProject(project: Project): void {
 
 function upgradeIndices(project: Project): void {
   // Audio files
-  if (project.assets?.deprecatedAudioFiles.length > 0) {
-    project.assets.deprecatedAudioFiles.forEach((a, i) =>
-      project.assets.audioFiles[i + 1] = a);
+  if (project.assets != null) {
+    if (project.assets?.deprecatedAudioFiles.length > 0) {
+      project.assets.deprecatedAudioFiles.forEach((a, i) => {
+        if (project.assets != null) {
+          project.assets.audioFiles[i + 1] = a;
+        }
+      }
+      );
 
-    project.shows.forEach(s => {
-      s.audioTrack.audioFileId += 1;
-    });
+      project.shows.forEach(s => {
+        if (s.audioTrack != null) {
+          s.audioTrack.audioFileId += 1;
+        }
+      });
 
-    project.assets.deprecatedAudioFiles = [];
+      project.assets.deprecatedAudioFiles = [];
+    }
   }
 
   // Physical fixtures
@@ -84,13 +92,17 @@ function upgradeIndices(project: Project): void {
   // Beat metadata
   for (const a of Object.values(project.assets?.audioFiles || {})) {
     if ((a.beatMetadata?.deprecatedOffsetMs || 0) != 0) {
-      a.beatMetadata.offsetMs = BigInt(a.beatMetadata.deprecatedOffsetMs);
-      a.beatMetadata.deprecatedOffsetMs = 0;
+      if (a.beatMetadata != null) {
+        a.beatMetadata.offsetMs = BigInt(a.beatMetadata.deprecatedOffsetMs);
+        a.beatMetadata.deprecatedOffsetMs = 0;
+      }
     }
   }
   if ((project.liveBeat?.deprecatedOffsetMs || 0) != 0) {
-    project.liveBeat.offsetMs = BigInt(project.liveBeat.deprecatedOffsetMs);
-    project.liveBeat.deprecatedOffsetMs = 0;
+    if (project.liveBeat) {
+      project.liveBeat.offsetMs = BigInt(project.liveBeat.deprecatedOffsetMs);
+      project.liveBeat.deprecatedOffsetMs = 0;
+    }
   }
 }
 
@@ -230,8 +242,8 @@ function upgradeUniverse(project: Project) {
       }
     });
 
-  delete project.physicalFixtures;
-  delete project.physicalFixtureGroups;
+  project.physicalFixtures = {};
+  project.physicalFixtureGroups = {};
 }
 
 function upgradeLiveEffects(project: Project) {
@@ -325,15 +337,25 @@ function upgradeColorTypes(project: Project) {
   const upgradeEffect = (effect: Effect) => {
     switch (effect.effect.case) {
       case "staticEffect":
-        upgradeState(effect.effect.value.state);
+        if (effect.effect.value.state != null) {
+          upgradeState(effect.effect.value.state);
+        }
         break;
       case "rampEffect":
-        upgradeState(effect.effect.value.stateStart);
-        upgradeState(effect.effect.value.stateEnd);
+        if (effect.effect.value.stateStart != null) {
+          upgradeState(effect.effect.value.stateStart);
+        }
+        if (effect.effect.value.stateEnd != null) {
+          upgradeState(effect.effect.value.stateEnd);
+        }
         break;
       case "strobeEffect":
-        upgradeState(effect.effect.value.stateA);
-        upgradeState(effect.effect.value.stateB);
+        if (effect.effect.value.stateA != null) {
+          upgradeState(effect.effect.value.stateA);
+        }
+        if (effect.effect.value.stateB != null) {
+          upgradeState(effect.effect.value.stateB);
+        }
         break;
     }
   };
@@ -347,8 +369,13 @@ function upgradeColorTypes(project: Project) {
       } else if (c.description.case === 'effectGroup') {
         return c.description.value.channels.map(c => c.effect);
       }
+      throw new Error('Tried to upgrade effects in unknown component effect description: ' + c.description.case);
     })
-    .forEach(upgradeEffect);
+    .forEach((e) => {
+      if (e != null) {
+        upgradeEffect(e);
+      }
+    });
 
   project.shows
     .flatMap(s => s.lightTracks)
@@ -356,12 +383,12 @@ function upgradeColorTypes(project: Project) {
     .flatMap(l => l.effects)
     .forEach(upgradeEffect);
 
-    project.scenes.forEach(s => {
-      if (!s.colorPalettes || s.colorPalettes.length < 1) {
-        s.colorPalettes = [DEFAULT_COLOR_PALETTE.clone()];
-      }
-      if (!s.colorPaletteTransitionDurationMs) {
-        s.colorPaletteTransitionDurationMs = 2_000;
-      }
-    });
+  project.scenes.forEach(s => {
+    if (!s.colorPalettes || s.colorPalettes.length < 1) {
+      s.colorPalettes = [DEFAULT_COLOR_PALETTE.clone()];
+    }
+    if (!s.colorPaletteTransitionDurationMs) {
+      s.colorPaletteTransitionDurationMs = 2_000;
+    }
+  });
 }

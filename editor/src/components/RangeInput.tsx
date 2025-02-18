@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from "react";
+import { useCallback } from "react";
 import { NumberInput } from "./Input";
 
 interface RangeInputProps {
@@ -16,15 +16,6 @@ export default function RangeInput(
       onChange(Math.min(value));
     } else {
       onChange(value);
-    }
-  }, [max]);
-
-  const step = useMemo(() => {
-    switch (max) {
-      case "1":
-        return 1 / 256;
-      case "255":
-        return 1;
     }
   }, [max]);
 

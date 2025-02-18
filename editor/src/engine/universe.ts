@@ -58,10 +58,19 @@ export function renderShowToUniverse(t: number, frame: number, project: Project)
   const show = project.shows[project.selectedShow || 0];
 
   if (show) {
-    const beatMetadata = project
-      .assets
-      ?.audioFiles[show.audioTrack?.audioFileId]
-      ?.beatMetadata;
+    if (show.audioTrack?.audioFileId == null) {
+
+    }
+    let beatMetadata: BeatMetadata | undefined;
+    if (show.audioTrack?.audioFileId != null) {
+      beatMetadata = project
+        .assets
+        ?.audioFiles[show.audioTrack?.audioFileId]
+        ?.beatMetadata;
+    }
+    if (beatMetadata == null) {
+      throw new Error('Tried to render a frame for a show with an audio file without beat metadata!');
+    }
     const context: Omit<RenderContext, 'output'> = {
       t: t,
       project: project,
@@ -70,6 +79,9 @@ export function renderShowToUniverse(t: number, frame: number, project: Project)
     };
 
     for (const track of show.lightTracks) {
+      if (track.outputId == null) {
+        continue;
+      }
       const output = getWritableDevice(project, track.outputId);
       if (output) {
         const trackContext = Object.assign({}, context, { output });
@@ -96,7 +108,7 @@ export function renderSceneToUniverse(
 
   const scene = project.scenes[project.activeScene];
   if (!scene) {
-    return;
+    return universe;
   }
 
   const colorPaletteT = Math.min(1, Number(BigInt(t) - scene.colorPaletteStartTransition) / scene.colorPaletteTransitionDurationMs);
@@ -111,7 +123,7 @@ export function renderSceneToUniverse(
         continue;
       }
 
-      const sinceTransition = Number(BigInt(absoluteT) - component.transition.value);
+      const sinceTransition = Number(BigInt(absoluteT) - (component.transition.value || 0n));
 
       let amount: number = 0;
       if (component.transition.case === 'startFadeInMs') {
@@ -138,7 +150,14 @@ export function renderSceneToUniverse(
       switch (component.description.case) {
         case 'effectGroup':
           for (const channel of component.description.value.channels) {
+            if (channel.outputId == null) {
+              continue;
+            }
+
             const effect = channel.effect;
+            if (effect == null) {
+              throw new Error('Tried to render component without effect!');
+            }
             const effectLength = effect.endMs - effect.startMs;
 
             const durationEffect = getComponentDurationMs(component, beatMetadata);
@@ -159,6 +178,9 @@ export function renderSceneToUniverse(
               if (component.duration.case === 'durationBeat') {
                 effectT = (beatT * effectLength) / beatMetadata.lengthMs;
               } else {
+                if (component.duration.value == null) {
+                  throw new Error('Tried to render effect group component without a duration!');
+                }
                 effectT = (absoluteT * effectLength) / component.duration.value;
               }
             }
@@ -186,6 +208,9 @@ export function renderSceneToUniverse(
             if (component.duration.case === 'durationBeat') {
               sequenceT = relativeT / beatMetadata.lengthMs;
             } else {
+              if (component.duration.value == null) {
+                throw new Error('Tried to render sequence component without a duration!');
+              }
               sequenceT = (relativeT * sequence.nativeBeats) / component.duration.value;
             }
 
@@ -198,6 +223,9 @@ export function renderSceneToUniverse(
             if (component.duration?.case === 'durationBeat') {
               sequenceT = (beatT % (beatMetadata.lengthMs * sequence.nativeBeats)) * SEQUENCE_BEAT_RESOLUTION / beatMetadata.lengthMs;
             } else {
+              if (component.duration.value == null) {
+                throw new Error('Tried to render effect group component without a duration!');
+              }
               sequenceT = (absoluteT * SEQUENCE_BEAT_RESOLUTION * sequence.nativeBeats / component.duration.value) % (sequence.nativeBeats * SEQUENCE_BEAT_RESOLUTION);
             }
           }
@@ -240,6 +268,9 @@ function renderUniverseSequence(
     };
 
     for (const track of universeSequence.lightTracks) {
+      if (track.outputId == null) {
+        continue;
+      }
       const output = getWritableDevice(project, track.outputId);
       if (output != null) {
         const trackContext = Object.assign({}, context, { output });
@@ -341,6 +372,9 @@ function applyEffect(context: RenderContext, beat: BeatMetadata, frame: number, 
   }
 
   if (effect.effect.case === 'staticEffect') {
+    if (effect.effect.value.state == null) {
+      throw new Error('Tried to render static effect without state!');
+    }
     applyState(effect.effect.value.state, context);
 
   } else if (effect.effect.case === 'rampEffect') {

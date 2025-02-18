@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { createRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import IconBxPause from "../icons/IconBxPause";
 import IconBxPlay from "../icons/IconBxPlay";
 import IconBxPulse from "../icons/IconBxPulse";
@@ -29,7 +29,7 @@ export function BeatEditor({ file, onCancel }: BeatEditorProps):
   JSX.Element {
   const { saveAssets } = useContext(ProjectContext);
   const { setShortcuts } = useContext(ShortcutContext);
-  const waveRef = useRef<HTMLDivElement>();
+  const waveRef = createRef<HTMLDivElement>();
   const [zoomLevel, setZoomLevel] = useState(64);
   const [waveSurfer, setWaveSurfer] = useState<WaveSurfer | null>(null);
   const [waveSurferRegions, setWaveSurferRegions] =
@@ -127,8 +127,9 @@ export function BeatEditor({ file, onCancel }: BeatEditorProps):
       return () => {
         setWaveSurfer(null);
         ws.destroy();
-      }
+      };
     }
+    return undefined;
   }, [waveRef.current, fileBlob]);
 
   // Set zoom level.
@@ -203,6 +204,7 @@ export function BeatEditor({ file, onCancel }: BeatEditorProps):
         setLastMarker(markers[2]);
       });
     }
+    return undefined;
   }, [waveSurfer, waveSurferRegions, firstMarker, secondMarker, lastMarker, beatsPerDuration]);
 
   const playPause = useCallback(() => {
@@ -261,7 +263,7 @@ export function BeatEditor({ file, onCancel }: BeatEditorProps):
       <div ref={waveRef}></div>
       <div className={styles.buttonRow}>
         <Button
-          onClick={() => waveSurfer.seekTo(0)}
+          onClick={() => waveSurfer?.seekTo(0)}
           icon={<IconBxSkipPrevious />}>
           Jump to start
         </Button>
@@ -275,7 +277,7 @@ export function BeatEditor({ file, onCancel }: BeatEditorProps):
           {playing ? 'Pause' : 'Play'}
         </Button>
         <Button
-          onClick={() => waveSurfer.seekTo(1)}
+          onClick={() => waveSurfer?.seekTo(1)}
           icon={<IconBxSkipNext />}>
           Jump to end
         </Button>

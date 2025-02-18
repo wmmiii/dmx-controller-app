@@ -1,4 +1,4 @@
-import React, { useContext, useRef } from "react";
+import { createRef, useContext } from "react";
 
 import IconBxBrushAlt from '../icons/IconBxBrush';
 import IconBxChevronDown from "../icons/IconBxChevronDown";
@@ -43,7 +43,11 @@ export function LightTrack({
 }: LightTrackProps):
   JSX.Element {
   const { project, save } = useContext(ProjectContext);
-  const trackRef = useRef<HTMLDivElement>();
+  const trackRef = createRef<HTMLDivElement>();
+
+  if (track.outputId == null) {
+    throw new Error('Track output ID not set!');
+  }
 
   return (
     <div className={styles.lightTrack}>
@@ -118,7 +122,7 @@ export function LightTrack({
         {
           track.layers.map((l, i) => (
             <LightLayer
-              className={track.collapsed ? styles.collapsedLayer : null}
+              className={track.collapsed ? styles.collapsedLayer : undefined}
               key={i}
               trackIndex={trackIndex}
               layerIndex={i}
