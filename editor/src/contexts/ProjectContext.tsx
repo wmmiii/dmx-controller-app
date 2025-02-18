@@ -11,6 +11,8 @@ const PROJECT_KEY = "tmp-project-1";
 const ASSETS_KEY = "tmp-assets-1";
 const MAX_UNDO = 100;
 
+let globalOpened = false;
+
 const DEFAULT_UNIVERSE_MAP: { [id: string]: Universe } = {};
 const DEFAULT_UNIVERSE_ID = randomUint64();
 DEFAULT_UNIVERSE_MAP[DEFAULT_UNIVERSE_ID.toString()] = new Universe({
@@ -66,6 +68,10 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
 
   useEffect(() => {
     (async () => {
+      if (globalOpened) {
+        return;
+      }
+      globalOpened = true;
       try {
         const projectBlob = await getBlob(PROJECT_KEY);
         const assetsBlob = await getBlob(ASSETS_KEY);

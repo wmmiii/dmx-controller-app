@@ -117,7 +117,6 @@ export function NumberInput({
       onKeyDown={(e) => {
         switch (e.code) {
           case 'Enter':
-            flushValue();
             inputRef.current?.blur();
             break;
           case 'Escape':

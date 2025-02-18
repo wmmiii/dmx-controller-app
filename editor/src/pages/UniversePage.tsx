@@ -705,8 +705,9 @@ function EditDefinitionDialog({
                         }
 
                         const channel = definition.channels[index];
+
                         if (isAngleChannel(newType) && channel.mapping.case !== 'angleMapping') {
-                          definition.channels[index].mapping = {
+                          channel.mapping = {
                             case: 'angleMapping',
                             value: new FixtureDefinition_Channel_AngleMapping({
                               minDegrees: 0,
@@ -714,7 +715,7 @@ function EditDefinitionDialog({
                             }),
                           };
                         } else if (isAmountChannel(newType) && channel.mapping.case !== 'amountMapping') {
-                          definition.channels[index].mapping = {
+                          channel.mapping = {
                             case: 'amountMapping',
                             value: new FixtureDefinition_Channel_AmountMapping({
                               minValue: 0,
@@ -722,7 +723,7 @@ function EditDefinitionDialog({
                             }),
                           };
                         } else if (channel.mapping.case != undefined) {
-                          definition.channels[index].mapping = {
+                          channel.mapping = {
                             case: undefined,
                             value: undefined,
                           };
@@ -755,7 +756,7 @@ function EditDefinitionDialog({
                     }
                   </td>
                   {
-                    channel.mapping.case === 'angleMapping' ?
+                    channel?.mapping.case === 'angleMapping' ?
                       <>
                         <td>
                           <NumberInput
@@ -788,7 +789,7 @@ function EditDefinitionDialog({
                       </>
                   }
                   {
-                    channel.mapping.case === 'amountMapping' ?
+                    channel?.mapping.case === 'amountMapping' ?
                       <>
                         <td>
                           <RangeInput

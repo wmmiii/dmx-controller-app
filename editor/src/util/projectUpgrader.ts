@@ -303,6 +303,7 @@ function upgradeFixtures(project: Project) {
 function updateFixtureDefinitionMapping(project: Project) {
   Object.values(project.fixtureDefinitions)
     .flatMap(d => Object.values(d.channels))
+    .filter(c => c.mapping?.case == null)
     .forEach(c => {
       if (isAngleChannel(c.type)) {
         c.mapping = {
