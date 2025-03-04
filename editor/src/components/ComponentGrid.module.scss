@@ -1,39 +1,17 @@
 @import '../vars';
 
-$element-height: 80px;
-$element-width: 200px;
+$element-size: 100px;
+$triangle-diag: 40px;
 
 .component-grid {
-  overflow: auto;
-  position: relative;
+  display: grid;
+  gap: spacing(1);
+  grid-template-columns: repeat(auto-fill, $element-size);
+  grid-template-rows: repeat(auto-fill, $element-size);
 }
 
-.row {
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: row;
-  gap: spacing(2);
-  min-width: 100%;
-  padding: spacing(1);
-}
-
-.row-placeholder {
-  border-radius: $dim-border-radius;
-  box-sizing: border-box;
-  height: $element-height;
-  margin: spacing(1);
-  width: calc(100% - spacing(2));
-}
-
-.row-placeholder,
 .component-placeholder {
-  align-items: center;
-  background-color: $col-bg-placeholder;
-  color: $col-text-dim;
   cursor: pointer;
-  display: flex;
-  font-size: 12pt;
-  justify-content: center;
 
   &:hover {
     background-color: $col-bg-placeholder-hover;
@@ -48,10 +26,13 @@ $element-width: 200px;
   border: 4px solid transparent;
   box-sizing: border-box;
   cursor: pointer;
-  display: grid;
-  gap: spacing(1);
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  padding: spacing(1);
+  display: flex;
+  flex-direction: column;
+  height: $element-size;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  width: $element-size;
 
   &.active {
     border-color: $col-accent;
@@ -62,59 +43,24 @@ $element-width: 200px;
     border-style: dashed;
   }
 
-  .row {
-    display: flex;
-    flex-direction: row;
-    gap: spacing(1);
-  }
+  .settings-triangle {
+    background-color: $col-border;
+    width: $triangle-diag;
+    height: $triangle-diag;
+    position: absolute;
+    right: -$triangle-diag / 2;
+    top: -$triangle-diag / 2;
+    transform-origin: 50% 50%;
+    transform: rotate(-45deg);
 
-  .icon,
-  .settings {
-    align-items: center;
-    display: flex;
-    font-size: 24px;
-    grid-row: 1 / 2;
-    justify-content: center;
-  }
-
-  .icon {
-    color: $col-text-dim;
-  }
-
-  .icon-placeholder {
-    width: 24px;
-  }
-
-  .settings-placeholder {
-    height: 40px;
-    width: 40px;
+    &:hover {
+      background-color: $col-border-higher;
+    }
   }
 
   .title {
     font-size: 14pt;
-    grid-column: 1 / 5;
-    grid-row: 2 / 3;
-    overflow: hidden;
+    padding: spacing(1);
     text-align: center;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 184px;
-  }
-}
-
-.drag-handle {
-  align-items: center;
-  align-self: stretch;
-  border-radius: $dim-border-radius;
-  box-sizing: border-box;
-  color: $col-text-dim;
-  cursor: grab;
-  display: flex;
-  flex-shrink: 0;
-  justify-content: center;
-  padding: spacing(0.5);
-
-  &:hover {
-    background-color: $col-bg-placeholder-hover;
   }
 }

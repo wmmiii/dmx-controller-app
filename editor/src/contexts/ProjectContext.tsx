@@ -28,7 +28,7 @@ const DEFAULT_PROJECT = new Project({
   physicalFixtures: {},
   scenes: [{
     name: 'Default scene',
-    rows: [],
+    componentMap: [],
   }],
   liveBeat: {
     lengthMs: Math.floor(60_000 / 120),

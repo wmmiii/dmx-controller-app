@@ -114,137 +114,147 @@ export function renderSceneToUniverse(
   const colorPalette = interpolatePalettes(
     scene.colorPalettes[scene.lastActiveColorPalette],
     scene.colorPalettes[scene.activeColorPalette],
-    colorPaletteT)
+    colorPaletteT);
 
-  for (const row of scene.rows.slice().reverse()) {
-    for (const component of row.components.slice().reverse()) {
-      if (component.oneShot && component.transition.case === 'startFadeOutMs') {
+  const sortedComponents = scene.componentMap
+    .sort((a, b) => {
+      if (a.y != b.y) {
+        return b.y - a.y;
+      }
+      if (a.x != b.x) {
+        return b.x - a.x;
+      }
+      return 0;
+    })
+    .map(c => c.component!);
+
+  for (const component of sortedComponents) {
+    if (component.oneShot && component.transition.case === 'startFadeOutMs') {
+      continue;
+    }
+
+    const sinceTransition = Number(BigInt(absoluteT) - (component.transition.value || 0n));
+
+    let amount: number = 0;
+    if (component.transition.case === 'startFadeInMs') {
+      const fadeInMs = component.fadeInDuration.case === 'fadeInBeat' ?
+        (component.fadeInDuration.value || 0) * beatMetadata.lengthMs :
+        (component.fadeInDuration.value || 0);
+
+      amount = Math.min(1, sinceTransition / fadeInMs);
+    } else if (component.transition.case === 'startFadeOutMs') {
+      const fadeOutMs = component.fadeOutDuration.case === 'fadeOutBeat' ?
+        (component.fadeOutDuration.value || 0) * beatMetadata.lengthMs :
+        (component.fadeOutDuration.value || 0);
+
+      if (sinceTransition > fadeOutMs) {
         continue;
       }
 
-      const sinceTransition = Number(BigInt(absoluteT) - (component.transition.value || 0n));
+      amount = Math.max(0, 1 - sinceTransition / fadeOutMs);
+    }
 
-      let amount: number = 0;
-      if (component.transition.case === 'startFadeInMs') {
-        const fadeInMs = component.fadeInDuration.case === 'fadeInBeat' ?
-          (component.fadeInDuration.value || 0) * beatMetadata.lengthMs :
-          (component.fadeInDuration.value || 0);
+    const before = [...universe];
+    const after = [...universe];
 
-        amount = Math.min(1, sinceTransition / fadeInMs);
-      } else if (component.transition.case === 'startFadeOutMs') {
-        const fadeOutMs = component.fadeOutDuration.case === 'fadeOutBeat' ?
-          (component.fadeOutDuration.value || 0) * beatMetadata.lengthMs :
-          (component.fadeOutDuration.value || 0);
-
-        if (sinceTransition > fadeOutMs) {
-          continue;
-        }
-
-        amount = Math.max(0, 1 - sinceTransition / fadeOutMs);
-      }
-
-      const before = [...universe];
-      const after = [...universe];
-
-      switch (component.description.case) {
-        case 'effectGroup':
-          for (const channel of component.description.value.channels) {
-            if (channel.outputId == null) {
-              continue;
-            }
-
-            const effect = channel.effect;
-            if (effect == null) {
-              throw new Error('Tried to render component without effect!');
-            }
-            const effectLength = effect.endMs - effect.startMs;
-
-            const durationEffect = getComponentDurationMs(component, beatMetadata);
-            let effectT: number;
-            if (component.oneShot) {
-              if (component.duration.case === 'durationBeat') {
-                effectT = (sinceTransition * effectLength) / beatMetadata.lengthMs;
-              } else {
-                effectT = (sinceTransition * effectLength) / durationEffect;
-              }
-
-              // Only play once
-              if (effectT > effectLength) {
-                break;
-              }
-
-            } else {
-              if (component.duration.case === 'durationBeat') {
-                effectT = (beatT * effectLength) / beatMetadata.lengthMs;
-              } else {
-                if (component.duration.value == null) {
-                  throw new Error('Tried to render effect group component without a duration!');
-                }
-                effectT = (absoluteT * effectLength) / component.duration.value;
-              }
-            }
-
-            const output = getWritableDevice(project, channel.outputId);
-            if (output != null) {
-              applyEffect({
-                t: effectT,
-                output: output,
-                project: project,
-                colorPalette: colorPalette,
-                universe: after,
-              }, beatMetadata, frame, effect);
-            }
+    switch (component.description.case) {
+      case 'effectGroup':
+        for (const channel of component.description.value.channels) {
+          if (channel.outputId == null) {
+            continue;
           }
-          break;
 
-        case 'sequence':
-          const sequence = component.description.value;
+          const effect = channel.effect;
+          if (effect == null) {
+            throw new Error('Tried to render component without effect!');
+          }
+          const effectLength = effect.endMs - effect.startMs;
 
-          const durationSequence = SEQUENCE_BEAT_RESOLUTION * sequence.nativeBeats;
-          let sequenceT: number;
+          const durationEffect = getComponentDurationMs(component, beatMetadata);
+          let effectT: number;
           if (component.oneShot) {
-            const relativeT = sinceTransition * SEQUENCE_BEAT_RESOLUTION;
             if (component.duration.case === 'durationBeat') {
-              sequenceT = relativeT / beatMetadata.lengthMs;
+              effectT = (sinceTransition * effectLength) / beatMetadata.lengthMs;
             } else {
-              if (component.duration.value == null) {
-                throw new Error('Tried to render sequence component without a duration!');
-              }
-              sequenceT = (relativeT * sequence.nativeBeats) / component.duration.value;
+              effectT = (sinceTransition * effectLength) / durationEffect;
             }
 
             // Only play once
-            if (sequenceT > durationSequence) {
+            if (effectT > effectLength) {
               break;
             }
 
           } else {
-            if (component.duration?.case === 'durationBeat') {
-              sequenceT = (beatT % (beatMetadata.lengthMs * sequence.nativeBeats)) * SEQUENCE_BEAT_RESOLUTION / beatMetadata.lengthMs;
+            if (component.duration.case === 'durationBeat') {
+              effectT = (beatT * effectLength) / beatMetadata.lengthMs;
             } else {
               if (component.duration.value == null) {
                 throw new Error('Tried to render effect group component without a duration!');
               }
-              sequenceT = (absoluteT * SEQUENCE_BEAT_RESOLUTION * sequence.nativeBeats / component.duration.value) % (sequence.nativeBeats * SEQUENCE_BEAT_RESOLUTION);
+              effectT = (absoluteT * effectLength) / component.duration.value;
             }
           }
 
-          renderUniverseSequence(
-            sequenceT,
-            frame,
-            sequence,
-            project,
-            colorPalette,
-            after);
-          break;
+          const output = getWritableDevice(project, channel.outputId);
+          if (output != null) {
+            applyEffect({
+              t: effectT,
+              output: output,
+              project: project,
+              colorPalette: colorPalette,
+              universe: after,
+            }, beatMetadata, frame, effect);
+          }
+        }
+        break;
 
-        default:
-          console.error(`Unrecognized description type ${component.description}.`);
-          return universe;
-      }
+      case 'sequence':
+        const sequence = component.description.value;
 
-      interpolateUniverses(universe, amount, before, after);
+        const durationSequence = SEQUENCE_BEAT_RESOLUTION * sequence.nativeBeats;
+        let sequenceT: number;
+        if (component.oneShot) {
+          const relativeT = sinceTransition * SEQUENCE_BEAT_RESOLUTION;
+          if (component.duration.case === 'durationBeat') {
+            sequenceT = relativeT / beatMetadata.lengthMs;
+          } else {
+            if (component.duration.value == null) {
+              throw new Error('Tried to render sequence component without a duration!');
+            }
+            sequenceT = (relativeT * sequence.nativeBeats) / component.duration.value;
+          }
+
+          // Only play once
+          if (sequenceT > durationSequence) {
+            break;
+          }
+
+        } else {
+          if (component.duration?.case === 'durationBeat') {
+            sequenceT = (beatT % (beatMetadata.lengthMs * sequence.nativeBeats)) * SEQUENCE_BEAT_RESOLUTION / beatMetadata.lengthMs;
+          } else {
+            if (component.duration.value == null) {
+              throw new Error('Tried to render effect group component without a duration!');
+            }
+            sequenceT = (absoluteT * SEQUENCE_BEAT_RESOLUTION * sequence.nativeBeats / component.duration.value) % (sequence.nativeBeats * SEQUENCE_BEAT_RESOLUTION);
+          }
+        }
+
+        renderUniverseSequence(
+          sequenceT,
+          frame,
+          sequence,
+          project,
+          colorPalette,
+          after);
+        break;
+
+      default:
+        console.error(`Unrecognized description type ${component.description}.`);
+        return universe;
     }
+
+    interpolateUniverses(universe, amount, before, after);
   }
 
   return universe;

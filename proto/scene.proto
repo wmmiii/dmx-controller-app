@@ -74,7 +74,17 @@ message Scene {
   }
 
   message ComponentRow {
+    option deprecated = true;
     repeated Component components = 11;
+  }
+
+  message ComponentMap {
+    Component component = 1;
+
+    // The horizontal index of the component, measured from left to right.
+    int32 x = 2;
+    // The vertical index of the component, measured from top to bottom.
+    int32 y = 3;
   }
 
   string name = 1;
@@ -86,5 +96,6 @@ message Scene {
   reserved 7 to 10;
 
   repeated Component components = 11 [deprecated = true];
-  repeated ComponentRow rows = 12;
+  repeated ComponentRow rows = 12 [deprecated = true];
+  repeated ComponentMap componentMap = 13;
 }

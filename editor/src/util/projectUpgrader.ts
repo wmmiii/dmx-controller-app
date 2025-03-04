@@ -6,7 +6,7 @@ import { Universe } from "@dmx-controller/proto/universe_pb";
 import { OutputId, OutputId_FixtureMapping } from "@dmx-controller/proto/output_id_pb";
 import { LightTrack } from "@dmx-controller/proto/light_track_pb";
 import { FixtureDefinition_Channel_AmountMapping, FixtureDefinition_Channel_AngleMapping, PhysicalFixtureGroup, PhysicalFixtureGroup_FixtureList } from "@dmx-controller/proto/fixture_pb";
-import { Scene_Component_EffectGroupComponent_EffectChannel } from "@dmx-controller/proto/scene_pb";
+import { Scene_Component_EffectGroupComponent_EffectChannel, Scene_ComponentMap } from "@dmx-controller/proto/scene_pb";
 import { isAmountChannel, isAngleChannel } from "../engine/fixture";
 import { DEFAULT_COLOR_PALETTE } from "../engine/universe";
 
@@ -18,6 +18,7 @@ export default function upgradeProject(project: Project): void {
   upgradeFixtures(project);
   updateFixtureDefinitionMapping(project);
   upgradeColorTypes(project);
+  upgradeComponentMapping(project);
 }
 
 function upgradeIndices(project: Project): void {
@@ -392,4 +393,25 @@ function upgradeColorTypes(project: Project) {
       s.colorPaletteTransitionDurationMs = 2_000;
     }
   });
+}
+
+function upgradeComponentMapping(project: Project) {
+  for (const scene of project.scenes) {
+    if (scene.rows.length > 0) {
+      for (let y = 0; y < scene.rows.length; y++) {
+        const row = scene.rows[y];
+        for (let x = 0; x < row.components.length; x++) {
+          const component = row.components[x];
+
+          scene.componentMap.push(new Scene_ComponentMap({
+            component: component,
+            x: x,
+            y: y,
+          }));
+        }
+      }
+    }
+
+    scene.rows = [];
+  }
 }

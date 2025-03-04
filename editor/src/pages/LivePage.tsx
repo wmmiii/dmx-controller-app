@@ -1,5 +1,4 @@
 import { useContext, useEffect, useRef, useState } from 'react';
-import IconBxBrushAlt from '../icons/IconBxBrush';
 import IconBxPlus from '../icons/IconBxPlus';
 import IconBxX from '../icons/IconBxX';
 import styles from "./LivePage.module.scss";
@@ -12,7 +11,7 @@ import { LiveBeat } from '../components/LiveBeat';
 import { Modal } from '../components/Modal';
 import { NumberInput, TextInput, ToggleInput } from '../components/Input';
 import { ProjectContext } from '../contexts/ProjectContext';
-import { Scene, Scene_Component, Scene_Component_EffectGroupComponent, Scene_Component_EffectGroupComponent_EffectChannel, Scene_Component_SequenceComponent } from '@dmx-controller/proto/scene_pb';
+import { Scene, Scene_Component, Scene_Component_EffectGroupComponent, Scene_Component_EffectGroupComponent_EffectChannel, Scene_Component_SequenceComponent, Scene_ComponentMap } from '@dmx-controller/proto/scene_pb';
 import { SerialContext } from '../contexts/SerialContext';
 import { UniverseSequenceEditor } from '../components/UniverseSequenceEditor';
 import { getOutputName, OutputSelector } from '../components/OutputSelector';
@@ -35,10 +34,10 @@ function LivePageImpl(): JSX.Element {
   const { project, save } = useContext(ProjectContext);
   const projectRef = useRef<Project>(project);
   const { beat: beatMetadata } = useContext(BeatContext);
-  const [addRowIndex, setAddRowIndex] = useState<number | null>(null);
+  const [addComponentIndex, setAddComponentIndex] = useState<{ x: number, y: number } | null>(null);
   const { setRenderUniverse, clearRenderUniverse } = useContext(SerialContext);
 
-  const [selected, setSelected] = useState<Scene_Component | null>(null);
+  const [selected, setSelected] = useState<Scene_ComponentMap | null>(null);
 
   const scene = project?.scenes[0];
 
@@ -74,21 +73,17 @@ function LivePageImpl(): JSX.Element {
       <div className={styles.wrapper}>
         <div className={styles.header}>
           <LiveBeat className={styles.beat} />
-          <IconButton
-            title="Cleanup rows"
-            onClick={() => {
-              project.scenes[0].rows = project.scenes[0].rows.filter(r => r.components.length > 0);
-              save('Cleanup rows.');
-            }}>
-            <IconBxBrushAlt />
-          </IconButton>
         </div>
         <div className={styles.body}>
-          <ComponentGrid
-            className={styles.sceneEditor}
-            sceneId={0}
-            onSelect={setSelected}
-            setAddRowIndex={setAddRowIndex} />
+          <div className={styles.gridWrapper}>
+            <ComponentGrid
+              className={styles.sceneEditor}
+              sceneId={0}
+              onSelect={setSelected}
+              setAddComponentIndex={setAddComponentIndex}
+              maxX={scene.componentMap.map(c => c.x).reduce((a, b) => a > b ? a : b) + 2}
+              maxY={scene.componentMap.map(c => c.y).reduce((a, b) => a > b ? a : b) + 2} />
+          </div>
           <div className={styles.palettes}>
             {
               scene?.colorPalettes.map((p, i) => (
@@ -129,16 +124,17 @@ function LivePageImpl(): JSX.Element {
         </div>
       </div>
       {
-        addRowIndex != null &&
+        addComponentIndex != null &&
         <AddNewDialog
           scene={project.scenes[0]}
-          rowIndex={addRowIndex}
+          x={addComponentIndex.x}
+          y={addComponentIndex.y}
           onSelect={setSelected}
-          onClose={() => setAddRowIndex(null)} />
+          onClose={() => setAddComponentIndex(null)} />
       }
       {
         selected &&
-        <ComponentEditor component={selected} onClose={() => setSelected(null)} />
+        <ComponentEditor component={selected.component!} onClose={() => setSelected(null)} />
       }
     </PaletteContext.Provider>
   );
@@ -267,15 +263,11 @@ function ComponentEditor({ component, onClose }: ComponentEditorProps) {
             <Button
               variant="warning"
               onClick={() => {
-                let modified = false;
-                project.scenes[0].rows.forEach(row => {
-                  const index = row.components.indexOf(component);
-                  if (index > -1) {
-                    row.components.splice(index, 1);
-                    modified = true;
-                  }
-                });
-                if (modified) {
+                const componentMap = project.scenes[0].componentMap;
+                const index = componentMap.findIndex((c) => c.component === component);
+                if (index > -1) {
+                  componentMap.splice(index, 1);
+
                   onClose();
                   save(`Delete component ${component.name}.`);
                 }
@@ -354,15 +346,16 @@ function EffectGroupEditor({ effect, name }: EffectGroupEditorProps) {
 
 interface AddNewDialogProps {
   scene: Scene;
-  rowIndex: number;
-  onSelect: (component: Scene_Component) => void;
+  x: number;
+  y: number;
+  onSelect: (componentMap: Scene_ComponentMap) => void;
   onClose: () => void;
 }
 
-function AddNewDialog({ scene, rowIndex, onSelect, onClose }: AddNewDialogProps) {
+function AddNewDialog({ scene, x, y, onSelect, onClose }: AddNewDialogProps) {
   const { save } = useContext(ProjectContext);
 
-  const addComponent = (description: Scene_Component['description']) => {
+  const addComponent = (description: Scene_Component['description'], x: number, y: number) => {
     const component = new Scene_Component({
       name: 'New Component',
       description: description,
@@ -375,13 +368,18 @@ function AddNewDialog({ scene, rowIndex, onSelect, onClose }: AddNewDialogProps)
         value: 0n,
       },
     });
-    scene.rows[rowIndex].components.push(component);
-    return component;
+    const componentMap = new Scene_ComponentMap({
+      component: component,
+      x: x,
+      y: y,
+    });
+    scene.componentMap.push(componentMap);
+    return componentMap;
   }
   return (
     <Modal
       bodyClass={styles.addComponent}
-      title={`Add new component to row ${rowIndex + 1}`}
+      title={`Add new component`}
       onClose={onClose}>
       <div className={styles.addComponentDescription}>
         Static effects simply set a fixture or group of fixtures to a specific
@@ -390,15 +388,15 @@ function AddNewDialog({ scene, rowIndex, onSelect, onClose }: AddNewDialogProps)
       <Button
         icon={<IconBxPlus />}
         onClick={() => {
-          const component = addComponent({
+          const componentMap = addComponent({
             case: 'effectGroup',
             value: new Scene_Component_EffectGroupComponent({
               channels: [createEffectChannel()],
             }),
-          });
-          save(`Add new effect component to row ${rowIndex}.`);
+          }, x, y);
+          save(`Add new effect component.`);
           onClose();
-          onSelect(component);
+          onSelect(componentMap);
         }}>
         Add Static Effect
       </Button>
@@ -414,8 +412,8 @@ function AddNewDialog({ scene, rowIndex, onSelect, onClose }: AddNewDialogProps)
             value: new Scene_Component_SequenceComponent({
               nativeBeats: 1,
             }),
-          });
-          save(`Add new sequence component to row ${rowIndex}.`);
+          }, x, y);
+          save(`Add new sequence component.`);
           onClose();
           onSelect(component);
         }}>

@@ -7,13 +7,6 @@
   flex-direction: column;
 }
 
-.editor-pane {
-  @include fill;
-
-  display: flex;
-  flex-direction: column;
-}
-
 .add-component {
   display: grid;
   grid-template-columns: 50% 50%;
@@ -49,6 +42,12 @@
   flex-direction: row;
   flex: 1;
   min-height: 0;
+  position: relative;
+}
+
+.grid-wrapper {
+  flex: 1;
+  overflow: auto;
 }
 
 .scene-editor {
