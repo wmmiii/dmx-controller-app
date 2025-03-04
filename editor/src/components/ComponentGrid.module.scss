@@ -8,6 +8,7 @@ $triangle-diag: 40px;
   gap: spacing(1);
   grid-template-columns: repeat(auto-fill, $element-size);
   grid-template-rows: repeat(auto-fill, $element-size);
+  margin: 0 spacing(1) spacing(1);
 }
 
 .component-placeholder {
@@ -59,8 +60,20 @@ $triangle-diag: 40px;
   }
 
   .title {
+    box-sizing: border-box;
     font-size: 14pt;
+    overflow: hidden;
     padding: spacing(1);
     text-align: center;
+    width: 100%;
+  }
+
+  .priority {
+    bottom: spacing(0.5);
+    color: $col-text-dim;
+    flex-shrink: 0;
+    font-size: 10pt;
+    left: spacing(0.5);
+    position: absolute;
   }
 }

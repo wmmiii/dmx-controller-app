@@ -102,7 +102,8 @@ export function ComponentGrid({
                 }}
                 onSelect={() => onSelect(mapping)}
                 x={x}
-                y={y} />
+                y={y}
+                priority={mapping.priority} />
             );
           } else {
             return (
@@ -142,9 +143,10 @@ interface ComponentProps {
   onSelect: () => void;
   x: number;
   y: number;
+  priority: number;
 }
 
-function Component({ component, dragging, onDragComponent, onDropComponent, onSelect, x, y }: ComponentProps) {
+function Component({ component, dragging, onDragComponent, onDropComponent, onSelect, x, y, priority }: ComponentProps) {
   const { beat } = useContext(BeatContext);
   const { t } = useContext(TimeContext);
   const { save } = useContext(ProjectContext);
@@ -186,6 +188,12 @@ function Component({ component, dragging, onDragComponent, onDropComponent, onSe
       <div className={styles.title}>
         {component.name}
       </div>
+      {
+        priority != 0 &&
+        <div className={styles.priority}>
+          {priority}
+        </div>
+      }
     </div>
   );
 }

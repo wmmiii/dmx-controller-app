@@ -134,19 +134,21 @@ function LivePageImpl(): JSX.Element {
       }
       {
         selected &&
-        <ComponentEditor component={selected.component!} onClose={() => setSelected(null)} />
+        <ComponentEditor componentMap={selected} onClose={() => setSelected(null)} />
       }
     </PaletteContext.Provider>
   );
 }
 
 interface ComponentEditorProps {
-  component: Scene_Component;
+  componentMap: Scene_ComponentMap;
   onClose: () => void;
 }
 
-function ComponentEditor({ component, onClose }: ComponentEditorProps) {
+function ComponentEditor({ componentMap, onClose }: ComponentEditorProps) {
   const { project, save } = useContext(ProjectContext);
+
+  const component = componentMap.component!;
 
   return (
     <Modal
@@ -169,18 +171,30 @@ function ComponentEditor({ component, onClose }: ComponentEditorProps) {
                 }} />
             </div>
             <div className={styles.row}>
+              <label>Priority</label>
+              <NumberInput
+                min={-1000}
+                max={1000}
+                type="integer"
+                value={componentMap.priority}
+                onChange={(v) => {
+                  componentMap.priority = v;
+                  save(`Set priority to ${v} for ${component.name}.`);
+                }} />
+            </div>
+            <div className={styles.row}>
               <label>Shortcut</label>
               <input
                 onChange={() => { }}
                 onKeyDown={(e) => {
                   if (e.code.startsWith('Digit')) {
-                    component.shortcut = e.code.substring(5);
-                    save(`Add shortcut ${component.shortcut} for component ${name}.`);
+                    componentMap.shortcut = e.code.substring(5);
+                    save(`Add shortcut ${componentMap.shortcut} for component ${component.name}.`);
                   } else if (e.code === 'Backspace' || e.code === 'Delete') {
-                    save(`Remove shortcut for component ${name}.`);
+                    save(`Remove shortcut for component ${component.name}.`);
                   }
                 }}
-                value={component.shortcut} />
+                value={componentMap.shortcut} />
             </div>
             <div className={styles.row}>
               <ToggleInput

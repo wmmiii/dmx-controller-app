@@ -118,6 +118,9 @@ export function renderSceneToUniverse(
 
   const sortedComponents = scene.componentMap
     .sort((a, b) => {
+      if (a.priority != b.priority) {
+        return a.priority - b.priority;
+      }
       if (a.y != b.y) {
         return b.y - a.y;
       }
