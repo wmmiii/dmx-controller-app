@@ -60,12 +60,19 @@ $triangle-diag: 40px;
   }
 
   .title {
+    align-items: center;
+    border-radius: 100%;
     box-sizing: border-box;
-    font-size: 14pt;
+    display: flex;
+    font-size: 12pt;
+    font-weight: 600;
+    height: calc(100% - spacing(1));
+    justify-content: center;
     overflow: hidden;
     padding: spacing(1);
     text-align: center;
-    width: 100%;
+    text-shadow: 0 0 1px #000, 0 0 2px #000, 0 0 4px #000;
+    width: calc(100% - spacing(1));
   }
 
   .priority {

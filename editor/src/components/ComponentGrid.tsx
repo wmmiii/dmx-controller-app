@@ -6,7 +6,10 @@ import { ProjectContext } from '../contexts/ProjectContext';
 import { Scene_Component, Scene_ComponentMap } from '@dmx-controller/proto/scene_pb';
 import { ShortcutContext } from '../contexts/ShortcutContext';
 import { TimeContext } from '../contexts/TimeContext';
-import { componentActive } from '../util/projectUtils';
+import { componentActive, componentTileDetails } from '../util/projectUtils';
+import { PaletteContext } from '../contexts/PaletteContext';
+import { Color, ColorPalette, PaletteColor } from '@dmx-controller/proto/color_pb';
+import { FixtureState } from '@dmx-controller/proto/effect_pb';
 
 interface ComponentGridProps {
   className?: string;
@@ -148,8 +151,32 @@ interface ComponentProps {
 
 function Component({ component, dragging, onDragComponent, onDropComponent, onSelect, x, y, priority }: ComponentProps) {
   const { beat } = useContext(BeatContext);
-  const { t } = useContext(TimeContext);
+  const { palette } = useContext(PaletteContext);
   const { save } = useContext(ProjectContext);
+  const { t } = useContext(TimeContext);
+
+  const details = useMemo(() => componentTileDetails(component), [component.toJson()]);
+  
+  const background = useMemo(() => {
+    if (details.colors.length === 0) {
+      return null;
+    } else if (details.colors.length === 1) {
+      return complexColorToHex(details.colors[0], palette);
+    }
+
+    let gradient = "linear-gradient(135deg, ";
+    for (let i = 0; i < details.colors.length; i++) {
+      const color = complexColorToHex(details.colors[i], palette);
+    
+      gradient += i === 0 ? "" : ", ";
+      if (color != null) {
+        gradient += color;
+      } else {
+        gradient += "transparent";
+      }
+    }
+    return gradient + ")";
+  }, [details, palette]);
 
   const classes = [styles.component];
   if (componentActive(component, beat, t)) {
@@ -185,7 +212,7 @@ function Component({ component, dragging, onDragComponent, onDropComponent, onSe
       }}>
       <div className={styles.settingsTriangle} onClick={onSelect}>
       </div>
-      <div className={styles.title}>
+      <div className={styles.title} style={{background: background as any}}>
         {component.name}
       </div>
       {
@@ -249,3 +276,35 @@ function transitionComponent(component: Scene_Component, enabled: boolean, beat:
   }
 }
 
+function complexColorToHex(complexColor: FixtureState['lightColor'], palette: ColorPalette) {
+  let color: Color | null = null;
+
+  if (complexColor.case === 'color') {
+    color = complexColor.value;
+  } else if (complexColor.case === 'paletteColor') {
+    if (complexColor.value === PaletteColor.PALETTE_PRIMARY) {
+      color = palette.primary?.color || null;
+    } else if (complexColor.value === PaletteColor.PALETTE_SECONDARY) {
+      color = palette.secondary?.color || null;
+    } else if (complexColor.value === PaletteColor.PALETTE_TERTIARY) {
+      color = palette.tertiary?.color || null;
+    } else if (complexColor.value === PaletteColor.PALETTE_WHITE) {
+      color = new Color({red: 0, green: 0, blue: 0, white: 1});
+    } else if (complexColor.value === PaletteColor.PALETTE_BLACK) {
+      color = new Color({red: 0, green: 0, blue: 0, white: 0});
+    }
+  }
+
+  if (color == null) {
+    return null;
+  }
+    
+  return rgbwToHex(color.red, color.green, color.blue, color.white || 0);
+}
+
+function rgbwToHex(r: number, g: number, b: number, w: number) {
+  r = Math.min((r + w) * 255, 255);
+  g = Math.min((g + w) * 255, 255);
+  b = Math.min((b + w) * 255, 255);
+  return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+}
