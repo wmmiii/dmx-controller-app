@@ -296,7 +296,7 @@ function EditFixtureDialog({
             if (fixture.fixtureDefinitionId !== 0n) {
               definitionName = project.fixtureDefinitions[fixture.fixtureDefinitionId.toString()].name;
             }
-            save(`Change fixture definition for ${fixture.name} to ${definitionName}`);
+            save(`Change fixture profile for ${fixture.name} to ${definitionName}`);
           }}>
           <option key="unset" value={0n.toString()}>
             &lt;unset&gt;
@@ -511,7 +511,7 @@ function FixtureDefinitionList(): JSX.Element | null {
 
   return (
     <div className={styles.pane}>
-      <h2>Fixture Definitions</h2>
+      <h2>Fixture Profiles</h2>
       <ul>
         {
           Object.entries(project.fixtureDefinitions)
@@ -525,12 +525,12 @@ function FixtureDefinitionList(): JSX.Element | null {
       <Button onClick={() => {
         const newId = randomUint64();
         project.fixtureDefinitions[newId.toString()] = new FixtureDefinition({
-          name: 'New Fixture Definition',
+          name: 'New Fixture Profile',
         });
         setSelectedDefinitionId(newId);
-        save('Create new fixture definition.');
+        save('Create new fixture profile.');
       }}>
-        + Add New Fixture Definition
+        + Add New Fixture Profile
       </Button>
       {
         selectedDefinition &&
@@ -545,7 +545,7 @@ function FixtureDefinitionList(): JSX.Element | null {
             definition.name = "Copy of " + selectedDefinition.name;
             project.fixtureDefinitions[newId.toString()] = definition;
             setSelectedDefinitionId(newId);
-            save(`Copy fixture definition ${selectedDefinition.name}.`);
+            save(`Copy fixture profile ${selectedDefinition.name}.`);
           }}
           deleteDefinition={() => {
             const id = selectedDefinitionId?.toString();
@@ -554,7 +554,7 @@ function FixtureDefinitionList(): JSX.Element | null {
             }
             const name = project.fixtureDefinitions[id].name;
             delete project.fixtureDefinitions[id];
-            save(`Delete fixture definition ${name}.`);
+            save(`Delete fixture profile ${name}.`);
           }} />
       }
     </div>
@@ -613,13 +613,13 @@ function EditDefinitionDialog({
         </div>
       }>
       <IconButton
-        title="Copy Fixture Definition"
+        title="Copy Fixture Profile"
         onClick={copy}>
         <IconBxCopyAlt />
       </IconButton>
       <IconButton
         variant='warning'
-        title="Delete Fixture Definition"
+        title="Delete Fixture Profile"
         onClick={deleteDefinition}>
         <IconBxX />
       </IconButton>
@@ -630,7 +630,7 @@ function EditDefinitionDialog({
             value={definition.name}
             onChange={(v) => {
               definition.name = v;
-              save(`Change fixture definition name to ${v}.`);
+              save(`Change fixture profile name to ${v}.`);
             }} />
         </label>
         <label>
@@ -639,7 +639,7 @@ function EditDefinitionDialog({
             value={definition.manufacturer}
             onChange={(v) => {
               definition.manufacturer = v;
-              save(`Set manufacturer of fixture definition ${definition.name} to ${v}.`);
+              save(`Set manufacturer of fixture profile ${definition.name} to ${v}.`);
             }} />
         </label>
       </div>
