@@ -38,7 +38,7 @@ message FixtureState {
     RGBW rgbw = 3 [deprecated = true];
   }
 
-  optional double brightness = 4;
+  optional double dimmer = 4;
   optional double pan = 5;
   optional double tilt = 6;
   optional double width = 10;

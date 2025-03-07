@@ -516,7 +516,7 @@ function effectIcons(effect: FixtureStateProto):
   } else if (effect.lightColor.case === 'paletteColor') {
     icons.push(IconBxPalette);
   }
-  if (effect?.brightness != null) {
+  if (effect?.dimmer != null) {
     icons.push(IconBxsSun);
   }
   if (effect?.pan != null || effect?.tilt != null) {

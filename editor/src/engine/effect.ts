@@ -62,8 +62,8 @@ export function applyState(state: FixtureState, context: RenderContext): void {
     device.setAngle(universe, 'tilt', state.tilt);
   }
 
-  if (state.brightness != null) {
-    device.setAmount(universe, 'brightness', state.brightness);
+  if (state.dimmer != null) {
+    device.setAmount(universe, 'dimmer', state.dimmer);
   }
 
   if (state.strobe != null) {

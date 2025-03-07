@@ -21,7 +21,7 @@ export function isAngleChannel(type: string): type is AngleChannel {
   return ANGLE_CHANNEL.includes(type as AngleChannel);
 }
 
-export const AMOUNT_CHANNEL = ['brightness', 'height', 'strobe', 'width', 'zoom'] as const;
+export const AMOUNT_CHANNEL = ['dimmer', 'height', 'strobe', 'width', 'zoom'] as const;
 export type AmountChannel = typeof AMOUNT_CHANNEL[number];
 export function isAmountChannel(type: string): type is AmountChannel {
   return AMOUNT_CHANNEL.includes(type as AmountChannel);

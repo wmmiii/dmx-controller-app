@@ -108,10 +108,10 @@ export function EffectState(
           }} />
       }
       <RangeChannel
-        name="Brightness"
-        value={state.brightness}
+        name="Dimmer"
+        value={state.dimmer}
         onChange={(v) => {
-          state.brightness = v;
+          state.dimmer = v;
           onChange(state);
         }} />
       <RangeChannel
