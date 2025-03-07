@@ -4,7 +4,7 @@ import IconBxDownload from '../icons/IconBxDownload';
 import IconBxUpload from '../icons/IconBxUpload';
 import IconBxX from '../icons/IconBxX';
 import RangeInput from '../components/RangeInput';
-import styles from './UniversePage.module.scss';
+import styles from './PatchPage.module.scss';
 import { AMOUNT_CHANNEL, ANGLE_CHANNEL, ChannelTypes, COLOR_CHANNELS, deleteFixture, deleteFixtureGroup, isAmountChannel, isAngleChannel } from '../engine/fixture';
 import { Button, IconButton } from '../components/Button';
 import { FixtureDefinition, FixtureDefinition_Channel, FixtureDefinition_Channel_AmountMapping, FixtureDefinition_Channel_AngleMapping, PhysicalFixture, PhysicalFixtureGroup, PhysicalFixtureGroup_FixtureList } from '@dmx-controller/proto/fixture_pb';
@@ -19,7 +19,7 @@ import { getActiveUniverse } from '../util/projectUtils';
 import { getApplicableMembers } from '../engine/group';
 import { randomUint64 } from '../util/numberUtils';
 
-export default function UniversePage(): JSX.Element {
+export default function PatchPage(): JSX.Element {
   return (
     <div className={styles.wrapper}>
       <HorizontalSplitPane
@@ -65,7 +65,7 @@ function FixtureList(): JSX.Element | null {
         }
         project.universes[serialized.id.toString()] = serialized.universe;
         project.activeUniverse = serialized.id;
-        save(`Upload universe ${serialized.universe.name}.`);
+        save(`Upload patch ${serialized.universe.name}.`);
       };
       button.addEventListener('change', handleUpload);
       return () => button.removeEventListener('change', handleUpload);
@@ -79,7 +79,7 @@ function FixtureList(): JSX.Element | null {
         value={project.activeUniverse.toString()}
         onChange={(e) => {
           project.activeUniverse = BigInt(e.target.value);
-          save(`Change active universe to ${getActiveUniverse(project).name}.`);
+          save(`Change active patch to ${getActiveUniverse(project).name}.`);
         }}>
         {
           Object.entries(project.universes).map(([i, u]) =>
@@ -93,11 +93,11 @@ function FixtureList(): JSX.Element | null {
         value={getActiveUniverse(project).name}
         onChange={(v) => {
           getActiveUniverse(project).name = v;
-          save(`Set universe name to "${v}".`);
+          save(`Set patch name to "${v}".`);
         }}
       />
       <IconButton
-        title={`Download universe ${getActiveUniverse(project).name}`}
+        title={`Download patch ${getActiveUniverse(project).name}`}
         onClick={() => {
           const fixtures: { [id: string]: FixtureDefinition } = {};
           const universe = getActiveUniverse(project);
@@ -116,12 +116,12 @@ function FixtureList(): JSX.Element | null {
             type: 'application/protobuf',
           });
 
-          downloadBlob(blob, escapeForFilesystem(universe.name) + '.universe.dmxapp');
+          downloadBlob(blob, escapeForFilesystem(universe.name) + '.patch.dmxapp');
         }}>
         <IconBxDownload />
       </IconButton>
       <IconButton
-        title="Upload universe"
+        title="Upload patch"
         onClick={() => uploadButtonRef.current?.click()}>
         <IconBxUpload />
       </IconButton>
@@ -129,12 +129,12 @@ function FixtureList(): JSX.Element | null {
       <Button onClick={() => {
         const id = randomUint64();
         project.universes[id.toString()] = new Universe({
-          name: 'New Universe'
+          name: 'New Patch'
         });
         project.activeUniverse = id;
-        save('Create a new universe.');
+        save('Create a new patch.');
       }}>
-        Create new universe
+        Create new patch
       </Button>
       <div>
         Offset MS:

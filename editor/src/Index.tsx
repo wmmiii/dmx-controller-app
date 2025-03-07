@@ -12,7 +12,7 @@ import IconBxlWindows from './icons/IconBxlWindows';
 import IconBxsBulb from './icons/IconBxsBulb';
 import ProjectPage from './pages/ProjectPage';
 import ShowPage from './pages/ShowPage';
-import UniversePage from './pages/UniversePage';
+import PatchPage from './pages/PatchPage';
 import styles from './Index.module.scss';
 import { Button } from './components/Button';
 import { DialogContext } from './contexts/DialogContext';
@@ -82,8 +82,8 @@ export default function Index(): JSX.Element {
                   onSelect: () => navigate('/assets'),
                 },
                 {
-                  title: 'Universe',
-                  onSelect: () => navigate('/universe'),
+                  title: 'Patch',
+                  onSelect: () => navigate('/patch'),
                 },
                 {
                   title: 'Project Settings',
@@ -135,7 +135,7 @@ export default function Index(): JSX.Element {
             <Route path="/live" element={<LivePage />} />
             <Route path="/show" element={<ShowPage />} />
             <Route path="/assets" element={<AssetBrowserPage />} />
-            <Route path="/universe" element={<UniversePage />} />
+            <Route path="/patch" element={<PatchPage />} />
             <Route path="/project" element={<ProjectPage />} />
           </Routes>
         </ErrorBoundary>
