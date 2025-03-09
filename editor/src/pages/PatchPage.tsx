@@ -7,7 +7,7 @@ import RangeInput from '../components/RangeInput';
 import styles from './PatchPage.module.scss';
 import { AMOUNT_CHANNEL, ANGLE_CHANNEL, ChannelTypes, COLOR_CHANNELS, deleteFixture, deleteFixtureGroup, isAmountChannel, isAngleChannel } from '../engine/fixture';
 import { Button, IconButton } from '../components/Button';
-import { FixtureDefinition, FixtureDefinition_Channel, FixtureDefinition_Channel_AmountMapping, FixtureDefinition_Channel_AngleMapping, PhysicalFixture, PhysicalFixtureGroup } from '@dmx-controller/proto/fixture_pb';
+import { FixtureDefinition, FixtureDefinition_Channel, FixtureDefinition_Channel_AmountMapping, FixtureDefinition_Channel_AngleMapping, FixtureDefinition_Mode, PhysicalFixture, PhysicalFixtureGroup } from '@dmx-controller/proto/fixture_pb';
 import { HorizontalSplitPane } from '../components/SplitPane';
 import { Modal } from '../components/Modal';
 import { NumberInput, TextInput } from '../components/Input';
@@ -103,7 +103,7 @@ function FixtureList(): JSX.Element | null {
           const universe = getActiveUniverse(project);
           Object.values(universe.fixtures)
             .map(f => {
-              const id = f.fixtureDefinitionId.toString();
+              const id = f.fixtureDefinitionId;
               fixtures[id] = project.fixtureDefinitions[id];
             });
           const serialized = new SerializedUniverse({
@@ -156,9 +156,11 @@ function FixtureList(): JSX.Element | null {
             .sort((a, b) => a[1].channelOffset - b[1].channelOffset)
             .map(([id, fixture]) => {
               const definition =
-                project.fixtureDefinitions[fixture.fixtureDefinitionId.toString()];
+                project.fixtureDefinitions[fixture.fixtureDefinitionId];
 
-              let numChannels = fixture.channelOffset + definition?.numChannels;
+              const mode = definition?.modes[fixture.fixtureMode];
+
+              let numChannels = fixture.channelOffset + mode?.numChannels;
               if (isNaN(numChannels)) {
                 numChannels = fixture.channelOffset + 1;
               }
@@ -167,7 +169,7 @@ function FixtureList(): JSX.Element | null {
                 <li key={id} onClick={() => {
                   setSelectedFixtureId(BigInt(id));
                 }}>
-                  {definition == null && '⚠️ '}
+                  {mode == null && '⚠️ '}
                   (
                   {fixture.channelOffset + 1}
                   &nbsp;—&nbsp;
@@ -255,7 +257,7 @@ function EditFixtureDialog({
   const { project, save } = useContext(ProjectContext);
 
   const definition: FixtureDefinition | undefined = useMemo(
-    () => project.fixtureDefinitions[fixture.fixtureDefinitionId.toString()],
+    () => project.fixtureDefinitions[fixture.fixtureDefinitionId],
     [project, fixture]);
 
   return (
@@ -287,18 +289,19 @@ function EditFixtureDialog({
           }} />
       </label>
       <label>
-        <span>Definition</span>
+        <span>Profile</span>
         <select
-          value={fixture.fixtureDefinitionId.toString()}
+          value={fixture.fixtureDefinitionId}
           onChange={(e) => {
-            fixture.fixtureDefinitionId = BigInt(e.target.value);
-            let definitionName = "<unset>";
-            if (fixture.fixtureDefinitionId !== 0n) {
-              definitionName = project.fixtureDefinitions[fixture.fixtureDefinitionId.toString()].name;
+            fixture.fixtureDefinitionId = e.target.value;
+            fixture.fixtureMode = Object.keys(project.fixtureDefinitions[fixture.fixtureDefinitionId].modes)[0];
+            let definitionName = '<unset>';
+            if (fixture.fixtureDefinitionId !== '') {
+              definitionName = project.fixtureDefinitions[fixture.fixtureDefinitionId].name;
             }
             save(`Change fixture profile for ${fixture.name} to ${definitionName}`);
           }}>
-          <option key="unset" value={0n.toString()}>
+          <option key="unset" value={''}>
             &lt;unset&gt;
           </option>
           {
@@ -311,7 +314,30 @@ function EditFixtureDialog({
               ))
           }
         </select>
-        {fixture.fixtureDefinitionId == 0n && ' ⚠️'}
+        <select
+          value={fixture.fixtureMode}
+          onChange={(e) => {
+            fixture.fixtureMode = e.target.value;
+            let modeName = '<unset>';
+            if (fixture.fixtureMode !== '') {
+              modeName = project.fixtureDefinitions[fixture.fixtureDefinitionId].modes[fixture.fixtureMode].name;
+            }
+            save(`Change fixture profile for ${fixture.name} to ${modeName}`);
+          }}>
+          <option disabled={true} key="unset" value={''}>
+            &lt;unset&gt;
+          </option>
+          {
+            Object.entries(project.fixtureDefinitions[fixture.fixtureDefinitionId]?.modes || {})
+              .sort((a, b) => a[1].name.localeCompare(b[1].name))
+              .map(([id, mode]) => (
+                <option key={id} value={id}>
+                  {mode.name}
+                </option>
+              ))
+          }
+        </select>
+        {(fixture.fixtureDefinitionId == '' || fixture.fixtureMode == '') && ' ⚠️'}
       </label>
       <label>
         <span>Channel</span>
@@ -350,7 +376,7 @@ function EditFixtureDialog({
 function FixtureDefinitionList(): JSX.Element | null {
   const { project, save } = useContext(ProjectContext);
   const [selectedDefinitionId, setSelectedDefinitionId] =
-    useState<bigint | null>(null);
+    useState<string | null>(null);
 
   const selectedDefinition = useMemo(
     () => {
@@ -369,17 +395,21 @@ function FixtureDefinitionList(): JSX.Element | null {
         {
           Object.entries(project.fixtureDefinitions)
             .map(([id, definition]) => (
-              <li key={id} onClick={() => setSelectedDefinitionId(BigInt(id))}>
+              <li key={id} onClick={() => setSelectedDefinitionId(id)}>
                 {definition.name}
               </li>
             ))
         }
       </ul>
       <Button onClick={() => {
-        const newId = randomUint64();
-        project.fixtureDefinitions[newId.toString()] = new FixtureDefinition({
+        const newId = crypto.randomUUID();
+        const newDefinition = new FixtureDefinition({
           name: 'New Fixture Profile',
         });
+        newDefinition.modes[crypto.randomUUID()] = new FixtureDefinition_Mode({
+          name: 'Default',
+        });
+        project.fixtureDefinitions[newId.toString()] = newDefinition;
         setSelectedDefinitionId(newId);
         save('Create new fixture profile.');
       }}>
@@ -393,7 +423,7 @@ function FixtureDefinitionList(): JSX.Element | null {
             if (selectedDefinition == null) {
               return;
             }
-            const newId = randomUint64();
+            const newId = crypto.randomUUID();
             const definition = new FixtureDefinition(selectedDefinition);
             definition.name = "Copy of " + selectedDefinition.name;
             project.fixtureDefinitions[newId.toString()] = definition;
@@ -429,6 +459,7 @@ function EditDefinitionDialog({
 }: EditDefinitionDialogProps): JSX.Element {
   const { save } = useContext(ProjectContext);
   const { setRenderUniverse, clearRenderUniverse } = useContext(SerialContext);
+  const [modeId, setModeId] = useState<string>(Object.keys(definition.modes)[0]);
   const [testIndex, setTestIndex] = useState(0);
   const [testValues, setTestValues] = useState([] as number[]);
 
@@ -452,6 +483,8 @@ function EditDefinitionDialog({
     setRenderUniverse(render);
     return () => clearRenderUniverse(render);
   }, [definition, testIndex, testValues, setRenderUniverse, clearRenderUniverse]);
+
+  const mode = definition.modes[modeId];
 
   return (
     <Modal
@@ -496,15 +529,26 @@ function EditDefinitionDialog({
             }} />
         </label>
       </div>
+
+      <label>
+        <span>Mode</span>
+        <select value={modeId} onChange={(e) => setModeId(e.target.value)}>
+          {
+            Object.keys(definition.modes)
+              .map((m) => <option key={m} value={m}>{definition.modes[m].name}</option>)
+          }
+        </select>
+      </label>
+
       <label>
         <span>Total channels</span>
         <NumberInput
-          min={Math.max(0, ...Object.keys(definition.channels).map(i => parseInt(i)))}
+          min={Math.max(0, ...Object.keys(mode.channels).map(i => parseInt(i)))}
           max={512}
-          value={definition.numChannels}
+          value={mode.numChannels}
           onChange={(v) => {
-            definition.numChannels = v;
-            save(`Set number of channels of ${definition.name} to ${v}.`);
+            mode.numChannels = v;
+            save(`Set number of channels of ${mode.name} to ${v}.`);
           }} />
       </label>
       <label>
@@ -530,9 +574,9 @@ function EditDefinitionDialog({
         </thead>
         <tbody>
           {
-            Array.from(Array(definition.numChannels), (_, i) => {
+            Array.from(Array(mode.numChannels), (_, i) => {
               const index = i + 1;
-              const channel = definition.channels[index];
+              const channel = mode.channels[index];
               return (
                 <tr key={index}>
                   <td>{index}</td>
@@ -541,14 +585,14 @@ function EditDefinitionDialog({
                       value={channel?.type || 'unset'}
                       onChange={(e) => {
                         if (e.target.value === 'unset') {
-                          delete definition.channels[index];
+                          delete mode.channels[index];
                           save(`Delete mapping for channel ${index}.`);
                           return;
                         }
 
                         const newType = e.target.value as ChannelTypes;
-                        if (definition.channels[index] == null) {
-                          definition.channels[index] = new FixtureDefinition_Channel({
+                        if (mode.channels[index] == null) {
+                          mode.channels[index] = new FixtureDefinition_Channel({
                             type: newType,
                             mapping: {
                               case: undefined,

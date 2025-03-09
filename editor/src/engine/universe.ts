@@ -341,13 +341,19 @@ function renderLayersToUniverse(
 
 function applyDefaults(project: Project, universe: DmxUniverse): void {
   for (const fixture of Object.values(getActiveUniverse(project).fixtures)) {
-    const fixtureDefinition = project.fixtureDefinitions[fixture.fixtureDefinitionId.toString()];
+    const fixtureDefinition = project.fixtureDefinitions[fixture.fixtureDefinitionId];
     // Can happen if fixture has not yet set a definition.
     if (!fixtureDefinition) {
       continue;
     }
 
-    for (const channel of Object.entries(fixtureDefinition.channels)) {
+    const fixtureMode = fixtureDefinition.modes[fixture.fixtureMode];
+
+    if (!fixtureMode) {
+      continue;
+    }
+
+    for (const channel of Object.entries(fixtureMode.channels)) {
       const index = parseInt(channel[0]) - 1 + fixture.channelOffset;
       let value = channel[1].defaultValue;
       if (channel[1].mapping.case === 'angleMapping') {

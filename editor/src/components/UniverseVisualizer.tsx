@@ -23,15 +23,20 @@ export function UniverseVisualizer() {
 
       return Object.values(getActiveUniverse(project).fixtures)
         .map((f, i) => {
-          const definition = project.fixtureDefinitions[f.fixtureDefinitionId.toString()];
+          const definition = project.fixtureDefinitions[f.fixtureDefinitionId];
           // Can happen if the definition is unset.
           if (definition == null) {
             return;
           }
 
+          const mode = definition.modes[f.fixtureMode];
+          if (mode == null) {
+            return;
+          }
+
           const getChannel = (type: ChannelTypes): number | undefined => {
             try {
-              const entry = Object.entries(definition.channels)
+              const entry = Object.entries(mode.channels)
               .find(e => e[1].type === type);
               if (entry == null) {
                 return undefined;

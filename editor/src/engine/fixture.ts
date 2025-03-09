@@ -3,7 +3,7 @@ import { getAllFixtures } from "./group";
 import { OutputId, OutputId_FixtureMapping } from "@dmx-controller/proto/output_id_pb";
 import { getActiveUniverse } from "../util/projectUtils";
 import { LightTrack } from "@dmx-controller/proto/light_track_pb";
-import { FixtureDefinition, PhysicalFixture } from "@dmx-controller/proto/fixture_pb";
+import { FixtureDefinition_Mode, PhysicalFixture } from "@dmx-controller/proto/fixture_pb";
 
 export type DmxUniverse = number[];
 
@@ -75,9 +75,14 @@ function getPhysicalWritableDevice(
   }
   const physicalFixture = getActiveUniverse(project).fixtures[fixtureId.toString()];
   const definition =
-    project.fixtureDefinitions[physicalFixture.fixtureDefinitionId.toString()];
+    project.fixtureDefinitions[physicalFixture.fixtureDefinitionId];
   // Check to ensure this fixture has a definition.
   if (definition == null) {
+    return undefined;
+  }
+
+  const mode = definition.modes[physicalFixture.fixtureMode];
+  if (mode == null) {
     return undefined;
   }
 
@@ -88,7 +93,7 @@ function getPhysicalWritableDevice(
     amountFunctions: new Map(),
   };
 
-  collectFunctions(physicalFixture, definition, functionCollection);
+  collectFunctions(physicalFixture, mode, functionCollection);
   return functionCollectionToDevice(functionCollection);
 }
 
@@ -104,7 +109,7 @@ function getPhysicalWritableDeviceFromGroup(
 
   if (groupId === GROUP_ALL_ID) {
     Object.values(getActiveUniverse(project).fixtures)
-      .forEach(f => collectFunctions(f, project.fixtureDefinitions[f.fixtureDefinitionId.toString()], functionCollection));
+      .forEach(f => collectFunctions(f, project.fixtureDefinitions[f.fixtureDefinitionId].modes[f.fixtureMode], functionCollection));
   } else {
     const group = project.groups[groupId.toString()];
     if (!group) {
@@ -115,8 +120,9 @@ function getPhysicalWritableDeviceFromGroup(
       .forEach(id => {
         const physicalFixture = getActiveUniverse(project).fixtures[id.toString()];
         const definition =
-          project.fixtureDefinitions[physicalFixture.fixtureDefinitionId.toString()];
-        collectFunctions(physicalFixture, definition, functionCollection);
+          project.fixtureDefinitions[physicalFixture.fixtureDefinitionId];
+        const mode = definition.modes[physicalFixture.fixtureMode];
+        collectFunctions(physicalFixture, mode, functionCollection);
       });
   }
 
@@ -179,13 +185,13 @@ interface FunctionCollection {
   amountFunctions: Map<AmountChannel, Array<(universe: DmxUniverse, a: number) => void>>;
 }
 
-function collectFunctions(fixture: PhysicalFixture, definition: FixtureDefinition, collection: FunctionCollection) {
+function collectFunctions(fixture: PhysicalFixture, mode: FixtureDefinition_Mode, collection: FunctionCollection) {
   collection.manualFunctions.push((universe, index, value) => {
     universe[fixture.channelOffset + index] = value;
   });
 
-  for (const stringIndex in definition.channels) {
-    const channel = definition.channels[stringIndex];
+  for (const stringIndex in mode.channels) {
+    const channel = mode.channels[stringIndex];
     const index = fixture.channelOffset + parseInt(stringIndex) - 1;
     const channelType = channel.type as ChannelTypes;
     switch (channelType) {

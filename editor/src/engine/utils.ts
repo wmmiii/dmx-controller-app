@@ -17,7 +17,7 @@ export function universeToUint8Array(project: Project, universe: DmxUniverse) {
 
   Object.values(getActiveUniverse(project).fixtures)
     .forEach(f => {
-      const d = project.fixtureDefinitions[f.fixtureDefinitionId.toString()];
+      const d = project.fixtureDefinitions[f.fixtureDefinitionId];
       if (d == null) {
         return;
       }

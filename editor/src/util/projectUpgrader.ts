@@ -5,7 +5,7 @@ import { randomUint64 } from "./numberUtils";
 import { Universe } from "@dmx-controller/proto/universe_pb";
 import { OutputId, OutputId_FixtureMapping } from "@dmx-controller/proto/output_id_pb";
 import { LightTrack } from "@dmx-controller/proto/light_track_pb";
-import { FixtureDefinition_Channel_AmountMapping, FixtureDefinition_Channel_AngleMapping, PhysicalFixtureGroup, PhysicalFixtureGroup_FixtureList } from "@dmx-controller/proto/fixture_pb";
+import { FixtureDefinition, FixtureDefinition_Channel_AmountMapping, FixtureDefinition_Channel_AngleMapping, FixtureDefinition_Mode, PhysicalFixtureGroup, PhysicalFixtureGroup_FixtureList } from "@dmx-controller/proto/fixture_pb";
 import { Scene_Component_EffectGroupComponent_EffectChannel, Scene_ComponentMap } from "@dmx-controller/proto/scene_pb";
 import { isAmountChannel, isAngleChannel } from "../engine/fixture";
 import { DEFAULT_COLOR_PALETTE } from "../engine/universe";
@@ -19,6 +19,7 @@ export default function upgradeProject(project: Project): void {
   updateFixtureDefinitionMapping(project);
   upgradeColorTypes(project);
   upgradeComponentMapping(project);
+  upgradeFixtureDefinitions(project);
 }
 
 function upgradeIndices(project: Project): void {
@@ -278,7 +279,7 @@ function upgradeLiveEffects(project: Project) {
 }
 
 function upgradeFixtures(project: Project) {
-  for (const entry of Object.entries(project.deprecatedFixtureDefinitions)) {
+  for (const entry of Object.entries(project.deprecatedUint32FixtureDefinitions)) {
     const definitionId = randomUint64();
 
     const oldId = parseInt(entry[0]);
@@ -291,14 +292,14 @@ function upgradeFixtures(project: Project) {
 
     for (const universe of Object.values(project.universes)) {
       for (const fixture of Object.values(universe.fixtures)) {
-        if (fixture.deprecatedFixtureDefinitionId === oldId) {
-          fixture.fixtureDefinitionId = definitionId;
+        if (fixture.deprecatedUint32FixtureDefinitionId === oldId) {
+          fixture.deprecatedUint64FixtureDefinitionId = definitionId;
         }
       }
     }
   }
 
-  project.deprecatedFixtureDefinitions = {};
+  project.deprecatedUint32FixtureDefinitions = {};
 }
 
 function updateFixtureDefinitionMapping(project: Project) {
@@ -414,4 +415,48 @@ function upgradeComponentMapping(project: Project) {
 
     scene.rows = [];
   }
+}
+
+function upgradeFixtureDefinitions(project: Project) {
+  const idMapping = new Map<bigint, {id: string, mode: string}>();
+
+  if (Object.keys(project.deprecatedUint64FixtureDefinitions).length === 0) {
+    return;
+  }
+
+  // Upgrade definitions
+  for (const oldId in project.deprecatedUint64FixtureDefinitions) {
+    const oldDefinition = project.deprecatedUint64FixtureDefinitions[oldId];
+
+    const newId = crypto.randomUUID();
+    const mode = crypto.randomUUID();
+
+    project.fixtureDefinitions[newId] = new FixtureDefinition({
+      globalId: newId,
+      name: oldDefinition.name,
+      manufacturer: oldDefinition.manufacturer,
+    });
+    project.fixtureDefinitions[newId].modes[mode] = new FixtureDefinition_Mode({
+      name: 'Default',
+      numChannels: oldDefinition.numChannels,
+      channels: oldDefinition.channels,
+    });
+    idMapping.set(BigInt(oldId), {id: newId, mode: mode});
+  }
+
+  // Fix mappings
+  for (const universeId in project.universes) {
+    const universe = project.universes[universeId];
+    for (const fixtureId in universe.fixtures) {
+      const fixture = universe.fixtures[fixtureId];
+      const newId = idMapping.get(fixture.deprecatedUint64FixtureDefinitionId);
+      if (!newId) {
+        throw new Error(`Could not find ID mapping for ${fixture.deprecatedUint64FixtureDefinitionId}!`)
+      }
+      fixture.fixtureDefinitionId = newId.id;
+      fixture.fixtureMode = newId.mode;
+    }
+  }
+
+  project.deprecatedUint64FixtureDefinitions = {};
 }

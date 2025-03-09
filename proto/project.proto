@@ -35,7 +35,7 @@ message Project {
   // Universe descriptions
   uint32 update_frequency_ms = 11;
   int32 timing_offset_ms = 12;
-  map<uint64, FixtureDefinition> fixture_definitions = 20;
+  map<string, FixtureDefinition> fixture_definitions = 22;
   map<uint64, Universe> universes = 17;
   uint64 active_universe = 18;
   map<uint64, PhysicalFixtureGroup> groups = 19;
@@ -57,8 +57,9 @@ message Project {
   map<uint32, FixtureSequence> fixture_sequences = 41 [ deprecated = true ];
   repeated DefaultChannelValues default_channel_values = 16
       [ deprecated = true ];
-  map<uint32, FixtureDefinition> deprecated_fixture_definitions = 13
+  map<uint32, FixtureDefinition> deprecated_uint32_fixture_definitions = 13
       [ deprecated = true ];
   map<uint32, PhysicalFixtureGroup> physical_fixture_groups = 15
       [ deprecated = true ];
+  map<uint64, FixtureDefinition> deprecated_uint64_fixture_definitions = 20;
 }

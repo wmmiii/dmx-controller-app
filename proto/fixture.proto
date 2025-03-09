@@ -9,6 +9,12 @@ message FixtureDefinition {
     int32 fast_strobe = 3;
   }
 
+  message Mode {
+    string name = 1;
+    uint32 num_channels = 2;
+    map<uint32, Channel> channels = 3;
+  }
+
   message Channel {
     message AngleMapping {
       /** Minimum number of degrees that a "pan" or "tilt" channel can move. */
@@ -49,21 +55,25 @@ message FixtureDefinition {
     StrobeMapping deprecated_strobe = 5 [ deprecated = true ];
   }
 
+  string global_id = 5;
   string name = 1;
   string manufacturer = 2;
-  uint32 num_channels = 4;
-  map<uint32, Channel> channels = 3;
+  map<string, Mode> modes = 6;
+
+  uint32 num_channels = 4 [deprecated = true];
+  map<uint32, Channel> channels = 3 [deprecated = true];
 }
 
 message PhysicalFixture {
   string name = 1;
-  uint64 fixture_definition_id = 4;
+  string fixture_definition_id = 5;
+  string fixture_mode = 6;
   uint32 channel_offset = 3;
 
-  reserved 5 to 6;
   map<string, double> channel_offsets = 7;
 
-  uint32 deprecated_fixture_definition_id = 2 [ deprecated = true ];
+  uint32 deprecated_uint32_fixture_definition_id = 2 [ deprecated = true ];
+  uint64 deprecated_uint64_fixture_definition_id = 4 [deprecated = true];
 }
 
 message PhysicalFixtureGroup {

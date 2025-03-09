@@ -14,7 +14,6 @@ import { universeToUint8Array } from "../engine/utils";
 import { renderGroupDebugToUniverse } from "../engine/universe";
 import { SerialContext } from "../contexts/SerialContext";
 
-
 interface EditGroupDialogProps {
   groupId: bigint;
   group: PhysicalFixtureGroup;
