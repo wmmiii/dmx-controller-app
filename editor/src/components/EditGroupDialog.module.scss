@@ -1,26 +1,5 @@
 @import '../vars';
 
-.wrapper {
-  @include fill;
-}
-
-.splitPane {
-  @include fill;
-}
-
-.pane {
-  padding: spacing(2);
-
-  li {
-    color: $col-interactive;
-    cursor: pointer;
-
-    &:hover {
-      color: $col-interactive-hover;
-    }
-  }
-}
-
 .editor {
   display: flex;
   flex-direction: column;

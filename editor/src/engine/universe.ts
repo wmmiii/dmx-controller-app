@@ -11,7 +11,8 @@ import { interpolateUniverses } from "./utils";
 import { rampEffect } from "./rampEffect";
 import { strobeEffect } from "./strobeEffect";
 import { ColorPalette } from "@dmx-controller/proto/color_pb";
-import { interpolatePalettes } from "../util/colorUtil";
+import { hsvToColor, interpolatePalettes } from "../util/colorUtil";
+import { OutputId, OutputId_FixtureMapping } from "@dmx-controller/proto/output_id_pb";
 
 export const DEFAULT_COLOR_PALETTE = new ColorPalette({
   name: 'Unset palette',
@@ -260,6 +261,29 @@ export function renderSceneToUniverse(
     interpolateUniverses(universe, amount, before, after);
   }
 
+  return universe;
+}
+
+export function renderGroupDebugToUniverse(project: Project, groupId: bigint) {
+  const universe = new Array(512).fill(0);
+
+  const fixtures = project.groups[groupId.toString()].fixtures[project.activeUniverse.toString()].fixtures;
+  for (let index = 0; index < fixtures.length; index++) {
+    const fixtureMapping = new OutputId_FixtureMapping();
+    fixtureMapping.fixtures[project.activeUniverse.toString()] = fixtures[index];
+    const output = getWritableDevice(project, new OutputId({
+      output: {
+        case: 'fixtures',
+        value: fixtureMapping,
+      }
+    }));
+
+    const color = hsvToColor(index / fixtures.length, 1, 1);
+
+    output?.setAmount(universe, 'dimmer', 1);
+    output?.setColor(universe, color.red, color.green, color.blue);
+  }
+  
   return universe;
 }
 

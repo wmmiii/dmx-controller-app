@@ -126,9 +126,10 @@ function getPhysicalWritableDeviceFromGroup(
 export function deleteFixture(project: Project, fixtureId: bigint) {
   // Delete from groups.
   for (const group of Object.values(project.groups)) {
-    group.fixtures[project.activeUniverse.toString()].fixtures =
-      group.fixtures[project.activeUniverse.toString()]
-        .fixtures.filter(f => f !== fixtureId);
+    const fixtureList = group.fixtures[project.activeUniverse.toString()];
+    if (fixtureList) {
+      fixtureList.fixtures = fixtureList.fixtures.filter(f => f !== fixtureId);
+    }
   }
 
   const deleteFromLightTrack = (t: LightTrack) => {
