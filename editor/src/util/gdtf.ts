@@ -50,15 +50,15 @@ export async function extractGdtf(arrayBuffer: Blob) {
       for (const channelName of ANGLE_CHANNEL) {
         if (initialFunction.indexOf(channelName) >= 0) {
           const channelFunction = channelElement.querySelector('ChannelFunction');
-          const minDegrees = parseFloat(getAttributeNotEmpty(channelFunction, 'PhysicalFrom'));
-          const maxDegrees = parseFloat(getAttributeNotEmpty(channelFunction, 'PhysicalTo'));
+          const fromDegrees = parseFloat(getAttributeNotEmpty(channelFunction, 'PhysicalFrom'));
+          const toDegrees = parseFloat(getAttributeNotEmpty(channelFunction, 'PhysicalTo'));
           addChannels(
             mode,
             channelName,
             offset, {
             case: 'angleMapping', value: new FixtureDefinition_Channel_AngleMapping({
-              minDegrees: Math.round(minDegrees),
-              maxDegrees: Math.round(maxDegrees),
+              minDegrees: Math.round(Math.min(fromDegrees, toDegrees)),
+              maxDegrees: Math.round(Math.max(fromDegrees, toDegrees)),
             })
           });
           continue channel;
