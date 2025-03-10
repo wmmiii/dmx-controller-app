@@ -1,14 +1,17 @@
 {
   "private": true,
   "dependencies": {
+    "@zip.js/zip.js": "^2.7.57",
     "crunker": "2.4.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-pick-color": "^2.0.0",
+    "react-pick-color": "2.0.0",
     "react-router": "6.20.1",
     "react-router-dom": "6.20.1",
-    "realtime-bpm-analyzer": "^4.0.2",
-    "wavesurfer.js": "7.7.11"
+    "realtime-bpm-analyzer": "4.0.2",
+    "uuid-by-string": "4.0.0",
+    "wavesurfer.js": "7.7.11",
+    "zip.js": "link:@types/@zip.js/zip.js"
   },
   "devDependencies": {
     "@bufbuild/protobuf": "1.7.2",

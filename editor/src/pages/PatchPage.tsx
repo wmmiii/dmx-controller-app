@@ -18,6 +18,7 @@ import { downloadBlob, escapeForFilesystem } from '../util/fileUtils';
 import { getActiveUniverse } from '../util/projectUtils';
 import { randomUint64 } from '../util/numberUtils';
 import { EditGroupDialog } from '../components/EditGroupDialog';
+import { extractGdtf } from '../util/gdtf';
 
 export default function PatchPage(): JSX.Element {
   return (
@@ -377,6 +378,7 @@ function FixtureDefinitionList(): JSX.Element | null {
   const { project, save } = useContext(ProjectContext);
   const [selectedDefinitionId, setSelectedDefinitionId] =
     useState<string | null>(null);
+  const [highlightDrop, setHighlightDrop] = useState(false);
 
   const selectedDefinition = useMemo(
     () => {
@@ -388,12 +390,47 @@ function FixtureDefinitionList(): JSX.Element | null {
     },
     [project, selectedDefinitionId]);
 
+
+  const classes = [styles.pane];
+  if (highlightDrop) {
+    classes.push(styles.highlightDrop);
+  }
+
   return (
-    <div className={styles.pane}>
+    <div className={classes.join(' ')}
+      onDragOver={(e) => {
+        setHighlightDrop(true);
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+      onDragLeave={(e) => {
+        setHighlightDrop(false);
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        (async () => {
+          for (let i = 0; i < e.dataTransfer.items.length; ++i) {
+            const item = e.dataTransfer.items[i];
+            if (item.kind === 'file') {
+              const file = item.getAsFile() as File;
+              const fixtureDefinition = await extractGdtf(file);
+              project.fixtureDefinitions[fixtureDefinition.globalId] = fixtureDefinition;
+              save(`Add ${fixtureDefinition.name} fixture profile.`);
+            }
+          }
+        })();
+
+        setHighlightDrop(false);
+      }}>
       <h2>Fixture Profiles</h2>
       <ul>
         {
           Object.entries(project.fixtureDefinitions)
+            .sort((a, b) => a[1].name.localeCompare(b[1].name))
             .map(([id, definition]) => (
               <li key={id} onClick={() => setSelectedDefinitionId(id)}>
                 {definition.name}
@@ -415,6 +452,12 @@ function FixtureDefinitionList(): JSX.Element | null {
       }}>
         + Add New Fixture Profile
       </Button>
+      <p className={styles.hint}>
+        <strong>Hint:</strong> You can drag and drop .gdtf fixture profile files
+        downloaded from&nbsp;
+        <a href="https://gdtf-share.com/share.php" target="_blank">GDTF Share</a>
+        &nbsp;onto this pane to quickly import profiles.
+      </p>
       {
         selectedDefinition &&
         <EditDefinitionDialog definition={selectedDefinition}

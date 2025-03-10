@@ -9,7 +9,10 @@
 }
 
 .pane {
+  border: 1px solid transparent;
+  box-sizing: border-box;
   padding: spacing(2);
+  min-height: 100%;
 
   li {
     color: $col-interactive;
@@ -19,6 +22,10 @@
       color: $col-interactive-hover;
     }
   }
+}
+
+.highlight-drop {
+  border-color: $col-interactive;
 }
 
 .editor {
@@ -45,4 +52,9 @@
 
 .draggable {
   cursor: grab;
+}
+
+.hint {
+  color: $col-text-dim;
+  font-size: 10pt;
 }
