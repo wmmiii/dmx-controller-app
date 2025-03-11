@@ -20,6 +20,7 @@ export default function upgradeProject(project: Project): void {
   upgradeColorTypes(project);
   upgradeComponentMapping(project);
   upgradeFixtureDefinitions(project);
+  upgradeEffectTiming(project);
 }
 
 function upgradeIndices(project: Project): void {
@@ -459,4 +460,47 @@ function upgradeFixtureDefinitions(project: Project) {
   }
 
   project.deprecatedUint64FixtureDefinitions = {};
+}
+
+function upgradeEffectTiming(project: Project) {
+  const upgradeEffect = (effect: Effect) => {
+    if (effect.effect.case === 'rampEffect') {
+      const ramp = effect.effect.value
+      ramp.timingMode = effect.timingMode;
+      ramp.timingMultiplier = effect.timingMultiplier;
+      ramp.mirrored = effect.mirrored;
+    }
+  }
+
+  project.scenes
+    .flatMap(s => s.componentMap)
+    .flatMap(c => c.component!)
+    .flatMap(c => {
+      if (c.description.case === 'sequence') {
+        return c.description.value.lightTracks.flatMap(t => t.layers).flatMap(l => l.effects);
+      } else if (c.description.case === 'effectGroup') {
+        return c.description.value.channels.map(c => c.effect);
+      }
+      throw new Error('Tried to upgrade effects in unknown component effect description: ' + c.description.case);
+    })
+    .forEach((e) => {
+      if (e != null) {
+        upgradeEffect(e);
+      }
+    });
+
+  project.shows
+    .flatMap(s => s.lightTracks)
+    .flatMap(t => t.layers)
+    .flatMap(l => l.effects)
+    .forEach(upgradeEffect);
+
+  project.scenes.forEach(s => {
+    if (!s.colorPalettes || s.colorPalettes.length < 1) {
+      s.colorPalettes = [DEFAULT_COLOR_PALETTE.clone()];
+    }
+    if (!s.colorPaletteTransitionDurationMs) {
+      s.colorPaletteTransitionDurationMs = 2_000;
+    }
+  });
 }

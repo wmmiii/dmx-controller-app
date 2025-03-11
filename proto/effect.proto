@@ -76,9 +76,14 @@ message Effect {
       SINE = 4;
     }
 
-    EasingFunction easing = 1;
     FixtureState state_start = 2;
     FixtureState state_end = 3;
+
+    EasingFunction easing = 1;
+    EffectTiming timing_mode = 6;
+    double timing_multiplier = 7;
+    bool mirrored = 8;
+    double phase = 9;
 
     reserved 4 to 5; // Deprecated fixture_sequence_mapping
   }
@@ -95,13 +100,6 @@ message Effect {
   uint32 end_ms = 2;
   reserved 3 to 10;
 
-  // Timing details
-  EffectTiming timing_mode = 11;
-  reserved 12; // Deprecated offset_ms
-  double timing_multiplier = 13;
-  bool mirrored = 14;
-  reserved 15 to 17; // Deprecated
-  double offset_amount = 18;
   reserved 19 to 100;
 
   oneof effect {
@@ -109,4 +107,11 @@ message Effect {
     RampEffect ramp_effect = 102;
     StrobeEffect strobe_effect = 103;
   }
+  // Deprecated
+  EffectTiming timing_mode = 11 [deprecated = true];
+  reserved 12; // Deprecated offset_ms
+  double timing_multiplier = 13 [deprecated = true];
+  bool mirrored = 14 [deprecated = true];
+  reserved 15 to 17;
+  double offset_amount = 18 [deprecated = true];
 }

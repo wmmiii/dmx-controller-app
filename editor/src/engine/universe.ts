@@ -1,6 +1,6 @@
 import { BeatMetadata } from "@dmx-controller/proto/beat_pb";
 import { DmxUniverse, WritableDevice, getWritableDevice, mapDegrees } from "./fixture";
-import { Effect, EffectTiming } from "@dmx-controller/proto/effect_pb";
+import { Effect, Effect_RampEffect, EffectTiming } from "@dmx-controller/proto/effect_pb";
 import { LightLayer } from "@dmx-controller/proto/light_layer_pb";
 import { Project } from "@dmx-controller/proto/project_pb";
 import { SEQUENCE_BEAT_RESOLUTION } from "../components/UniverseSequenceEditor";
@@ -13,6 +13,7 @@ import { strobeEffect } from "./strobeEffect";
 import { ColorPalette } from "@dmx-controller/proto/color_pb";
 import { hsvToColor, interpolatePalettes } from "../util/colorUtil";
 import { OutputId, OutputId_FixtureMapping } from "@dmx-controller/proto/output_id_pb";
+import { getAllFixtures } from "./group";
 
 export const DEFAULT_COLOR_PALETTE = new ColorPalette({
   name: 'Unset palette',
@@ -41,6 +42,7 @@ export const DEFAULT_COLOR_PALETTE = new ColorPalette({
 
 export interface RenderContext {
   readonly t: number;
+  readonly outputId: OutputId;
   readonly output: WritableDevice;
   readonly project: Project;
   readonly colorPalette: ColorPalette;
@@ -71,7 +73,7 @@ export function renderShowToUniverse(t: number, frame: number, project: Project)
     if (beatMetadata == null) {
       throw new Error('Tried to render a frame for a show with an audio file without beat metadata!');
     }
-    const context: Omit<RenderContext, 'output'> = {
+    const context: Omit<Omit<RenderContext, 'output'>, 'outputId'> = {
       t: t,
       project: project,
       colorPalette: show.colorPalette || DEFAULT_COLOR_PALETTE,
@@ -84,7 +86,7 @@ export function renderShowToUniverse(t: number, frame: number, project: Project)
       }
       const output = getWritableDevice(project, track.outputId);
       if (output) {
-        const trackContext = Object.assign({}, context, { output });
+        const trackContext = Object.assign({}, context, { outputId: track.outputId, output });
         renderLayersToUniverse(t, track.layers, trackContext, beatMetadata, frame);
       }
     }
@@ -203,6 +205,7 @@ export function renderSceneToUniverse(
           if (output != null) {
             applyEffect({
               t: effectT,
+              outputId: channel.outputId,
               output: output,
               project: project,
               colorPalette: colorPalette,
@@ -283,7 +286,7 @@ export function renderGroupDebugToUniverse(project: Project, groupId: bigint) {
     output?.setAmount(universe, 'dimmer', 1);
     output?.setColor(universe, color.red, color.green, color.blue);
   }
-  
+
   return universe;
 }
 
@@ -296,7 +299,7 @@ function renderUniverseSequence(
   universe: DmxUniverse,
 ) {
   if (universeSequence) {
-    const context: Omit<RenderContext, 'output'> = {
+    const context: Omit<Omit<RenderContext, 'output'>, 'outputId'> = {
       t: t,
       project: project,
       colorPalette: colorPalette,
@@ -309,7 +312,7 @@ function renderUniverseSequence(
       }
       const output = getWritableDevice(project, track.outputId);
       if (output != null) {
-        const trackContext = Object.assign({}, context, { output });
+        const trackContext = Object.assign({}, context, { outputId: track.outputId, output });
         renderLayersToUniverse(
           t,
           track.layers,
@@ -367,64 +370,76 @@ function applyDefaults(project: Project, universe: DmxUniverse): void {
 }
 
 function applyEffect(context: RenderContext, beat: BeatMetadata, frame: number, effect: Effect): void {
-  let offsetMs: number;
-  switch (effect.timingMode) {
-    case EffectTiming.BEAT:
-      offsetMs = effect.offsetAmount * beat.lengthMs;
-      break;
-    case EffectTiming.ONE_SHOT:
-      offsetMs = effect.offsetAmount * (effect.endMs - effect.startMs);
-      break;
-    default:
-      offsetMs = 0;
-  }
-
-  // Calculate beat
-  const virtualBeat = (context.t + offsetMs - Number(beat.offsetMs)) *
-    (effect.timingMultiplier || 1) * (effect.mirrored ? 2 : 1);
-  const beatIndex = Math.floor(virtualBeat / beat.lengthMs);
-  const beatT = ((virtualBeat % beat.lengthMs) / beat.lengthMs) % 1;
-
-  // Calculate timing
-  /** The [0, 1] value of how far in the effect we are. */
-  let effectT: number;
-  switch (effect.timingMode) {
-    case EffectTiming.ONE_SHOT:
-      const relativeT =
-        (context.t + offsetMs - effect.startMs) /
-        (effect.endMs - effect.startMs) *
-        (effect.timingMultiplier || 1) * (effect.mirrored ? 2 : 1);
-      effectT = relativeT % 1;
-      if (effect.mirrored && Math.floor(relativeT) % 2) {
-        effectT = 1 - effectT;
-      }
-      break;
-    case EffectTiming.BEAT:
-      if (beat) {
-        effectT = beatT;
-        if (effect.mirrored && beatIndex % 2) {
-          effectT = 1 - effectT;
-        }
-      } else {
-        effectT = 0;
-      }
-      break;
-    default:
-      throw Error('Unknown effect timing!');
-  }
-
   if (effect.effect.case === 'staticEffect') {
     if (effect.effect.value.state == null) {
       throw new Error('Tried to render static effect without state!');
     }
     applyState(effect.effect.value.state, context);
-
-  } else if (effect.effect.case === 'rampEffect') {
-    rampEffect(
-      context,
-      effect.effect.value,
-      effectT);
   } else if (effect.effect.case === 'strobeEffect') {
     strobeEffect(context, effect.effect.value, frame);
+  } else if (effect.effect.case === 'rampEffect') {
+    const ramp = effect.effect.value;
+
+    if (ramp.phase != 0 && context.outputId.output.case === 'group') {
+      const fixtures = getAllFixtures(context.project, context.outputId.output.value);
+      const amount = ramp.phase / fixtures.length;
+      for (let i = 0; i < fixtures.length; ++i) {
+        const fixtureMapping: { [key: string]: bigint } = {};
+        fixtureMapping[context.project.activeUniverse.toString()] = fixtures[i];
+        const outputId = new OutputId({
+          output: {
+            case: 'fixtures',
+            value: {
+              fixtures: fixtureMapping,
+            }
+          }
+        });
+
+        const output = getWritableDevice(context.project, outputId);
+        const effectT = calculateEffectT(context, beat, effect, ramp, amount * i);
+        rampEffect(Object.assign({}, context, { output, outputId }), ramp, effectT);
+      }
+    } else {
+      const effectT = calculateEffectT(context, beat, effect, ramp, 0);
+      rampEffect(context, ramp, effectT);
+    }
+  }
+}
+
+function calculateEffectT(context: RenderContext, beat: BeatMetadata, effect: Effect, ramp: Effect_RampEffect, phaseOffset: number) {
+  // Calculate beat
+  const virtualBeat = (context.t - Number(beat.offsetMs)) *
+    (ramp.timingMultiplier || 1) * (ramp.mirrored ? 2 : 1) +
+    phaseOffset * Number(beat.lengthMs);
+  const beatIndex = Math.floor(virtualBeat / beat.lengthMs);
+  const beatT = ((virtualBeat % beat.lengthMs) / beat.lengthMs) % 1;
+
+  // Calculate timing
+  /** The [0, 1] value of how far in the effect we are. */
+  switch (ramp.timingMode) {
+    case EffectTiming.ONE_SHOT:
+      const relativeT =
+        (context.t - effect.startMs) /
+        (effect.endMs - effect.startMs) *
+        (ramp.timingMultiplier || 1) * (ramp.mirrored ? 2 : 1) +
+        phaseOffset;
+      let effectT = (relativeT) % 1;
+      if (ramp.mirrored && Math.floor(relativeT) % 2) {
+        return 1 - effectT;
+      } else {
+        return effectT;
+      }
+    case EffectTiming.BEAT:
+      if (beat) {
+        if (ramp.mirrored && beatIndex % 2) {
+          return 1 - beatT;
+        } else {
+          return beatT;
+        }
+      } else {
+        return 0;
+      }
+    default:
+      throw Error('Unknown effect timing!');
   }
 }

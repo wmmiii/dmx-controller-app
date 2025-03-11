@@ -228,12 +228,14 @@ interface EffectDetailsBaseProps<T> {
   className?: string;
   effect: T;
   showTiming?: false;
+  showPhase: boolean;
 }
 
 export function EffectDetails({
   className,
   effect,
   showTiming,
+  showPhase,
 }: EffectDetailsBaseProps<EffectProto>): JSX.Element {
   const { save } = useContext(ProjectContext);
 
@@ -244,17 +246,17 @@ export function EffectDetails({
   switch (effect.effect.case) {
     case 'staticEffect':
       details = (
-        <StaticEffectDetails effect={effect.effect.value} />
+        <StaticEffectDetails effect={effect.effect.value} showPhase={false} />
       );
       break;
     case 'rampEffect':
       details = (
-        <RampEffectDetails effect={effect.effect.value} />
+        <RampEffectDetails effect={effect.effect.value} showTiming={showTiming} showPhase={showPhase} />
       );
       break;
     case 'strobeEffect':
       details = (
-        <StrobeEffectDetails effect={effect.effect.value} />
+        <StrobeEffectDetails effect={effect.effect.value} showPhase={false} />
       );
       break;
     default:
@@ -384,68 +386,7 @@ export function EffectDetails({
           <IconBxsBolt />
         </IconButton>
       </div>
-
-      {
-        effect.effect.case === 'rampEffect' &&
-        <>
-          {showTiming === undefined &&
-            <label>
-              <span>Timing mode</span>
-              <select
-                value={effect.timingMode}
-                onChange={(e) => {
-                  effect.timingMode = parseInt(e.target.value);
-                  save(`Change effect timing to ${effect.timingMode === EffectTiming.ONE_SHOT ? 'one shot' : 'beat'}.`);
-                }}>
-                <option value={EffectTiming.ONE_SHOT}>One Shot</option>
-                <option value={EffectTiming.BEAT}>Beat</option>
-              </select>
-            </label>
-          }
-
-          <label>
-            <span>Timing multiplier</span>
-            <NumberInput
-              type="float"
-              max={128}
-              min={0}
-              value={effect.timingMultiplier || 1}
-              onChange={(v) => {
-                effect.timingMultiplier = v;
-                save(`Change effect timing multiplier to ${v}.`);
-              }} />
-          </label>
-
-          <hr />
-
-          <label>
-            <span>Offset %</span>
-            <NumberInput
-              type="float"
-              max={100}
-              min={0}
-              value={(effect.offsetAmount || 0) * 100}
-              onChange={(v) => {
-                effect.offsetAmount = v / 100;
-                save('Change effect offset.');
-              }} />
-          </label>
-
-          <hr />
-
-          <label>
-            <span>Mirrored</span>
-            <Button
-              variant={effect.mirrored ? 'primary' : 'default'}
-              onClick={() => {
-                effect.mirrored = !effect.mirrored;
-                save(`Changed effect mirrored status to ${effect.mirrored}.`);
-              }}>
-              Mirrored
-            </Button>
-          </label>
-        </>
-      }
+      <hr />
       {details}
     </div>
   )
@@ -554,7 +495,7 @@ function StaticEffectDetails({ effect }: EffectDetailsBaseProps<Effect_StaticEff
   );
 }
 
-function RampEffectDetails({ effect }: EffectDetailsBaseProps<Effect_RampEffect>): JSX.Element {
+function RampEffectDetails({ effect, showTiming, showPhase }: EffectDetailsBaseProps<Effect_RampEffect>): JSX.Element {
   const { save } = useContext(ProjectContext);
   if (effect.stateStart == null || effect.stateEnd == null) {
     throw new Error('Ramp effect does not have a state!');
@@ -585,6 +526,63 @@ function RampEffectDetails({ effect }: EffectDetailsBaseProps<Effect_RampEffect>
           </option>
         </select>
       </label>
+      {
+        showTiming === undefined &&
+        <label>
+          <span>Timing mode</span>
+          <select
+            value={effect.timingMode}
+            onChange={(e) => {
+              effect.timingMode = parseInt(e.target.value);
+              save(`Change effect timing to ${effect.timingMode === EffectTiming.ONE_SHOT ? 'one shot' : 'beat'}.`);
+            }}>
+            <option value={EffectTiming.ONE_SHOT}>One Shot</option>
+            <option value={EffectTiming.BEAT}>Beat</option>
+          </select>
+        </label>
+      }
+
+      <label>
+        <span>Timing multiplier</span>
+        <NumberInput
+          type="float"
+          max={128}
+          min={0}
+          value={effect.timingMultiplier || 1}
+          onChange={(v) => {
+            effect.timingMultiplier = v;
+            save(`Change effect timing multiplier to ${v}.`);
+          }} />
+      </label>
+
+      <label>
+        <span>Mirrored</span>
+        <Button
+          variant={effect.mirrored ? 'primary' : 'default'}
+          onClick={() => {
+            effect.mirrored = !effect.mirrored;
+            save(`Changed effect mirrored status to ${effect.mirrored}.`);
+          }}>
+          Mirrored
+        </Button>
+      </label>
+
+      {
+        showPhase &&
+        <label>
+          <span>Phase</span>
+          <NumberInput
+            type="float"
+            max={256}
+            min={-256}
+            value={effect.phase || 0}
+            onChange={(v) => {
+              effect.phase = v;
+              save(`Change effect phase to ${v}.`);
+            }} />
+        </label>
+      }
+
       <hr />
       <h2>Start</h2>
       <EffectState

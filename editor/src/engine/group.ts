@@ -1,5 +1,7 @@
 import { OutputId, OutputId_FixtureMapping } from "@dmx-controller/proto/output_id_pb";
 import { Project } from "@dmx-controller/proto/project_pb";
+import { GROUP_ALL_ID } from "./fixture";
+import { getActiveUniverse } from "../util/projectUtils";
 
 interface GroupMember {
   id: OutputId;
@@ -55,6 +57,9 @@ export function getApplicableMembers(project: Project, groupId: bigint): GroupMe
 }
 
 export function getAllFixtures(project: Project, groupId: bigint): bigint[] {
+  if (groupId === GROUP_ALL_ID) {
+    return Object.keys(getActiveUniverse(project).fixtures).map(id => BigInt(id));
+  }
   const group = project.groups[groupId.toString()];
   if (!group) {
     return [];

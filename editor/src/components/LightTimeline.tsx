@@ -35,6 +35,13 @@ export default function LightTimeline(props: TracksProps): JSX.Element {
     return props.lightTracks[s.track]?.layers[s.layer]?.effects[s.effect] || null;
   }, [props.lightTracks, selectedAddress]);
 
+  const outputType = useMemo(() => {
+    if (selectedAddress == null) {
+      return null;
+    }
+    return props.lightTracks[selectedAddress.track].outputId?.output.case;
+  }, [props.lightTracks, selectedAddress]);
+
   const deleteSelected = useCallback(() => {
     if (selectedAddress == null) {
       return;
@@ -79,7 +86,9 @@ export default function LightTimeline(props: TracksProps): JSX.Element {
           selectedEffect ?
             <EffectDetails
               className={styles.effectDetails}
-              effect={selectedEffect} /> :
+              effect={selectedEffect}
+              showPhase={outputType === 'group'} 
+              /> :
             <div className={styles.effectDetails}>
               Select an effect to view details.
             </div>

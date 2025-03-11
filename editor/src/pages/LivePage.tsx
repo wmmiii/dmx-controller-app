@@ -339,7 +339,7 @@ function EffectGroupEditor({ effect, name }: EffectGroupEditorProps) {
                     save(`Set effect output to ${getOutputName(project, o)}.`);
                   }} />
               </label>
-              <EffectDetails effect={c.effect} showTiming={false} />
+              <EffectDetails effect={c.effect} showTiming={false} showPhase={c.outputId?.output.case === 'group'} />
             </div>
           )
         })
