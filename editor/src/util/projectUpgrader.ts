@@ -419,7 +419,7 @@ function upgradeComponentMapping(project: Project) {
 }
 
 function upgradeFixtureDefinitions(project: Project) {
-  const idMapping = new Map<bigint, {id: string, mode: string}>();
+  const idMapping = new Map<bigint, { id: string, mode: string }>();
 
   if (Object.keys(project.deprecatedUint64FixtureDefinitions).length === 0) {
     return;
@@ -442,7 +442,7 @@ function upgradeFixtureDefinitions(project: Project) {
       numChannels: oldDefinition.numChannels,
       channels: oldDefinition.channels,
     });
-    idMapping.set(BigInt(oldId), {id: newId, mode: mode});
+    idMapping.set(BigInt(oldId), { id: newId, mode: mode });
   }
 
   // Fix mappings
@@ -465,10 +465,12 @@ function upgradeFixtureDefinitions(project: Project) {
 function upgradeEffectTiming(project: Project) {
   const upgradeEffect = (effect: Effect) => {
     if (effect.effect.case === 'rampEffect') {
-      const ramp = effect.effect.value
-      ramp.timingMode = effect.timingMode;
-      ramp.timingMultiplier = effect.timingMultiplier;
-      ramp.mirrored = effect.mirrored;
+      const ramp = effect.effect.value;
+      if (ramp.timingMode == 0 && ramp.timingMultiplier == 0 && !ramp.mirrored) {
+        ramp.timingMode = effect.timingMode;
+        ramp.timingMultiplier = effect.timingMultiplier;
+        ramp.mirrored = effect.mirrored;
+      }
     }
   }
 

@@ -156,7 +156,7 @@ function Component({ component, dragging, onDragComponent, onDropComponent, onSe
   const { t } = useContext(TimeContext);
 
   const details = useMemo(() => componentTileDetails(component), [component.toJson()]);
-  
+
   const background = useMemo(() => {
     if (details.colors.length === 0) {
       return null;
@@ -167,7 +167,7 @@ function Component({ component, dragging, onDragComponent, onDropComponent, onSe
     let gradient = "linear-gradient(135deg, ";
     for (let i = 0; i < details.colors.length; i++) {
       const color = complexColorToHex(details.colors[i], palette);
-    
+
       gradient += i === 0 ? "" : ", ";
       if (color != null) {
         gradient += color;
@@ -210,9 +210,14 @@ function Component({ component, dragging, onDragComponent, onDropComponent, onSe
         onDropComponent();
         e.stopPropagation();
       }}>
-      <div className={styles.settingsTriangle} onClick={onSelect}>
+      <div
+        className={styles.settingsTriangle}
+        onClick={(e) => {
+          onSelect();
+          e.stopPropagation();
+        }}>
       </div>
-      <div className={styles.title} style={{background: background as any}}>
+      <div className={styles.title} style={{ background: background as any }}>
         {component.name}
       </div>
       {
@@ -289,16 +294,16 @@ function complexColorToHex(complexColor: FixtureState['lightColor'], palette: Co
     } else if (complexColor.value === PaletteColor.PALETTE_TERTIARY) {
       color = palette.tertiary?.color || null;
     } else if (complexColor.value === PaletteColor.PALETTE_WHITE) {
-      color = new Color({red: 0, green: 0, blue: 0, white: 1});
+      color = new Color({ red: 0, green: 0, blue: 0, white: 1 });
     } else if (complexColor.value === PaletteColor.PALETTE_BLACK) {
-      color = new Color({red: 0, green: 0, blue: 0, white: 0});
+      color = new Color({ red: 0, green: 0, blue: 0, white: 0 });
     }
   }
 
   if (color == null) {
     return null;
   }
-    
+
   return rgbwToHex(color.red, color.green, color.blue, color.white || 0);
 }
 
