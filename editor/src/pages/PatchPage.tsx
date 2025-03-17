@@ -19,6 +19,7 @@ import { getActiveUniverse } from '../util/projectUtils';
 import { randomUint64 } from '../util/numberUtils';
 import { EditGroupDialog } from '../components/EditGroupDialog';
 import { extractGdtf } from '../util/gdtf';
+import { Warning } from '../components/Warning';
 
 export default function PatchPage(): JSX.Element {
   return (
@@ -170,12 +171,20 @@ function FixtureList(): JSX.Element | null {
                 <li key={id} onClick={() => {
                   setSelectedFixtureId(BigInt(id));
                 }}>
-                  {mode == null && '⚠️ '}
                   (
                   {fixture.channelOffset + 1}
                   &nbsp;—&nbsp;
                   {numChannels}
-                  ) {fixture.name}
+                  )
+                  &nbsp;
+                  {fixture.name}
+                  {
+                    mode == null &&
+                    <>
+                      &nbsp;
+                      <Warning title='Fixture does not have profile set!' />
+                    </>
+                  }
                 </li>
               );
             })
@@ -338,7 +347,10 @@ function EditFixtureDialog({
               ))
           }
         </select>
-        {(fixture.fixtureDefinitionId == '' || fixture.fixtureMode == '') && ' ⚠️'}
+        {
+          (fixture.fixtureDefinitionId == '' || fixture.fixtureMode == '') &&
+          <Warning title='Fixture does not have profile set!' />
+        }
       </label>
       <label>
         <span>Channel</span>
@@ -644,7 +656,7 @@ function EditDefinitionDialog({
                           });
                         }
 
-                        const channel = definition.channels[index];
+                        const channel = mode.channels[index];
 
                         if (isAngleChannel(newType) && channel.mapping.case !== 'angleMapping') {
                           channel.mapping = {

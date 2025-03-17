@@ -758,7 +758,7 @@
         "bzlTransitiveDigest": "goOLvHeH++sft9p6Q55Vu1aErXTC1p5j27bfZ0he1mU=",
         "usagesDigest": "bJqg+9by4wZOpx8S9JJC1D7T478qXrWRgToobYGVq0k=",
         "recordedFileInputs": {
-          "@@//pnpm-lock.yaml": "91884093fb809a69859f8f904b1b03e62beac48016d916e3233b375d5b5e4b29"
+          "@@//pnpm-lock.yaml": "2088fe225f5dfcce391f9ca1f7dab07ec3b5f945d216aa426f1c344d7dc2e811"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -6484,6 +6484,74 @@
                 ],
                 "scheduler": [
                   "0.23.0"
+                ],
+                "js-tokens": [
+                  "4.0.0"
+                ]
+              },
+              "lifecycle_build_target": false,
+              "lifecycle_hooks_env": [],
+              "lifecycle_hooks_execution_requirements": [],
+              "bins": {},
+              "npm_translate_lock_repo": "npm",
+              "package_visibility": [
+                "//visibility:public"
+              ]
+            }
+          },
+          "npm__react-icons__5.5.0__react_18.2.0": {
+            "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
+            "ruleClassName": "npm_import_rule",
+            "attributes": {
+              "package": "react-icons",
+              "version": "5.5.0_react@18.2.0",
+              "root_package": "",
+              "link_workspace": "",
+              "link_packages": {
+                "": [
+                  "react-icons"
+                ]
+              },
+              "integrity": "sha512-MEFcXdkP3dLo8uumGI5xN3lDFNsRtrjbOEKDLD7yv76v4wpnEq2Lt2qeHaQOr34I/wPN3s3+N08WkQ+CW37Xiw==",
+              "url": "https://registry.npmjs.org/react-icons/-/react-icons-5.5.0.tgz",
+              "commit": "",
+              "patch_args": [],
+              "patches": [],
+              "custom_postinstall": "",
+              "npm_auth": "",
+              "npm_auth_basic": "",
+              "npm_auth_username": "",
+              "npm_auth_password": "",
+              "lifecycle_hooks": [],
+              "extra_build_content": "",
+              "generate_bzl_library_targets": false
+            }
+          },
+          "npm__react-icons__5.5.0__react_18.2.0__links": {
+            "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
+            "ruleClassName": "npm_import_links",
+            "attributes": {
+              "package": "react-icons",
+              "version": "5.5.0_react@18.2.0",
+              "dev": false,
+              "root_package": "",
+              "link_packages": {
+                "": [
+                  "react-icons"
+                ]
+              },
+              "deps": {
+                "react": "18.2.0"
+              },
+              "transitive_closure": {
+                "react-icons": [
+                  "5.5.0_react@18.2.0"
+                ],
+                "react": [
+                  "18.2.0"
+                ],
+                "loose-envify": [
+                  "1.4.0"
                 ],
                 "js-tokens": [
                   "4.0.0"

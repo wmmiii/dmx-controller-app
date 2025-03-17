@@ -39,6 +39,7 @@ ts_project(
         "//:node_modules/crunker",
         "//:node_modules/react",
         "//:node_modules/react-dom",
+        "//:node_modules/react-icons",
         "//:node_modules/react-pick-color",
         "//:node_modules/react-router-dom",
         "//:node_modules/realtime-bpm-analyzer",

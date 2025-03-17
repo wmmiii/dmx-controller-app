@@ -6,6 +6,7 @@ import { downloadBlob, escapeForFilesystem } from '../util/fileUtils';
 import { getBlob, storeBlob } from '../util/storageUtil';
 import { Universe } from '@dmx-controller/proto/universe_pb';
 import { randomUint64 } from '../util/numberUtils';
+import { DEFAULT_COLOR_PALETTE } from '../engine/universe';
 
 const PROJECT_KEY = "tmp-project-1";
 const ASSETS_KEY = "tmp-assets-1";
@@ -29,6 +30,7 @@ const DEFAULT_PROJECT = new Project({
   scenes: [{
     name: 'Default scene',
     componentMap: [],
+    colorPalettes: [DEFAULT_COLOR_PALETTE],
   }],
   liveBeat: {
     lengthMs: Math.floor(60_000 / 120),

@@ -15,12 +15,13 @@ specifiers:
   esbuild-scss-modules-plugin: 1.1.1
   react: 18.2.0
   react-dom: 18.2.0
+  react-icons: 5.5.0
   react-pick-color: 2.0.0
   react-router: 6.20.1
   react-router-dom: 6.20.1
   realtime-bpm-analyzer: 4.0.2
   typescript: 5.3.3
-  uuid-by-string: ^4.0.0
+  uuid-by-string: 4.0.0
   wavesurfer.js: 7.7.11
   zip.js: link:@types/@zip.js/zip.js
 
@@ -29,6 +30,7 @@ dependencies:
   crunker: 2.4.0
   react: 18.2.0
   react-dom: 18.2.0_react@18.2.0
+  react-icons: 5.5.0_react@18.2.0
   react-pick-color: 2.0.0_biqbaboplfbrettd7655fr4n2y
   react-router: 6.20.1_react@18.2.0
   react-router-dom: 6.20.1_biqbaboplfbrettd7655fr4n2y
@@ -811,6 +813,14 @@ packages:
       loose-envify: 1.4.0
       react: 18.2.0
       scheduler: 0.23.0
+    dev: false
+
+  /react-icons/5.5.0_react@18.2.0:
+    resolution: {integrity: sha512-MEFcXdkP3dLo8uumGI5xN3lDFNsRtrjbOEKDLD7yv76v4wpnEq2Lt2qeHaQOr34I/wPN3s3+N08WkQ+CW37Xiw==}
+    peerDependencies:
+      react: '*'
+    dependencies:
+      react: 18.2.0
     dev: false
 
   /react-pick-color/2.0.0_biqbaboplfbrettd7655fr4n2y:

@@ -81,8 +81,8 @@ function LivePageImpl(): JSX.Element {
               sceneId={0}
               onSelect={setSelected}
               setAddComponentIndex={setAddComponentIndex}
-              maxX={scene.componentMap.map(c => c.x).reduce((a, b) => a > b ? a : b) + 2}
-              maxY={scene.componentMap.map(c => c.y).reduce((a, b) => a > b ? a : b) + 2} />
+              maxX={scene.componentMap.map(c => c.x).reduce((a, b) => a > b ? a : b, 0) + 2}
+              maxY={scene.componentMap.map(c => c.y).reduce((a, b) => a > b ? a : b, 0) + 2} />
           </div>
           <div className={styles.palettes}>
             {
