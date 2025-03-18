@@ -96,6 +96,27 @@ message Effect {
     FixtureState state_b = 3;
   }
 
+  message RandomEffect {
+    uint32 seed = 1;
+    uint32 effect_a_min = 2;
+    uint32 effect_a_variation = 3;
+    uint32 effect_b_min = 4;
+    uint32 effect_b_variation = 5;
+    bool treat_fixtures_individually = 6;
+
+    oneof effect_a {
+      StaticEffect a_static = 11;
+      RampEffect a_ramp = 12;
+      StrobeEffect a_strobe = 13;
+    }
+
+    oneof effect_b {
+      StaticEffect b_static = 21;
+      RampEffect b_ramp = 22;
+      StrobeEffect b_strobe = 23;
+    }
+  }
+
   uint32 start_ms = 1;
   uint32 end_ms = 2;
   reserved 3 to 10;
@@ -106,6 +127,7 @@ message Effect {
     StaticEffect static_effect = 101;
     RampEffect ramp_effect = 102;
     StrobeEffect strobe_effect = 103;
+    RandomEffect random_effect = 104;
   }
   // Deprecated
   EffectTiming timing_mode = 11 [deprecated = true];

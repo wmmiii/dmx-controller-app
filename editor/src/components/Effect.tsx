@@ -6,20 +6,21 @@ import IconPanTilt from '../icons/IconPanTilt';
 import IconRgb from '../icons/IconRgb';
 import styles from './Effect.module.scss';
 import { Button, IconButton } from './Button';
-import { CSSProperties } from "react";
+import { CSSProperties } from 'react';
 import { DEFAULT_EFFECT_COLOR, DEFAULT_EFFECT_COLOR_ALT } from '../util/styleUtils';
-import { Effect as EffectProto, EffectTiming, Effect_RampEffect, Effect_RampEffect_EasingFunction, Effect_StaticEffect, FixtureState, FixtureState as FixtureStateProto, Effect_StrobeEffect } from "@dmx-controller/proto/effect_pb";
+import { Effect as EffectProto, EffectTiming, Effect_RampEffect, Effect_RampEffect_EasingFunction, Effect_StaticEffect, FixtureState, FixtureState as FixtureStateProto, Effect_StrobeEffect, Effect_RandomEffect } from '@dmx-controller/proto/effect_pb';
 import { EffectState } from './EffectState';
-import { NumberInput } from './Input';
+import { NumberInput, ToggleInput } from './Input';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { RenderingContext } from '../contexts/RenderingContext';
 import { ShortcutContext } from '../contexts/ShortcutContext';
-import IconBxCheckbox from '../icons/IconBxCheckbox';
 import IconBxLineChart from '../icons/IconBxLineChart';
 import IconBxMove from '../icons/IconBxMove';
 import IconBxPalette from '../icons/IconBxPalette';
 import { Color, ColorPalette, PaletteColor } from '@dmx-controller/proto/color_pb';
 import { PaletteContext } from '../contexts/PaletteContext';
+import { BiDice6, BiPause } from 'react-icons/bi';
+import { getStates } from '../util/effectUtils';
 
 export interface EffectAddress {
   track: number;
@@ -259,6 +260,11 @@ export function EffectDetails({
         <StrobeEffectDetails effect={effect.effect.value} showPhase={false} />
       );
       break;
+    case 'randomEffect':
+      details = (
+        <RandomEffectDetails effect={effect.effect.value} showPhase={false} />
+      );
+      break;
     default:
       details = (
         <p>Unrecognized effect type: {JSON.stringify(effect.effect)}</p>
@@ -273,69 +279,36 @@ export function EffectDetails({
           title="Static Effect"
           variant={effect.effect.case === 'staticEffect' ? 'primary' : 'default'}
           onClick={() => {
-            if (effect.effect.case === 'rampEffect') {
-              effect.effect = {
-                case: 'staticEffect',
-                value: new Effect_StaticEffect({
-                  state: effect.effect.value.stateStart,
-                }),
-              };
-              save('Change effect type to static.');
-            } else if (effect.effect.case === 'strobeEffect') {
-              effect.effect = {
-                case: 'staticEffect',
-                value: new Effect_StaticEffect({
-                  state: effect.effect.value.stateA,
-                }),
-              };
-              save('Change effect type to static.');
+            if (effect.effect.case === 'staticEffect') {
+              return;
             }
+
+            effect.effect = {
+              case: 'staticEffect',
+              value: new Effect_StaticEffect({
+                state: getStates(effect.effect.value).a,
+              }),
+            };
+            save('Change effect type to static.');
           }}>
-          <IconBxCheckbox />
+          <BiPause />
         </IconButton>
         <IconButton
           title="Ramp Effect"
           variant={effect.effect.case === 'rampEffect' ? 'primary' : 'default'}
           onClick={() => {
-            if (effect.effect.case === 'staticEffect') {
-              if (effect.effect.value.state) {
-                effect.effect = {
-                  case: 'rampEffect',
-                  value: new Effect_RampEffect({
-                    stateStart: effect.effect.value.state.clone(),
-                    stateEnd: effect.effect.value.state.clone(),
-                  }),
-                };
-              } else {
-                effect.effect = {
-                  case: 'rampEffect',
-                  value: new Effect_RampEffect({
-                    stateStart: new FixtureState(),
-                    stateEnd: new FixtureState(),
-                  }),
-                }
-              }
-              save('Change effect type to ramp.');
-            } else if (effect.effect.case === 'strobeEffect') {
-              if (effect.effect.value.stateA != null && effect.effect.value.stateB != null) {
-                effect.effect = {
-                  case: 'rampEffect',
-                  value: new Effect_RampEffect({
-                    stateStart: effect.effect.value.stateA.clone(),
-                    stateEnd: effect.effect.value.stateB.clone(),
-                  }),
-                };
-              } else {
-                effect.effect = {
-                  case: 'rampEffect',
-                  value: new Effect_RampEffect({
-                    stateStart: new FixtureState(),
-                    stateEnd: new FixtureState(),
-                  }),
-                };
-              }
-              save('Change effect type to ramp.');
+            if (effect.effect.case === 'rampEffect') {
+              return;
             }
+
+            effect.effect = {
+              case: 'rampEffect',
+              value: new Effect_RampEffect({
+                stateStart: getStates(effect.effect.value).a,
+                stateEnd: getStates(effect.effect.value).b,
+              }),
+            };
+            save('Change effect type to ramp.');
           }}>
           <IconBxLineChart />
         </IconButton>
@@ -343,52 +316,60 @@ export function EffectDetails({
           title="Strobe Effect"
           variant={effect.effect.case === 'strobeEffect' ? 'primary' : 'default'}
           onClick={() => {
-            if (effect.effect.case === 'staticEffect') {
-              if (effect.effect.value.state) {
-                effect.effect = {
-                  case: 'strobeEffect',
-                  value: new Effect_StrobeEffect({
-                    stateA: effect.effect.value.state.clone(),
-                    stateB: effect.effect.value.state.clone(),
-                  }),
-                };
-              } else {
-                effect.effect = {
-                  case: 'strobeEffect',
-                  value: new Effect_StrobeEffect({
-                    stateA: new FixtureState(),
-                    stateB: new FixtureState(),
-                  }),
-                };
-              }
-              save('Change effect type to strobe.');
-            } else if (effect.effect.case === 'rampEffect') {
-              if (effect.effect.value.stateStart != null && effect.effect.value.stateEnd != null) {
-                effect.effect = {
-                  case: 'strobeEffect',
-                  value: new Effect_StrobeEffect({
-                    stateA: effect.effect.value.stateStart.clone(),
-                    stateB: effect.effect.value.stateEnd.clone(),
-                  }),
-                };
-              } else {
-                effect.effect = {
-                  case: 'strobeEffect',
-                  value: new Effect_StrobeEffect({
-                    stateA: new FixtureState(),
-                    stateB: new FixtureState(),
-                  }),
-                };
-              }
-              save('Change effect type to strobe.');
+            if (effect.effect.case === 'strobeEffect') {
+              return;
             }
+
+            effect.effect = {
+              case: 'strobeEffect',
+              value: new Effect_StrobeEffect({
+                stateA: getStates(effect.effect.value).a,
+                stateB: getStates(effect.effect.value).b,
+              }),
+            };
+            save('Change effect type to strobe.');
           }}>
           <IconBxsBolt />
+        </IconButton>
+        <IconButton
+          title="Random Effect"
+          variant={effect.effect.case === 'randomEffect' ? 'primary' : 'default'}
+          onClick={() => {
+            if (effect.effect.case === 'randomEffect') {
+              return;
+            }
+
+            effect.effect = {
+              case: 'randomEffect',
+              value: new Effect_RandomEffect({
+                seed: 0,
+                effectAMin: 0,
+                effectAVariation: 1000,
+                effectBMin: 0,
+                effectBVariation: 1000,
+
+                effectA: {
+                  case: 'aStatic',
+                  value: new Effect_StaticEffect({
+                    state: getStates(effect.effect.value).a,
+                  }),
+                },
+                effectB: {
+                  case: 'bStatic',
+                  value: new Effect_StaticEffect({
+                    state: getStates(effect.effect.value).b,
+                  }),
+                },
+              })
+            }
+            save('Change effect type to random.');
+          }}>
+          <BiDice6 />
         </IconButton>
       </div>
       <hr />
       {details}
-    </div>
+    </div >
   )
 }
 
@@ -484,7 +465,6 @@ function StaticEffectDetails({ effect }: EffectDetailsBaseProps<Effect_StaticEff
 
   return (
     <>
-      <hr />
       <EffectState
         state={effect.state}
         onChange={(s) => {
@@ -656,4 +636,119 @@ function StrobeEffectDetails({ effect }: EffectDetailsBaseProps<Effect_StrobeEff
         }} />
     </>
   );
+}
+
+function RandomEffectDetails({ effect }: EffectDetailsBaseProps<Effect_RandomEffect>): JSX.Element {
+  const { save } = useContext(ProjectContext);
+
+  return (
+    <>
+      <label>
+        <span>Effect A min (Seconds)</span>
+        <NumberInput
+          title="speed"
+          type="float"
+          min={0}
+          max={500}
+          value={effect.effectAMin / 1000}
+          onChange={(value) => {
+            const ms = Math.floor(value * 1000);
+            effect.effectAMin = ms;
+            save(`Change random effect A min seconds to ${value}.`);
+          }} />
+      </label>
+      <label>
+        <span>Effect A max (Seconds)</span>
+        <NumberInput
+          title="speed"
+          type="float"
+          min={effect.effectAMin / 1000}
+          max={500}
+          value={(effect.effectAMin + effect.effectAVariation) / 1000}
+          onChange={(value) => {
+            effect.effectAVariation = Math.floor(value * 1000) - effect.effectAMin;
+            save(`Change random effect A max seconds to ${value}.`);
+          }} />
+      </label>
+
+      <label>
+        <span>Effect B min (Seconds)</span>
+        <NumberInput
+          title="speed"
+          type="float"
+          min={0}
+          max={500}
+          value={effect.effectBMin / 1000}
+          onChange={(value) => {
+            const ms = Math.floor(value * 1000);
+            effect.effectBMin = ms;
+            save(`Change random effect A min seconds to ${value}.`);
+          }} />
+      </label>
+      <label>
+        <span>Effect B max (Seconds)</span>
+        <NumberInput
+          title="speed"
+          type="float"
+          min={effect.effectBMin / 1000}
+          max={500}
+          value={(effect.effectBMin + effect.effectBVariation) / 1000}
+          onChange={(value) => {
+            effect.effectBVariation = Math.floor(value * 1000) - effect.effectBMin;
+            save(`Change random effect A max seconds to ${value}.`);
+          }} />
+      </label>
+
+      <label>
+        <span>Independent Fixtures</span>
+        <ToggleInput
+          value={effect.treatFixturesIndividually}
+          onChange={(value) => {
+            effect.treatFixturesIndividually = value;
+            save(`Change random effect to ${value ? '' : 'not '}treat fixtures independently.`)
+          }} />
+      </label>
+
+      <label>
+        <span>Random Seed</span>
+        <NumberInput
+          title="speed"
+          type="integer"
+          min={0}
+          max={4_294_967_295}
+          value={effect.seed}
+          onChange={(value) => {
+            effect.seed = value;
+            save(`Change random effect seed to ${value}.`);
+          }} />
+      </label>
+
+      <hr />
+      <h2>Effect A</h2>
+      <RandomEffectSubDetails effect={effect.effectA} />
+      <hr />
+      <h2>Effect B</h2>
+      <RandomEffectSubDetails effect={effect.effectB} />
+    </>
+  );
+}
+
+interface RandomEffectSubDetailsProps {
+  effect: Effect_RandomEffect['effectA'] | Effect_RandomEffect['effectB'];
+}
+
+function RandomEffectSubDetails({ effect }: RandomEffectSubDetailsProps) {
+  switch (effect.case) {
+    case 'aStatic':
+    case 'bStatic':
+      return <StaticEffectDetails effect={effect.value} showPhase={false} />
+    case 'aRamp':
+    case 'bRamp':
+      return <RampEffectDetails effect={effect.value} showPhase={false} />
+    case 'aStrobe':
+    case 'bStrobe':
+      return <StrobeEffectDetails effect={effect.value} showPhase={false} />
+    default:
+      return 'Not Set';
+  }
 }

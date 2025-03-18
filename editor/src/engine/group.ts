@@ -58,7 +58,9 @@ export function getApplicableMembers(project: Project, groupId: bigint): GroupMe
 
 export function getAllFixtures(project: Project, groupId: bigint): bigint[] {
   if (groupId === GROUP_ALL_ID) {
-    return Object.keys(getActiveUniverse(project).fixtures).map(id => BigInt(id));
+    return Object.entries(getActiveUniverse(project).fixtures)
+      .sort((a, b) => a[1].channelOffset - b[1].channelOffset)
+      .map(e => BigInt(e[0]));
   }
   const group = project.groups[groupId.toString()];
   if (!group) {

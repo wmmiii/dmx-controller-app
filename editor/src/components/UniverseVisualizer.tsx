@@ -22,6 +22,7 @@ export function UniverseVisualizer() {
       }
 
       return Object.values(getActiveUniverse(project).fixtures)
+        .sort((a, b) => a.channelOffset - b.channelOffset)
         .map((f, i) => {
           const definition = project.fixtureDefinitions[f.fixtureDefinitionId];
           // Can happen if the definition is unset.
@@ -37,7 +38,7 @@ export function UniverseVisualizer() {
           const getChannel = (type: ChannelTypes): number | undefined => {
             try {
               const entry = Object.entries(mode.channels)
-              .find(e => e[1].type === type);
+                .find(e => e[1].type === type);
               if (entry == null) {
                 return undefined;
               }

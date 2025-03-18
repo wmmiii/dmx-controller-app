@@ -203,6 +203,13 @@ export function EffectState(
           state.height = v;
           onChange(state);
         }} />
+      <RangeChannel
+        name="Zoom"
+        value={state.zoom}
+        onChange={(v) => {
+          state.zoom = v;
+          onChange(state);
+        }} />
       <label>Channels:</label>
       {
         state.channels.map((c: FixtureState_Channel, i: number) => (

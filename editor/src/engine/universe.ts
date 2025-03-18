@@ -14,6 +14,7 @@ import { ColorPalette } from "@dmx-controller/proto/color_pb";
 import { hsvToColor, interpolatePalettes } from "../util/colorUtil";
 import { OutputId, OutputId_FixtureMapping } from "@dmx-controller/proto/output_id_pb";
 import { getAllFixtures } from "./group";
+import { randomEffect } from "./randomEffect";
 
 export const DEFAULT_COLOR_PALETTE = new ColorPalette({
   name: 'Unset palette',
@@ -41,6 +42,7 @@ export const DEFAULT_COLOR_PALETTE = new ColorPalette({
 });
 
 export interface RenderContext {
+  readonly globalT: number;
   readonly t: number;
   readonly outputId: OutputId;
   readonly output: WritableDevice;
@@ -74,6 +76,7 @@ export function renderShowToUniverse(t: number, frame: number, project: Project)
       throw new Error('Tried to render a frame for a show with an audio file without beat metadata!');
     }
     const context: Omit<Omit<RenderContext, 'output'>, 'outputId'> = {
+      globalT: t,
       t: t,
       project: project,
       colorPalette: show.colorPalette || DEFAULT_COLOR_PALETTE,
@@ -204,6 +207,7 @@ export function renderSceneToUniverse(
           const output = getWritableDevice(project, channel.outputId);
           if (output != null) {
             applyEffect({
+              globalT: t,
               t: effectT,
               outputId: channel.outputId,
               output: output,
@@ -248,6 +252,7 @@ export function renderSceneToUniverse(
         }
 
         renderUniverseSequence(
+          t,
           sequenceT,
           frame,
           sequence,
@@ -291,6 +296,7 @@ export function renderGroupDebugToUniverse(project: Project, groupId: bigint) {
 }
 
 function renderUniverseSequence(
+  globalT: number,
   t: number,
   frame: number,
   universeSequence: Scene_Component_SequenceComponent,
@@ -300,6 +306,7 @@ function renderUniverseSequence(
 ) {
   if (universeSequence) {
     const context: Omit<Omit<RenderContext, 'output'>, 'outputId'> = {
+      globalT: globalT,
       t: t,
       project: project,
       colorPalette: colorPalette,
@@ -381,27 +388,23 @@ function applyEffect(context: RenderContext, beat: BeatMetadata, frame: number, 
     const ramp = effect.effect.value;
 
     if (ramp.phase != 0 && context.outputId.output.case === 'group') {
-      const fixtures = getAllFixtures(context.project, context.outputId.output.value);
-      const amount = ramp.phase / fixtures.length;
-      for (let i = 0; i < fixtures.length; ++i) {
-        const fixtureMapping: { [key: string]: bigint } = {};
-        fixtureMapping[context.project.activeUniverse.toString()] = fixtures[i];
-        const outputId = new OutputId({
-          output: {
-            case: 'fixtures',
-            value: {
-              fixtures: fixtureMapping,
-            }
-          }
-        });
-
-        const output = getWritableDevice(context.project, outputId);
+      applyToEachFixture(context, context.outputId.output.value, (i, total, outputId, output) => {
+        const amount = ramp.phase / total;
         const effectT = calculateEffectT(context, beat, effect, ramp, amount * i);
         rampEffect(Object.assign({}, context, { output, outputId }), ramp, effectT);
-      }
+      });
     } else {
       const effectT = calculateEffectT(context, beat, effect, ramp, 0);
       rampEffect(context, ramp, effectT);
+    }
+  } else if (effect.effect.case === 'randomEffect') {
+    if (effect.effect.value.treatFixturesIndividually && context.outputId.output.case === 'group') {
+      const e = effect.effect.value;
+      applyToEachFixture(context, context.outputId.output.value, (i, _, outputId, output) => {
+        randomEffect(Object.assign({}, context, { output, outputId }), e, frame, i);
+      })
+    } else {
+      randomEffect(context, effect.effect.value, frame);
     }
   }
 }
@@ -441,5 +444,26 @@ function calculateEffectT(context: RenderContext, beat: BeatMetadata, effect: Ef
       }
     default:
       throw Error('Unknown effect timing!');
+  }
+}
+
+function applyToEachFixture(context: RenderContext, groupId: bigint, action: (i: number, total: number, outputId: OutputId, device: WritableDevice) => void) {
+  const fixtures = getAllFixtures(context.project, groupId);
+  for (let i = 0; i < fixtures.length; ++i) {
+    const fixtureMapping: { [key: string]: bigint } = {};
+    fixtureMapping[context.project.activeUniverse.toString()] = fixtures[i];
+    const outputId = new OutputId({
+      output: {
+        case: 'fixtures',
+        value: {
+          fixtures: fixtureMapping,
+        }
+      }
+    });
+
+    const device = getWritableDevice(context.project, outputId);
+    if (device) {
+      action(i, fixtures.length, outputId, device);
+    }
   }
 }

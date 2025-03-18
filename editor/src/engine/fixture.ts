@@ -109,6 +109,7 @@ function getPhysicalWritableDeviceFromGroup(
 
   if (groupId === GROUP_ALL_ID) {
     Object.values(getActiveUniverse(project).fixtures)
+      .sort((a, b) => a.channelOffset - b.channelOffset)
       .forEach(f => collectFunctions(f, project.fixtureDefinitions[f.fixtureDefinitionId].modes[f.fixtureMode], functionCollection));
   } else {
     const group = project.groups[groupId.toString()];
