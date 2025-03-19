@@ -7,8 +7,8 @@ import { OutputId, OutputId_FixtureMapping } from "@dmx-controller/proto/output_
 import { LightTrack } from "@dmx-controller/proto/light_track_pb";
 import { FixtureDefinition, FixtureDefinition_Channel_AmountMapping, FixtureDefinition_Channel_AngleMapping, FixtureDefinition_Mode, PhysicalFixtureGroup, PhysicalFixtureGroup_FixtureList } from "@dmx-controller/proto/fixture_pb";
 import { Scene_Component_EffectGroupComponent_EffectChannel, Scene_ComponentMap } from "@dmx-controller/proto/scene_pb";
-import { isAmountChannel, isAngleChannel } from "../engine/fixture";
 import { DEFAULT_COLOR_PALETTE } from "../engine/universe";
+import { isAmountChannel, isAngleChannel } from "../engine/channel";
 
 export default function upgradeProject(project: Project): void {
   upgradeIndices(project);

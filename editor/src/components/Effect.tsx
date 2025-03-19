@@ -21,6 +21,7 @@ import { Color, ColorPalette, PaletteColor } from '@dmx-controller/proto/color_p
 import { PaletteContext } from '../contexts/PaletteContext';
 import { BiDice6, BiPause } from 'react-icons/bi';
 import { getStates } from '../util/effectUtils';
+import { ChannelTypes } from '../engine/channel';
 
 export interface EffectAddress {
   track: number;
@@ -228,6 +229,7 @@ export function Effect({
 interface EffectDetailsBaseProps<T> {
   className?: string;
   effect: T;
+  availableChannels: ChannelTypes[],
   showTiming?: false;
   showPhase: boolean;
 }
@@ -235,6 +237,7 @@ interface EffectDetailsBaseProps<T> {
 export function EffectDetails({
   className,
   effect,
+  availableChannels,
   showTiming,
   showPhase,
 }: EffectDetailsBaseProps<EffectProto>): JSX.Element {
@@ -247,22 +250,22 @@ export function EffectDetails({
   switch (effect.effect.case) {
     case 'staticEffect':
       details = (
-        <StaticEffectDetails effect={effect.effect.value} showPhase={false} />
+        <StaticEffectDetails effect={effect.effect.value} availableChannels={availableChannels} showPhase={false} />
       );
       break;
     case 'rampEffect':
       details = (
-        <RampEffectDetails effect={effect.effect.value} showTiming={showTiming} showPhase={showPhase} />
+        <RampEffectDetails effect={effect.effect.value} availableChannels={availableChannels} showTiming={showTiming} showPhase={showPhase} />
       );
       break;
     case 'strobeEffect':
       details = (
-        <StrobeEffectDetails effect={effect.effect.value} showPhase={false} />
+        <StrobeEffectDetails effect={effect.effect.value} availableChannels={availableChannels} showPhase={false} />
       );
       break;
     case 'randomEffect':
       details = (
-        <RandomEffectDetails effect={effect.effect.value} showPhase={false} />
+        <RandomEffectDetails effect={effect.effect.value} availableChannels={availableChannels} showPhase={false} />
       );
       break;
     default:
@@ -372,7 +375,7 @@ function effectIcons(effect: FixtureStateProto):
   return icons;
 }
 
-function StaticEffectDetails({ effect }: EffectDetailsBaseProps<Effect_StaticEffect>): JSX.Element {
+function StaticEffectDetails({ effect, availableChannels }: EffectDetailsBaseProps<Effect_StaticEffect>): JSX.Element {
   const { save } = useContext(ProjectContext);
 
   if (effect.state == null) {
@@ -386,12 +389,13 @@ function StaticEffectDetails({ effect }: EffectDetailsBaseProps<Effect_StaticEff
         onChange={(s) => {
           effect.state = s;
           save('Change static effect state.');
-        }} />
+        }}
+        availableChannels={availableChannels} />
     </>
   );
 }
 
-function RampEffectDetails({ effect, showTiming, showPhase }: EffectDetailsBaseProps<Effect_RampEffect>): JSX.Element {
+function RampEffectDetails({ effect, availableChannels, showTiming, showPhase }: EffectDetailsBaseProps<Effect_RampEffect>): JSX.Element {
   const { save } = useContext(ProjectContext);
   if (effect.stateStart == null || effect.stateEnd == null) {
     throw new Error('Ramp effect does not have a state!');
@@ -486,7 +490,8 @@ function RampEffectDetails({ effect, showTiming, showPhase }: EffectDetailsBaseP
         onChange={(s) => {
           effect.stateStart = s;
           save('Change ramp effect start state.');
-        }} />
+        }}
+        availableChannels={availableChannels} />
       <hr />
       <h2>End</h2>
       <EffectState
@@ -494,12 +499,13 @@ function RampEffectDetails({ effect, showTiming, showPhase }: EffectDetailsBaseP
         onChange={(s) => {
           effect.stateEnd = s;
           save('Change ramp effect end state.');
-        }} />
+        }}
+        availableChannels={availableChannels} />
     </>
   );
 }
 
-function StrobeEffectDetails({ effect }: EffectDetailsBaseProps<Effect_StrobeEffect>): JSX.Element {
+function StrobeEffectDetails({ effect, availableChannels }: EffectDetailsBaseProps<Effect_StrobeEffect>): JSX.Element {
   const { save } = useContext(ProjectContext);
 
   if (effect.stateA == null || effect.stateB == null) {
@@ -541,7 +547,8 @@ function StrobeEffectDetails({ effect }: EffectDetailsBaseProps<Effect_StrobeEff
         onChange={(s) => {
           effect.stateA = s;
           save('Change strobe effect A.');
-        }} />
+        }}
+        availableChannels={availableChannels} />
       <hr />
       <h2>State B</h2>
       <EffectState
@@ -549,12 +556,13 @@ function StrobeEffectDetails({ effect }: EffectDetailsBaseProps<Effect_StrobeEff
         onChange={(s) => {
           effect.stateB = s;
           save('Change strobe effect B.');
-        }} />
+        }}
+        availableChannels={availableChannels} />
     </>
   );
 }
 
-function RandomEffectDetails({ effect }: EffectDetailsBaseProps<Effect_RandomEffect>): JSX.Element {
+function RandomEffectDetails({ effect, availableChannels }: EffectDetailsBaseProps<Effect_RandomEffect>): JSX.Element {
   const { save } = useContext(ProjectContext);
 
   const mapToStandardEffect = (effect: Effect_RandomEffect['effectA'] | Effect_RandomEffect['effectB']) => {
@@ -668,7 +676,7 @@ function RandomEffectDetails({ effect }: EffectDetailsBaseProps<Effect_RandomEff
             save(description);
           }} />
       </div>
-      <RandomEffectSubDetails effect={effect.effectA} />
+      <RandomEffectSubDetails effect={effect.effectA} availableChannels={availableChannels} />
       <hr />
       <h2>Effect B</h2>
       <div className={styles.effectType}>
@@ -683,7 +691,7 @@ function RandomEffectDetails({ effect }: EffectDetailsBaseProps<Effect_RandomEff
             save(description);
           }} />
       </div>
-      <RandomEffectSubDetails effect={effect.effectB} />
+      <RandomEffectSubDetails effect={effect.effectB} availableChannels={availableChannels} />
     </>
   );
 }
@@ -795,19 +803,20 @@ function EffectSelector({ effect, setEffect, showRandom }: EffectSelectorProps) 
 
 interface RandomEffectSubDetailsProps {
   effect: Effect_RandomEffect['effectA'] | Effect_RandomEffect['effectB'];
+  availableChannels: ChannelTypes[],
 }
 
-function RandomEffectSubDetails({ effect }: RandomEffectSubDetailsProps) {
+function RandomEffectSubDetails({ effect, availableChannels }: RandomEffectSubDetailsProps) {
   switch (effect.case) {
     case 'aStaticEffect':
     case 'bStaticEffect':
-      return <StaticEffectDetails effect={effect.value} showPhase={false} />
+      return <StaticEffectDetails effect={effect.value} availableChannels={availableChannels} showPhase={false} />
     case 'aRampEffect':
     case 'bRampEffect':
-      return <RampEffectDetails effect={effect.value} showPhase={false} />
+      return <RampEffectDetails effect={effect.value} availableChannels={availableChannels} showPhase={false} />
     case 'aStrobeEffect':
     case 'bStrobeEffect':
-      return <StrobeEffectDetails effect={effect.value} showPhase={false} />
+      return <StrobeEffectDetails effect={effect.value} availableChannels={availableChannels} showPhase={false} />
     default:
       return 'Not Set';
   }

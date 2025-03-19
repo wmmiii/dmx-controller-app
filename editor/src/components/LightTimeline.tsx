@@ -18,21 +18,26 @@ import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
 import { Effect as EffectProto } from '@dmx-controller/proto/effect_pb';
 import { RenderingContext } from '../contexts/RenderingContext';
 import { getOutputName } from './OutputSelector';
+import { getAvailableChannels } from '../engine/fixture';
+
 
 export const LEFT_WIDTH = 180;
 
 export default function LightTimeline(props: TracksProps): JSX.Element {
   const { setShortcuts } = useContext(ShortcutContext);
-  const { save } = useContext(ProjectContext);
+  const { project, save } = useContext(ProjectContext);
   const [selectedAddress, setSelectedAddress] = useState<EffectAddress | null>(null);
   const [copyEffect, setCopyEffect] = useState<EffectProto | null>(null);
 
-  const selectedEffect = useMemo(() => {
+  const [selectedEffect, availableChannels] = useMemo(() => {
     if (selectedAddress == null) {
-      return null;
+      return [null, []];
     }
     const s = selectedAddress;
-    return props.lightTracks[s.track]?.layers[s.layer]?.effects[s.effect] || null;
+    return [
+      props.lightTracks[s.track]?.layers[s.layer]?.effects[s.effect] || null,
+      getAvailableChannels(props.lightTracks[s.track]?.outputId, project),
+    ];
   }, [props.lightTracks, selectedAddress]);
 
   const outputType = useMemo(() => {
@@ -88,6 +93,7 @@ export default function LightTimeline(props: TracksProps): JSX.Element {
               className={styles.effectDetails}
               effect={selectedEffect}
               showPhase={outputType === 'group'} 
+              availableChannels={availableChannels}
               /> :
             <div className={styles.effectDetails}>
               Select an effect to view details.

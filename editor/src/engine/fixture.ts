@@ -4,31 +4,11 @@ import { OutputId, OutputId_FixtureMapping } from "@dmx-controller/proto/output_
 import { getActiveUniverse } from "../util/projectUtils";
 import { LightTrack } from "@dmx-controller/proto/light_track_pb";
 import { FixtureDefinition_Mode, PhysicalFixture } from "@dmx-controller/proto/fixture_pb";
+import { AmountChannel, AngleChannel, ChannelTypes, isAmountChannel, isAngleChannel } from "./channel";
 
 export type DmxUniverse = number[];
 
 export const GROUP_ALL_ID = 0n;
-
-export const COLOR_CHANNELS = ['red', 'green', 'blue', 'cyan', 'magenta', 'yellow', 'white'] as const;
-export type ColorChannel = typeof COLOR_CHANNELS[number];
-export function isColorChannel(type: string): type is ColorChannel {
-  return COLOR_CHANNELS.includes(type as ColorChannel);
-}
-
-export const ANGLE_CHANNEL = ['pan', 'tilt'] as const;
-export type AngleChannel = typeof ANGLE_CHANNEL[number];
-export function isAngleChannel(type: string): type is AngleChannel {
-  return ANGLE_CHANNEL.includes(type as AngleChannel);
-}
-
-export const AMOUNT_CHANNEL = ['dimmer', 'height', 'strobe', 'width', 'zoom'] as const;
-export type AmountChannel = typeof AMOUNT_CHANNEL[number];
-export function isAmountChannel(type: string): type is AmountChannel {
-  return AMOUNT_CHANNEL.includes(type as AmountChannel);
-}
-
-export type ChannelTypes = ColorChannel | AngleChannel | AmountChannel;
-
 
 export interface WritableDevice {
   /**
@@ -128,6 +108,24 @@ function getPhysicalWritableDeviceFromGroup(
   }
 
   return functionCollectionToDevice(functionCollection);
+}
+
+export function getAvailableChannels(outputId: OutputId | undefined, project: Project): ChannelTypes[] {
+  let fixtureIds: BigInt[];
+  if (outputId?.output.case === 'fixtures') {
+    fixtureIds = [outputId.output.value.fixtures[String(project.activeUniverse)]];
+  } else if (outputId?.output.case === 'group') {
+    fixtureIds = getAllFixtures(project, outputId.output.value);
+  } else {
+    fixtureIds = Object.keys(getActiveUniverse(project).fixtures).map(id => BigInt(id));
+  }
+
+  const channels = new Set(fixtureIds
+    .map(id => getActiveUniverse(project).fixtures[String(id)])
+    .map(pf => project.fixtureDefinitions[pf.fixtureDefinitionId].modes[pf.fixtureMode])
+    .flatMap(mode => Object.values(mode.channels))
+    .map(c => c.type));
+  return Array.from(channels);
 }
 
 export function deleteFixture(project: Project, fixtureId: bigint) {

@@ -1,7 +1,7 @@
 import { FixtureDefinition, FixtureDefinition_Channel, FixtureDefinition_Channel_AmountMapping, FixtureDefinition_Channel_AngleMapping, FixtureDefinition_Mode } from '@dmx-controller/proto/fixture_pb';
 import { BlobReader, TextWriter, ZipReader } from '@zip.js/zip.js';
 import getUuidByString from 'uuid-by-string';
-import { AMOUNT_CHANNEL, ANGLE_CHANNEL, COLOR_CHANNELS } from '../engine/fixture';
+import {AMOUNT_CHANNELS, ANGLE_CHANNELS, COLOR_CHANNELS } from '../engine/channel';
 
 export async function extractGdtf(arrayBuffer: Blob) {
   // Unzip archive and find XML.
@@ -47,7 +47,7 @@ export async function extractGdtf(arrayBuffer: Blob) {
           continue channel;
         }
       }
-      for (const channelName of ANGLE_CHANNEL) {
+      for (const channelName of ANGLE_CHANNELS) {
         if (initialFunction.indexOf(channelName) >= 0) {
           const channelFunction = channelElement.querySelector('ChannelFunction');
           const fromDegrees = parseFloat(getAttributeNotEmpty(channelFunction, 'PhysicalFrom'));
@@ -64,7 +64,7 @@ export async function extractGdtf(arrayBuffer: Blob) {
           continue channel;
         }
       }
-      for (const channelName of AMOUNT_CHANNEL) {
+      for (const channelName of AMOUNT_CHANNELS) {
         if (initialFunction.indexOf(channelName) >= 0) {
           addChannels(
             mode,

@@ -5,7 +5,6 @@ import IconBxUpload from '../icons/IconBxUpload';
 import IconBxX from '../icons/IconBxX';
 import RangeInput from '../components/RangeInput';
 import styles from './PatchPage.module.scss';
-import { AMOUNT_CHANNEL, ANGLE_CHANNEL, ChannelTypes, COLOR_CHANNELS, deleteFixture, deleteFixtureGroup, isAmountChannel, isAngleChannel } from '../engine/fixture';
 import { Button, IconButton } from '../components/Button';
 import { FixtureDefinition, FixtureDefinition_Channel, FixtureDefinition_Channel_AmountMapping, FixtureDefinition_Channel_AngleMapping, FixtureDefinition_Mode, PhysicalFixture, PhysicalFixtureGroup } from '@dmx-controller/proto/fixture_pb';
 import { HorizontalSplitPane } from '../components/SplitPane';
@@ -20,6 +19,8 @@ import { randomUint64 } from '../util/numberUtils';
 import { EditGroupDialog } from '../components/EditGroupDialog';
 import { extractGdtf } from '../util/gdtf';
 import { Warning } from '../components/Warning';
+import { deleteFixture, deleteFixtureGroup } from '../engine/fixture';
+import { AMOUNT_CHANNELS, ANGLE_CHANNELS, ChannelTypes, COLOR_CHANNELS, isAmountChannel, isAngleChannel } from '../engine/channel';
 
 export default function PatchPage(): JSX.Element {
   return (
@@ -365,7 +366,7 @@ function EditFixtureDialog({
       </label>
       {
         definition != null &&
-        ANGLE_CHANNEL
+        ANGLE_CHANNELS
           .filter(t => Object.values(definition.channels)
             .some(c => c.type === t))
           .map((t, i) => (
@@ -686,7 +687,7 @@ function EditDefinitionDialog({
                       <option value="unset">Unset</option>
                       <option value="other">Other</option>
                       {
-                        [...COLOR_CHANNELS, ...AMOUNT_CHANNEL, ...ANGLE_CHANNEL]
+                        [...COLOR_CHANNELS, ...AMOUNT_CHANNELS, ...ANGLE_CHANNELS]
                           .flatMap(t => [t, `${t}-fine`])
                           .map((t, i) => (
                             <option key={i} value={t}>{t}</option>

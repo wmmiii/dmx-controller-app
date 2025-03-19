@@ -7,16 +7,18 @@ import { Button, IconButton } from './Button';
 import { FixtureState as FixtureStateProto, FixtureState_Channel } from "@dmx-controller/proto/effect_pb";
 import { NumberInput } from './Input';
 import { Color, PaletteColor } from '@dmx-controller/proto/color_pb';
+import { AMOUNT_CHANNELS, ANGLE_CHANNELS, ChannelTypes, COLOR_CHANNELS } from '../engine/channel';
 
 type ColorSelectorType = 'none' | 'color' | PaletteColor;
 
 interface EffectStateProps {
   state: FixtureStateProto;
   onChange: (state: FixtureStateProto) => void;
+  availableChannels: ChannelTypes[],
 }
 
 export function EffectState(
-  { state, onChange }: EffectStateProps):
+  { state, onChange, availableChannels }: EffectStateProps):
   JSX.Element {
 
   const onColorTypeChange = useCallback((type: ColorSelectorType) => {
@@ -57,159 +59,114 @@ export function EffectState(
 
   return (
     <>
-      <label>
-        <span>Color mode</span>
-        <select
-          value={colorType}
-          onChange={(e) => onColorTypeChange(e.target.value as ColorSelectorType)}>
-          <option value="none">None</option>
-          <option value="color">Custom Color</option>
-          <option value={PaletteColor.PALETTE_PRIMARY}>Primary</option>
-          <option value={PaletteColor.PALETTE_SECONDARY}>Secondary</option>
-          <option value={PaletteColor.PALETTE_TERTIARY}>Tertiary</option>
-          <option value={PaletteColor.PALETTE_WHITE}>White</option>
-          <option value={PaletteColor.PALETTE_BLACK}>Black</option>
-        </select>
-      </label>
       {
-        state.lightColor.case === 'color' &&
-        <ColorPicker
-          hideAlpha={true}
-          color={{
-            r: state.lightColor.value.red * 255,
-            g: state.lightColor.value.green * 255,
-            b: state.lightColor.value.blue * 255,
-            a: 1,
-          }}
-          onChange={({ rgb }) => {
-            if (state.lightColor.case === 'color') {
-              state.lightColor.value.red = rgb.r / 255;
-              state.lightColor.value.green = rgb.g / 255;
-              state.lightColor.value.blue = rgb.b / 255;
-            }
-            onChange(state);
-          }}
-          theme={{
-            background: 'transparent',
-            borderColor: 'none',
-            width: '100%',
-          }} />
-      }
-      {
-        state.lightColor.case === 'color' &&
-        <RangeChannel
-          name="White"
-          value={state.lightColor.value.white}
-          onChange={(v) => {
-            if (state.lightColor.case === 'color') {
-              state.lightColor.value.white = v;
-              onChange(state);
-            }
-          }} />
-      }
-      <RangeChannel
-        name="Dimmer"
-        value={state.dimmer}
-        onChange={(v) => {
-          state.dimmer = v;
-          onChange(state);
-        }} />
-      <RangeChannel
-        name="Strobe"
-        value={state.strobe}
-        onChange={(v) => {
-          state.strobe = v;
-          onChange(state);
-        }} />
-      {
-        state.pan != null ?
-          <label className={styles.stateRow}>
-            <span>Pan</span>
-            <NumberInput
-              type="float"
-              max={720}
-              min={-720}
-              value={state.pan}
-              onChange={(v) => {
-                state.pan = v;
-                onChange(state);
-              }} />&nbsp;
-            <IconButton
-              title="Remove Pan"
-              onClick={() => {
-                state.pan = undefined;
-                onChange(state);
-              }}>
-              <IconBxX />
-            </IconButton>
-          </label> :
-          <label className={styles.stateRow}>
-            <span>Pan</span>
-            <IconButton
-              title="Add Pan"
-              onClick={() => {
-                state.pan = 0;
-                onChange(state);
-              }}>
-              <IconBxPlus />
-            </IconButton>
+        availableChannels.findIndex((channel) => COLOR_CHANNELS.indexOf(channel as any) > -1) &&
+        <>
+          <label>
+            <span>Color mode</span>
+            <select
+              value={colorType}
+              onChange={(e) => onColorTypeChange(e.target.value as ColorSelectorType)}>
+              <option value="none">None</option>
+              <option value="color">Custom Color</option>
+              <option value={PaletteColor.PALETTE_PRIMARY}>Primary</option>
+              <option value={PaletteColor.PALETTE_SECONDARY}>Secondary</option>
+              <option value={PaletteColor.PALETTE_TERTIARY}>Tertiary</option>
+              <option value={PaletteColor.PALETTE_WHITE}>White</option>
+              <option value={PaletteColor.PALETTE_BLACK}>Black</option>
+            </select>
           </label>
+          {
+            state.lightColor.case === 'color' &&
+            <ColorPicker
+              hideAlpha={true}
+              color={{
+                r: state.lightColor.value.red * 255,
+                g: state.lightColor.value.green * 255,
+                b: state.lightColor.value.blue * 255,
+                a: 1,
+              }}
+              onChange={({ rgb }) => {
+                if (state.lightColor.case === 'color') {
+                  state.lightColor.value.red = rgb.r / 255;
+                  state.lightColor.value.green = rgb.g / 255;
+                  state.lightColor.value.blue = rgb.b / 255;
+                }
+                onChange(state);
+              }}
+              theme={{
+                background: 'transparent',
+                borderColor: 'none',
+                width: '100%',
+              }} />
+          }
+          {
+            state.lightColor.case === 'color' &&
+            <RangeChannel
+              name="White"
+              value={state.lightColor.value.white}
+              onChange={(v) => {
+                if (state.lightColor.case === 'color') {
+                  state.lightColor.value.white = v;
+                  onChange(state);
+                }
+              }} />
+          }
+        </>
       }
       {
-        state.tilt != null ?
-          <label className={styles.stateRow}>
-            <span>Tilt</span>
-            <NumberInput
-              type="float"
-              max={720}
-              min={-720}
-              value={state.tilt}
-              onChange={(v) => {
-                state.tilt = v;
-                onChange(state);
-              }} />&nbsp;
-            <IconButton
-              title="Remove Tilt"
-              onClick={() => {
-                state.tilt = undefined;
-                onChange(state);
-              }}>
-              <IconBxX />
-            </IconButton>
-          </label> :
-          <label className={styles.stateRow}>
-            <span>Tilt</span>
-            <IconButton
-              title="Add Tilt"
-              onClick={() => {
-                state.tilt = 0;
-                onChange(state);
-              }}>
-              <IconBxPlus />
-            </IconButton>
-          </label>
+        (availableChannels
+          .filter((channel) => ANGLE_CHANNELS.indexOf(channel as any) > -1) as Array<keyof FixtureStateProto>)
+          .map((channel, i) => (
+            <label className={styles.stateRow} key={i}>
+              <span>{channel}</span>
+              {
+                state[channel] != null ?
+                  <>
+                    <NumberInput
+                      type="float"
+                      max={720}
+                      min={-720}
+                      value={state[channel] as number}
+                      onChange={(v) => {
+                        state[channel] = v as any;
+                        onChange(state);
+                      }} />&nbsp;
+                    <IconButton
+                      title={`Remove ${channel}`}
+                      onClick={() => {
+                        state[channel] = undefined as any;
+                        onChange(state);
+                      }}>
+                      <IconBxX />
+                    </IconButton>
+                  </> :
+                  <IconButton
+                    title={`Add ${channel}`}
+                    onClick={() => {
+                      state[channel] = 0 as any;
+                      onChange(state);
+                    }}>
+                    <IconBxPlus />
+                  </IconButton>
+              }
+            </label>
+          ))
       }
-      <RangeChannel
-        name="Width"
-        value={state.width}
-        onChange={(v) => {
-          state.width = v;
-          onChange(state);
-        }} />
-      <RangeChannel
-        name="Height"
-        value={state.height}
-        onChange={(v) => {
-          state.height = v;
-          onChange(state);
-        }} />
-      <RangeChannel
-        name="Zoom"
-        value={state.zoom}
-        onChange={(v) => {
-          state.zoom = v;
-          onChange(state);
-        }} />
+      {
+        (availableChannels
+          .filter((channel) => AMOUNT_CHANNELS.indexOf(channel as any) > -1) as Array<keyof FixtureStateProto>)
+          .map((channel, i) => (
+            <RangeChannel
+              key={i}
+              name={channel}
+              value={state[channel] as number}
+              onChange={(v) => {
+                state[channel] = v as any;
+                onChange(state);
+              }} />
+          ))
+      }
       <label>Channels:</label>
       {
         state.channels.map((c: FixtureState_Channel, i: number) => (

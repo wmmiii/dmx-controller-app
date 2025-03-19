@@ -1,6 +1,7 @@
-import { ChannelTypes, DmxUniverse } from "./fixture";
+import { DmxUniverse } from "./fixture";
 import { Project } from "@dmx-controller/proto/project_pb";
 import { getActiveUniverse } from "../util/projectUtils";
+import { ChannelTypes } from "./channel";
 
 export function interpolateUniverses(universe: DmxUniverse, t: number, start: DmxUniverse, end: DmxUniverse) {
   // First do a dumb interpolation of all the channels to set coarse values.

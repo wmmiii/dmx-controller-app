@@ -20,6 +20,7 @@ import { universeToUint8Array } from '../engine/utils';
 import { Project } from '@dmx-controller/proto/project_pb';
 import { PaletteContext } from '../contexts/PaletteContext';
 import { PaletteSwatch } from '../components/Palette';
+import { getAvailableChannels } from '../engine/fixture';
 
 
 export function LivePage(): JSX.Element {
@@ -339,7 +340,11 @@ function EffectGroupEditor({ effect, name }: EffectGroupEditorProps) {
                     save(`Set effect output to ${getOutputName(project, o)}.`);
                   }} />
               </label>
-              <EffectDetails effect={c.effect} showTiming={false} showPhase={c.outputId?.output.case === 'group'} />
+              <EffectDetails
+                effect={c.effect}
+                showTiming={false}
+                showPhase={c.outputId?.output.case === 'group'}
+                availableChannels={getAvailableChannels(c.outputId, project)}/>
             </div>
           )
         })

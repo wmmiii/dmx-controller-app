@@ -1,10 +1,10 @@
 import { useContext, useEffect, useMemo, useState } from 'react';
 
 import styles from "./UniverseVisualizer.module.scss";
-import { ChannelTypes } from '../engine/fixture';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { SerialContext } from '../contexts/SerialContext';
 import { getActiveUniverse } from '../util/projectUtils';
+import { ChannelTypes } from '../engine/channel';
 
 export function UniverseVisualizer() {
   const { project } = useContext(ProjectContext);
