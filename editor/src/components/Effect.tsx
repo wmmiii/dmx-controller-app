@@ -286,7 +286,7 @@ export function EffectDetails({
             effect.effect = {
               case: 'staticEffect',
               value: new Effect_StaticEffect({
-                state: getStates(effect.effect.value).a,
+                state: getStates(effect.effect.value).a.clone(),
               }),
             };
             save('Change effect type to static.');
@@ -304,8 +304,8 @@ export function EffectDetails({
             effect.effect = {
               case: 'rampEffect',
               value: new Effect_RampEffect({
-                stateStart: getStates(effect.effect.value).a,
-                stateEnd: getStates(effect.effect.value).b,
+                stateStart: getStates(effect.effect.value).a.clone(),
+                stateEnd: getStates(effect.effect.value).b.clone(),
               }),
             };
             save('Change effect type to ramp.');
@@ -323,8 +323,8 @@ export function EffectDetails({
             effect.effect = {
               case: 'strobeEffect',
               value: new Effect_StrobeEffect({
-                stateA: getStates(effect.effect.value).a,
-                stateB: getStates(effect.effect.value).b,
+                stateA: getStates(effect.effect.value).a.clone(),
+                stateB: getStates(effect.effect.value).b.clone(),
               }),
             };
             save('Change effect type to strobe.');
@@ -351,13 +351,13 @@ export function EffectDetails({
                 effectA: {
                   case: 'aStatic',
                   value: new Effect_StaticEffect({
-                    state: getStates(effect.effect.value).a,
+                    state: getStates(effect.effect.value).a.clone(),
                   }),
                 },
                 effectB: {
                   case: 'bStatic',
                   value: new Effect_StaticEffect({
-                    state: getStates(effect.effect.value).b,
+                    state: getStates(effect.effect.value).b.clone(),
                   }),
                 },
               })

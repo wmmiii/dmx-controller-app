@@ -21,12 +21,13 @@ export function universeToUint8Array(project: Project, universe: DmxUniverse) {
       if (d == null) {
         return;
       }
-      for (const channel of Object.entries(d.channels)) {
+      const m = d.modes[f.fixtureMode];
+      for (const channel of Object.entries(m.channels)) {
         const type = channel[1].type;
         if (type.indexOf('-fine') > -1) {
           const fineIndex = parseInt(channel[0]) + f.channelOffset - 1;
           const coarseType = type.substring(0, type.length - 5) as ChannelTypes;
-          const courseEntry = Object.entries(d.channels).find(c => c[1].type === coarseType);
+          const courseEntry = Object.entries(m.channels).find(c => c[1].type === coarseType);
           if (courseEntry == null) {
             continue;
           }
