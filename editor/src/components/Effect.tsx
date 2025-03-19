@@ -275,97 +275,13 @@ export function EffectDetails({
     <div className={classes.join(' ')}>
       <div className={styles.effectType}>
         <span>Effect type</span>
-        <IconButton
-          title="Static Effect"
-          variant={effect.effect.case === 'staticEffect' ? 'primary' : 'default'}
-          onClick={() => {
-            if (effect.effect.case === 'staticEffect') {
-              return;
-            }
-
-            effect.effect = {
-              case: 'staticEffect',
-              value: new Effect_StaticEffect({
-                state: getStates(effect.effect.value).a.clone(),
-              }),
-            };
-            save('Change effect type to static.');
-          }}>
-          <BiPause />
-        </IconButton>
-        <IconButton
-          title="Ramp Effect"
-          variant={effect.effect.case === 'rampEffect' ? 'primary' : 'default'}
-          onClick={() => {
-            if (effect.effect.case === 'rampEffect') {
-              return;
-            }
-
-            effect.effect = {
-              case: 'rampEffect',
-              value: new Effect_RampEffect({
-                stateStart: getStates(effect.effect.value).a.clone(),
-                stateEnd: getStates(effect.effect.value).b.clone(),
-              }),
-            };
-            save('Change effect type to ramp.');
-          }}>
-          <IconBxLineChart />
-        </IconButton>
-        <IconButton
-          title="Strobe Effect"
-          variant={effect.effect.case === 'strobeEffect' ? 'primary' : 'default'}
-          onClick={() => {
-            if (effect.effect.case === 'strobeEffect') {
-              return;
-            }
-
-            effect.effect = {
-              case: 'strobeEffect',
-              value: new Effect_StrobeEffect({
-                stateA: getStates(effect.effect.value).a.clone(),
-                stateB: getStates(effect.effect.value).b.clone(),
-              }),
-            };
-            save('Change effect type to strobe.');
-          }}>
-          <IconBxsBolt />
-        </IconButton>
-        <IconButton
-          title="Random Effect"
-          variant={effect.effect.case === 'randomEffect' ? 'primary' : 'default'}
-          onClick={() => {
-            if (effect.effect.case === 'randomEffect') {
-              return;
-            }
-
-            effect.effect = {
-              case: 'randomEffect',
-              value: new Effect_RandomEffect({
-                seed: 0,
-                effectAMin: 0,
-                effectAVariation: 1000,
-                effectBMin: 0,
-                effectBVariation: 1000,
-
-                effectA: {
-                  case: 'aStatic',
-                  value: new Effect_StaticEffect({
-                    state: getStates(effect.effect.value).a.clone(),
-                  }),
-                },
-                effectB: {
-                  case: 'bStatic',
-                  value: new Effect_StaticEffect({
-                    state: getStates(effect.effect.value).b.clone(),
-                  }),
-                },
-              })
-            }
-            save('Change effect type to random.');
-          }}>
-          <BiDice6 />
-        </IconButton>
+        <EffectSelector
+          effect={effect.effect}
+          setEffect={(e, description) => {
+            effect.effect = e;
+            save(description);
+          }}
+          showRandom={true} />
       </div>
       <hr />
       {details}
@@ -641,6 +557,21 @@ function StrobeEffectDetails({ effect }: EffectDetailsBaseProps<Effect_StrobeEff
 function RandomEffectDetails({ effect }: EffectDetailsBaseProps<Effect_RandomEffect>): JSX.Element {
   const { save } = useContext(ProjectContext);
 
+  const mapToStandardEffect = (effect: Effect_RandomEffect['effectA'] | Effect_RandomEffect['effectB']) => {
+    if (effect.case) {
+      const stripped = effect.case?.substring(1);
+
+      return {
+        case: stripped.substring(0, 1).toLowerCase() + stripped.substring(1),
+        value: effect.value,
+      } as EffectProto['effect'];
+    }
+    return {
+      case: undefined,
+      value: undefined,
+    } as EffectProto['effect'];
+  }
+
   return (
     <>
       <label>
@@ -725,10 +656,139 @@ function RandomEffectDetails({ effect }: EffectDetailsBaseProps<Effect_RandomEff
 
       <hr />
       <h2>Effect A</h2>
+      <div className={styles.effectType}>
+        <span>Effect type</span>
+        <EffectSelector
+          effect={mapToStandardEffect(effect.effectA)}
+          setEffect={(e, description) => {
+            effect.effectA = {
+              case: 'a' + e.case?.substring(0, 1).toUpperCase() + e.case?.substring(1),
+              value: e.value,
+            } as Effect_RandomEffect['effectA']
+            save(description);
+          }} />
+      </div>
       <RandomEffectSubDetails effect={effect.effectA} />
       <hr />
       <h2>Effect B</h2>
+      <div className={styles.effectType}>
+        <span>Effect B type</span>
+        <EffectSelector
+          effect={mapToStandardEffect(effect.effectB)}
+          setEffect={(e, description) => {
+            effect.effectB = {
+              case: 'b' + e.case?.substring(0, 1).toUpperCase() + e.case?.substring(1),
+              value: e.value,
+            } as Effect_RandomEffect['effectB']
+            save(description);
+          }} />
+      </div>
       <RandomEffectSubDetails effect={effect.effectB} />
+    </>
+  );
+}
+
+interface EffectSelectorProps {
+  effect: EffectProto['effect'];
+  setEffect: (effect: EffectProto['effect'], description: string) => void;
+  showRandom?: boolean;
+}
+
+function EffectSelector({ effect, setEffect, showRandom }: EffectSelectorProps) {
+  return (
+    <>
+      <IconButton
+        title="Static Effect"
+        variant={effect.case === 'staticEffect' ? 'primary' : 'default'}
+        onClick={() => {
+          if (effect.case === 'staticEffect') {
+            return;
+          }
+
+          setEffect({
+            case: 'staticEffect',
+            value: new Effect_StaticEffect({
+              state: getStates(effect.value).a.clone(),
+            }),
+          }, 'Change effect type to static.');
+        }}>
+        <BiPause />
+      </IconButton>
+      <IconButton
+        title="Ramp Effect"
+        variant={effect.case === 'rampEffect' ? 'primary' : 'default'}
+        onClick={() => {
+          if (effect.case === 'rampEffect') {
+            return;
+          }
+
+          setEffect({
+            case: 'rampEffect',
+            value: new Effect_RampEffect({
+              stateStart: getStates(effect.value).a.clone(),
+              stateEnd: getStates(effect.value).b.clone(),
+            }),
+          }, 'Change effect type to ramp.');
+        }}>
+        <IconBxLineChart />
+      </IconButton>
+      <IconButton
+        title="Strobe Effect"
+        variant={effect.case === 'strobeEffect' ? 'primary' : 'default'}
+        onClick={() => {
+          if (effect.case === 'strobeEffect') {
+            return;
+          }
+
+          setEffect({
+            case: 'strobeEffect',
+            value: new Effect_StrobeEffect({
+              stateA: getStates(effect.value).a.clone(),
+              stateB: getStates(effect.value).b.clone(),
+              stateAFames: 3,
+              stateBFames: 3,
+            }),
+          }, 'Change effect type to strobe.');
+        }}>
+        <IconBxsBolt />
+      </IconButton>
+      {
+        showRandom &&
+        <IconButton
+          title="Random Effect"
+          variant={effect.case === 'randomEffect' ? 'primary' : 'default'}
+          onClick={() => {
+            if (effect.case === 'randomEffect') {
+              return;
+            }
+
+            setEffect({
+              case: 'randomEffect',
+              value: new Effect_RandomEffect({
+                seed: 0,
+                effectAMin: 0,
+                effectAVariation: 1000,
+                effectBMin: 0,
+                effectBVariation: 1000,
+
+                effectA: {
+                  case: 'aStaticEffect',
+                  value: new Effect_StaticEffect({
+                    state: getStates(effect.value).a.clone(),
+                  }),
+                },
+                effectB: {
+                  case: 'bStaticEffect',
+                  value: new Effect_StaticEffect({
+                    state: getStates(effect.value).b.clone(),
+                  }),
+                },
+              })
+            }, 'Change effect type to random.');
+          }}>
+          <BiDice6 />
+        </IconButton>
+      }
     </>
   );
 }
@@ -739,14 +799,14 @@ interface RandomEffectSubDetailsProps {
 
 function RandomEffectSubDetails({ effect }: RandomEffectSubDetailsProps) {
   switch (effect.case) {
-    case 'aStatic':
-    case 'bStatic':
+    case 'aStaticEffect':
+    case 'bStaticEffect':
       return <StaticEffectDetails effect={effect.value} showPhase={false} />
-    case 'aRamp':
-    case 'bRamp':
+    case 'aRampEffect':
+    case 'bRampEffect':
       return <RampEffectDetails effect={effect.value} showPhase={false} />
-    case 'aStrobe':
-    case 'bStrobe':
+    case 'aStrobeEffect':
+    case 'bStrobeEffect':
       return <StrobeEffectDetails effect={effect.value} showPhase={false} />
     default:
       return 'Not Set';

@@ -105,15 +105,15 @@ message Effect {
     bool treat_fixtures_individually = 6;
 
     oneof effect_a {
-      StaticEffect a_static = 11;
-      RampEffect a_ramp = 12;
-      StrobeEffect a_strobe = 13;
+      StaticEffect a_static_effect = 11;
+      RampEffect a_ramp_effect = 12;
+      StrobeEffect a_strobe_effect = 13;
     }
 
     oneof effect_b {
-      StaticEffect b_static = 21;
-      RampEffect b_ramp = 22;
-      StrobeEffect b_strobe = 23;
+      StaticEffect b_static_effect = 21;
+      RampEffect b_ramp_effect = 22;
+      StrobeEffect b_strobe_effect = 23;
     }
   }
 

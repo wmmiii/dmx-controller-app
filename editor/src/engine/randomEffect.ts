@@ -47,16 +47,16 @@ export function randomEffect(
   }
 
   switch (subEffect.case) {
-    case 'aStatic':
-    case 'bStatic':
+    case 'aStaticEffect':
+    case 'bStaticEffect':
       applyState(subEffect.value.state!, context);
       break;
-    case 'aRamp':
-    case 'bRamp':
+    case 'aRampEffect':
+    case 'bRampEffect':
       rampEffect(context, subEffect.value, subEffectT);
       break;
-    case 'aStrobe':
-    case 'bStrobe':
+    case 'aStrobeEffect':
+    case 'bStrobeEffect':
       strobeEffect(context, subEffect.value, frame);
       break;
   }
