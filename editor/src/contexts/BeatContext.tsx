@@ -10,6 +10,7 @@ type SampleQuality = 'idle' | 'not enough samples' | 'poor' | 'fair' | 'excellen
 
 export const BeatContext = createContext({
   beat: new BeatMetadata({ lengthMs: Number.MAX_SAFE_INTEGER, offsetMs: BigInt(0) }),
+  setBeat: (_duration: number, _start?: bigint) => { },
   addBeatSample: (_t: number) => { },
   sampleQuality: 'idle' as SampleQuality,
   detectionStrategy: 'manual' as BeatDetectionStrategy,
@@ -133,6 +134,13 @@ export function BeatProvider({ children }: PropsWithChildren): JSX.Element {
   return (
     <BeatContext.Provider value={{
       beat,
+      setBeat: (length, start) => {
+      project.liveBeat = new BeatMetadata({
+        lengthMs: length,
+        offsetMs: start || project.liveBeat?.offsetMs || 0n,
+      });
+      save('Manually set beat');
+      },
       addBeatSample,
       sampleQuality,
       detectionStrategy: strategy,

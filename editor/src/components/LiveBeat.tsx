@@ -1,6 +1,7 @@
 import { useContext, useEffect, useMemo } from 'react';
 import { ShortcutContext } from '../contexts/ShortcutContext';
 import { BeatContext } from '../contexts/BeatContext';
+import { NumberInput } from './Input';
 
 
 interface LiveBeatProps {
@@ -8,7 +9,7 @@ interface LiveBeatProps {
 }
 
 export function LiveBeat({ className }: LiveBeatProps): JSX.Element {
-  const { beat, sampleQuality, addBeatSample, detectionStrategy, setDetectionStrategy } = useContext(BeatContext);
+  const { beat, setBeat, sampleQuality, addBeatSample, detectionStrategy, setDetectionStrategy } = useContext(BeatContext);
   const { setShortcuts } = useContext(ShortcutContext);
 
   useEffect(() => setShortcuts([
@@ -33,8 +34,13 @@ export function LiveBeat({ className }: LiveBeatProps): JSX.Element {
 
   return (
     <div className={className}>
-      {beatEmoji}
-      &nbsp;BPM: {Math.floor(60_000 / (beat?.lengthMs || NaN))}&nbsp;
+      {beatEmoji}&nbsp;
+      &nbsp;BPM: <NumberInput
+        type="integer"
+        min={0}
+        max={300}
+        value={Math.floor(60_000 / (beat?.lengthMs || NaN))} 
+        onChange={(v) => setBeat(60_000 / v)}/>&nbsp;
       <select value={detectionStrategy} onChange={(e) => setDetectionStrategy(e.target.value as any)}>
         <option value="manual">Manual</option>
         <option value="microphone">Microphone</option>

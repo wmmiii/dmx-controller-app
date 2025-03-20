@@ -122,6 +122,7 @@ export function getAvailableChannels(outputId: OutputId | undefined, project: Pr
 
   const channels = new Set(fixtureIds
     .map(id => getActiveUniverse(project).fixtures[String(id)])
+    .filter(pf => pf != null)
     .map(pf => project.fixtureDefinitions[pf.fixtureDefinitionId].modes[pf.fixtureMode])
     .flatMap(mode => Object.values(mode.channels))
     .map(c => c.type));

@@ -221,7 +221,14 @@ export function BeatEditor({ file, onCancel }: BeatEditorProps):
     },
   ]), [playPause]);
 
+  const setBpm = useCallback((bpm: number) => {
+    const beatDuration = 60_000 / bpm;
+    setSecondMarker(firstMarker + beatDuration);
+  }, [firstMarker, setSecondMarker])
+
   const beat = ((t - firstBeat) % beatDuration) / beatDuration;
+
+  const bpm = Math.floor(60_000 / beatDuration);
 
   const onSave = useCallback(() => {
     file.beatMetadata = new BeatMetadata({
@@ -292,6 +299,15 @@ export function BeatEditor({ file, onCancel }: BeatEditorProps):
             onChange={setBeatsPerDuration}
             min={1}
             max={128} />
+        </div>
+        <div>
+          BPM:
+          <NumberInput
+            type="integer"
+            min={0}
+            max={300}
+            value={bpm}
+            onChange={setBpm} />
         </div>
       </div>
       <h2>Instructions</h2>
