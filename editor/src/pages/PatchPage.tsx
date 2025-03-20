@@ -6,7 +6,7 @@ import IconBxX from '../icons/IconBxX';
 import RangeInput from '../components/RangeInput';
 import styles from './PatchPage.module.scss';
 import { Button, IconButton } from '../components/Button';
-import { FixtureDefinition, FixtureDefinition_Channel, FixtureDefinition_Channel_AmountMapping, FixtureDefinition_Channel_AngleMapping, FixtureDefinition_Mode, PhysicalFixture, PhysicalFixtureGroup } from '@dmx-controller/proto/fixture_pb';
+import { FixtureDefinition, FixtureDefinition_Channel, FixtureDefinition_Channel_AmountMapping, FixtureDefinition_Channel_AngleMapping, FixtureDefinition_Channel_ColorWheelMapping, FixtureDefinition_Channel_ColorWheelMapping_ColorWheelColor, FixtureDefinition_Mode, PhysicalFixture, PhysicalFixtureGroup } from '@dmx-controller/proto/fixture_pb';
 import { HorizontalSplitPane } from '../components/SplitPane';
 import { Modal } from '../components/Modal';
 import { NumberInput, TextInput } from '../components/Input';
@@ -21,6 +21,8 @@ import { extractGdtf } from '../util/gdtf';
 import { Warning } from '../components/Warning';
 import { deleteFixture, deleteFixtureGroup } from '../engine/fixture';
 import { AMOUNT_CHANNELS, ANGLE_CHANNELS, ChannelTypes, COLOR_CHANNELS, isAmountChannel, isAngleChannel } from '../engine/channel';
+import { BiPlus, BiX } from 'react-icons/bi';
+import { ColorSwatch } from '../components/ColorSwatch';
 
 export default function PatchPage(): JSX.Element {
   return (
@@ -518,10 +520,11 @@ function EditDefinitionDialog({
   const [modeId, setModeId] = useState<string>(Object.keys(definition.modes)[0]);
   const [testIndex, setTestIndex] = useState(0);
   const [testValues, setTestValues] = useState([] as number[]);
+  const [wheel, setWheel] = useState<FixtureDefinition_Channel_ColorWheelMapping | null>(null);
 
   useEffect(() => {
     const testValues: number[] = [];
-    Object.entries(definition.channels).forEach(([i, c]) => {
+    Object.entries(mode.channels).forEach(([i, c]) => {
       testValues[parseInt(i) - 1 + testIndex] = c.defaultValue || 0;
     });
     setTestValues(testValues);
@@ -530,7 +533,7 @@ function EditDefinitionDialog({
   useEffect(() => {
     const render = () => {
       const universe = new Uint8Array(512);
-      for (let i = 0; i < definition.numChannels; ++i) {
+      for (let i = 0; i < mode.numChannels; ++i) {
         universe[i + testIndex] = testValues[i] || 0;
       }
       return universe;
@@ -693,6 +696,7 @@ function EditDefinitionDialog({
                             <option key={i} value={t}>{t}</option>
                           ))
                       }
+                      <option value="color_wheel">color wheel</option>
                     </select>
                   </td>
                   <td>
@@ -708,72 +712,11 @@ function EditDefinitionDialog({
                         }} />
                     }
                   </td>
-                  {
-                    channel?.mapping.case === 'angleMapping' ?
-                      <>
-                        <td>
-                          <NumberInput
-                            min={-720}
-                            max={720}
-                            value={channel.mapping.value.minDegrees}
-                            onChange={(v) => {
-                              if (channel.mapping.case === 'angleMapping') {
-                                channel.mapping.value.minDegrees = v;
-                                save(`Set channel ${index} min degrees to ${v}.`);
-                              }
-                            }} />
-                        </td>
-                        <td>
-                          <NumberInput
-                            min={-720}
-                            max={720}
-                            value={channel.mapping.value.maxDegrees}
-                            onChange={(v) => {
-                              if (channel.mapping.case === 'angleMapping') {
-                                channel.mapping.value.maxDegrees = v;
-                                save(`Set channel ${index} max degrees to ${v}.`);
-                              }
-                            }} />
-                        </td>
-                      </> :
-                      <>
-                        <td></td>
-                        <td></td>
-                      </>
-                  }
-                  {
-                    channel?.mapping.case === 'amountMapping' ?
-                      <>
-                        <td>
-                          <RangeInput
-                            title={`Minimum value for ${channel?.type} channel.`}
-                            value={channel.mapping.value.minValue}
-                            onChange={(value) => {
-                              if (channel.mapping.case === 'amountMapping') {
-                                channel.mapping.value.minValue = value;
-                                save(`Set channel ${index} min value to ${value}.`);
-                              }
-                            }}
-                            max="255" />
-                        </td>
-                        <td>
-                          <RangeInput
-                            title={`Maximum value for ${channel?.type} channel.`}
-                            value={channel.mapping.value.maxValue}
-                            onChange={(value) => {
-                              if (channel.mapping.case === 'amountMapping') {
-                                channel.mapping.value.maxValue = value;
-                                save(`Set channel ${index} max value to ${value}.`);
-                              }
-                            }}
-                            max="255" />
-                        </td>
-                      </> :
-                      <>
-                        <td></td>
-                        <td></td>
-                      </>
-                  }
+                  <ChannelMapping
+                    index={index}
+                    type={channel?.type}
+                    mapping={channel?.mapping}
+                    setWheel={setWheel} />
                   <td>
                     <NumberInput
                       min={0}
@@ -792,6 +735,195 @@ function EditDefinitionDialog({
           }
         </tbody>
       </table>
+      {
+        wheel &&
+        <ColorWheelEditor wheel={wheel} onClose={() => setWheel(null)} />
+      }
     </Modal>
   );
+}
+
+interface ChannelMappingProps {
+  index: number;
+  type: string | undefined;
+  mapping: FixtureDefinition_Channel['mapping'] | undefined;
+  setWheel: (wheel: FixtureDefinition_Channel_ColorWheelMapping) => void;
+}
+
+function ChannelMapping({ index, type, mapping, setWheel }: ChannelMappingProps) {
+  const { save } = useContext(ProjectContext);
+
+  if (type == null || mapping == null) {
+    return (
+      <td colSpan={4}></td>
+    );
+  }
+
+  switch (mapping.case) {
+    case 'angleMapping':
+      return (
+        <>
+          <td>
+            <NumberInput
+              min={-720}
+              max={720}
+              value={mapping.value.minDegrees}
+              onChange={(v) => {
+                if (mapping.case === 'angleMapping') {
+                  mapping.value.minDegrees = v;
+                  save(`Set channel ${index} min degrees to ${v}.`);
+                }
+              }} />
+          </td>
+          <td>
+            <NumberInput
+              min={-720}
+              max={720}
+              value={mapping.value.maxDegrees}
+              onChange={(v) => {
+                if (mapping.case === 'angleMapping') {
+                  mapping.value.maxDegrees = v;
+                  save(`Set channel ${index} max degrees to ${v}.`);
+                }
+              }} />
+          </td>
+          <td colSpan={2}></td>
+        </>
+      );
+    case 'amountMapping':
+      return (
+        <>
+          <td colSpan={2}></td>
+          <td>
+            <RangeInput
+              title={`Minimum value for ${type} channel.`}
+              value={mapping.value.minValue}
+              onChange={(value) => {
+                if (mapping.case === 'amountMapping') {
+                  mapping.value.minValue = value;
+                  save(`Set channel ${index} min value to ${value}.`);
+                }
+              }}
+              max="255" />
+          </td>
+          <td>
+            <RangeInput
+              title={`Maximum value for ${type} channel.`}
+              value={mapping.value.maxValue}
+              onChange={(value) => {
+                if (mapping.case === 'amountMapping') {
+                  mapping.value.maxValue = value;
+                  save(`Set channel ${index} max value to ${value}.`);
+                }
+              }}
+              max="255" />
+          </td>
+        </>
+      );
+    case 'colorWheelMapping':
+      return (
+        <td colSpan={4}>
+          <Button onClick={() => setWheel(mapping.value)}>
+            Edit Color Wheel
+          </Button>
+        </td>
+      );
+    default:
+      return (
+        <td colSpan={4}>
+        </td>
+      );
+  }
+}
+
+interface ColorWheelEditorProps {
+  wheel: FixtureDefinition_Channel_ColorWheelMapping;
+  onClose: () => void;
+}
+
+function ColorWheelEditor({ wheel, onClose }: ColorWheelEditorProps) {
+  const { save } = useContext(ProjectContext);
+  return (
+    <Modal
+      title="Edit Color Wheel"
+      onClose={onClose}
+      footer={<Button onClick={onClose}>Done</Button>}>
+      <table>
+        <thead>
+          <tr>
+            <td>Value</td>
+            <td>Color</td>
+            <td>Name</td>
+            <td></td>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            wheel.colors
+              .filter((c) => {
+                if (c.color == null) {
+                  console.log(c);
+                }
+                return c.color != null;
+              })
+              .map((c, i) => (
+                <tr key={i}>
+                  <td>
+                    <NumberInput
+                      min={0}
+                      max={512}
+                      value={c.value}
+                      onChange={(value) => {
+                        c.value = value;
+                        save(`Change color wheel value to ${value}.`);
+                      }} />
+                  </td>
+                  <td>
+                    <ColorSwatch color={c.color!} />
+                  </td>
+                  <td>
+                    <TextInput
+                      value={c.name}
+                      onChange={(value) => {
+                        c.name = value;
+                        save(`Change name of color on wheel to ${value};`)
+                      }} />
+                  </td>
+                  <td>
+                    <IconButton
+                      title={`Delete ${c.name}`}
+                      onClick={() => {
+                        wheel.colors = wheel.colors.filter((color) => color != c);
+                        save(`Deleted color ${c.name} from wheel.`);
+                      }}>
+                      <BiX />
+                    </IconButton>
+                  </td>
+                </tr>
+              ))
+          }
+          <tr>
+            <td colSpan={4}>
+              <Button
+                icon={<BiPlus />}
+                onClick={() => {
+                  wheel.colors.push(new FixtureDefinition_Channel_ColorWheelMapping_ColorWheelColor({
+                    name: 'New color',
+                    value: 512,
+                    color: {
+                      red: 1,
+                      green: 1,
+                      blue: 1,
+                    },
+                  }));
+                  save('Added color to color wheel.');
+                }}>
+                Add new Color
+              </Button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </Modal>
+  )
 }

@@ -32,10 +32,12 @@ ts_project(
     ]),
     tsconfig = "//:tsconfig",
     deps = [
+        "//:node_modules/@types/cie-rgb-color-converter",
         "//:node_modules/@types/react",
         "//:node_modules/@types/react-dom",
         "//:node_modules/@types/react-router-dom",
         "//:node_modules/@zip.js/zip.js",
+        "//:node_modules/cie-rgb-color-converter",
         "//:node_modules/crunker",
         "//:node_modules/react",
         "//:node_modules/react-dom",

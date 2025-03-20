@@ -4,11 +4,13 @@ specifiers:
   '@bufbuild/protobuf': 1.7.2
   '@bufbuild/protoc-gen-connect-es': 0.13.0
   '@bufbuild/protoc-gen-es': 1.7.2
+  '@types/cie-rgb-color-converter': ^1.0.0
   '@types/dom-serial': 1.0.6
   '@types/react': 18.2.42
   '@types/react-dom': 18.2.17
   '@types/react-router-dom': 5.3.3
   '@zip.js/zip.js': ^2.7.57
+  cie-rgb-color-converter: ^1.0.6
   crunker: 2.4.0
   esbuild: 0.24.0
   esbuild-css-modules-plugin: 3.1.0
@@ -27,6 +29,7 @@ specifiers:
 
 dependencies:
   '@zip.js/zip.js': 2.7.57
+  cie-rgb-color-converter: 1.0.6
   crunker: 2.4.0
   react: 18.2.0
   react-dom: 18.2.0_react@18.2.0
@@ -43,6 +46,7 @@ devDependencies:
   '@bufbuild/protobuf': 1.7.2
   '@bufbuild/protoc-gen-connect-es': 0.13.0_oiyrjpl52uyd66bh6gknkwxihu
   '@bufbuild/protoc-gen-es': 1.7.2_@bufbuild+protobuf@1.7.2
+  '@types/cie-rgb-color-converter': 1.0.0
   '@types/dom-serial': 1.0.6
   '@types/react': 18.2.42
   '@types/react-dom': 18.2.17
@@ -326,6 +330,10 @@ packages:
     engines: {node: '>=14.0.0'}
     dev: false
 
+  /@types/cie-rgb-color-converter/1.0.0:
+    resolution: {integrity: sha512-ZeLsd/aV0ziQQMEsGCRbHU1uNK60jUYK6fxLqIb4znVpg2tCpcD6/w5sRRuytq58YvnPgjvxFJFTJlEijUOkSQ==}
+    dev: true
+
   /@types/dom-serial/1.0.6:
     resolution: {integrity: sha512-eUHKbc6mdMgMm75/oBLocs3wkOQkPQ/oNCT+b5OgUT6mLgIvDTp3wCCE9tYZNvDPPh6Cj9lVg2IguWfS/mDrrQ==}
     dev: true
@@ -418,6 +426,10 @@ packages:
     optionalDependencies:
       fsevents: 2.3.3
     dev: true
+
+  /cie-rgb-color-converter/1.0.6:
+    resolution: {integrity: sha512-ox9KQRf1i8jFhE1d0cZGwGLyRWy03oFLUhXqr9XrD4XACNezejiarj/4VZnYcYHOifQcmY/JIC0HB1Nkv+nFZQ==}
+    dev: false
 
   /crunker/2.4.0:
     resolution: {integrity: sha512-3J0aBgLaB8jpGh6o+bisjYzOEkJLYxhnisHXogjY4fxYewh1aVCptWAz7RSTYPncCyxdfA+UaWAM1BrQiZvZgQ==}

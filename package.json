@@ -2,6 +2,7 @@
   "private": true,
   "dependencies": {
     "@zip.js/zip.js": "^2.7.57",
+    "cie-rgb-color-converter": "^1.0.6",
     "crunker": "2.4.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
@@ -18,6 +19,7 @@
     "@bufbuild/protobuf": "1.7.2",
     "@bufbuild/protoc-gen-connect-es": "0.13.0",
     "@bufbuild/protoc-gen-es": "1.7.2",
+    "@types/cie-rgb-color-converter": "^1.0.0",
     "@types/dom-serial": "1.0.6",
     "@types/react": "18.2.42",
     "@types/react-dom": "18.2.17",

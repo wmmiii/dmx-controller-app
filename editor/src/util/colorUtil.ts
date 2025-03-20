@@ -1,4 +1,5 @@
 import { Color, ColorPalette } from "@dmx-controller/proto/color_pb";
+import ColorConverter from 'cie-rgb-color-converter';
 
 export function stringifyColor(color: Color) {
   return `rgb(${color.red * 255}, ${color.green * 255}, ${color.blue * 255})`;
@@ -46,16 +47,25 @@ export function hsvToColor(h: number, s: number, v: number) {
   let g = 0;
   let b = 0;
   switch (i % 6) {
-      case 0: r = v, g = t, b = p; break;
-      case 1: r = q, g = v, b = p; break;
-      case 2: r = p, g = v, b = t; break;
-      case 3: r = p, g = q, b = v; break;
-      case 4: r = t, g = p, b = v; break;
-      case 5: r = v, g = p, b = q; break;
+    case 0: r = v, g = t, b = p; break;
+    case 1: r = q, g = v, b = p; break;
+    case 2: r = p, g = v, b = t; break;
+    case 3: r = p, g = q, b = v; break;
+    case 4: r = t, g = p, b = v; break;
+    case 5: r = v, g = p, b = q; break;
   }
   return new Color({
     red: r,
     green: g,
     blue: b,
+  });
+}
+
+export function cieToColor(x: number, y: number, bri: number) {
+  const color = ColorConverter.xyBriToRgb(x, y, bri);
+  return new Color({
+    red: color.r / 255,
+    green: color.g / 255,
+    blue: color.b / 255,
   });
 }

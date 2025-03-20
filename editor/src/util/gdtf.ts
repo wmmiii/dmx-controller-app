@@ -1,7 +1,9 @@
-import { FixtureDefinition, FixtureDefinition_Channel, FixtureDefinition_Channel_AmountMapping, FixtureDefinition_Channel_AngleMapping, FixtureDefinition_Mode } from '@dmx-controller/proto/fixture_pb';
+import { FixtureDefinition, FixtureDefinition_Channel, FixtureDefinition_Channel_AmountMapping, FixtureDefinition_Channel_AngleMapping, FixtureDefinition_Channel_ColorWheelMapping, FixtureDefinition_Channel_ColorWheelMapping_ColorWheelColor, FixtureDefinition_Mode } from '@dmx-controller/proto/fixture_pb';
 import { BlobReader, TextWriter, ZipReader } from '@zip.js/zip.js';
 import getUuidByString from 'uuid-by-string';
-import {AMOUNT_CHANNELS, ANGLE_CHANNELS, COLOR_CHANNELS } from '../engine/channel';
+import { AMOUNT_CHANNELS, ANGLE_CHANNELS, COLOR_CHANNELS } from '../engine/channel';
+import { Color } from '@dmx-controller/proto/color_pb';
+import { cieToColor } from './colorUtil';
 
 export async function extractGdtf(arrayBuffer: Blob) {
   // Unzip archive and find XML.
@@ -35,8 +37,15 @@ export async function extractGdtf(arrayBuffer: Blob) {
 
     channel: for (const channelElement of Array.from(modeElement.querySelectorAll('DMXChannel'))) {
       const initialFunction = getAttributeNotEmpty(channelElement, 'InitialFunction').toLowerCase();
-      const offset = getAttributeNotEmpty(channelElement, 'Offset').split(',').map((i) => parseInt(i));
+      const offset = getAttributeNotEmpty(channelElement, 'Offset')
+        .split(',')
+        .map((i) => parseInt(i))
+        .filter((o) => !isNaN(o));
+      if (offset.length === 0) {
+        continue channel;
+      }
       maxChannel = Math.max(maxChannel, ...offset);
+
       for (const channelName of COLOR_CHANNELS) {
         if (initialFunction.indexOf(channelName) >= 0) {
           addChannels(
@@ -71,7 +80,8 @@ export async function extractGdtf(arrayBuffer: Blob) {
             channelName,
             offset,
             {
-              case: 'amountMapping', value: new FixtureDefinition_Channel_AmountMapping({
+              case: 'amountMapping',
+              value: new FixtureDefinition_Channel_AmountMapping({
                 minValue: 0,
                 maxValue: 255,
               })
@@ -84,8 +94,54 @@ export async function extractGdtf(arrayBuffer: Blob) {
         mode.channels[offset[0]] = new FixtureDefinition_Channel({
           type: 'other',
           defaultValue: 255,
-          mapping: {case: undefined, value: undefined},
+          mapping: {
+            case: undefined,
+            value: undefined,
+          },
         });
+      }
+
+      if (initialFunction.indexOf('color selection') >= 0) {
+        const colorElement = channelElement.querySelector('[Name="Color Selection"]');
+        const wheelName = getAttributeNotEmpty(colorElement, 'Wheel');
+        if (wheelName) {
+          const wheel = description.querySelector(`Wheel[Name="${wheelName}"]`);
+          if (wheel) {
+            // Extract all the colors
+            const colors: { [color: string]: Color } = {};
+            for (const colorElement of Array.from(wheel.querySelectorAll('Slot'))) {
+              const color = getAttributeNotEmpty(colorElement, 'Color')
+                .split(',')
+                .map(parseFloat);
+              const name = getAttributeNotEmpty(colorElement, 'Name');
+              if (name) {
+                colors[name.toLowerCase()] = cieToColor(color[0], color[1], color[2]);
+              }
+            }
+
+            const mapping = new FixtureDefinition_Channel_ColorWheelMapping();
+            for (const set of Array.from(colorElement!.querySelectorAll('ChannelSet'))) {
+              const value = parseInt(getAttributeNotEmpty(set, 'DMXFrom').split('/')[0]);
+              const name = getAttributeNotEmpty(set, 'Name');
+              const color = colors[name.toLowerCase()];
+
+              mapping.colors.push(new FixtureDefinition_Channel_ColorWheelMapping_ColorWheelColor({
+                name: name,
+                value: value,
+                color: color,
+              }));
+            }
+
+            mode.channels[offset[0]] = new FixtureDefinition_Channel({
+              type: 'color_wheel',
+              defaultValue: 0,
+              mapping: {
+                case: 'colorWheelMapping',
+                value: mapping,
+              },
+            });
+          }
+        }
       }
     }
 

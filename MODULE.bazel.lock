@@ -758,7 +758,7 @@
         "bzlTransitiveDigest": "goOLvHeH++sft9p6Q55Vu1aErXTC1p5j27bfZ0he1mU=",
         "usagesDigest": "bJqg+9by4wZOpx8S9JJC1D7T478qXrWRgToobYGVq0k=",
         "recordedFileInputs": {
-          "@@//pnpm-lock.yaml": "2088fe225f5dfcce391f9ca1f7dab07ec3b5f945d216aa426f1c344d7dc2e811"
+          "@@//pnpm-lock.yaml": "c34fa569a852feffb3091e846a29dcb4ecbae457f2c929bc852f7e6af8ce2a80"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -2461,6 +2461,63 @@
               ]
             }
           },
+          "npm__at_types_cie-rgb-color-converter__1.0.0": {
+            "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
+            "ruleClassName": "npm_import_rule",
+            "attributes": {
+              "package": "@types/cie-rgb-color-converter",
+              "version": "1.0.0",
+              "root_package": "",
+              "link_workspace": "",
+              "link_packages": {
+                "": [
+                  "@types/cie-rgb-color-converter"
+                ]
+              },
+              "integrity": "sha512-ZeLsd/aV0ziQQMEsGCRbHU1uNK60jUYK6fxLqIb4znVpg2tCpcD6/w5sRRuytq58YvnPgjvxFJFTJlEijUOkSQ==",
+              "url": "https://registry.npmjs.org/@types/cie-rgb-color-converter/-/cie-rgb-color-converter-1.0.0.tgz",
+              "commit": "",
+              "patch_args": [],
+              "patches": [],
+              "custom_postinstall": "",
+              "npm_auth": "",
+              "npm_auth_basic": "",
+              "npm_auth_username": "",
+              "npm_auth_password": "",
+              "lifecycle_hooks": [],
+              "extra_build_content": "",
+              "generate_bzl_library_targets": false
+            }
+          },
+          "npm__at_types_cie-rgb-color-converter__1.0.0__links": {
+            "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
+            "ruleClassName": "npm_import_links",
+            "attributes": {
+              "package": "@types/cie-rgb-color-converter",
+              "version": "1.0.0",
+              "dev": true,
+              "root_package": "",
+              "link_packages": {
+                "": [
+                  "@types/cie-rgb-color-converter"
+                ]
+              },
+              "deps": {},
+              "transitive_closure": {
+                "@types/cie-rgb-color-converter": [
+                  "1.0.0"
+                ]
+              },
+              "lifecycle_build_target": false,
+              "lifecycle_hooks_env": [],
+              "lifecycle_hooks_execution_requirements": [],
+              "bins": {},
+              "npm_translate_lock_repo": "npm",
+              "package_visibility": [
+                "//visibility:public"
+              ]
+            }
+          },
           "npm__at_types_dom-serial__1.0.6": {
             "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
             "ruleClassName": "npm_import_rule",
@@ -3321,6 +3378,63 @@
                 ],
                 "is-number": [
                   "7.0.0"
+                ]
+              },
+              "lifecycle_build_target": false,
+              "lifecycle_hooks_env": [],
+              "lifecycle_hooks_execution_requirements": [],
+              "bins": {},
+              "npm_translate_lock_repo": "npm",
+              "package_visibility": [
+                "//visibility:public"
+              ]
+            }
+          },
+          "npm__cie-rgb-color-converter__1.0.6": {
+            "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
+            "ruleClassName": "npm_import_rule",
+            "attributes": {
+              "package": "cie-rgb-color-converter",
+              "version": "1.0.6",
+              "root_package": "",
+              "link_workspace": "",
+              "link_packages": {
+                "": [
+                  "cie-rgb-color-converter"
+                ]
+              },
+              "integrity": "sha512-ox9KQRf1i8jFhE1d0cZGwGLyRWy03oFLUhXqr9XrD4XACNezejiarj/4VZnYcYHOifQcmY/JIC0HB1Nkv+nFZQ==",
+              "url": "https://registry.npmjs.org/cie-rgb-color-converter/-/cie-rgb-color-converter-1.0.6.tgz",
+              "commit": "",
+              "patch_args": [],
+              "patches": [],
+              "custom_postinstall": "",
+              "npm_auth": "",
+              "npm_auth_basic": "",
+              "npm_auth_username": "",
+              "npm_auth_password": "",
+              "lifecycle_hooks": [],
+              "extra_build_content": "",
+              "generate_bzl_library_targets": false
+            }
+          },
+          "npm__cie-rgb-color-converter__1.0.6__links": {
+            "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
+            "ruleClassName": "npm_import_links",
+            "attributes": {
+              "package": "cie-rgb-color-converter",
+              "version": "1.0.6",
+              "dev": false,
+              "root_package": "",
+              "link_packages": {
+                "": [
+                  "cie-rgb-color-converter"
+                ]
+              },
+              "deps": {},
+              "transitive_closure": {
+                "cie-rgb-color-converter": [
+                  "1.0.6"
                 ]
               },
               "lifecycle_build_target": false,

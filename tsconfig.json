@@ -9,6 +9,8 @@
       "ESNext",
     ],
     "moduleResolution": "node",
+    "sourceMap": true,
+    "inlineSources": true,
     "strict": true,
     "noImplicitAny": true,
     "noUnusedLocals": true,

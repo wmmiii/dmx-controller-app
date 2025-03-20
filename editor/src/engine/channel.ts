@@ -25,7 +25,7 @@ export const COLOR_CHANNEL_DESCRIPTIONS: { [channel: string]: ChannelDescription
   },
   'white': {
     description: 'The white component of a light.'
-  }
+  },
 } as const;
 export const COLOR_CHANNELS = Object.keys(COLOR_CHANNEL_DESCRIPTIONS);
 export type ColorChannel = typeof COLOR_CHANNELS[number];
