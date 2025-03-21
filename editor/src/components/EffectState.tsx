@@ -60,7 +60,9 @@ export function EffectState(
   return (
     <>
       {
-        availableChannels.findIndex((channel) => COLOR_CHANNELS.indexOf(channel as any) > -1) &&
+        availableChannels.findIndex((channel) => 
+          COLOR_CHANNELS.indexOf(channel as any) > -1 ||
+          channel === 'color_wheel') > -1 &&
         <>
           <label>
             <span>Color mode</span>

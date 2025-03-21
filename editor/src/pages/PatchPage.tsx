@@ -860,12 +860,7 @@ function ColorWheelEditor({ wheel, onClose }: ColorWheelEditorProps) {
         <tbody>
           {
             wheel.colors
-              .filter((c) => {
-                if (c.color == null) {
-                  console.log(c);
-                }
-                return c.color != null;
-              })
+              .filter((c) => c.color != null)
               .map((c, i) => (
                 <tr key={i}>
                   <td>

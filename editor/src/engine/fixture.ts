@@ -3,8 +3,8 @@ import { getAllFixtures } from "./group";
 import { OutputId, OutputId_FixtureMapping } from "@dmx-controller/proto/output_id_pb";
 import { getActiveUniverse } from "../util/projectUtils";
 import { LightTrack } from "@dmx-controller/proto/light_track_pb";
-import { FixtureDefinition_Mode, PhysicalFixture } from "@dmx-controller/proto/fixture_pb";
-import { AmountChannel, AngleChannel, ChannelTypes, isAmountChannel, isAngleChannel } from "./channel";
+import { FixtureDefinition_Channel_ColorWheelMapping, FixtureDefinition_Mode, PhysicalFixture } from "@dmx-controller/proto/fixture_pb";
+import { AmountChannel, AngleChannel, ChannelTypes, COLOR_CHANNELS, isAmountChannel, isAngleChannel } from "./channel";
 
 export type DmxUniverse = number[];
 
@@ -123,7 +123,8 @@ export function getAvailableChannels(outputId: OutputId | undefined, project: Pr
   const channels = new Set(fixtureIds
     .map(id => getActiveUniverse(project).fixtures[String(id)])
     .filter(pf => pf != null)
-    .map(pf => project.fixtureDefinitions[pf.fixtureDefinitionId].modes[pf.fixtureMode])
+    .map(pf => project.fixtureDefinitions[pf.fixtureDefinitionId]?.modes[pf.fixtureMode])
+    .filter(m => m != null)
     .flatMap(mode => Object.values(mode.channels))
     .map(c => c.type));
   return Array.from(channels);
@@ -192,80 +193,42 @@ function collectFunctions(fixture: PhysicalFixture, mode: FixtureDefinition_Mode
 
   for (const stringIndex in mode.channels) {
     const channel = mode.channels[stringIndex];
-    const index = fixture.channelOffset + parseInt(stringIndex) - 1;
+    const modeIndex = parseInt(stringIndex);
+    const index = fixture.channelOffset + modeIndex - 1;
     const channelType = channel.type as ChannelTypes;
-    switch (channelType) {
-      case 'red':
-        collection.colorFunctions.push((universe, r, _g, _b, _w) => {
-          universe[index] = r * 255;
-        });
-        break;
-      case 'green':
-        collection.colorFunctions.push((universe, _r, g, _b, _w) => {
-          universe[index] = g * 255;
-        });
-        break;
-      case 'blue':
-        collection.colorFunctions.push((universe, _r, _g, b, _w) => {
-          universe[index] = b * 255;
-        });
-        break;
-      case 'cyan':
-        collection.colorFunctions.push((universe, r, _g, _b, _w) => {
-          universe[index] = (1 - r) * 255;
-        });
-        break;
-      case 'magenta':
-        collection.colorFunctions.push((universe, _r, g, _b, _w) => {
-          universe[index] = (1 - g) * 255;
-        });
-        break;
-      case 'yellow':
-        collection.colorFunctions.push((universe, _r, _g, b, _w) => {
-          universe[index] = (1 - b) * 255;
-        });
-        break;
-      case 'white':
-        collection.colorFunctions.push((universe, _r, _g, _b, w) => {
-          if (w != null) {
-            universe[index] = w * 255;
-          }
-        });
-        break;
-      default:
-        if (isAngleChannel(channelType)) {
-          if (collection.angleFunctions.get(channelType) == null) {
-            collection.angleFunctions.set(channelType, []);
-          }
-          const offset = fixture.channelOffsets[channelType] || 0;
-          const functions = collection.angleFunctions.get(channelType);
-          if (functions == null) {
-            throw new Error('Angle channel does not have function map defined!');
-          }
-          functions.push((universe, d) => {
-            if (channel.mapping.case === 'angleMapping') {
-              universe[index] = mapDegrees(
-                d + offset,
-                channel.mapping.value.minDegrees,
-                channel.mapping.value.maxDegrees);
-            }
-
-          });
-        } else if (isAmountChannel(channelType)) {
-          if (collection.amountFunctions.get(channelType) == null) {
-            collection.amountFunctions.set(channelType, []);
-          } const functions = collection.amountFunctions.get(channelType);
-          if (functions == null) {
-            throw new Error('Amount channel does not have function map defined!');
-          }
-          functions.push((universe, a) => {
-            if (channel.mapping.case === 'amountMapping') {
-              universe[index] = (
-                a * (channel.mapping.value.maxValue - channel.mapping.value.minValue) + channel.mapping.value.minValue
-              ) % 256;
-            }
-          });
+    collectColorChannels(channelType, index, modeIndex, mode, collection);
+    if (isAngleChannel(channelType)) {
+      if (collection.angleFunctions.get(channelType) == null) {
+        collection.angleFunctions.set(channelType, []);
+      }
+      const offset = fixture.channelOffsets[channelType] || 0;
+      const functions = collection.angleFunctions.get(channelType);
+      if (functions == null) {
+        throw new Error('Angle channel does not have function map defined!');
+      }
+      functions.push((universe, d) => {
+        if (channel.mapping.case === 'angleMapping') {
+          universe[index] = mapDegrees(
+            d + offset,
+            channel.mapping.value.minDegrees,
+            channel.mapping.value.maxDegrees);
         }
+
+      });
+    } else if (isAmountChannel(channelType)) {
+      if (collection.amountFunctions.get(channelType) == null) {
+        collection.amountFunctions.set(channelType, []);
+      } const functions = collection.amountFunctions.get(channelType);
+      if (functions == null) {
+        throw new Error('Amount channel does not have function map defined!');
+      }
+      functions.push((universe, a) => {
+        if (channel.mapping.case === 'amountMapping') {
+          universe[index] = (
+            a * (channel.mapping.value.maxValue - channel.mapping.value.minValue) + channel.mapping.value.minValue
+          ) % 256;
+        }
+      });
     }
   }
 }
@@ -339,4 +302,94 @@ export function deleteFixtureGroup(project: Project, fixtureGroupId: bigint) {
     });
 
   delete project.groups[fixtureGroupId.toString()];
+}
+
+function collectColorChannels(
+  channelType: String,
+  index: number,
+  modeIndex: number,
+  mode: FixtureDefinition_Mode,
+  collection: FunctionCollection) {
+  const hasWhite = 'white' in Object.values(mode.channels);
+  switch (channelType) {
+    case 'red':
+      if (hasWhite) {
+        collection.colorFunctions.push((universe, r, _g, _b, _w) => {
+          universe[index] = r * 255;
+        });
+      } else {
+        collection.colorFunctions.push((universe, r, _g, _b, w) => {
+          universe[index] = Math.floor(r * 255 + w * 255);
+        });
+      }
+      break;
+    case 'green':
+      if (hasWhite) {
+        collection.colorFunctions.push((universe, _r, g, _b, _w) => {
+          universe[index] = g * 255;
+        });
+      } else {
+        collection.colorFunctions.push((universe, _r, g, _b, w) => {
+          universe[index] = Math.floor(g * 255 + w * 255);
+        });
+      }
+      break;
+    case 'blue':
+      if (hasWhite) {
+        collection.colorFunctions.push((universe, _r, _g, b, _w) => {
+          universe[index] = b * 255;
+        });
+      } else {
+        collection.colorFunctions.push((universe, _r, _g, b, w) => {
+          universe[index] = Math.floor(b * 255 + w * 255);
+        });
+      }
+      break;
+    case 'cyan':
+      collection.colorFunctions.push((universe, r, _g, _b, _w) => {
+        universe[index] = (1 - r) * 255;
+      });
+      break;
+    case 'magenta':
+      collection.colorFunctions.push((universe, _r, g, _b, _w) => {
+        universe[index] = (1 - g) * 255;
+      });
+      break;
+    case 'yellow':
+      collection.colorFunctions.push((universe, _r, _g, b, _w) => {
+        universe[index] = (1 - b) * 255;
+      });
+      break;
+    case 'white':
+      collection.colorFunctions.push((universe, _r, _g, _b, w) => {
+        if (w != null) {
+          universe[index] = w * 255;
+        }
+      });
+      break;
+    case 'color_wheel':
+      // Check to see if this fixture only supports a color wheel.
+      if (Object.values(mode.channels)
+        .map((c) => c.type)
+        .findIndex((c => c in COLOR_CHANNELS)) < 0) {
+        const mapping = mode.channels[modeIndex].mapping.value as FixtureDefinition_Channel_ColorWheelMapping;
+        collection.colorFunctions.push((universe, r, g, b) => {
+          let wheelSlot = 0;
+          let minDist = 100;
+          for (const slot of mapping.colors) {
+            const color = slot.color!;
+            const rDist = color.red - r;
+            const gDist = color.green - g;
+            const bDist = color.blue - b;
+            const dist = rDist * rDist + gDist * gDist + bDist * bDist;
+
+            if (dist < minDist) {
+              minDist = dist;
+              wheelSlot = slot.value;
+            }
+          }
+          universe[index] = wheelSlot;
+        });
+      }
+  }
 }

@@ -49,6 +49,7 @@ export interface RenderContext {
   readonly project: Project;
   readonly colorPalette: ColorPalette;
   readonly universe: DmxUniverse;
+  readonly nonInterpolatedIndices: number[];
 }
 
 export function renderShowToUniverse(t: number, frame: number, project: Project):
@@ -57,7 +58,7 @@ export function renderShowToUniverse(t: number, frame: number, project: Project)
 
   const universe = new Array(512).fill(0);
 
-  applyDefaults(project, universe);
+  const nonInterpolatedIndices = applyDefaults(project, universe);
 
   const show = project.shows[project.selectedShow || 0];
 
@@ -81,6 +82,7 @@ export function renderShowToUniverse(t: number, frame: number, project: Project)
       project: project,
       colorPalette: show.colorPalette || DEFAULT_COLOR_PALETTE,
       universe: universe,
+      nonInterpolatedIndices: nonInterpolatedIndices,
     };
 
     for (const track of show.lightTracks) {
@@ -109,7 +111,7 @@ export function renderSceneToUniverse(
 
   const universe = new Array(512).fill(0);
 
-  applyDefaults(project, universe);
+  const nonInterpolatedIndices = applyDefaults(project, universe);
 
   const scene = project.scenes[project.activeScene];
   if (!scene) {
@@ -214,6 +216,7 @@ export function renderSceneToUniverse(
               project: project,
               colorPalette: colorPalette,
               universe: after,
+              nonInterpolatedIndices: nonInterpolatedIndices,
             }, beatMetadata, frame, effect);
           }
         }
@@ -266,7 +269,7 @@ export function renderSceneToUniverse(
         return universe;
     }
 
-    interpolateUniverses(universe, amount, before, after);
+    interpolateUniverses(universe, amount, before, after, nonInterpolatedIndices);
   }
 
   return universe;
@@ -305,12 +308,15 @@ function renderUniverseSequence(
   universe: DmxUniverse,
 ) {
   if (universeSequence) {
+    const nonInterpolatedIndices = applyDefaults(project, universe);
+
     const context: Omit<Omit<RenderContext, 'output'>, 'outputId'> = {
       globalT: globalT,
       t: t,
       project: project,
       colorPalette: colorPalette,
       universe: universe,
+      nonInterpolatedIndices: nonInterpolatedIndices,
     };
 
     for (const track of universeSequence.lightTracks) {
@@ -349,7 +355,9 @@ function renderLayersToUniverse(
   }
 }
 
-function applyDefaults(project: Project, universe: DmxUniverse): void {
+/** Applies default values to all indices and returns an array of non-interpolated channels; */
+function applyDefaults(project: Project, universe: DmxUniverse): number[] {
+  const nonInterpolatedIndices: number[] = [];
   for (const fixture of Object.values(getActiveUniverse(project).fixtures)) {
     const fixtureDefinition = project.fixtureDefinitions[fixture.fixtureDefinitionId];
     // Can happen if fixture has not yet set a definition.
@@ -370,10 +378,13 @@ function applyDefaults(project: Project, universe: DmxUniverse): void {
         const mapping = channel[1].mapping.value;
         value += fixture.channelOffsets[channel[1].type] || 0;
         value = mapDegrees(value, mapping.minDegrees, mapping.maxDegrees);
+      } else if (channel[1].mapping.case === 'colorWheelMapping') {
+        nonInterpolatedIndices.push(index);
       }
       universe[index] = value;
     }
   }
+  return nonInterpolatedIndices;
 }
 
 function applyEffect(context: RenderContext, beat: BeatMetadata, frame: number, effect: Effect): void {

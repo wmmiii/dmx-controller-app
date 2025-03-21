@@ -42,5 +42,5 @@ export function rampEffect(
       easedT = t;
   }
 
-  interpolateUniverses(context.universe, easedT, start, end);
+  interpolateUniverses(context.universe, easedT, start, end, context.nonInterpolatedIndices);
 }

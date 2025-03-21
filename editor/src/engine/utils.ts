@@ -3,10 +3,18 @@ import { Project } from "@dmx-controller/proto/project_pb";
 import { getActiveUniverse } from "../util/projectUtils";
 import { ChannelTypes } from "./channel";
 
-export function interpolateUniverses(universe: DmxUniverse, t: number, start: DmxUniverse, end: DmxUniverse) {
-  // First do a dumb interpolation of all the channels to set coarse values.
+export function interpolateUniverses(
+  universe: DmxUniverse,
+  t: number,
+  start: DmxUniverse,
+  end: DmxUniverse,
+  nonInterpolatedIndices: number[]) {
   for (let i = 0; i < universe.length; ++i) {
-    universe[i] = start[i] * (1 - t) + end[i] * t;
+    if (nonInterpolatedIndices.indexOf(i) > -1) {
+      universe[i] = t > 0.5 ? end[i] : start[i];
+    } else {
+      universe[i] = start[i] * (1 - t) + end[i] * t;
+    }
   }
 }
 

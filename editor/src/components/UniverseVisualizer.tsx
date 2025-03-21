@@ -5,6 +5,7 @@ import { ProjectContext } from '../contexts/ProjectContext';
 import { SerialContext } from '../contexts/SerialContext';
 import { getActiveUniverse } from '../util/projectUtils';
 import { ChannelTypes } from '../engine/channel';
+import { FixtureDefinition_Channel_ColorWheelMapping } from '@dmx-controller/proto/fixture_pb';
 
 export function UniverseVisualizer() {
   const { project } = useContext(ProjectContext);
@@ -27,12 +28,12 @@ export function UniverseVisualizer() {
           const definition = project.fixtureDefinitions[f.fixtureDefinitionId];
           // Can happen if the definition is unset.
           if (definition == null) {
-            return;
+            return undefined;
           }
 
           const mode = definition.modes[f.fixtureMode];
           if (mode == null) {
-            return;
+            return undefined;
           }
 
           const getChannel = (type: ChannelTypes): number | undefined => {
@@ -48,13 +49,19 @@ export function UniverseVisualizer() {
             }
           };
 
+          const colorWheelIndex = Object.entries(mode.channels).find(c => c[1].type === 'color_wheel');
+
           return {
             id: i,
             name: f.name,
+            offset: f.channelOffset,
             rIndex: getChannel('red'),
             gIndex: getChannel('green'),
             bIndex: getChannel('blue'),
             wIndex: getChannel('white'),
+            wheelIndex: colorWheelIndex ? parseInt(colorWheelIndex[0]) + f.channelOffset - 1: undefined,
+            dimmerIndex: getChannel('dimmer'),
+            mode: mode,
           };
         });
     }, [project]);
@@ -86,13 +93,33 @@ export function UniverseVisualizer() {
             );
           }
 
-          const redRaw = getValue(f.rIndex);
-          const greenRaw = getValue(f.gIndex);
-          const blueRaw = getValue(f.bIndex);
-          const whiteRaw = getValue(f.wIndex);
-          const red = redRaw + whiteRaw;
-          const green = greenRaw + whiteRaw;
-          const blue = blueRaw + whiteRaw;
+          let red = 0;
+          let green = 0;
+          let blue = 0;
+          if (f.rIndex != null) {
+            const redRaw = getValue(f.rIndex);
+            const greenRaw = getValue(f.gIndex);
+            const blueRaw = getValue(f.bIndex);
+            const whiteRaw = getValue(f.wIndex);
+            red = redRaw + whiteRaw;
+            green = greenRaw + whiteRaw;
+            blue = blueRaw + whiteRaw;
+          } else if (f.wheelIndex != null) {
+            const wheelSlot = getValue(f.wheelIndex);
+            const mapping = f.mode.channels[f.wheelIndex - f.offset + 1].mapping.value as FixtureDefinition_Channel_ColorWheelMapping;
+            const color = mapping.colors.find(c => c.value === wheelSlot)!.color!;
+            red = color.red * 255;
+            green = color.green * 255;
+            blue = color.blue * 255;
+          }
+
+          if (f.dimmerIndex != null) {
+            const dimmerValue = getValue(f.dimmerIndex);
+            red *= (dimmerValue / 255);
+            green *= (dimmerValue / 255);
+            blue *= (dimmerValue / 255);
+          }
+
           const background = `rgb(${Math.min(red, 255)}, ${Math.min(green, 255)}, ${Math.min(blue, 255)})`;
           const shadow = `rgb(${Math.max(red - 255, 0)}, ${Math.max(green - 255, 0)}, ${Math.max(blue - 255, 0)})`;
 
