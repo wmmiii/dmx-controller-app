@@ -1,13 +1,12 @@
-import { ColorPalette, ColorPalette_ColorDescription } from "@dmx-controller/proto/color_pb";
-import ColorPicker from "react-pick-color";
+import { ColorPalette } from "@dmx-controller/proto/color_pb";
 import IconBxsCog from "../icons/IconBxsCog";
 import styles from './Palette.module.scss';
 import { Button, IconButton } from "./Button";
 import { Modal } from "./Modal";
 import { ProjectContext } from "../contexts/ProjectContext";
 import { TextInput } from "./Input";
-import { stringifyColor } from "../util/colorUtil";
 import { useContext, useState } from "react";
+import { ColorSwatch } from "./ColorSwatch";
 
 interface PaletteSwatchProps {
   palette: ColorPalette;
@@ -35,18 +34,9 @@ export function PaletteSwatch({ palette, active, onClick, onDelete, className }:
     <div
       className={classes.join(' ')} onClick={onClick}
       title={palette.name}>
-      <div
-        className={styles.primary}
-        style={{ backgroundColor: stringifyColor(palette.primary.color) }}>
-      </div>
-      <div
-        className={styles.secondary}
-        style={{ backgroundColor: stringifyColor(palette.secondary.color) }}>
-      </div>
-      <div
-        className={styles.tertiary}
-        style={{ backgroundColor: stringifyColor(palette.tertiary.color) }}>
-      </div>
+      <ColorSwatch color={palette.primary!.color} />
+      <ColorSwatch color={palette.secondary!.color} />
+      <ColorSwatch color={palette.tertiary!.color} />
       <IconButton
         title="Modify palette"
         onClick={() => setEditPalette(true)}>
@@ -97,50 +87,16 @@ function EditPaletteDialog({ palette, onDelete, onClose }: EditPaletteDialogProp
         <>Delete palette {palette.name}</>
       </Button>
       <div className={styles.colorSelectors}>
-        <EditColor name="Primary" color={palette.primary} />
-        <EditColor name="Secondary" color={palette.secondary} />
-        <EditColor name="Tertiary" color={palette.tertiary} />
+        <ColorSwatch
+          color={palette.primary!.color}
+          updateDescription={`Update primary color for ${palette.name}`} />
+        <ColorSwatch
+          color={palette.secondary!.color}
+          updateDescription={`Update secondary color for ${palette.name}`} />
+        <ColorSwatch
+          color={palette.tertiary!.color}
+          updateDescription={`Update tertiary color for ${palette.name}`}  />
       </div>
     </Modal>
-  );
-}
-
-interface EditColorProps {
-  name: string;
-  color: ColorPalette_ColorDescription;
-}
-
-function EditColor({ name, color }: EditColorProps) {
-  const { update } = useContext(ProjectContext);
-
-  if (color?.color == null) {
-    throw new Error('Color not defined!');
-  }
-
-  return (
-    <div>
-      {name}
-      <ColorPicker
-        color={{
-          r: color.color.red * 255,
-          g: color.color.green * 255,
-          b: color.color.blue * 255,
-          a: 1,
-        }}
-        onChange={({ rgb }) => {
-          if (color?.color == null) {
-            throw new Error('Color not defined!');
-          }
-
-          color.color.red = rgb.r / 255;
-          color.color.green = rgb.g / 255;
-          color.color.blue = rgb.b / 255;
-          update();
-        }}
-        theme={{
-          background: 'transparent',
-          borderColor: 'none',
-        }} />
-    </div>
   );
 }

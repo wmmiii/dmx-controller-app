@@ -1,13 +1,13 @@
-import { useCallback } from 'react';
-import ColorPicker from 'react-pick-color';
 import IconBxPlus from '../icons/IconBxPlus';
 import IconBxX from '../icons/IconBxX';
 import styles from './EffectState.module.scss';
+import { AMOUNT_CHANNELS, ANGLE_CHANNELS, ChannelTypes, COLOR_CHANNELS } from '../engine/channel';
 import { Button, IconButton } from './Button';
+import { Color, PaletteColor } from '@dmx-controller/proto/color_pb';
+import { ColorSwatch } from './ColorSwatch';
 import { FixtureState as FixtureStateProto, FixtureState_Channel } from "@dmx-controller/proto/effect_pb";
 import { NumberInput } from './Input';
-import { Color, PaletteColor } from '@dmx-controller/proto/color_pb';
-import { AMOUNT_CHANNELS, ANGLE_CHANNELS, ChannelTypes, COLOR_CHANNELS } from '../engine/channel';
+import { useCallback } from 'react';
 
 type ColorSelectorType = 'none' | 'color' | PaletteColor;
 
@@ -60,7 +60,7 @@ export function EffectState(
   return (
     <>
       {
-        availableChannels.findIndex((channel) => 
+        availableChannels.findIndex((channel) =>
           COLOR_CHANNELS.indexOf(channel as any) > -1 ||
           channel === 'color_wheel') > -1 &&
         <>
@@ -80,27 +80,10 @@ export function EffectState(
           </label>
           {
             state.lightColor.case === 'color' &&
-            <ColorPicker
-              hideAlpha={true}
-              color={{
-                r: state.lightColor.value.red * 255,
-                g: state.lightColor.value.green * 255,
-                b: state.lightColor.value.blue * 255,
-                a: 1,
-              }}
-              onChange={({ rgb }) => {
-                if (state.lightColor.case === 'color') {
-                  state.lightColor.value.red = rgb.r / 255;
-                  state.lightColor.value.green = rgb.g / 255;
-                  state.lightColor.value.blue = rgb.b / 255;
-                }
-                onChange(state);
-              }}
-              theme={{
-                background: 'transparent',
-                borderColor: 'none',
-                width: '100%',
-              }} />
+            <label>
+              <span>Custom color</span>
+              <ColorSwatch color={state.lightColor.value} updateDescription="Update custom color." />
+            </label>
           }
           {
             state.lightColor.case === 'color' &&

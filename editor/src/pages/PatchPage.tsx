@@ -874,7 +874,7 @@ function ColorWheelEditor({ wheel, onClose }: ColorWheelEditorProps) {
                       }} />
                   </td>
                   <td>
-                    <ColorSwatch color={c.color!} />
+                    <ColorSwatch color={c.color!} updateDescription="Update color wheel color." />
                   </td>
                   <td>
                     <TextInput

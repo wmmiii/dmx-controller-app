@@ -59,6 +59,10 @@
   border-left: 1px solid $col-border;
   flex-shrink: 0;
   overflow-y: auto;
+
+  > button {
+    width: 100%;
+  }
 }
 
 .split-pane {

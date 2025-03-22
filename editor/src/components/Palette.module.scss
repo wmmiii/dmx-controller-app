@@ -15,25 +15,8 @@
   border-color: $col-accent;
 }
 
-.primary {
-  border-radius: $dim-border-radius;
-  height: 20px;
-  width: 20px;
-}
-
-.secondary {
-  border-radius: $dim-border-radius;
-  height: 16px;
-  width: 16px;
-}
-
-.tertiary {
-  border-radius: $dim-border-radius;
-  height: 12px;
-  width: 12px;
-}
-
 .color-selectors {
   display: flex;
-  flex-direction: row;
+  justify-content: space-around;
+  padding: spacing(2);
 }

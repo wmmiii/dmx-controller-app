@@ -39,6 +39,7 @@ ts_project(
         "//:node_modules/@zip.js/zip.js",
         "//:node_modules/cie-rgb-color-converter",
         "//:node_modules/crunker",
+        "//:node_modules/radix-ui",
         "//:node_modules/react",
         "//:node_modules/react-dom",
         "//:node_modules/react-icons",

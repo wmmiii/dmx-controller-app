@@ -12,7 +12,7 @@ $dot-size: 20px;
 }
 
 .visualizerDot {
-  border-radius: calc($dot-size / 2);
+  border-radius: calc($dot-size / 4);
   height: $dot-size;
   width: $dot-size;
   margin: spacing(0.5);

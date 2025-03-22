@@ -1,6 +1,7 @@
 @import './vars';
 
 html {
+  --col-text: $col-text;
   background-color: $col-bg-higher;
   color: $col-text;
   font-family: 'Roboto', sans-serif;
