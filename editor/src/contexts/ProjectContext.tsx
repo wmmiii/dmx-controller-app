@@ -59,6 +59,10 @@ export const ProjectContext = createContext({
 export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
   const { setShortcuts } = useContext(ShortcutContext);
   const [project, setProject] = useState<Project | null>(null);
+  const projectRef = useRef(project);
+  useEffect(() => {
+    projectRef.current = project;
+  }, [project]);
   const [lastLoad, setLastLoad] = useState(new Date());
   const [lastOperation, setLastOperation] = useState('');
   const operationStack = useRef<Operation[]>([]);
@@ -118,19 +122,19 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
 
   const update = useCallback(
     () => {
-      if (project == null) {
+      if (projectRef.current == null) {
         throw new Error('Tried to update without project loaded!');
       }
-      setProject(new Project(project));
+      setProject(new Project(projectRef.current));
     },
-    [project, setProject]);
+    [projectRef, setProject]);
 
   const save = useCallback(async (changeDescription: string, undoable?: boolean) => {
-    if (project == null) {
+    if (projectRef.current == null) {
       throw new Error('Tried to save without project loaded!');
     }
-    await saveImpl(project, changeDescription);
-    const minProject = new Project(project);
+    await saveImpl(projectRef.current, changeDescription);
+    const minProject = new Project(projectRef.current);
     minProject.assets = undefined;
 
     if (undoable !== false) {
@@ -148,9 +152,9 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
       setOperationIndex(operationStack.current.length - 1);
     }
 
-    setProject(new Project(project));
+    setProject(new Project(projectRef.current));
     setLastOperation(changeDescription);
-  }, [project, operationStack, operationIndex, setProject, setOperationIndex]);
+  }, [projectRef, operationStack, operationIndex, setProject, setOperationIndex]);
 
   const saveAssetsImpl = useCallback(async (project: Project) => {
     console.time('save assets');

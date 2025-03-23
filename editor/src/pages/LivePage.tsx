@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import IconBxPlus from '../icons/IconBxPlus';
 import IconBxX from '../icons/IconBxX';
 import styles from "./LivePage.module.scss";
@@ -22,7 +22,9 @@ import { PaletteContext } from '../contexts/PaletteContext';
 import { PaletteSwatch } from '../components/Palette';
 import { getAvailableChannels } from '../engine/fixture';
 import { ControlCommandType, ControllerChannel, ControllerContext } from '../contexts/ControllerContext';
-
+import { assignAction, debounceInput, getActionDescription } from '../external_controller/externalController';
+import { ControllerMapping_Action } from '@dmx-controller/proto/controller_pb';
+import { deleteComponentStrength, findComponentStrength } from '../external_controller/componentStrength';
 
 export function LivePage(): JSX.Element {
   return (
@@ -136,7 +138,7 @@ function LivePageImpl(): JSX.Element {
       }
       {
         selected &&
-        <ComponentEditor componentMap={selected} components={scene.componentMap} onClose={() => setSelected(null)} />
+        <ComponentEditor componentMap={selected} onClose={() => setSelected(null)} />
       }
     </PaletteContext.Provider>
   );
@@ -144,11 +146,10 @@ function LivePageImpl(): JSX.Element {
 
 interface ComponentEditorProps {
   componentMap: Scene_ComponentMap;
-  components: Scene['componentMap'];
   onClose: () => void;
 }
 
-function ComponentEditor({ componentMap, components, onClose }: ComponentEditorProps) {
+function ComponentEditor({ componentMap, onClose }: ComponentEditorProps) {
   const { project, save } = useContext(ProjectContext);
   const { controllerName, addListener, removeListener } = useContext(ControllerContext);
   const [mappingControllerInput, setMappingControllerInput] = useState(false);
@@ -156,38 +157,44 @@ function ComponentEditor({ componentMap, components, onClose }: ComponentEditorP
 
   const component = componentMap.component!;
 
+  const controllerAction = useMemo(() => {
+    if (controllerName) {
+      return findComponentStrength(project, controllerName, 0, componentMap.id);
+    } else {
+      return undefined;
+    }
+  }, [project, controllerName]);
+
   useEffect(() => {
     if (!mappingControllerInput) {
       return;
     }
 
-    let timeoutHandle: any;
-    const listener = (channel: ControllerChannel, _value: number, cct: ControlCommandType) => {
+    const listener = (project: Project, channel: ControllerChannel, _value: number, cct: ControlCommandType) => {
       if (controllerName == null) {
         return;
       }
-      const mappedComponent = components.find(c => c.component?.controllerChannel[controllerName] === channel);
-      if (mappedComponent != null) {
-        setExistingComponent(mappedComponent.component!.name);
+
+      const existingDescription = getActionDescription(project, controllerName, channel);
+      if (existingDescription != null) {
+        setExistingComponent(existingComponent);
         setMappingControllerInput(false);
         return;
       }
 
-      if (cct === 'lsb' || cct === null) {
-        clearTimeout(timeoutHandle);
-        component.controllerChannel[controllerName] = channel;
+      debounceInput(cct, () => {
+        assignAction(project, controllerName, channel, new ControllerMapping_Action({
+          action: {
+            case: 'componentStrength',
+            value: {
+              scene: 0,
+              componentId: componentMap.id,
+            },
+          },
+        }));
         save(`Map ${component.name} to controller input.`);
         setMappingControllerInput(false);
-      } else if (cct === 'msb') {
-        // Wait for lsb to see if this channel supports it.
-        timeoutHandle = setTimeout(() => {
-          component.controllerChannel[controllerName] = channel;
-          save(`Map ${component.name} to controller input.`);
-          setMappingControllerInput(false);
-        }, 100);
-      } else {
-        throw Error(`Unknown control command type ${cct}!`);
-      }
+      });
     };
     addListener(listener);
     return () => removeListener(listener);
@@ -242,32 +249,21 @@ function ComponentEditor({ componentMap, components, onClose }: ComponentEditorP
             {
               controllerName != null &&
               <div className={styles.row}>
-                <label>Controller iput</label>
+                <label>Strength</label>
                 {
-                  component.controllerChannel[controllerName] ?
+                  controllerAction ?
                     <Button onClick={() => {
-                      component.controllerChannel[controllerName] = '';
+                      deleteComponentStrength(project, controllerName, 0, componentMap.id);
                       save(`Remove controller mapping for ${component.name}.`);
                     }}>
-                      Remove controller mapping
+                      Remove MIDI
                     </Button> :
                     <Button
                       variant={mappingControllerInput ? 'primary' : 'default'}
                       onClick={() => setMappingControllerInput(!mappingControllerInput)}>
-                      Map controller input
+                      Set MIDI
                     </Button>
                 }
-                <input
-                  onChange={() => { }}
-                  onKeyDown={(e) => {
-                    if (e.code.startsWith('Digit')) {
-                      componentMap.shortcut = e.code.substring(5);
-                      save(`Add shortcut ${componentMap.shortcut} for component ${component.name}.`);
-                    } else if (e.code === 'Backspace' || e.code === 'Delete') {
-                      save(`Remove shortcut for component ${component.name}.`);
-                    }
-                  }}
-                  value={componentMap.shortcut} />
               </div>
             }
             <div className={styles.row}>

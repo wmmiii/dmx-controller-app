@@ -2,22 +2,23 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, } 
 import { Modal } from "../components/Modal";
 import { Button } from "../components/Button";
 import { ProjectContext } from "./ProjectContext";
+import { outputValues, performAction } from "../external_controller/externalController";
+import { Project } from "@dmx-controller/proto/project_pb";
+import { TimeContext } from "./TimeContext";
 
 export type ControllerChannel = string;
 export type ControlCommandType = 'msb' | 'lsb' | null;
+type Listener = (
+  _project: Project,
+  _channel: ControllerChannel,
+  _value: number,
+  _controlType: ControlCommandType) => void;
 
 export const ControllerContext = createContext({
   controllerName: null as string | null,
   connect: () => { },
-  addListener: (_listener: (
-    _channel: ControllerChannel,
-    _value: number,
-    _controlType: ControlCommandType) => void) => { },
-  removeListener: (_listener: (
-    _channel: ControllerChannel,
-    _value: number,
-    _controlType: ControlCommandType) => void) => { },
-  output: (_channel: ControllerChannel, _value: number) => { },
+  addListener: (_listener: Listener) => { },
+  removeListener: (_listener: Listener) => { },
 });
 
 interface MidiDevice {
@@ -31,11 +32,18 @@ interface ControllerProviderImplProps {
 }
 
 export function ControllerProvider({ children, }: ControllerProviderImplProps): JSX.Element {
-  const { project, lastLoad, save } = useContext(ProjectContext);
+  const { project, lastLoad, save, update } = useContext(ProjectContext);
+  const projectRef = useRef<Project>(project);
+  useEffect(() => {
+    projectRef.current = project;
+  }, [project]);
+  const { t } = useContext(TimeContext);
 
   const [controller, setController] = useState<MidiDevice | null>(null);
   const [candidateList, setCandidateList] = useState<any[] | null>(null);
-  const inputListeners = useRef<Array<(channel: ControllerChannel, value: number, controlCommandType: ControlCommandType) => void>>([]);
+  const inputListeners = useRef<Array<Listener>>([]);
+
+  const controllerMapping = project.controllerMapping!;
 
   const connect = useCallback(async () => {
     const access = await navigator.requestMIDIAccess();
@@ -64,14 +72,14 @@ export function ControllerProvider({ children, }: ControllerProviderImplProps): 
   useEffect(() => {
     (async () => {
       // Try to reconnect if last controller is known.
-      if (project.lastControllerName != null) {
+      if (controllerMapping.lastControllerName != null) {
         const access = await navigator.requestMIDIAccess();
         const input =
           Array.from((access.inputs as any).values() as Iterable<MIDIInput>)
-            .find((input) => input.name == project.lastControllerName);
+            .find((input) => input.name == controllerMapping.lastControllerName);
         const output =
           Array.from((access.outputs as any).values() as Iterable<MIDIOutput>)
-            .find((input) => input.name == project.lastControllerName);
+            .find((input) => input.name == controllerMapping.lastControllerName);
         if (input != null && output != null) {
           setController({
             name: input.name,
@@ -85,7 +93,7 @@ export function ControllerProvider({ children, }: ControllerProviderImplProps): 
 
   useEffect(() => {
     if (controller == null) {
-      return;
+      return () => {};
     }
 
     let msbBuffer: Map<number, number> = new Map();
@@ -130,11 +138,11 @@ export function ControllerProvider({ children, }: ControllerProviderImplProps): 
         return;
       }
 
-      inputListeners.current.forEach((l) => l(`${command}, ${data[1]}`, value, controlCommandType));
+      inputListeners.current.forEach((l) => l(projectRef.current, `${command}, ${data[1]}`, value, controlCommandType));
     };
 
-    () => controller.input.onmidimessage = null;
-  }, [controller, inputListeners]);
+    return () => controller.input.onmidimessage = null;
+  }, [controller, inputListeners, projectRef]);
 
   const output = useCallback((c: ControllerChannel, value: number) => {
     try {
@@ -152,10 +160,43 @@ export function ControllerProvider({ children, }: ControllerProviderImplProps): 
     }
   }, [controller]);
 
-  const addListener = useCallback((listener: (channel: ControllerChannel, value: number, controlChannelType: ControlCommandType) => void) =>
-    inputListeners.current.push(listener), [])
-  const removeListener = useCallback((listener: (channel: ControllerChannel, value: number, controlChannelType: ControlCommandType) => void) =>
-    inputListeners.current.splice(inputListeners.current.indexOf(listener), 1), [])
+  useEffect(() => {
+    if (controller?.name) {
+      outputValues(project, controller?.name, t, output);
+    }
+  }, [project, controller, output, t]);
+
+  const addListener = useCallback((listener: Listener) => {
+    inputListeners.current.push(listener);
+  }, []);
+  const removeListener = useCallback((listener: Listener) => {
+    inputListeners.current.splice(inputListeners.current.indexOf(listener), 1);
+  }, []);
+
+  useEffect(() => console.log('inputListeners', inputListeners), [inputListeners]);
+
+  useEffect(() => {
+    let timeout: any;
+    const listener: Listener = (_p, channel, value, cct) => {
+      const controllerName = controller?.name;
+      if (controllerName) {
+        performAction(
+          project,
+          controllerName,
+          channel,
+          value,
+          cct);
+        update();
+        // Debounce midi input.
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+          save('Update via controller input.');
+        }, 500);
+      }
+    };
+    addListener(listener);
+    return () => removeListener(listener);
+  }, [controller, update, addListener, removeListener]);
 
   // Expose output function for debugging purposes.
   useEffect(() => {
@@ -170,7 +211,6 @@ export function ControllerProvider({ children, }: ControllerProviderImplProps): 
         connect: connect,
         addListener: addListener,
         removeListener: removeListener,
-        output: output,
       }}>
         {children}
       </ControllerContext.Provider>
@@ -179,7 +219,7 @@ export function ControllerProvider({ children, }: ControllerProviderImplProps): 
         <ControllerSelectionDialog
           candidateList={candidateList}
           setController={(controller) => {
-            project.lastControllerName = controller?.name || '';
+            project.controllerMapping!.lastControllerName = controller?.name || '';
             if (controller?.name) {
               save('Enable auto-reconnect for midi controller.');
             } else {

@@ -1,20 +1,21 @@
 import { BeatMetadata } from "@dmx-controller/proto/beat_pb";
+import { ColorPalette } from "@dmx-controller/proto/color_pb";
 import { DmxUniverse, WritableDevice, getWritableDevice, mapDegrees } from "./fixture";
 import { Effect, Effect_RampEffect, EffectTiming } from "@dmx-controller/proto/effect_pb";
 import { LightLayer } from "@dmx-controller/proto/light_layer_pb";
+import { OutputId, OutputId_FixtureMapping } from "@dmx-controller/proto/output_id_pb";
 import { Project } from "@dmx-controller/proto/project_pb";
 import { SEQUENCE_BEAT_RESOLUTION } from "../components/UniverseSequenceEditor";
 import { Scene_Component_SequenceComponent } from "@dmx-controller/proto/scene_pb";
 import { applyState } from "./effect";
-import { getActiveUniverse, getComponentDurationMs } from "../util/projectUtils";
+import { getActiveUniverse } from "../util/projectUtils";
+import { getAllFixtures } from "./group";
+import { getComponentDurationMs } from "../util/component";
+import { hsvToColor, interpolatePalettes } from "../util/colorUtil";
 import { interpolateUniverses } from "./utils";
 import { rampEffect } from "./rampEffect";
-import { strobeEffect } from "./strobeEffect";
-import { ColorPalette } from "@dmx-controller/proto/color_pb";
-import { hsvToColor, interpolatePalettes } from "../util/colorUtil";
-import { OutputId, OutputId_FixtureMapping } from "@dmx-controller/proto/output_id_pb";
-import { getAllFixtures } from "./group";
 import { randomEffect } from "./randomEffect";
+import { strobeEffect } from "./strobeEffect";
 
 export const DEFAULT_COLOR_PALETTE = new ColorPalette({
   name: 'Unset palette',
@@ -144,7 +145,7 @@ export function renderSceneToUniverse(
       continue;
     }
 
-    const sinceTransition = Number(BigInt(absoluteT) - (component.transition.case != 'absoluteValue' ? component.transition.value || 0n: 0n));
+    const sinceTransition = Number(BigInt(absoluteT) - (component.transition.case != 'absoluteStrength' ? component.transition.value || 0n: 0n));
 
     let amount: number = 0;
     if (component.transition.case === 'startFadeInMs') {
@@ -163,7 +164,7 @@ export function renderSceneToUniverse(
       }
 
       amount = Math.max(0, 1 - sinceTransition / fadeOutMs);
-    } else if (component.transition.case === 'absoluteValue') {
+    } else if (component.transition.case === 'absoluteStrength') {
       amount = component.transition.value;
     }
 

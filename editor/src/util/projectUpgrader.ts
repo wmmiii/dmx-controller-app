@@ -9,6 +9,7 @@ import { FixtureDefinition, FixtureDefinition_Channel_AmountMapping, FixtureDefi
 import { Scene_Component_EffectGroupComponent_EffectChannel, Scene_ComponentMap } from "@dmx-controller/proto/scene_pb";
 import { DEFAULT_COLOR_PALETTE } from "../engine/universe";
 import { isAmountChannel, isAngleChannel } from "../engine/channel";
+import { ControllerMapping } from "@dmx-controller/proto/controller_pb";
 
 export default function upgradeProject(project: Project): void {
   upgradeIndices(project);
@@ -21,6 +22,7 @@ export default function upgradeProject(project: Project): void {
   upgradeComponentMapping(project);
   upgradeFixtureDefinitions(project);
   upgradeEffectTiming(project);
+  upgradeComponentIds(project);
 }
 
 function upgradeIndices(project: Project): void {
@@ -416,6 +418,10 @@ function upgradeComponentMapping(project: Project) {
 
     scene.rows = [];
   }
+
+  if (project.controllerMapping == null) {
+    project.controllerMapping = new ControllerMapping();
+  }
 }
 
 function upgradeFixtureDefinitions(project: Project) {
@@ -505,4 +511,14 @@ function upgradeEffectTiming(project: Project) {
       s.colorPaletteTransitionDurationMs = 2_000;
     }
   });
+}
+
+function upgradeComponentIds(project: Project) {
+  for (const scene of project.scenes) {
+    scene.componentMap.forEach((m) => {
+      if (!m.id) {
+        m.id = crypto.randomUUID();
+      }
+    });
+  }
 }

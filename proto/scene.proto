@@ -51,7 +51,7 @@ message Scene {
     reserved 3; // active
     string shortcut = 4 [deprecated = true];
     // Maps from controller ID to channel.
-    map<string, string> controller_channel = 16;
+    map<string, string> controller_channel = 16 [deprecated = true];
     bool one_shot = 15;
 
     oneof duration {
@@ -72,7 +72,7 @@ message Scene {
     oneof transition {
       int64 start_fade_in_ms = 11;
       int64 start_fade_out_ms = 12;
-      float absolute_value = 17;
+      float absolute_strength = 17;
     }
   }
 
@@ -82,6 +82,8 @@ message Scene {
   }
 
   message ComponentMap {
+    string id = 6;
+
     Component component = 1;
 
     // The horizontal index of the component, measured from left to right.
@@ -91,7 +93,7 @@ message Scene {
 
     int32 priority = 4;
 
-    string shortcut = 5;
+    string shortcut = 5 [deprecated = true];
   }
 
   string name = 1;

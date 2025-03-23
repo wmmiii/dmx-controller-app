@@ -1,16 +1,17 @@
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useCallback, useContext, useMemo, useState } from 'react';
 import styles from './ComponentGrid.module.scss';
 import { BeatContext } from '../contexts/BeatContext';
-import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { Scene_Component, Scene_ComponentMap } from '@dmx-controller/proto/scene_pb';
 import { TimeContext } from '../contexts/TimeContext';
-import { componentActiveAmount, componentTileDetails } from '../util/projectUtils';
+import { componentTileDetails } from '../util/projectUtils';
 import { PaletteContext } from '../contexts/PaletteContext';
 import { Color, ColorPalette, PaletteColor } from '@dmx-controller/proto/color_pb';
 import { FixtureState } from '@dmx-controller/proto/effect_pb';
-import { ControlCommandType, ControllerChannel, ControllerContext } from '../contexts/ControllerContext';
+import { ControllerContext } from '../contexts/ControllerContext';
 import { SiMidi } from 'react-icons/si';
+import { findComponentStrength } from '../external_controller/componentStrength';
+import { componentActiveAmount, toggleComponent } from '../util/component';
 
 interface ComponentGridProps {
   className?: string;
@@ -60,6 +61,7 @@ export function ComponentGrid({
             return (
               <Component
                 key={x + ' ' + y}
+                id={mapping.id}
                 component={mapping.component!}
                 onDragComponent={() => setDraggingComponent(mapping)}
                 onDropComponent={() => {
@@ -105,6 +107,7 @@ export function ComponentGrid({
 }
 
 interface ComponentProps {
+  id: string,
   component: Scene_Component;
   onDragComponent: () => void;
   onDropComponent: () => void;
@@ -114,14 +117,16 @@ interface ComponentProps {
   priority: number;
 }
 
-function Component({ component, onDragComponent, onDropComponent, onSelect, x, y, priority }: ComponentProps) {
-  const { controllerName, output: controllerOutput, addListener, removeListener } = useContext(ControllerContext);
+function Component({ id, component, onDragComponent, onDropComponent, onSelect, x, y, priority }: ComponentProps) {
+  const { controllerName } = useContext(ControllerContext);
   const { beat } = useContext(BeatContext);
   const { palette } = useContext(PaletteContext);
-  const { save, update } = useContext(ProjectContext);
+  const { project, save } = useContext(ProjectContext);
   const { t } = useContext(TimeContext);
 
   const details = useMemo(() => componentTileDetails(component), [component.toJson()]);
+
+  const controllerMapping = findComponentStrength(project, controllerName || '', 0, id);
 
   const background = useMemo(() => {
     if (details.colors.length === 0) {
@@ -145,56 +150,13 @@ function Component({ component, onDragComponent, onDropComponent, onSelect, x, y
   }, [details, palette]);
 
   const toggle = useCallback(() => {
-    const enabled = component.oneShot ||
-      component.transition.case === 'startFadeOutMs' ||
-      (component.transition.case === 'absoluteValue' && component.transition.value < 0.1);
-    if (transitionComponent(component, enabled, beat)) {
+    const [modified, enabled] = toggleComponent(component, beat)
+    if (modified) {
       save(`${enabled ? 'Enable' : 'Disable'} component ${component.name}.`);
     }
   }, [component, beat, save]);
 
-  useEffect(() => {
-    const channel = component.controllerChannel[controllerName || ''];
-    if (!channel) {
-      return;
-    }
-
-    let timeout: any;
-
-    const listener = (c: ControllerChannel, value: number, controlChannelType: ControlCommandType) => {
-      if (c === channel) {
-        if (controlChannelType != null) {
-          component.transition = {
-            case: 'absoluteValue',
-            value: value,
-          };
-
-          // Debounce fader inputs.
-          clearTimeout(timeout);
-          timeout = setTimeout(() => {
-            save(`Set value of ${component.name} to ${value}.`);
-          }, 500);
-
-          update();
-        } else if (c === channel && value > 0.5) {
-          toggle();
-        }
-      }
-    };
-    addListener(listener);
-    return () => removeListener(listener);
-  }, [component.controllerChannel[controllerName || ''], addListener, removeListener]);
-
   const activeAmount = componentActiveAmount(component, beat, t);
-
-  useEffect(() => {
-    const channel = component.controllerChannel[controllerName || ''];
-    if (!channel) {
-      return;
-    }
-
-    controllerOutput(channel, activeAmount);
-  }, [component, controllerName, controllerOutput, activeAmount]);
 
   const classes = [styles.component];
 
@@ -236,7 +198,7 @@ function Component({ component, onDragComponent, onDropComponent, onSelect, x, y
           </div>
         }
         {
-          component.controllerChannel[controllerName || ''] &&
+          controllerMapping &&
           <div className={styles.controller}>
             <SiMidi />
           </div>
@@ -245,57 +207,6 @@ function Component({ component, onDragComponent, onDropComponent, onSelect, x, y
       <div className={styles.border} style={{ opacity: activeAmount }}></div>
     </div>
   );
-}
-
-function transitionComponent(component: Scene_Component, enabled: boolean, beat: BeatMetadata) {
-  const t = BigInt(new Date().getTime());
-  if (component.transition.case === undefined || component.transition.case === 'absoluteValue') {
-    component.transition = {
-      case: 'startFadeOutMs',
-      value: 0n,
-    };
-  }
-
-  // One shot components should always restart now.
-  if (enabled && component.oneShot) {
-    component.transition = {
-      case: 'startFadeInMs',
-      value: t,
-    };
-    return true;
-  }
-
-  const fadeInMs = component.fadeInDuration.case === 'fadeInBeat' ?
-    (component.fadeInDuration.value || 0) * beat.lengthMs :
-    (component.fadeInDuration.value || 0);
-
-  const fadeOutMs = component.fadeOutDuration.case === 'fadeOutBeat' ?
-    (component.fadeOutDuration.value || 0) * beat.lengthMs :
-    (component.fadeOutDuration.value || 0);
-
-  if (!enabled && component.transition.case === 'startFadeInMs') {
-    // Calculate fade in amount.
-    const amount = Math.min(1, Number(t - component.transition.value) / fadeInMs);
-
-    // Set fade out such that effect is contiguous.
-    component.transition = {
-      case: 'startFadeOutMs',
-      value: t - BigInt(Math.floor((1 - amount) * fadeOutMs)),
-    };
-    return true;
-  } else if (enabled && component.transition.case === 'startFadeOutMs') {
-    // Calculate fade out amount.
-    const amount = Math.max(0, 1 - (Number(t - component.transition.value) / fadeOutMs));
-
-    // Set fade in such that effect is contiguous.
-    component.transition = {
-      case: 'startFadeInMs',
-      value: t - BigInt(Math.floor(amount * fadeInMs)),
-    };
-    return true;
-  } else {
-    return false;
-  }
 }
 
 function complexColorToHex(complexColor: FixtureState['lightColor'], palette: ColorPalette) {

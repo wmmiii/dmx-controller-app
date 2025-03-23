@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package dmx_controller;
+
+message ControllerMapping {
+  message Controller {
+    map<string, Action> actions = 1;
+  }
+
+  message Action {
+    oneof action {
+      ComponentStrength component_strength = 1;
+    }
+  }
+
+  message ComponentStrength {
+    uint32 scene = 1;
+    string component_id = 2;
+  }
+
+  map<string, Controller> controllers = 1;
+  string last_controller_name = 2;
+}
