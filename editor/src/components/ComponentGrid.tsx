@@ -10,6 +10,8 @@ import { componentActive, componentTileDetails } from '../util/projectUtils';
 import { PaletteContext } from '../contexts/PaletteContext';
 import { Color, ColorPalette, PaletteColor } from '@dmx-controller/proto/color_pb';
 import { FixtureState } from '@dmx-controller/proto/effect_pb';
+import { ControllerChannel, ControllerContext } from '../contexts/ControllerContext';
+import { SiMidi } from 'react-icons/si';
 
 interface ComponentGridProps {
   className?: string;
@@ -150,6 +152,7 @@ interface ComponentProps {
 }
 
 function Component({ component, dragging, onDragComponent, onDropComponent, onSelect, x, y, priority }: ComponentProps) {
+  const { controllerName, output: controllerOutput, addListener, removeListener } = useContext(ControllerContext);
   const { beat } = useContext(BeatContext);
   const { palette } = useContext(PaletteContext);
   const { save } = useContext(ProjectContext);
@@ -178,8 +181,41 @@ function Component({ component, dragging, onDragComponent, onDropComponent, onSe
     return gradient + ")";
   }, [details, palette]);
 
+  const toggle = useCallback(() => {
+    const enabled = component.oneShot || component.transition.case !== 'startFadeInMs';
+    if (transitionComponent(component, enabled, beat)) {
+      save(`${enabled ? 'Enable' : 'Disable'} component ${component.name}.`);
+    }
+  }, [component, beat, save]);
+
+  useEffect(() => {
+    const channel = component.controllerChannel[controllerName || ''];
+    if (!channel) {
+      return;
+    }
+
+    const listener = (c: ControllerChannel, value: number) => {
+      if (c === channel && value > 0.5) {
+        toggle();
+      }
+    };
+    addListener(listener);
+    return () => removeListener(listener);
+  }, [component, controllerName, addListener, removeListener]);
+
+  const active = componentActive(component, beat, t);
+
+  useEffect(() => {
+    const channel = component.controllerChannel[controllerName || ''];
+    if (!channel) {
+      return;
+    }
+
+    controllerOutput(channel, active ? 1 : 0);
+  }, [component, controllerName, controllerOutput, active]);
+
   const classes = [styles.component];
-  if (componentActive(component, beat, t)) {
+  if (active) {
     classes.push(styles.active);
   }
   if (dragging) {
@@ -195,11 +231,7 @@ function Component({ component, dragging, onDragComponent, onDropComponent, onSe
         gridRowStart: y + 1,
         gridRowEnd: y + 2,
       }}
-      onClick={() => {
-        if (transitionComponent(component, component.oneShot || component.transition.case !== 'startFadeInMs', beat)) {
-          save(`${component.transition.case === 'startFadeInMs' ? 'Enable' : 'Disable'} component ${component.name}.`);
-        }
-      }}
+      onClick={toggle}
       draggable={true}
       onDragStart={(e) => {
         onDragComponent();
@@ -224,6 +256,12 @@ function Component({ component, dragging, onDragComponent, onDropComponent, onSe
         priority != 0 &&
         <div className={styles.priority}>
           {priority}
+        </div>
+      }
+      {
+        component.controllerChannel[controllerName || ''] &&
+        <div className={styles.controller}>
+          <SiMidi />
         </div>
       }
     </div>

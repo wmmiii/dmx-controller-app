@@ -7,6 +7,7 @@ import { SerialProvider } from './contexts/SerialContext';
 import { ShortcutProvider } from './contexts/ShortcutContext';
 import { TimeProvider } from './contexts/TimeContext';
 import { createRoot } from 'react-dom/client';
+import { ControllerProvider } from './contexts/ControllerContext';
 
 // import wasm, {hello_world} from '@dmx-controller/core_interface/core_wasm';
 
@@ -23,7 +24,9 @@ root.render(
           <SerialProvider>
             <ShortcutProvider>
               <ProjectProvider>
-                <Index />
+                <ControllerProvider>
+                  <Index />
+                </ControllerProvider>
               </ProjectProvider>
             </ShortcutProvider>
           </SerialProvider>

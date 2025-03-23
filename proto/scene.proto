@@ -50,6 +50,8 @@ message Scene {
     }
     reserved 3; // active
     string shortcut = 4 [deprecated = true];
+    // Maps from controller ID to channel.
+    map<string, string> controller_channel = 16;
     bool one_shot = 15;
 
     oneof duration {

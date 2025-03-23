@@ -1,4 +1,3 @@
-import { JSX, createRef, useContext, useEffect, useState } from 'react';
 import AssetBrowserPage from './pages/AssetBrowserPage';
 import IconBxBulb from './icons/IconBxBulb';
 import IconBxDownload from './icons/IconBxDownload';
@@ -10,24 +9,28 @@ import IconBxUpload from './icons/IconBxUpload';
 import IconBxlGithub from './icons/IconBxlGithub';
 import IconBxlWindows from './icons/IconBxlWindows';
 import IconBxsBulb from './icons/IconBxsBulb';
+import PatchPage from './pages/PatchPage';
 import ProjectPage from './pages/ProjectPage';
 import ShowPage from './pages/ShowPage';
-import PatchPage from './pages/PatchPage';
 import styles from './Index.module.scss';
-import { Button } from './components/Button';
+import { Button, IconButton } from './components/Button';
+import { ControllerContext } from './contexts/ControllerContext';
 import { DialogContext } from './contexts/DialogContext';
 import { Dropdown } from './components/Dropdown';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { JSX, createRef, useContext, useEffect, useState } from 'react';
 import { LivePage } from './pages/LivePage';
 import { Modal } from './components/Modal';
 import { ProjectContext } from './contexts/ProjectContext';
 import { Routes, Route } from 'react-router-dom';
 import { SerialContext } from './contexts/SerialContext';
+import { SiMidi } from "react-icons/si";
 import { UniverseVisualizer } from './components/UniverseVisualizer';
 import { useNavigate } from 'react-router-dom';
 
 export default function Index(): JSX.Element {
   const { port, blackout, setBlackout, connect, disconnect } = useContext(SerialContext);
+  const { controllerName, connect: connectMidi } = useContext(ControllerContext);
   const { downloadProject, openProject, lastOperation } = useContext(ProjectContext);
   const navigate = useNavigate();
 
@@ -127,6 +130,12 @@ export default function Index(): JSX.Element {
           {lastOperation}
         </div>
         <FpsIndicator />
+        <IconButton
+          title="Midi Controller"
+          variant={controllerName ? 'primary' : 'default'}
+          onClick={connectMidi}>
+          <SiMidi />
+        </IconButton>
       </header >
       <main>
         <ErrorBoundary>
@@ -145,7 +154,7 @@ export default function Index(): JSX.Element {
 }
 
 function FpsIndicator() {
-  const {subscribeToFspUpdates} = useContext(SerialContext);
+  const { subscribeToFspUpdates } = useContext(SerialContext);
   const [fps, setFps] = useState(0);
 
   useEffect(() => {

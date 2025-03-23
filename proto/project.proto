@@ -52,6 +52,7 @@ message Project {
   repeated Scene scenes = 51;
   uint32 active_scene = 52;
   BeatMetadata live_beat = 53;
+  string last_controller_name = 54;
 
   map<uint32, PhysicalFixture> physical_fixtures = 14 [ deprecated = true ];
   map<uint32, FixtureSequence> fixture_sequences = 41 [ deprecated = true ];

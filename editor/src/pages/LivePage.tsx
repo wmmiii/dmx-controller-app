@@ -21,6 +21,7 @@ import { Project } from '@dmx-controller/proto/project_pb';
 import { PaletteContext } from '../contexts/PaletteContext';
 import { PaletteSwatch } from '../components/Palette';
 import { getAvailableChannels } from '../engine/fixture';
+import { ControlCommandType, ControllerChannel, ControllerContext } from '../contexts/ControllerContext';
 
 
 export function LivePage(): JSX.Element {
@@ -135,7 +136,7 @@ function LivePageImpl(): JSX.Element {
       }
       {
         selected &&
-        <ComponentEditor componentMap={selected} onClose={() => setSelected(null)} />
+        <ComponentEditor componentMap={selected} components={scene.componentMap} onClose={() => setSelected(null)} />
       }
     </PaletteContext.Provider>
   );
@@ -143,13 +144,54 @@ function LivePageImpl(): JSX.Element {
 
 interface ComponentEditorProps {
   componentMap: Scene_ComponentMap;
+  components: Scene['componentMap'];
   onClose: () => void;
 }
 
-function ComponentEditor({ componentMap, onClose }: ComponentEditorProps) {
+function ComponentEditor({ componentMap, components, onClose }: ComponentEditorProps) {
   const { project, save } = useContext(ProjectContext);
+  const { controllerName, addListener, removeListener } = useContext(ControllerContext);
+  const [mappingControllerInput, setMappingControllerInput] = useState(false);
+  const [existingComponent, setExistingComponent] = useState<string | null>(null);
 
   const component = componentMap.component!;
+
+  useEffect(() => {
+    if (!mappingControllerInput) {
+      return;
+    }
+
+    let timeoutHandle: any;
+    const listener = (channel: ControllerChannel, _value: number, cct: ControlCommandType) => {
+      if (controllerName == null) {
+        return;
+      }
+      const mappedComponent = components.find(c => c.component?.controllerChannel[controllerName] === channel);
+      if (mappedComponent != null) {
+        setExistingComponent(mappedComponent.component!.name);
+        setMappingControllerInput(false);
+        return;
+      }
+
+      if (cct === 'lsb' || cct === null) {
+        clearTimeout(timeoutHandle);
+        component.controllerChannel[controllerName] = channel;
+        save(`Map ${component.name} to controller input.`);
+        setMappingControllerInput(false);
+      } else if (cct === 'msb') {
+        // Wait for lsb to see if this channel supports it.
+        timeoutHandle = setTimeout(() => {
+          component.controllerChannel[controllerName] = channel;
+          save(`Map ${component.name} to controller input.`);
+          setMappingControllerInput(false);
+        }, 100);
+      } else {
+        throw Error(`Unknown control command type ${cct}!`);
+      }
+    };
+    addListener(listener);
+    return () => removeListener(listener);
+  }, [mappingControllerInput, controllerName, setExistingComponent, setMappingControllerInput, component]);
 
   return (
     <Modal
@@ -197,6 +239,37 @@ function ComponentEditor({ componentMap, onClose }: ComponentEditorProps) {
                 }}
                 value={componentMap.shortcut} />
             </div>
+            {
+              controllerName != null &&
+              <div className={styles.row}>
+                <label>Controller iput</label>
+                {
+                  component.controllerChannel[controllerName] ?
+                    <Button onClick={() => {
+                      component.controllerChannel[controllerName] = '';
+                      save(`Remove controller mapping for ${component.name}.`);
+                    }}>
+                      Remove controller mapping
+                    </Button> :
+                    <Button
+                      variant={mappingControllerInput ? 'primary' : 'default'}
+                      onClick={() => setMappingControllerInput(!mappingControllerInput)}>
+                      Map controller input
+                    </Button>
+                }
+                <input
+                  onChange={() => { }}
+                  onKeyDown={(e) => {
+                    if (e.code.startsWith('Digit')) {
+                      componentMap.shortcut = e.code.substring(5);
+                      save(`Add shortcut ${componentMap.shortcut} for component ${component.name}.`);
+                    } else if (e.code === 'Backspace' || e.code === 'Delete') {
+                      save(`Remove shortcut for component ${component.name}.`);
+                    }
+                  }}
+                  value={componentMap.shortcut} />
+              </div>
+            }
             <div className={styles.row}>
               <ToggleInput
                 className={styles.switch}
@@ -301,6 +374,12 @@ function ComponentEditor({ componentMap, onClose }: ComponentEditorProps) {
             <SequenceEditor sequence={component.description.value} />
           }
         </>} />
+      {
+        existingComponent &&
+        <Modal title='Controller mapping error' onClose={() => setExistingComponent(null)}>
+          This input is already mapped to {existingComponent}.
+        </Modal>
+      }
     </Modal>
   );
 }
@@ -344,7 +423,7 @@ function EffectGroupEditor({ effect, name }: EffectGroupEditorProps) {
                 effect={c.effect}
                 showTiming={false}
                 showPhase={c.outputId?.output.case === 'group'}
-                availableChannels={getAvailableChannels(c.outputId, project)}/>
+                availableChannels={getAvailableChannels(c.outputId, project)} />
             </div>
           )
         })

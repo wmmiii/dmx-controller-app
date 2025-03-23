@@ -47,6 +47,7 @@ interface Operation {
 
 export const ProjectContext = createContext({
   project: new Project(),
+  lastLoad: new Date(),
   save: (_changeDescription: string, _undoable?: boolean) => { },
   update: () => { },
   saveAssets: () => { },
@@ -58,6 +59,7 @@ export const ProjectContext = createContext({
 export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
   const { setShortcuts } = useContext(ShortcutContext);
   const [project, setProject] = useState<Project | null>(null);
+  const [lastLoad, setLastLoad] = useState(new Date());
   const [lastOperation, setLastOperation] = useState('');
   const operationStack = useRef<Operation[]>([]);
   const [operationIndex, setOperationIndex] = useState<number>(-1);
@@ -212,6 +214,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
     await saveAssetsImpl(p);
     await saveImpl(p, 'Open project.');
     setProject(p);
+    setLastLoad(new Date());
     setOperationIndex(0);
     operationStack.current = [{
       projectState: projectBlob,
@@ -250,6 +253,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
   return (
     <ProjectContext.Provider value={{
       project: project,
+      lastLoad: lastLoad,
       save: save,
       update: update,
       saveAssets: saveAssets,
