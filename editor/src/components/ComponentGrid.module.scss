@@ -1,6 +1,7 @@
 @import '../vars';
 
 $element-size: 100px;
+$border-size: 2px;
 $triangle-diag: 40px;
 
 .component-grid {
@@ -21,27 +22,41 @@ $triangle-diag: 40px;
 
 .component,
 .component-placeholder {
-  align-items: center;
-  background-color: $col-bg-higher;
   border-radius: $dim-border-radius;
-  border: 4px solid transparent;
   box-sizing: border-box;
   cursor: pointer;
-  display: flex;
-  flex-direction: column;
   height: $element-size;
-  justify-content: center;
-  overflow: hidden;
   position: relative;
   width: $element-size;
 
-  &.active {
-    border-color: $col-accent;
+  .contents {
+    align-items: center;
+    background-color: $col-bg-higher;
+    border-radius: $dim-border-radius;
+    bottom: $border-size;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    height: $element-size - $border-size * 2;
+    justify-content: center;
+    left: $border-size;
+    overflow: hidden;
+    position: absolute;
+    right: $border-size;
+    top: $border-size;
+    width: $element-size - $border-size * 2;
+    z-index: 1;
   }
 
-  &.dragging {
-    border-color: $col-border;
-    border-style: dashed;
+  .border {
+    background-color: $col-accent;
+    border-radius: $dim-border-radius;
+    bottom: 0;
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    z-index: 0;
   }
 
   .settings-triangle {

@@ -105,45 +105,57 @@ export function ControllerProvider({ children, }: ControllerProviderImplProps): 
       // https://www.songstuff.com/recording/article/midi-message-format/
       if (command > 127 && command < 144) {
         // Note off.
+        value /= 127;
       } else if (command > 143 && command < 160) {
         // Note on.
+        value /= 127;
       } else if (command > 159 && command < 176) {
         // Pressure.
+        value /= 127;
       } else if (command > 175 && command < 192) {
         // Control value.
         // https://nickfever.com/music/midi-cc-list
         if (data[1] < 32) {
           msbBuffer.set(data[1], data[2]);
           value = data[2] + (lsbBuffer.get(data[1] + 32) || 0) / 128;
-          lsbBuffer.delete(data[1] + 32);
           controlCommandType = 'msb';
         } else if (data[1] > 31 && data[1] < 64) {
           lsbBuffer.set(data[1], data[2]);
-          value = (msbBuffer.get(data[1] + 32) || 0) + data[2] / 128;
-          msbBuffer.delete(data[1] + 32);
+          value = (msbBuffer.get(data[1] - 32) || 0) + data[2] / 128;
           controlCommandType = 'lsb';
         }
+        value /= 128;
       } else {
         console.error('Unrecognized MIDI command!', command);
+        return;
       }
 
-      inputListeners.current.forEach((l) => l(`${command}, ${data[1]}`, value / 127, controlCommandType));
+      inputListeners.current.forEach((l) => l(`${command}, ${data[1]}`, value, controlCommandType));
     };
 
     () => controller.input.onmidimessage = null;
   }, [controller, inputListeners]);
 
   const output = useCallback((c: ControllerChannel, value: number) => {
-    const channel = c.split(' ').map((i) => parseInt(i)) as [number, number];
-    value *= value * 127;
-    if (channel[0] > 175 && channel[0] < 192) {
-      controller?.output.send([channel[0], channel[1] - 32, Math.floor(value)]);
-      const lsb = Math.floor((value % 1) * 127);
-      controller?.output.send([channel[0], channel[1], lsb]);
-    } else {
-      controller?.output.send([channel[0], channel[1], value]);
+    try {
+      const channel = c.split(' ').map((i) => parseInt(i)) as [number, number];
+      value *= 127;
+      if (channel[0] < 32) {
+        controller?.output.send([channel[0], channel[1], Math.floor(value)]);
+        const lsb = Math.floor((value % 1) * 127);
+        controller?.output.send([channel[0], channel[1] + 32, lsb]);
+      } else {
+        controller?.output.send([channel[0], channel[1], value]);
+      }
+    } catch (ex) {
+      console.error('Failed to send MIDI output!', ex);
     }
   }, [controller]);
+
+  const addListener = useCallback((listener: (channel: ControllerChannel, value: number, controlChannelType: ControlCommandType) => void) =>
+    inputListeners.current.push(listener), [])
+  const removeListener = useCallback((listener: (channel: ControllerChannel, value: number, controlChannelType: ControlCommandType) => void) =>
+    inputListeners.current.splice(inputListeners.current.indexOf(listener), 1), [])
 
   // Expose output function for debugging purposes.
   useEffect(() => {
@@ -156,10 +168,8 @@ export function ControllerProvider({ children, }: ControllerProviderImplProps): 
       <ControllerContext.Provider value={{
         controllerName: controller?.name || null,
         connect: connect,
-        addListener: (listener) =>
-          inputListeners.current.push(listener),
-        removeListener: (listener) =>
-          inputListeners.current.splice(inputListeners.current.indexOf(listener), 1),
+        addListener: addListener,
+        removeListener: removeListener,
         output: output,
       }}>
         {children}

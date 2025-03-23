@@ -144,7 +144,7 @@ export function renderSceneToUniverse(
       continue;
     }
 
-    const sinceTransition = Number(BigInt(absoluteT) - (component.transition.value || 0n));
+    const sinceTransition = Number(BigInt(absoluteT) - (component.transition.case != 'absoluteValue' ? component.transition.value || 0n: 0n));
 
     let amount: number = 0;
     if (component.transition.case === 'startFadeInMs') {
@@ -163,6 +163,8 @@ export function renderSceneToUniverse(
       }
 
       amount = Math.max(0, 1 - sinceTransition / fadeOutMs);
+    } else if (component.transition.case === 'absoluteValue') {
+      amount = component.transition.value;
     }
 
     const before = [...universe];

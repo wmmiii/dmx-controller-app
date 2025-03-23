@@ -72,6 +72,7 @@ message Scene {
     oneof transition {
       int64 start_fade_in_ms = 11;
       int64 start_fade_out_ms = 12;
+      float absolute_value = 17;
     }
   }
 

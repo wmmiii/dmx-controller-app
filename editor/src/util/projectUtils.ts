@@ -22,17 +22,18 @@ export function getComponentDurationMs(component: Scene_Component, beat: BeatMet
   }
 }
 
-export function componentActive(component: Scene_Component, beat: BeatMetadata, t: bigint) {
+export function componentActiveAmount(component: Scene_Component, beat: BeatMetadata, t: bigint): number {
   if (component.transition.case === 'startFadeInMs') {
     if (component.oneShot) {
       const duration = getComponentDurationMs(component, beat);
-      return t < component.transition.value + BigInt(Math.floor(duration));
+      return t < component.transition.value + BigInt(Math.floor(duration)) ? 1 : 0;
     } else {
-      return true;
+      return 1;
     }
-  } else {
-    return false;
+  } else if (component.transition.case === 'absoluteValue') {
+    return component.transition.value;
   }
+  return 0;
 }
 
 type Color = FixtureState['lightColor'];

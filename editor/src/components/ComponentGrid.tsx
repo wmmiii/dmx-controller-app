@@ -4,13 +4,12 @@ import { BeatContext } from '../contexts/BeatContext';
 import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { Scene_Component, Scene_ComponentMap } from '@dmx-controller/proto/scene_pb';
-import { ShortcutContext } from '../contexts/ShortcutContext';
 import { TimeContext } from '../contexts/TimeContext';
-import { componentActive, componentTileDetails } from '../util/projectUtils';
+import { componentActiveAmount, componentTileDetails } from '../util/projectUtils';
 import { PaletteContext } from '../contexts/PaletteContext';
 import { Color, ColorPalette, PaletteColor } from '@dmx-controller/proto/color_pb';
 import { FixtureState } from '@dmx-controller/proto/effect_pb';
-import { ControllerChannel, ControllerContext } from '../contexts/ControllerContext';
+import { ControlCommandType, ControllerChannel, ControllerContext } from '../contexts/ControllerContext';
 import { SiMidi } from 'react-icons/si';
 
 interface ComponentGridProps {
@@ -30,45 +29,10 @@ export function ComponentGrid({
   maxX,
   maxY,
 }: ComponentGridProps): JSX.Element {
-  const { beat } = useContext(BeatContext);
   const { project, save, update } = useContext(ProjectContext);
-  const { setShortcuts } = useContext(ShortcutContext);
   const [draggingComponent, setDraggingComponent] = useState<Scene_ComponentMap | null>(null);
 
   const scene = useMemo(() => project?.scenes[sceneId], [project, sceneId]);
-
-  const toggleComponents = useCallback((shortcut: string) => {
-    const components = scene.componentMap
-      .map(c => c.component!)
-      .filter((c) => c.shortcut === shortcut);
-    if (components.find(c => !c.oneShot && c.transition.case === 'startFadeInMs')) {
-      components.forEach(c => transitionComponent(c, false, beat));
-    } else {
-      components.forEach(c => transitionComponent(c, true, beat));
-    }
-    save(`Toggle components with shortcut "${shortcut}".`);
-  }, [scene, save]);
-
-  // Setup shortcuts.
-  useEffect(() => {
-    if (scene == null) {
-      return;
-    }
-
-    const shortcuts = new Set(
-      scene.componentMap
-        .map(c => c.component!)
-        .map(c => c.shortcut)
-        .filter(s => s != null && s !== ''));
-
-    return setShortcuts(
-      Array.from(shortcuts)
-        .map(s => ({
-          shortcut: { key: 'Digit' + s },
-          action: () => toggleComponents(s),
-          description: `Group toggle all components with the "${s}" shortcut.`,
-        })));
-  }, [scene?.componentMap.map(c => c.component! || []).map(c => c.shortcut)]);
 
   if (scene == null) {
     return <div className={className}></div>;
@@ -97,7 +61,6 @@ export function ComponentGrid({
               <Component
                 key={x + ' ' + y}
                 component={mapping.component!}
-                dragging={mapping === draggingComponent}
                 onDragComponent={() => setDraggingComponent(mapping)}
                 onDropComponent={() => {
                   if (draggingComponent) {
@@ -131,6 +94,7 @@ export function ComponentGrid({
                   e.stopPropagation();
                   e.preventDefault();
                 }}>
+                <div className={styles.contents}></div>
               </div>
             );
           }
@@ -142,7 +106,6 @@ export function ComponentGrid({
 
 interface ComponentProps {
   component: Scene_Component;
-  dragging: boolean;
   onDragComponent: () => void;
   onDropComponent: () => void;
   onSelect: () => void;
@@ -151,11 +114,11 @@ interface ComponentProps {
   priority: number;
 }
 
-function Component({ component, dragging, onDragComponent, onDropComponent, onSelect, x, y, priority }: ComponentProps) {
+function Component({ component, onDragComponent, onDropComponent, onSelect, x, y, priority }: ComponentProps) {
   const { controllerName, output: controllerOutput, addListener, removeListener } = useContext(ControllerContext);
   const { beat } = useContext(BeatContext);
   const { palette } = useContext(PaletteContext);
-  const { save } = useContext(ProjectContext);
+  const { save, update } = useContext(ProjectContext);
   const { t } = useContext(TimeContext);
 
   const details = useMemo(() => componentTileDetails(component), [component.toJson()]);
@@ -182,7 +145,9 @@ function Component({ component, dragging, onDragComponent, onDropComponent, onSe
   }, [details, palette]);
 
   const toggle = useCallback(() => {
-    const enabled = component.oneShot || component.transition.case !== 'startFadeInMs';
+    const enabled = component.oneShot ||
+      component.transition.case === 'startFadeOutMs' ||
+      (component.transition.case === 'absoluteValue' && component.transition.value < 0.1);
     if (transitionComponent(component, enabled, beat)) {
       save(`${enabled ? 'Enable' : 'Disable'} component ${component.name}.`);
     }
@@ -194,16 +159,33 @@ function Component({ component, dragging, onDragComponent, onDropComponent, onSe
       return;
     }
 
-    const listener = (c: ControllerChannel, value: number) => {
-      if (c === channel && value > 0.5) {
-        toggle();
+    let timeout: any;
+
+    const listener = (c: ControllerChannel, value: number, controlChannelType: ControlCommandType) => {
+      if (c === channel) {
+        if (controlChannelType != null) {
+          component.transition = {
+            case: 'absoluteValue',
+            value: value,
+          };
+
+          // Debounce fader inputs.
+          clearTimeout(timeout);
+          timeout = setTimeout(() => {
+            save(`Set value of ${component.name} to ${value}.`);
+          }, 500);
+
+          update();
+        } else if (c === channel && value > 0.5) {
+          toggle();
+        }
       }
     };
     addListener(listener);
     return () => removeListener(listener);
-  }, [component, controllerName, addListener, removeListener]);
+  }, [component.controllerChannel[controllerName || ''], addListener, removeListener]);
 
-  const active = componentActive(component, beat, t);
+  const activeAmount = componentActiveAmount(component, beat, t);
 
   useEffect(() => {
     const channel = component.controllerChannel[controllerName || ''];
@@ -211,16 +193,10 @@ function Component({ component, dragging, onDragComponent, onDropComponent, onSe
       return;
     }
 
-    controllerOutput(channel, active ? 1 : 0);
-  }, [component, controllerName, controllerOutput, active]);
+    controllerOutput(channel, activeAmount);
+  }, [component, controllerName, controllerOutput, activeAmount]);
 
   const classes = [styles.component];
-  if (active) {
-    classes.push(styles.active);
-  }
-  if (dragging) {
-    classes.push(styles.dragging);
-  }
 
   return (
     <div
@@ -242,35 +218,38 @@ function Component({ component, dragging, onDragComponent, onDropComponent, onSe
         onDropComponent();
         e.stopPropagation();
       }}>
-      <div
-        className={styles.settingsTriangle}
-        onClick={(e) => {
-          onSelect();
-          e.stopPropagation();
-        }}>
-      </div>
-      <div className={styles.title} style={{ background: background as any }}>
-        {component.name}
-      </div>
-      {
-        priority != 0 &&
-        <div className={styles.priority}>
-          {priority}
+      <div className={styles.contents}>
+        <div
+          className={styles.settingsTriangle}
+          onClick={(e) => {
+            onSelect();
+            e.stopPropagation();
+          }}>
         </div>
-      }
-      {
-        component.controllerChannel[controllerName || ''] &&
-        <div className={styles.controller}>
-          <SiMidi />
+        <div className={styles.title} style={{ background: background as any }}>
+          {component.name}
         </div>
-      }
+        {
+          priority != 0 &&
+          <div className={styles.priority}>
+            {priority}
+          </div>
+        }
+        {
+          component.controllerChannel[controllerName || ''] &&
+          <div className={styles.controller}>
+            <SiMidi />
+          </div>
+        }
+      </div>
+      <div className={styles.border} style={{ opacity: activeAmount }}></div>
     </div>
   );
 }
 
 function transitionComponent(component: Scene_Component, enabled: boolean, beat: BeatMetadata) {
   const t = BigInt(new Date().getTime());
-  if (component.transition.case === undefined) {
+  if (component.transition.case === undefined || component.transition.case === 'absoluteValue') {
     component.transition = {
       case: 'startFadeOutMs',
       value: 0n,
