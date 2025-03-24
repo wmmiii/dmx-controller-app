@@ -9,8 +9,13 @@ message ControllerMapping {
 
   message Action {
     oneof action {
+      BeatMatch beat_match = 2;
       ComponentStrength component_strength = 1;
     }
+  }
+
+  message BeatMatch {
+
   }
 
   message ComponentStrength {

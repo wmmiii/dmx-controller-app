@@ -10,8 +10,9 @@ import { Color, ColorPalette, PaletteColor } from '@dmx-controller/proto/color_p
 import { FixtureState } from '@dmx-controller/proto/effect_pb';
 import { ControllerContext } from '../contexts/ControllerContext';
 import { SiMidi } from 'react-icons/si';
-import { findComponentStrength } from '../external_controller/componentStrength';
 import { componentActiveAmount, toggleComponent } from '../util/component';
+import { findAction } from '../external_controller/externalController';
+import { ControllerMapping_ComponentStrength } from '@dmx-controller/proto/controller_pb';
 
 interface ComponentGridProps {
   className?: string;
@@ -126,7 +127,18 @@ function Component({ id, component, onDragComponent, onDropComponent, onSelect, 
 
   const details = useMemo(() => componentTileDetails(component), [component.toJson()]);
 
-  const controllerMapping = findComponentStrength(project, controllerName || '', 0, id);
+  const controllerMapping = useMemo(() => {
+    if (controllerName) {
+      return findAction(project, controllerName, {
+        case: 'componentStrength',
+        value: new ControllerMapping_ComponentStrength({
+          scene: 0,
+          componentId: id,
+        }),
+      });
+    }
+    return undefined;
+  }, [project, controllerName]);
 
   const background = useMemo(() => {
     if (details.colors.length === 0) {

@@ -1,0 +1,8 @@
+@import '../vars';
+
+.live-beat {
+  align-items: center;
+  display: flex;
+  flex-direction: row;
+  gap: spacing(1);
+}

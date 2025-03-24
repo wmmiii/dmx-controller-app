@@ -5,6 +5,7 @@ import { ProjectContext } from "./ProjectContext";
 import { outputValues, performAction } from "../external_controller/externalController";
 import { Project } from "@dmx-controller/proto/project_pb";
 import { TimeContext } from "./TimeContext";
+import { BeatContext } from "./BeatContext";
 
 export type ControllerChannel = string;
 export type ControlCommandType = 'msb' | 'lsb' | null;
@@ -38,6 +39,7 @@ export function ControllerProvider({ children, }: ControllerProviderImplProps): 
     projectRef.current = project;
   }, [project]);
   const { t } = useContext(TimeContext);
+  const { addBeatSample } = useContext(BeatContext);
 
   const [controller, setController] = useState<MidiDevice | null>(null);
   const [candidateList, setCandidateList] = useState<any[] | null>(null);
@@ -93,7 +95,7 @@ export function ControllerProvider({ children, }: ControllerProviderImplProps): 
 
   useEffect(() => {
     if (controller == null) {
-      return () => {};
+      return () => { };
     }
 
     let msbBuffer: Map<number, number> = new Map();
@@ -173,30 +175,31 @@ export function ControllerProvider({ children, }: ControllerProviderImplProps): 
     inputListeners.current.splice(inputListeners.current.indexOf(listener), 1);
   }, []);
 
-  useEffect(() => console.log('inputListeners', inputListeners), [inputListeners]);
-
   useEffect(() => {
     let timeout: any;
     const listener: Listener = (_p, channel, value, cct) => {
       const controllerName = controller?.name;
       if (controllerName) {
-        performAction(
+        const modified = performAction(
           project,
           controllerName,
           channel,
           value,
-          cct);
-        update();
-        // Debounce midi input.
-        clearTimeout(timeout);
-        timeout = setTimeout(() => {
-          save('Update via controller input.');
-        }, 500);
+          cct,
+          addBeatSample);
+        if (modified) {
+          update();
+          // Debounce midi input.
+          clearTimeout(timeout);
+          timeout = setTimeout(() => {
+            save('Update via controller input.');
+          }, 500);
+        }
       }
     };
     addListener(listener);
     return () => removeListener(listener);
-  }, [controller, update, addListener, removeListener]);
+  }, [controller, addBeatSample, update, addListener, removeListener]);
 
   // Expose output function for debugging purposes.
   useEffect(() => {

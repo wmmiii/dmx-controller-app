@@ -135,11 +135,11 @@ export function BeatProvider({ children }: PropsWithChildren): JSX.Element {
     <BeatContext.Provider value={{
       beat,
       setBeat: (length, start) => {
-      project.liveBeat = new BeatMetadata({
-        lengthMs: length,
-        offsetMs: start || project.liveBeat?.offsetMs || 0n,
-      });
-      save('Manually set beat');
+        project.liveBeat = new BeatMetadata({
+          lengthMs: length,
+          offsetMs: start || project.liveBeat?.offsetMs || 0n,
+        });
+        save('Manually set beat');
       },
       addBeatSample,
       sampleQuality,

@@ -2,7 +2,7 @@ import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import IconBxPlus from '../icons/IconBxPlus';
 import IconBxX from '../icons/IconBxX';
 import styles from "./LivePage.module.scss";
-import { BeatContext, BeatProvider } from '../contexts/BeatContext';
+import { BeatContext } from '../contexts/BeatContext';
 import { Button, IconButton } from '../components/Button';
 import { ComponentGrid } from '../components/ComponentGrid';
 import { EffectDetails } from '../components/Effect';
@@ -21,20 +21,11 @@ import { Project } from '@dmx-controller/proto/project_pb';
 import { PaletteContext } from '../contexts/PaletteContext';
 import { PaletteSwatch } from '../components/Palette';
 import { getAvailableChannels } from '../engine/fixture';
-import { ControlCommandType, ControllerChannel, ControllerContext } from '../contexts/ControllerContext';
-import { assignAction, debounceInput, getActionDescription } from '../external_controller/externalController';
-import { ControllerMapping_Action } from '@dmx-controller/proto/controller_pb';
-import { deleteComponentStrength, findComponentStrength } from '../external_controller/componentStrength';
+import { ControllerContext } from '../contexts/ControllerContext';
+import { ControllerMapping_Action, ControllerMapping_ComponentStrength } from '@dmx-controller/proto/controller_pb';
+import { ControllerConnection } from '../components/ControllerConnection';
 
 export function LivePage(): JSX.Element {
-  return (
-    <BeatProvider>
-      <LivePageImpl />
-    </BeatProvider>
-  );
-}
-
-function LivePageImpl(): JSX.Element {
   const { project, save } = useContext(ProjectContext);
   const projectRef = useRef<Project>(project);
   const { beat: beatMetadata } = useContext(BeatContext);
@@ -151,54 +142,18 @@ interface ComponentEditorProps {
 
 function ComponentEditor({ componentMap, onClose }: ComponentEditorProps) {
   const { project, save } = useContext(ProjectContext);
-  const { controllerName, addListener, removeListener } = useContext(ControllerContext);
-  const [mappingControllerInput, setMappingControllerInput] = useState(false);
+  const { controllerName } = useContext(ControllerContext);
   const [existingComponent, setExistingComponent] = useState<string | null>(null);
 
   const component = componentMap.component!;
 
-  const controllerAction = useMemo(() => {
-    if (controllerName) {
-      return findComponentStrength(project, controllerName, 0, componentMap.id);
-    } else {
-      return undefined;
-    }
-  }, [project, controllerName]);
-
-  useEffect(() => {
-    if (!mappingControllerInput) {
-      return;
-    }
-
-    const listener = (project: Project, channel: ControllerChannel, _value: number, cct: ControlCommandType) => {
-      if (controllerName == null) {
-        return;
-      }
-
-      const existingDescription = getActionDescription(project, controllerName, channel);
-      if (existingDescription != null) {
-        setExistingComponent(existingComponent);
-        setMappingControllerInput(false);
-        return;
-      }
-
-      debounceInput(cct, () => {
-        assignAction(project, controllerName, channel, new ControllerMapping_Action({
-          action: {
-            case: 'componentStrength',
-            value: {
-              scene: 0,
-              componentId: componentMap.id,
-            },
-          },
-        }));
-        save(`Map ${component.name} to controller input.`);
-        setMappingControllerInput(false);
-      });
-    };
-    addListener(listener);
-    return () => removeListener(listener);
-  }, [mappingControllerInput, controllerName, setExistingComponent, setMappingControllerInput, component]);
+  const action = useMemo(() => ({
+    case: 'componentStrength',
+    value: new ControllerMapping_ComponentStrength({
+      scene: 0,
+      componentId: componentMap.id,
+    }),
+  } as ControllerMapping_Action['action']), []);
 
   return (
     <Modal
@@ -249,21 +204,7 @@ function ComponentEditor({ componentMap, onClose }: ComponentEditorProps) {
             {
               controllerName != null &&
               <div className={styles.row}>
-                <label>Strength</label>
-                {
-                  controllerAction ?
-                    <Button onClick={() => {
-                      deleteComponentStrength(project, controllerName, 0, componentMap.id);
-                      save(`Remove controller mapping for ${component.name}.`);
-                    }}>
-                      Remove MIDI
-                    </Button> :
-                    <Button
-                      variant={mappingControllerInput ? 'primary' : 'default'}
-                      onClick={() => setMappingControllerInput(!mappingControllerInput)}>
-                      Set MIDI
-                    </Button>
-                }
+                <ControllerConnection action={action} title="Strength" />
               </div>
             }
             <div className={styles.row}>
