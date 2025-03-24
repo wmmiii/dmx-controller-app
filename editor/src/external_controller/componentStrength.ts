@@ -52,21 +52,3 @@ export function outputComponentStrength(project: Project, action: ControllerMapp
     return 0;
   }
 }
-
-export function deleteComponentStrength(project: Project, controllerName: string, scene: number, componentId: string) {
-  const actions = project.controllerMapping?.controllers[controllerName || '']?.actions;
-  if (!actions) {
-    return;
-  }
-  const channel = Object.entries(actions)
-    .find(e => {
-      if (e[1].action.case === 'componentStrength') {
-        const action = e[1].action.value;
-        return action.scene === scene && action.componentId === componentId;
-      }
-      return false;
-    });
-  if (channel != null) {
-    delete actions[channel[0]];
-  }
-}
