@@ -81,27 +81,28 @@ export function LivePage(): JSX.Element {
           </div>
           <div className={styles.palettes}>
             {
-              scene?.colorPalettes.map((p, i) => (
+              Object.entries(scene?.colorPalettes).map((e, i) => (
                 <PaletteSwatch
                   key={i}
-                  palette={p}
-                  active={scene.activeColorPalette === i}
+                  id={e[0]}
+                  palette={e[1]}
+                  active={scene.activeColorPalette === e[0]}
                   onClick={() => {
                     scene.lastActiveColorPalette = scene.activeColorPalette;
-                    scene.activeColorPalette = i;
+                    scene.activeColorPalette = e[0];
                     scene.colorPaletteStartTransition = BigInt(new Date().getTime());
-                    save(`Set color palette to ${p.name}.`);
+                    save(`Set color palette to ${e[1].name}.`);
                   }}
                   onDelete={() => {
-                    if (scene.colorPalettes.length <= 1) {
+                    if (Object.keys(scene.colorPalettes).length <= 1) {
                       return;
                     }
 
-                    scene.activeColorPalette = 0;
-                    scene.lastActiveColorPalette = 0;
-                    scene.colorPalettes.splice(i, 1);
+                    scene.activeColorPalette = Object.keys(scene.colorPalettes)[0];
+                    scene.activeColorPalette = Object.keys(scene.colorPalettes)[0];
+                    delete scene.colorPalettes[e[0]]
 
-                    save(`Delete color palette ${p.name}`)
+                    save(`Delete color palette ${e[1].name}`)
                   }} />
               ))
             }
@@ -110,7 +111,7 @@ export function LivePage(): JSX.Element {
               onClick={() => {
                 const newPalette = DEFAULT_COLOR_PALETTE.clone();
                 newPalette.name = 'New color palette';
-                scene.colorPalettes.push(newPalette);
+                scene.colorPalettes[crypto.randomUUID()] = newPalette;
                 save('Add new color palette');
               }}>
               Palette

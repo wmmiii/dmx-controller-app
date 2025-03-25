@@ -1,7 +1,7 @@
 import { Project } from "@dmx-controller/proto/project_pb";
 import { ControlCommandType, ControllerChannel } from "../contexts/ControllerContext";
-import { ControllerMapping, ControllerMapping_Action, ControllerMapping_BeatMatch, ControllerMapping_ComponentStrength, ControllerMapping_Controller } from "@dmx-controller/proto/controller_pb";
-import { assignComponentStrength, outputComponentStrength, performComponentStrength } from "./componentStrength";
+import { ControllerMapping, ControllerMapping_Action, ControllerMapping_ComponentStrength, ControllerMapping_Controller } from "@dmx-controller/proto/controller_pb";
+import { outputComponentStrength, performComponentStrength } from "./componentStrength";
 
 export function performAction(
   project: Project,
@@ -9,7 +9,8 @@ export function performAction(
   channel: ControllerChannel,
   value: number,
   cct: ControlCommandType,
-  addBeatSample: (t: number) => void) {
+  addBeatSample: (t: number) => void,
+  output: (channel: ControllerChannel, value: number) => void) {
   const action = project.controllerMapping!.controllers[controllerName]?.actions[channel]?.action;
 
   switch (action?.case) {
@@ -18,9 +19,20 @@ export function performAction(
         addBeatSample(new Date().getTime());
       }
       return false;
+    case 'colorPaletteSelection':
+      const scene = project.scenes[action.value.scene];
+      if (scene.activeColorPalette === action.value.paletteId) {
+        return false;
+      } else {
+        scene.lastActiveColorPalette = project.scenes[action.value.scene].activeColorPalette;
+        scene.activeColorPalette = action.value.paletteId;
+        scene.colorPaletteStartTransition = BigInt(new Date().getTime());
+        return true;
+      }
     case 'componentStrength':
       return performComponentStrength(project, action.value, value, cct);
     default:
+      output(channel, value);
       return false;
   }
 }
@@ -30,20 +42,8 @@ export function assignAction(
   controllerName: string,
   channel: ControllerChannel,
   action: ControllerMapping_Action) {
-  switch (action.action.case) {
-    case 'beatMatch':
-      deleteAction(project, controllerName, { case: 'beatMatch', value: new ControllerMapping_BeatMatch() });
-      getActionMap(project, controllerName)[channel] = new ControllerMapping_Action({
-        action: {
-          case: 'beatMatch',
-          value: {},
-        },
-      });
-      break;
-    case 'componentStrength':
-      assignComponentStrength(project, controllerName, channel, action.action.value);
-      break;
-  }
+  deleteAction(project, controllerName, action.action);
+  getActionMap(project, controllerName)[channel] = action;
 }
 
 export function findAction(project: Project, controllerName: string, action: ControllerMapping_Action['action']) {
@@ -81,8 +81,17 @@ export function outputValues(
     const action = entry[1].action;
     let value = 0;
     switch (action.case) {
+      case 'beatMatch':
+        const beatMetadata = project.liveBeat!;
+        const beatT = Number(t + BigInt(project.timingOffsetMs) - beatMetadata.offsetMs);
+        value = 1 - Math.round((beatT / beatMetadata.lengthMs) % 1);
+        break;
+      case 'colorPaletteSelection':
+        value = 1;
+        break;
       case 'componentStrength':
         value = outputComponentStrength(project, action.value, t);
+        break;
     }
     output(channel, value);
   }

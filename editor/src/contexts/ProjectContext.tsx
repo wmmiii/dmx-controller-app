@@ -7,6 +7,7 @@ import { getBlob, storeBlob } from '../util/storageUtil';
 import { Universe } from '@dmx-controller/proto/universe_pb';
 import { randomUint64 } from '../util/numberUtils';
 import { DEFAULT_COLOR_PALETTE } from '../engine/universe';
+import { ColorPalette } from '@dmx-controller/proto/color_pb';
 
 const PROJECT_KEY = "tmp-project-1";
 const ASSETS_KEY = "tmp-assets-1";
@@ -21,6 +22,10 @@ DEFAULT_UNIVERSE_MAP[DEFAULT_UNIVERSE_ID.toString()] = new Universe({
   fixtures: {},
 });
 
+const DEFAULT_COLOR_PALETTES: { [id: string]: ColorPalette } = {};
+const DEFAULT_COLOR_PALETTE_ID = crypto.randomUUID();
+DEFAULT_COLOR_PALETTES[DEFAULT_COLOR_PALETTE_ID] = DEFAULT_COLOR_PALETTE;
+
 const DEFAULT_PROJECT = new Project({
   name: "Untitled Project",
   updateFrequencyMs: 15,
@@ -30,7 +35,9 @@ const DEFAULT_PROJECT = new Project({
   scenes: [{
     name: 'Default scene',
     componentMap: [],
-    colorPalettes: [DEFAULT_COLOR_PALETTE],
+    colorPalettes: DEFAULT_COLOR_PALETTES,
+    activeColorPalette: DEFAULT_COLOR_PALETTE_ID,
+    lastActiveColorPalette: DEFAULT_COLOR_PALETTE_ID,
   }],
   liveBeat: {
     lengthMs: Math.floor(60_000 / 120),

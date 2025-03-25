@@ -57,7 +57,11 @@ export function LiveBeat({ className }: LiveBeatProps): JSX.Element {
         <option value="manual">Manual</option>
         <option value="microphone">Microphone</option>
       </select>
-      <ControllerConnection action={action} title="Beat Match" requiredType="button" />
+      <ControllerConnection
+        title="Beat Match"
+        iconOnly={false}
+        action={action}
+        requiredType="button" />
     </div>
   );
 }

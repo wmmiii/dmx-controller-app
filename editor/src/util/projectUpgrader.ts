@@ -7,7 +7,6 @@ import { OutputId, OutputId_FixtureMapping } from "@dmx-controller/proto/output_
 import { LightTrack } from "@dmx-controller/proto/light_track_pb";
 import { FixtureDefinition, FixtureDefinition_Channel_AmountMapping, FixtureDefinition_Channel_AngleMapping, FixtureDefinition_Mode, PhysicalFixtureGroup, PhysicalFixtureGroup_FixtureList } from "@dmx-controller/proto/fixture_pb";
 import { Scene_Component_EffectGroupComponent_EffectChannel, Scene_ComponentMap } from "@dmx-controller/proto/scene_pb";
-import { DEFAULT_COLOR_PALETTE } from "../engine/universe";
 import { isAmountChannel, isAngleChannel } from "../engine/channel";
 import { ControllerMapping } from "@dmx-controller/proto/controller_pb";
 
@@ -23,6 +22,7 @@ export default function upgradeProject(project: Project): void {
   upgradeFixtureDefinitions(project);
   upgradeEffectTiming(project);
   upgradeComponentIds(project);
+  upgradePaletteMapping(project);
 }
 
 function upgradeIndices(project: Project): void {
@@ -390,8 +390,8 @@ function upgradeColorTypes(project: Project) {
     .forEach(upgradeEffect);
 
   project.scenes.forEach(s => {
-    if (!s.colorPalettes || s.colorPalettes.length < 1) {
-      s.colorPalettes = [DEFAULT_COLOR_PALETTE.clone()];
+    if (!s.deprecatedColorPalettes) {
+      s.deprecatedColorPalettes = [];
     }
     if (!s.colorPaletteTransitionDurationMs) {
       s.colorPaletteTransitionDurationMs = 2_000;
@@ -504,9 +504,6 @@ function upgradeEffectTiming(project: Project) {
     .forEach(upgradeEffect);
 
   project.scenes.forEach(s => {
-    if (!s.colorPalettes || s.colorPalettes.length < 1) {
-      s.colorPalettes = [DEFAULT_COLOR_PALETTE.clone()];
-    }
     if (!s.colorPaletteTransitionDurationMs) {
       s.colorPaletteTransitionDurationMs = 2_000;
     }
@@ -520,5 +517,19 @@ function upgradeComponentIds(project: Project) {
         m.id = crypto.randomUUID();
       }
     });
+  }
+}
+
+function upgradePaletteMapping(project: Project) {
+  for (const scene of project.scenes) {
+    for (const colorPalette of scene.deprecatedColorPalettes) {
+      const id = crypto.randomUUID();
+      scene.colorPalettes[id] = colorPalette;
+    }
+    if (scene.deprecatedColorPalettes.length > 0) {
+      scene.activeColorPalette = Object.keys(scene.colorPalettes)[0];
+      scene.lastActiveColorPalette = Object.keys(scene.colorPalettes)[0];
+    }
+    scene.deprecatedColorPalettes = [];
   }
 }

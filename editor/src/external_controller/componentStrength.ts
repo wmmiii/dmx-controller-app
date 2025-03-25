@@ -1,8 +1,7 @@
-import { ControllerMapping_Action, ControllerMapping_ComponentStrength } from "@dmx-controller/proto/controller_pb";
+import { ControllerMapping_ComponentStrength } from "@dmx-controller/proto/controller_pb";
 import { Project } from "@dmx-controller/proto/project_pb";
 import { ControlCommandType } from "../contexts/ControllerContext";
 import { componentActiveAmount, toggleComponent } from "../util/component";
-import { deleteAction, getActionMap } from "./externalController";
 
 export function performComponentStrength(
   project: Project,
@@ -24,24 +23,6 @@ export function performComponentStrength(
     }
   }
   return true;
-}
-
-export function assignComponentStrength(
-  project: Project,
-  controllerName: string,
-  channel: string,
-  action: ControllerMapping_ComponentStrength) {
-  deleteAction(project, controllerName, {
-    case: 'componentStrength',
-    value: action,
-  });
-
-  getActionMap(project, controllerName)[channel] = new ControllerMapping_Action({
-    action: {
-      case: 'componentStrength',
-      value: action,
-    },
-  });
 }
 
 export function outputComponentStrength(project: Project, action: ControllerMapping_ComponentStrength, t: bigint) {

@@ -6,15 +6,16 @@ import { ControlCommandType, ControllerChannel, ControllerContext } from "../con
 import { SiMidi } from "react-icons/si";
 import { Project } from "@dmx-controller/proto/project_pb";
 import { Modal } from "./Modal";
-import { Button } from "./Button";
+import { Button, IconButton } from "./Button";
 
 interface ControllerConnectionProps {
   action: ControllerMapping_Action['action'];
   title: string;
+  iconOnly?: boolean;
   requiredType?: 'slider' | 'button';
 }
 
-export function ControllerConnection({ action, title, requiredType }: ControllerConnectionProps) {
+export function ControllerConnection({ action, title, iconOnly, requiredType }: ControllerConnectionProps) {
   const { project, save } = useContext(ProjectContext);
   const { controllerName, addListener, removeListener } = useContext(ControllerContext);
 
@@ -58,23 +59,45 @@ export function ControllerConnection({ action, title, requiredType }: Controller
     return () => { };
   }, [mappingControllerInput, controllerName, action]);
 
+  if (!controllerName) {
+    return null;
+  }
+
   return (
     <>
-      <Button
-        icon={<SiMidi />}
-        variant={mappingControllerInput ? 'warning' : existingAction ? 'primary' : 'default'}
-        onClick={() => {
-          if (mappingControllerInput) {
-            setMappingControllerInput(false);
-          } else if (existingAction && controllerName) {
-            deleteAction(project, controllerName, action);
-            save('Remove MIDI mapping.');
-          } else {
-            setMappingControllerInput(true);
-          }
-        }}>
-        {title}
-      </Button>
+      {
+        iconOnly != false ?
+          <IconButton
+            title={title}
+            variant={mappingControllerInput ? 'warning' : existingAction ? 'primary' : 'default'}
+            onClick={() => {
+              if (mappingControllerInput) {
+                setMappingControllerInput(false);
+              } else if (existingAction && controllerName) {
+                deleteAction(project, controllerName, action);
+                save('Remove MIDI mapping.');
+              } else {
+                setMappingControllerInput(true);
+              }
+            }}>
+            <SiMidi />
+          </IconButton> :
+          <Button
+            icon={<SiMidi />}
+            variant={mappingControllerInput ? 'warning' : existingAction ? 'primary' : 'default'}
+            onClick={() => {
+              if (mappingControllerInput) {
+                setMappingControllerInput(false);
+              } else if (existingAction && controllerName) {
+                deleteAction(project, controllerName, action);
+                save('Remove MIDI mapping.');
+              } else {
+                setMappingControllerInput(true);
+              }
+            }}>
+            {title}
+          </Button>
+      }
       {
         error &&
         <Modal title="Controller Mapping Error" onClose={() => setError(undefined)}>

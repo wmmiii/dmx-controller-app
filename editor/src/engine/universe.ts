@@ -311,7 +311,7 @@ function renderUniverseSequence(
   universe: DmxUniverse,
 ) {
   if (universeSequence) {
-    const nonInterpolatedIndices = applyDefaults(project, universe);
+    const nonInterpolatedIndices = applyDefaults(project, [...universe]);
 
     const context: Omit<Omit<RenderContext, 'output'>, 'outputId'> = {
       globalT: globalT,

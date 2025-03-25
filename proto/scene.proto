@@ -97,14 +97,17 @@ message Scene {
   }
 
   string name = 1;
-  repeated ColorPalette color_palettes = 2;
-  uint32 active_color_palette = 3;
-  uint32 last_active_color_palette = 4;
+  map<string, ColorPalette> color_palettes = 7;
+  string active_color_palette = 8;
+  string last_active_color_palette = 9;
   uint32 color_palette_transition_duration_ms = 5;
   uint64 color_palette_start_transition = 6;
-  reserved 7 to 10;
+  reserved 10;
 
   repeated Component components = 11 [deprecated = true];
   repeated ComponentRow rows = 12 [deprecated = true];
   repeated ComponentMap componentMap = 13;
+  repeated ColorPalette deprecated_color_palettes = 2 [deprecated = true];
+  uint32 deprecated_active_color_palette = 3 [deprecated = true];
+  uint32 deprecated_last_active_color_palette = 4 [deprecated = true];
 }

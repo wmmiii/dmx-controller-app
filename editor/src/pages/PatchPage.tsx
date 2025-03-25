@@ -662,6 +662,8 @@ function EditDefinitionDialog({
 
                         const channel = mode.channels[index];
 
+                        console.log(newType);
+
                         if (isAngleChannel(newType) && channel.mapping.case !== 'angleMapping') {
                           channel.mapping = {
                             case: 'angleMapping',
@@ -677,6 +679,11 @@ function EditDefinitionDialog({
                               minValue: 0,
                               maxValue: 255,
                             }),
+                          };
+                        } else if (newType === 'color_wheel' && channel.mapping.case !== 'colorWheelMapping') {
+                          channel.mapping = {
+                            case: 'colorWheelMapping',
+                            value: new FixtureDefinition_Channel_ColorWheelMapping(),
                           };
                         } else if (channel.mapping.case != undefined) {
                           channel.mapping = {

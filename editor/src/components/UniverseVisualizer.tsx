@@ -6,6 +6,7 @@ import { SerialContext } from '../contexts/SerialContext';
 import { getActiveUniverse } from '../util/projectUtils';
 import { ChannelTypes } from '../engine/channel';
 import { FixtureDefinition_Channel_ColorWheelMapping } from '@dmx-controller/proto/fixture_pb';
+import { Color } from '@dmx-controller/proto/color_pb';
 
 export function UniverseVisualizer() {
   const { project } = useContext(ProjectContext);
@@ -107,7 +108,7 @@ export function UniverseVisualizer() {
           } else if (f.wheelIndex != null) {
             const wheelSlot = getValue(f.wheelIndex);
             const mapping = f.mode.channels[f.wheelIndex - f.offset + 1].mapping.value as FixtureDefinition_Channel_ColorWheelMapping;
-            const color = mapping.colors.find(c => c.value === wheelSlot)!.color!;
+            const color = mapping.colors.find(c => c.value === wheelSlot)?.color || new Color();
             red = color.red * 255;
             green = color.green * 255;
             blue = color.blue * 255;

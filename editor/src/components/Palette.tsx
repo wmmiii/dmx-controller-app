@@ -5,10 +5,13 @@ import { Button, IconButton } from "./Button";
 import { Modal } from "./Modal";
 import { ProjectContext } from "../contexts/ProjectContext";
 import { TextInput } from "./Input";
-import { useContext, useState } from "react";
+import { useContext, useMemo, useState } from "react";
 import { ColorSwatch } from "./ColorSwatch";
+import { ControllerConnection } from "./ControllerConnection";
+import { ControllerMapping_ColorPaletteSelection } from "@dmx-controller/proto/controller_pb";
 
 interface PaletteSwatchProps {
+  id: string,
   palette: ColorPalette;
   active: boolean;
   onClick: () => void;
@@ -16,7 +19,7 @@ interface PaletteSwatchProps {
   className?: string;
 }
 
-export function PaletteSwatch({ palette, active, onClick, onDelete, className }: PaletteSwatchProps) {
+export function PaletteSwatch({ id, palette, active, onClick, onDelete, className }: PaletteSwatchProps) {
   const [editPalette, setEditPalette] = useState(false);
 
   const classes = [styles.paletteSwatch];
@@ -43,19 +46,25 @@ export function PaletteSwatch({ palette, active, onClick, onDelete, className }:
         <IconBxsCog />
       </IconButton>
       {
-        editPalette && <EditPaletteDialog palette={palette} onDelete={onDelete} onClose={() => setEditPalette(false)} />
+        editPalette &&
+        <EditPaletteDialog
+          id={id}
+          palette={palette}
+          onDelete={onDelete}
+          onClose={() => setEditPalette(false)} />
       }
     </div>
   );
 }
 
 interface EditPaletteDialogProps {
+  id: string,
   palette: ColorPalette;
   onDelete: () => void;
   onClose: () => void;
 }
 
-function EditPaletteDialog({ palette, onDelete, onClose }: EditPaletteDialogProps) {
+function EditPaletteDialog({ id, palette, onDelete, onClose }: EditPaletteDialogProps) {
   const { save, update } = useContext(ProjectContext);
 
   if (palette.primary?.color == null || palette.secondary?.color == null || palette.tertiary?.color == null) {
@@ -67,6 +76,8 @@ function EditPaletteDialog({ palette, onDelete, onClose }: EditPaletteDialogProp
     onClose();
   };
 
+  const action = useMemo(() => new ControllerMapping_ColorPaletteSelection({ scene: 0, paletteId: id }), [id]);
+
   return (
     <Modal
       title={`Edit ${palette.name}`}
@@ -77,6 +88,12 @@ function EditPaletteDialog({ palette, onDelete, onClose }: EditPaletteDialogProp
         onChange={(v) => {
           palette.name = v;
           update();
+        }} />
+      <ControllerConnection
+        title="Color Palette"
+        action={{
+          case: 'colorPaletteSelection',
+          value: action,
         }} />
       <Button
         variant="warning"
@@ -95,7 +112,7 @@ function EditPaletteDialog({ palette, onDelete, onClose }: EditPaletteDialogProp
           updateDescription={`Update secondary color for ${palette.name}`} />
         <ColorSwatch
           color={palette.tertiary!.color}
-          updateDescription={`Update tertiary color for ${palette.name}`}  />
+          updateDescription={`Update tertiary color for ${palette.name}`} />
       </div>
     </Modal>
   );

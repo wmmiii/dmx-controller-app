@@ -186,7 +186,8 @@ export function ControllerProvider({ children, }: ControllerProviderImplProps): 
           channel,
           value,
           cct,
-          addBeatSample);
+          addBeatSample,
+          output);
         if (modified) {
           update();
           // Debounce midi input.
