@@ -21,23 +21,35 @@ import { extractGdtf } from '../util/gdtf';
 import { Warning } from '../components/Warning';
 import { deleteFixture, deleteFixtureGroup } from '../engine/fixture';
 import { AMOUNT_CHANNELS, ANGLE_CHANNELS, ChannelTypes, COLOR_CHANNELS, isAmountChannel, isAngleChannel } from '../engine/channel';
-import { BiPlus, BiX } from 'react-icons/bi';
+import { BiGridVertical, BiPlus, BiX } from 'react-icons/bi';
 import { ColorSwatch } from '../components/ColorSwatch';
 
 export default function PatchPage(): JSX.Element {
+  const [draggingFixture, setDraggingFixture] = useState<bigint | null>(null);
+
   return (
     <div className={styles.wrapper}>
       <HorizontalSplitPane
         className={styles.splitPane}
-        left={<FixtureList />}
-        right={<FixtureDefinitionList />}
+        defaultAmount={0.65}
+        left={<FixtureList
+          draggingFixture={draggingFixture}
+          setDraggingFixture={setDraggingFixture} />}
+        right={<FixtureDefinitionList
+          draggingFixture={draggingFixture}
+          setDraggingFixture={setDraggingFixture} />}
       />
     </div>
   );
 }
 
-function FixtureList(): JSX.Element | null {
-  const { project, save } = useContext(ProjectContext);
+interface FixtureListProps {
+  draggingFixture: bigint | null;
+  setDraggingFixture: (id: bigint | null) => void;
+}
+
+function FixtureList({ draggingFixture: draggingFixture, setDraggingFixture: setDraggingFixture }: FixtureListProps): JSX.Element | null {
+  const { project, save, update } = useContext(ProjectContext);
   const [selectedFixtureId, setSelectedFixtureId] =
     useState<bigint | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<bigint | null>(null);
@@ -77,6 +89,55 @@ function FixtureList(): JSX.Element | null {
     }
     return undefined;
   }, [uploadButtonRef.current, project, save]);
+
+  interface ChannelInfo {
+    fixtureName: string;
+    type: string;
+    id?: string;
+  }
+
+  const channels = useMemo(() => {
+    const channels: Array<Array<ChannelInfo>> = [];
+    for (let i = 0; i < 512; ++i) {
+      channels[i] = [];
+    }
+
+    // Map all fixtures to their channels.
+    for (const f of Object.entries(getActiveUniverse(project).fixtures)) {
+      const id = f[0];
+      const fixture = f[1];
+
+      if (fixture.channelOffset === -1) {
+        break;
+      }
+
+      const definition =
+        project.fixtureDefinitions[fixture.fixtureDefinitionId];
+
+      const mode = definition?.modes[fixture.fixtureMode];
+
+      for (let c = 0; c < mode.numChannels; ++c) {
+        const channel = mode.channels[c];
+
+        channels[c + fixture.channelOffset].push({
+          fixtureName: fixture.name,
+          type: channel?.type,
+          id: c === 0 ? id : undefined,
+        });
+      }
+    }
+
+    // Remove channels that aren't doing anything.
+    for (let c = 500; c > 10; c -= 10) {
+      if (channels.slice(c - 10).every((ci) => ci.length === 0)) {
+        channels.length = c;
+      } else {
+        break;
+      }
+    }
+
+    return channels;
+  }, [project]);
 
   return (
     <div className={styles.pane}>
@@ -155,55 +216,95 @@ function FixtureList(): JSX.Element | null {
           }} />
       </div>
       <h2>⧇ Fixtures</h2>
-      <ol>
+      <div className={styles.universeGrid}>
         {
-          Object.entries(getActiveUniverse(project).fixtures)
-            .sort((a, b) => a[1].channelOffset - b[1].channelOffset)
-            .map(([id, fixture]) => {
-              const definition =
-                project.fixtureDefinitions[fixture.fixtureDefinitionId];
+          channels
+            .map((ciArray, i) => {
+              const classes = [styles.channel];
 
-              const mode = definition?.modes[fixture.fixtureMode];
+              let channelDescriptions: JSX.Element;
 
-              let numChannels = fixture.channelOffset + mode?.numChannels;
-              if (isNaN(numChannels)) {
-                numChannels = fixture.channelOffset + 1;
+              if (ciArray.length > 1) {
+                classes.push(styles.warning);
+                channelDescriptions = (
+                  <div className={styles.collisionWarning}>
+                    Collision:
+                    {
+                      ciArray.map((ci, i) => (
+                        <div key={i}>{ci.fixtureName}</div>
+                      ))
+                    }
+                  </div>
+                );
+              } else {
+                channelDescriptions = (
+                  <>
+                    {
+                      ciArray.map((ci, i) => (
+                        <div
+                          key={i}
+                          className={styles.channelDescription}
+                          title={`${ci.fixtureName}: ${ci.type || 'unset'}`}>
+                          <div className={styles.fixtureName}>
+                            {ci.fixtureName}:
+                          </div>
+                          <div className={styles.channelType}>
+                            {ci.type || 'unset'}
+                          </div>
+                        </div>
+                      ))
+                    }
+                  </>
+                );
               }
 
-              return (
-                <li key={id} onClick={() => {
-                  setSelectedFixtureId(BigInt(id));
-                }}>
-                  (
-                  {fixture.channelOffset + 1}
-                  &nbsp;—&nbsp;
-                  {numChannels}
-                  )
-                  &nbsp;
-                  {fixture.name}
-                  {
-                    mode == null &&
-                    <>
-                      &nbsp;
-                      <Warning title='Fixture does not have profile set!' />
-                    </>
-                  }
-                </li>
-              );
+              const fixtureStartCi = ciArray.find((ci) => ci.id);
+              if (fixtureStartCi) {
+                classes.push(styles.startChannel);
+                return (
+                  <div
+                    key={i}
+                    className={classes.join(' ')}
+                    onClick={() => {
+                      setSelectedFixtureId(BigInt(fixtureStartCi.id!));
+                    }}
+                    draggable={true}
+                    onDragStart={() => setDraggingFixture(BigInt(fixtureStartCi.id!))}>
+                    <div className={styles.channelNumber}>
+                      {i + 1}
+                    </div>
+                    <div className={styles.fixtureTitle}>
+                      {fixtureStartCi.fixtureName}
+                    </div>
+                    {channelDescriptions}
+                  </div>
+                );
+              } else {
+                const fixture = getActiveUniverse(project).fixtures[String(draggingFixture)];
+                return (
+                  <div key={i} className={classes.join(' ')}
+                    onDragOver={() => {
+                      if (draggingFixture) {
+                        fixture.channelOffset = i;
+                        update();
+                      }
+                    }}
+                    onDragEnd={() => {
+                      if (draggingFixture) {
+                        save(`Change fixture ${fixture.name} start channel to ${fixture.channelOffset + 1}.`);
+                        setDraggingFixture(null);
+                      }
+                    }}>
+                    <div className={styles.channelNumber}>
+                      {i + 1}
+                    </div>
+                    {channelDescriptions}
+                  </div>
+                );
+              }
             })
         }
-      </ol>
-      <Button onClick={() => {
-        const newId = randomUint64();
-        getActiveUniverse(project).fixtures[newId.toString()] =
-          new PhysicalFixture({
-            name: 'New Fixture',
-          });
-        setSelectedFixtureId(newId);
-        save(`Create new fixture.`);
-      }}>
-        + Add New Fixture
-      </Button>
+      </div>
       <h2>⧉ Groups</h2>
       <ul>
         {
@@ -389,8 +490,13 @@ function EditFixtureDialog({
   );
 }
 
-function FixtureDefinitionList(): JSX.Element | null {
-  const { project, save } = useContext(ProjectContext);
+interface FixtureDefinitionListProps {
+  draggingFixture: bigint | null;
+  setDraggingFixture: (id: bigint | null) => void;
+}
+
+function FixtureDefinitionList({ draggingFixture, setDraggingFixture }: FixtureDefinitionListProps): JSX.Element | null {
+  const { project, save, update } = useContext(ProjectContext);
   const [selectedDefinitionId, setSelectedDefinitionId] =
     useState<string | null>(null);
   const [highlightDrop, setHighlightDrop] = useState(false);
@@ -414,7 +520,9 @@ function FixtureDefinitionList(): JSX.Element | null {
   return (
     <div className={classes.join(' ')}
       onDragOver={(e) => {
-        setHighlightDrop(true);
+        if (e.dataTransfer.items.length > 1) {
+          setHighlightDrop(true);
+        }
         e.preventDefault();
         e.stopPropagation();
       }}
@@ -449,6 +557,46 @@ function FixtureDefinitionList(): JSX.Element | null {
             .map(([id, definition]) => (
               <li key={id} onClick={() => setSelectedDefinitionId(id)}>
                 {definition.name}
+
+                <ul className={styles.fixtureModes}>
+                  {
+                    Object.entries(definition.modes)
+                      .map((e, i) => (
+                        <li
+                          key={i}
+                          draggable={true}
+                          onDragStart={() => {
+                            const newFixtureId = randomUint64();
+                            getActiveUniverse(project).fixtures[String(newFixtureId)] =
+                              new PhysicalFixture({
+                                name: 'New Fixture',
+                                // -1 is transient.
+                                // This should always be set before saving.
+                                channelOffset: -1,
+                                fixtureDefinitionId: id,
+                                fixtureMode: e[0],
+                              });
+                            setDraggingFixture(newFixtureId);
+                            update();
+                          }}
+                          onDragEnd={() => {
+                            if (draggingFixture != null) {
+                              const fixture = getActiveUniverse(project).fixtures[String(draggingFixture)];
+                              if (fixture.channelOffset !== -1) {
+                                save(`Add new fixture at ${fixture.channelOffset}`);
+                              } else {
+                                setDraggingFixture(null);
+                                deleteFixture(project, draggingFixture);
+                                update();
+                              }
+                            }
+                          }}>
+                          <BiGridVertical />
+                          {e[1].name}
+                        </li>
+                      ))
+                  }
+                </ul>
               </li>
             ))
         }
@@ -661,8 +809,6 @@ function EditDefinitionDialog({
                         }
 
                         const channel = mode.channels[index];
-
-                        console.log(newType);
 
                         if (isAngleChannel(newType) && channel.mapping.case !== 'angleMapping') {
                           channel.mapping = {

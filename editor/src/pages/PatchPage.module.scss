@@ -1,5 +1,7 @@
 @import '../vars';
 
+$channel-size: 100px;
+
 .wrapper {
   @include fill;
 }
@@ -11,17 +13,9 @@
 .pane {
   border: 1px solid transparent;
   box-sizing: border-box;
-  padding: spacing(2);
+  max-width: 100%;
   min-height: 100%;
-
-  li {
-    color: $col-interactive;
-    cursor: pointer;
-
-    &:hover {
-      color: $col-interactive-hover;
-    }
-  }
+  padding: spacing(2);
 }
 
 .highlight-drop {
@@ -34,7 +28,8 @@
   gap: spacing(2);
   min-width: 40em;
 
-  th, td {
+  th,
+  td {
     padding: spacing(1);
   }
 }
@@ -50,6 +45,84 @@
   gap: spacing(2);
 }
 
+.universe-grid {
+  display: grid;
+  grid-template-columns: repeat(10, auto);
+  gap: spacing(1);
+
+  .channel {
+    align-items: center;
+    background-color: $col-bg-higher;
+    border-radius: $dim-border-radius;
+    border: 1px solid transparent;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    height: $channel-size;
+    justify-content: center;
+    margin: 0;
+    padding: 0;
+    position: relative;
+    overflow: hidden;
+    width: $channel-size;
+
+    &.warning {
+      border-color: $col-warning;
+    }
+
+    &.start-channel {
+      cursor: grab;
+      border-color: $col-interactive;
+
+      &:hover {
+        border-color: $col-interactive-hover;
+        background-color: $col-bg-higher-hover;
+      }
+    }
+
+    .channel-number {
+      color: $col-text-dim;
+      left: spacing(0.5);
+      position: absolute;
+      top: spacing(0.5);
+    }
+
+    .fixture-title {
+      box-sizing: border-box;
+      font-weight: bold;
+      max-width: 100%;
+      padding: 0 spacing(1);
+    }
+
+    .collision-warning {
+      align-self: flex-start;
+      box-sizing: border-box;
+      padding: 0 spacing(1);
+    }
+
+    .channel-description {
+      align-self: flex-start;
+      box-sizing: border-box;
+      padding: 0 spacing(1);
+    }
+
+    .fixture-name {
+      color: $col-text-dim;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .channel-type {
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+}
+
 .draggable {
   cursor: grab;
 }
@@ -57,4 +130,30 @@
 .hint {
   color: $col-text-dim;
   font-size: 10pt;
+}
+
+.fixture-modes {
+  margin: 0;
+  padding: 0;
+
+  li {
+    align-items: center;
+    background-color: $col-bg-higher;
+    border-radius: $dim-border-radius;
+    display: flex;
+    flex-direction: row;
+    gap: spacing(1);
+    list-style: none;
+    padding: spacing(1);
+    width: fit-content;
+    cursor: grab;
+
+    &:hover {
+      background-color: $col-bg-higher-hover;
+    }
+
+    svg {
+      color: $col-text-dim;
+    }
+  }
 }

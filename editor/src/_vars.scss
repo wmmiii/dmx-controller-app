@@ -1,5 +1,6 @@
 $col-bg: #111;
 $col-bg-higher: #1a1a1a;
+$col-bg-higher-hover: lighten($col-bg-higher, 10%);
 $col-bg-placeholder: $col-bg-higher;
 $col-bg-placeholder-hover: lighten($col-bg-placeholder, 10%);
 $col-text: #ffffff;
