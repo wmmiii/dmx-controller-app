@@ -1,38 +1,38 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import styles from './ComponentGrid.module.scss';
+import styles from './TileGrid.module.scss';
 import { BeatContext } from '../contexts/BeatContext';
 import { ProjectContext } from '../contexts/ProjectContext';
-import { Scene_Component, Scene_ComponentMap } from '@dmx-controller/proto/scene_pb';
+import { Scene_Tile, Scene_TileMap } from '@dmx-controller/proto/scene_pb';
 import { TimeContext } from '../contexts/TimeContext';
-import { componentTileDetails } from '../util/projectUtils';
+import { tileTileDetails } from '../util/projectUtils';
 import { PaletteContext } from '../contexts/PaletteContext';
 import { Color, ColorPalette, PaletteColor } from '@dmx-controller/proto/color_pb';
 import { FixtureState } from '@dmx-controller/proto/effect_pb';
 import { ControllerContext } from '../contexts/ControllerContext';
 import { SiMidi } from 'react-icons/si';
-import { componentActiveAmount, toggleComponent } from '../util/component';
+import { tileActiveAmount, toggleTile } from '../util/tile';
 import { findAction } from '../external_controller/externalController';
-import { ControllerMapping_ComponentStrength } from '@dmx-controller/proto/controller_pb';
+import { ControllerMapping_TileStrength } from '@dmx-controller/proto/controller_pb';
 
-interface ComponentGridProps {
+interface TileGridProps {
   className?: string;
   sceneId: number;
-  onSelect: (component: Scene_ComponentMap) => void;
-  setAddComponentIndex: (index: { x: number, y: number }) => void;
+  onSelect: (tile: Scene_TileMap) => void;
+  setAddTileIndex: (index: { x: number, y: number }) => void;
   maxX: number;
   maxY: number;
 }
 
-export function ComponentGrid({
+export function TileGrid({
   className,
   sceneId,
   onSelect,
-  setAddComponentIndex,
+  setAddTileIndex: setAddTileIndex,
   maxX,
   maxY,
-}: ComponentGridProps): JSX.Element {
+}: TileGridProps): JSX.Element {
   const { project, save, update } = useContext(ProjectContext);
-  const [draggingComponent, setDraggingComponent] = useState<Scene_ComponentMap | null>(null);
+  const [draggingTile, setDraggingTile] = useState<Scene_TileMap | null>(null);
 
   const scene = useMemo(() => project?.scenes[sceneId], [project, sceneId]);
 
@@ -40,16 +40,16 @@ export function ComponentGrid({
     return <div className={className}></div>;
   }
 
-  const map: Array<Array<Scene_ComponentMap | null>> = [];
+  const map: Array<Array<Scene_TileMap | null>> = [];
   for (let y = 0; y < maxY; y++) {
     map[y] = [];
     for (let x = 0; x < maxX; x++) {
-      const c = scene.componentMap.find((c) => c.x === x && c.y === y);
+      const c = scene.tileMap.find((c) => c.x === x && c.y === y);
       map[y][x] = c || null;
     }
   }
 
-  const classes = [styles.componentGrid];
+  const classes = [styles.tileGrid];
   if (className) {
     classes.push(className);
   }
@@ -60,16 +60,16 @@ export function ComponentGrid({
         map.map((r, y) => r.map((mapping, x) => {
           if (mapping != null) {
             return (
-              <Component
+              <Tile
                 key={x + ' ' + y}
                 id={mapping.id}
-                component={mapping.component!}
-                onDragComponent={() => setDraggingComponent(mapping)}
-                onDropComponent={() => {
-                  if (draggingComponent) {
-                    save(`Rearrange components in scene ${scene.name}.`);
+                tile={mapping.tile!}
+                onDragTile={() => setDraggingTile(mapping)}
+                onDropTile={() => {
+                  if (draggingTile) {
+                    save(`Rearrange tiles in scene ${scene.name}.`);
                   }
-                  setDraggingComponent(null);
+                  setDraggingTile(null);
                 }}
                 onSelect={() => onSelect(mapping)}
                 x={x}
@@ -80,18 +80,18 @@ export function ComponentGrid({
             return (
               <div
                 key={x + ' ' + y}
-                className={styles.componentPlaceholder}
+                className={styles.tilePlaceholder}
                 style={{
                   gridColumnStart: x + 1,
                   gridColumnEnd: x + 2,
                   gridRowStart: y + 1,
                   gridRowEnd: y + 2,
                 }}
-                onClick={() => setAddComponentIndex({ x, y })}
+                onClick={() => setAddTileIndex({ x, y })}
                 onDragOver={(e) => {
-                  if (draggingComponent) {
-                    draggingComponent.x = x;
-                    draggingComponent.y = y;
+                  if (draggingTile) {
+                    draggingTile.x = x;
+                    draggingTile.y = y;
                     update();
                   }
                   e.stopPropagation();
@@ -107,18 +107,18 @@ export function ComponentGrid({
   );
 }
 
-interface ComponentProps {
+interface TileProps {
   id: string,
-  component: Scene_Component;
-  onDragComponent: () => void;
-  onDropComponent: () => void;
+  tile: Scene_Tile;
+  onDragTile: () => void;
+  onDropTile: () => void;
   onSelect: () => void;
   x: number;
   y: number;
   priority: number;
 }
 
-function Component({ id, component, onDragComponent, onDropComponent, onSelect, x, y, priority }: ComponentProps) {
+function Tile({ id, tile, onDragTile, onDropTile, onSelect, x, y, priority }: TileProps) {
   const { controllerName } = useContext(ControllerContext);
   const { beat } = useContext(BeatContext);
   const { palette } = useContext(PaletteContext);
@@ -133,15 +133,15 @@ function Component({ id, component, onDragComponent, onDropComponent, onSelect, 
     return () => removeListener(listener);
   }, [setT, addListener, removeListener]);
 
-  const details = useMemo(() => componentTileDetails(component), [component.toJson()]);
+  const details = useMemo(() => tileTileDetails(tile), [tile.toJson()]);
 
   const controllerMapping = useMemo(() => {
     if (controllerName) {
       return findAction(project, controllerName, {
-        case: 'componentStrength',
-        value: new ControllerMapping_ComponentStrength({
+        case: 'tileStrength',
+        value: new ControllerMapping_TileStrength({
           scene: 0,
-          componentId: id,
+          tileId: id,
         }),
       });
     }
@@ -170,15 +170,15 @@ function Component({ id, component, onDragComponent, onDropComponent, onSelect, 
   }, [details, palette]);
 
   const toggle = useCallback(() => {
-    const [modified, enabled] = toggleComponent(component, beat)
+    const [modified, enabled] = toggleTile(tile, beat)
     if (modified) {
-      save(`${enabled ? 'Enable' : 'Disable'} component ${component.name}.`);
+      save(`${enabled ? 'Enable' : 'Disable'} tile ${tile.name}.`);
     }
-  }, [component, beat, save]);
+  }, [tile, beat, save]);
 
-  const activeAmount = componentActiveAmount(component, beat, t);
+  const activeAmount = tileActiveAmount(tile, beat, t);
 
-  const classes = [styles.component];
+  const classes = [styles.tile];
 
   return (
     <div
@@ -192,12 +192,12 @@ function Component({ id, component, onDragComponent, onDropComponent, onSelect, 
       onClick={toggle}
       draggable={true}
       onDragStart={(e) => {
-        onDragComponent();
+        onDragTile();
         e.stopPropagation();
       }}
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => {
-        onDropComponent();
+        onDropTile();
         e.stopPropagation();
       }}>
       <div className={styles.contents}>
@@ -209,7 +209,7 @@ function Component({ id, component, onDragComponent, onDropComponent, onSelect, 
           }}>
         </div>
         <div className={styles.title} style={{ background: background as any }}>
-          {component.name}
+          {tile.name}
         </div>
         {
           priority != 0 &&

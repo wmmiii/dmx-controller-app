@@ -6,7 +6,7 @@ import { Universe } from "@dmx-controller/proto/universe_pb";
 import { OutputId, OutputId_FixtureMapping } from "@dmx-controller/proto/output_id_pb";
 import { LightTrack } from "@dmx-controller/proto/light_track_pb";
 import { FixtureDefinition, FixtureDefinition_Channel_AmountMapping, FixtureDefinition_Channel_AngleMapping, FixtureDefinition_Mode, PhysicalFixtureGroup, PhysicalFixtureGroup_FixtureList } from "@dmx-controller/proto/fixture_pb";
-import { Scene_Component_EffectGroupComponent_EffectChannel, Scene_ComponentMap } from "@dmx-controller/proto/scene_pb";
+import { Scene_Tile_EffectGroupTile_EffectChannel, Scene_TileMap } from "@dmx-controller/proto/scene_pb";
 import { isAmountChannel, isAngleChannel } from "../engine/channel";
 import { ControllerMapping } from "@dmx-controller/proto/controller_pb";
 
@@ -18,10 +18,10 @@ export default function upgradeProject(project: Project): void {
   upgradeFixtures(project);
   updateFixtureDefinitionMapping(project);
   upgradeColorTypes(project);
-  upgradeComponentMapping(project);
+  upgradeTileMapping(project);
   upgradeFixtureDefinitions(project);
   upgradeEffectTiming(project);
-  upgradeComponentIds(project);
+  upgradeTileIds(project);
   upgradePaletteMapping(project);
 }
 
@@ -123,12 +123,12 @@ function shiftMapping(map: { [id: number]: any }): boolean {
 }
 
 function upgradeLive(project: Project) {
-  // Scene components
+  // Scene tiles
   for (const scene of project.scenes) {
     if (scene.rows == null) {
       scene.rows = [];
     }
-    // delete scene.components;
+    // delete scene.tiles;
   }
 }
 
@@ -259,7 +259,7 @@ function upgradeLiveEffects(project: Project) {
       if (c.description.case === 'effectGroup') {
         const effect = c.description.value;
         if (effect.outputId != null) {
-          effect.channels = [new Scene_Component_EffectGroupComponent_EffectChannel({
+          effect.channels = [new Scene_Tile_EffectGroupTile_EffectChannel({
             outputId: effect.outputId,
             effect: effect.effect,
           })];
@@ -399,7 +399,7 @@ function upgradeColorTypes(project: Project) {
   });
 }
 
-function upgradeComponentMapping(project: Project) {
+function upgradeTileMapping(project: Project) {
   for (const scene of project.scenes) {
     if (scene.rows.length > 0) {
       for (let y = 0; y < scene.rows.length; y++) {
@@ -407,8 +407,8 @@ function upgradeComponentMapping(project: Project) {
         for (let x = 0; x < row.components.length; x++) {
           const component = row.components[x];
 
-          scene.componentMap.push(new Scene_ComponentMap({
-            component: component,
+          scene.tileMap.push(new Scene_TileMap({
+            tile: component,
             x: x,
             y: y,
           }));
@@ -481,15 +481,15 @@ function upgradeEffectTiming(project: Project) {
   }
 
   project.scenes
-    .flatMap(s => s.componentMap)
-    .flatMap(c => c.component!)
-    .flatMap(c => {
-      if (c.description.case === 'sequence') {
-        return c.description.value.lightTracks.flatMap(t => t.layers).flatMap(l => l.effects);
-      } else if (c.description.case === 'effectGroup') {
-        return c.description.value.channels.map(c => c.effect);
+    .flatMap(s => s.tileMap)
+    .flatMap(t => t.tile!)
+    .flatMap(t => {
+      if (t.description.case === 'sequence') {
+        return t.description.value.lightTracks.flatMap(t => t.layers).flatMap(l => l.effects);
+      } else if (t.description.case === 'effectGroup') {
+        return t.description.value.channels.map(c => c.effect);
       }
-      throw new Error('Tried to upgrade effects in unknown component effect description: ' + c.description.case);
+      throw new Error('Tried to upgrade effects in unknown component effect description: ' + t.description.case);
     })
     .forEach((e) => {
       if (e != null) {
@@ -510,9 +510,9 @@ function upgradeEffectTiming(project: Project) {
   });
 }
 
-function upgradeComponentIds(project: Project) {
+function upgradeTileIds(project: Project) {
   for (const scene of project.scenes) {
-    scene.componentMap.forEach((m) => {
+    scene.tileMap.forEach((m) => {
       if (!m.id) {
         m.id = crypto.randomUUID();
       }

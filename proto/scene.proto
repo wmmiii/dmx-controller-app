@@ -7,14 +7,14 @@ import "proto/effect.proto";
 import "proto/light_track.proto";
 import "proto/output_id.proto";
 
-// A scene is a part of a live show that composes components together to form
+// A scene is a part of a live show that composes tiles together to form
 // the final output of the universe.
 message Scene {
 
-  // A component is a part of a scene that can be enabled or disabled and
+  // A tile is a part of a scene that can be enabled or disabled and
   // applies state to the universe.
-  message Component {
-    message EffectGroupComponent {
+  message Tile {
+    message EffectGroupTile {
       message EffectChannel {
         Effect effect = 1;
 
@@ -33,7 +33,7 @@ message Scene {
       OutputId output_id = 4 [deprecated = true];
     }
 
-    message SequenceComponent {
+    message SequenceTile {
       string name = 1;
       uint32 native_beats = 2;
 
@@ -45,8 +45,8 @@ message Scene {
     string name = 1;
     reserved 2; // universe_sequence_id
     oneof description {
-      SequenceComponent sequence = 13;
-      EffectGroupComponent effect_group = 14;
+      SequenceTile sequence = 13;
+      EffectGroupTile effect_group = 14;
     }
     reserved 3; // active
     string shortcut = 4 [deprecated = true];
@@ -78,17 +78,17 @@ message Scene {
 
   message ComponentRow {
     option deprecated = true;
-    repeated Component components = 11;
+    repeated Tile components = 11;
   }
 
-  message ComponentMap {
+  message TileMap {
     string id = 6;
 
-    Component component = 1;
+    Tile tile = 1;
 
-    // The horizontal index of the component, measured from left to right.
+    // The horizontal index of the tile, measured from left to right.
     int32 x = 2;
-    // The vertical index of the component, measured from top to bottom.
+    // The vertical index of the tile, measured from top to bottom.
     int32 y = 3;
 
     int32 priority = 4;
@@ -104,9 +104,9 @@ message Scene {
   uint64 color_palette_start_transition = 6;
   reserved 10;
 
-  repeated Component components = 11 [deprecated = true];
+  repeated Tile components = 11 [deprecated = true];
   repeated ComponentRow rows = 12 [deprecated = true];
-  repeated ComponentMap componentMap = 13;
+  repeated TileMap tileMap = 13;
   repeated ColorPalette deprecated_color_palettes = 2 [deprecated = true];
   uint32 deprecated_active_color_palette = 3 [deprecated = true];
   uint32 deprecated_last_active_color_palette = 4 [deprecated = true];

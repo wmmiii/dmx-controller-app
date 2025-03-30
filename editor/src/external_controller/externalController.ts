@@ -1,7 +1,7 @@
 import { Project } from "@dmx-controller/proto/project_pb";
 import { ControlCommandType, ControllerChannel } from "../contexts/ControllerContext";
-import { ControllerMapping, ControllerMapping_Action, ControllerMapping_ComponentStrength, ControllerMapping_Controller } from "@dmx-controller/proto/controller_pb";
-import { outputComponentStrength, performComponentStrength } from "./componentStrength";
+import { ControllerMapping, ControllerMapping_Action, ControllerMapping_TileStrength, ControllerMapping_Controller } from "@dmx-controller/proto/controller_pb";
+import { outputTileStrength, performTileStrength } from "./tileStrength";
 
 export function performAction(
   project: Project,
@@ -29,8 +29,8 @@ export function performAction(
         scene.colorPaletteStartTransition = BigInt(new Date().getTime());
         return true;
       }
-    case 'componentStrength':
-      return performComponentStrength(project, action.value, value, cct);
+    case 'tileStrength':
+      return performTileStrength(project, action.value, value, cct);
     default:
       output(channel, value);
       return false;
@@ -89,8 +89,8 @@ export function outputValues(
       case 'colorPaletteSelection':
         value = 1;
         break;
-      case 'componentStrength':
-        value = outputComponentStrength(project, action.value, t);
+      case 'tileStrength':
+        value = outputTileStrength(project, action.value, t);
         break;
     }
     output(channel, value);
@@ -102,12 +102,12 @@ export function getActionDescription(project: Project, controllerName: string, c
   switch (actionMapping?.action.case) {
     case 'beatMatch':
       return 'Samples the beat during beat-matching.';
-    case 'componentStrength':
-      const action: ControllerMapping_ComponentStrength = actionMapping?.action.value!;
-      const component = Array.from(project.scenes[action.scene].componentMap.values())
-        .find(m => m.id === action.componentId);
-      if (component) {
-        return `Toggles the strength of ${component.component?.name}.`;
+    case 'tileStrength':
+      const action: ControllerMapping_TileStrength = actionMapping?.action.value!;
+      const tile = Array.from(project.scenes[action.scene].tileMap.values())
+        .find(m => m.id === action.tileId);
+      if (tile) {
+        return `Toggles the strength of ${tile.tile?.name}.`;
       } else {
         return null;
       }

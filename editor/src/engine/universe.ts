@@ -6,11 +6,11 @@ import { LightLayer } from "@dmx-controller/proto/light_layer_pb";
 import { OutputId, OutputId_FixtureMapping } from "@dmx-controller/proto/output_id_pb";
 import { Project } from "@dmx-controller/proto/project_pb";
 import { SEQUENCE_BEAT_RESOLUTION } from "../components/UniverseSequenceEditor";
-import { Scene_Component_SequenceComponent } from "@dmx-controller/proto/scene_pb";
+import { Scene_Tile_SequenceTile } from "@dmx-controller/proto/scene_pb";
 import { applyState } from "./effect";
 import { getActiveUniverse } from "../util/projectUtils";
 import { getAllFixtures } from "./group";
-import { getComponentDurationMs } from "../util/component";
+import { getTileDurationMs } from "../util/tile";
 import { hsvToColor, interpolatePalettes } from "../util/colorUtil";
 import { interpolateUniverses } from "./utils";
 import { rampEffect } from "./rampEffect";
@@ -125,7 +125,7 @@ export function renderSceneToUniverse(
     scene.colorPalettes[scene.activeColorPalette],
     colorPaletteT);
 
-  const sortedComponents = scene.componentMap
+  const sortedTiles = scene.tileMap
     .sort((a, b) => {
       if (a.priority != b.priority) {
         return a.priority - b.priority;
@@ -138,56 +138,56 @@ export function renderSceneToUniverse(
       }
       return 0;
     })
-    .map(c => c.component!);
+    .map(t => t.tile!);
 
-  for (const component of sortedComponents) {
-    if (component.oneShot && component.transition.case === 'startFadeOutMs') {
+  for (const tile of sortedTiles) {
+    if (tile.oneShot && tile.transition.case === 'startFadeOutMs') {
       continue;
     }
 
-    const sinceTransition = Number(BigInt(absoluteT) - (component.transition.case != 'absoluteStrength' ? component.transition.value || 0n: 0n));
+    const sinceTransition = Number(BigInt(absoluteT) - (tile.transition.case != 'absoluteStrength' ? tile.transition.value || 0n: 0n));
 
     let amount: number = 0;
-    if (component.transition.case === 'startFadeInMs') {
-      const fadeInMs = component.fadeInDuration.case === 'fadeInBeat' ?
-        (component.fadeInDuration.value || 0) * beatMetadata.lengthMs :
-        (component.fadeInDuration.value || 0);
+    if (tile.transition.case === 'startFadeInMs') {
+      const fadeInMs = tile.fadeInDuration.case === 'fadeInBeat' ?
+        (tile.fadeInDuration.value || 0) * beatMetadata.lengthMs :
+        (tile.fadeInDuration.value || 0);
 
       amount = Math.min(1, sinceTransition / fadeInMs);
-    } else if (component.transition.case === 'startFadeOutMs') {
-      const fadeOutMs = component.fadeOutDuration.case === 'fadeOutBeat' ?
-        (component.fadeOutDuration.value || 0) * beatMetadata.lengthMs :
-        (component.fadeOutDuration.value || 0);
+    } else if (tile.transition.case === 'startFadeOutMs') {
+      const fadeOutMs = tile.fadeOutDuration.case === 'fadeOutBeat' ?
+        (tile.fadeOutDuration.value || 0) * beatMetadata.lengthMs :
+        (tile.fadeOutDuration.value || 0);
 
       if (sinceTransition > fadeOutMs) {
         continue;
       }
 
       amount = Math.max(0, 1 - sinceTransition / fadeOutMs);
-    } else if (component.transition.case === 'absoluteStrength') {
-      amount = component.transition.value;
+    } else if (tile.transition.case === 'absoluteStrength') {
+      amount = tile.transition.value;
     }
 
     const before = [...universe];
     const after = [...universe];
 
-    switch (component.description.case) {
+    switch (tile.description.case) {
       case 'effectGroup':
-        for (const channel of component.description.value.channels) {
+        for (const channel of tile.description.value.channels) {
           if (channel.outputId == null) {
             continue;
           }
 
           const effect = channel.effect;
           if (effect == null) {
-            throw new Error('Tried to render component without effect!');
+            throw new Error('Tried to render tile without effect!');
           }
           const effectLength = effect.endMs - effect.startMs;
 
-          const durationEffect = getComponentDurationMs(component, beatMetadata);
+          const durationEffect = getTileDurationMs(tile, beatMetadata);
           let effectT: number;
-          if (component.oneShot) {
-            if (component.duration.case === 'durationBeat') {
+          if (tile.oneShot) {
+            if (tile.duration.case === 'durationBeat') {
               effectT = (sinceTransition * effectLength) / beatMetadata.lengthMs;
             } else {
               effectT = (sinceTransition * effectLength) / durationEffect;
@@ -199,13 +199,13 @@ export function renderSceneToUniverse(
             }
 
           } else {
-            if (component.duration.case === 'durationBeat') {
+            if (tile.duration.case === 'durationBeat') {
               effectT = (beatT * effectLength) / beatMetadata.lengthMs;
             } else {
-              if (component.duration.value == null) {
-                throw new Error('Tried to render effect group component without a duration!');
+              if (tile.duration.value == null) {
+                throw new Error('Tried to render effect group tile without a duration!');
               }
-              effectT = (absoluteT * effectLength) / component.duration.value;
+              effectT = (absoluteT * effectLength) / tile.duration.value;
             }
           }
 
@@ -226,19 +226,19 @@ export function renderSceneToUniverse(
         break;
 
       case 'sequence':
-        const sequence = component.description.value;
+        const sequence = tile.description.value;
 
         const durationSequence = SEQUENCE_BEAT_RESOLUTION * sequence.nativeBeats;
         let sequenceT: number;
-        if (component.oneShot) {
+        if (tile.oneShot) {
           const relativeT = sinceTransition * SEQUENCE_BEAT_RESOLUTION;
-          if (component.duration.case === 'durationBeat') {
+          if (tile.duration.case === 'durationBeat') {
             sequenceT = relativeT / beatMetadata.lengthMs;
           } else {
-            if (component.duration.value == null) {
-              throw new Error('Tried to render sequence component without a duration!');
+            if (tile.duration.value == null) {
+              throw new Error('Tried to render sequence tile without a duration!');
             }
-            sequenceT = (relativeT * sequence.nativeBeats) / component.duration.value;
+            sequenceT = (relativeT * sequence.nativeBeats) / tile.duration.value;
           }
 
           // Only play once
@@ -247,13 +247,13 @@ export function renderSceneToUniverse(
           }
 
         } else {
-          if (component.duration?.case === 'durationBeat') {
+          if (tile.duration?.case === 'durationBeat') {
             sequenceT = (beatT % (beatMetadata.lengthMs * sequence.nativeBeats)) * SEQUENCE_BEAT_RESOLUTION / beatMetadata.lengthMs;
           } else {
-            if (component.duration.value == null) {
-              throw new Error('Tried to render effect group component without a duration!');
+            if (tile.duration.value == null) {
+              throw new Error('Tried to render effect group tile without a duration!');
             }
-            sequenceT = (absoluteT * SEQUENCE_BEAT_RESOLUTION * sequence.nativeBeats / component.duration.value) % (sequence.nativeBeats * SEQUENCE_BEAT_RESOLUTION);
+            sequenceT = (absoluteT * SEQUENCE_BEAT_RESOLUTION * sequence.nativeBeats / tile.duration.value) % (sequence.nativeBeats * SEQUENCE_BEAT_RESOLUTION);
           }
         }
 
@@ -268,7 +268,7 @@ export function renderSceneToUniverse(
         break;
 
       default:
-        console.error(`Unrecognized description type ${component.description}.`);
+        console.error(`Unrecognized description type ${tile.description}.`);
         return universe;
     }
 
@@ -305,7 +305,7 @@ function renderUniverseSequence(
   globalT: number,
   t: number,
   frame: number,
-  universeSequence: Scene_Component_SequenceComponent,
+  universeSequence: Scene_Tile_SequenceTile,
   project: Project,
   colorPalette: ColorPalette,
   universe: DmxUniverse,

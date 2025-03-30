@@ -10,7 +10,7 @@ message ControllerMapping {
   message Action {
     oneof action {
       BeatMatch beat_match = 2;
-      ComponentStrength component_strength = 1;
+      TileStrength tile_strength = 1;
       ColorPaletteSelection color_palette_selection = 3;
     }
   }
@@ -19,9 +19,9 @@ message ControllerMapping {
 
   }
 
-  message ComponentStrength {
+  message TileStrength {
     uint32 scene = 1;
-    string component_id = 2;
+    string tile_id = 2;
   }
 
   message ColorPaletteSelection {

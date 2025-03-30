@@ -4,14 +4,14 @@ import IconBxX from '../icons/IconBxX';
 import styles from "./LivePage.module.scss";
 import { BeatContext } from '../contexts/BeatContext';
 import { Button, IconButton } from '../components/Button';
-import { ComponentGrid } from '../components/ComponentGrid';
+import { TileGrid } from '../components/TileGrid';
 import { EffectDetails } from '../components/Effect';
 import { HorizontalSplitPane } from '../components/SplitPane';
 import { LiveBeat } from '../components/LiveBeat';
 import { Modal } from '../components/Modal';
 import { NumberInput, TextInput, ToggleInput } from '../components/Input';
 import { ProjectContext } from '../contexts/ProjectContext';
-import { Scene, Scene_Component, Scene_Component_EffectGroupComponent, Scene_Component_EffectGroupComponent_EffectChannel, Scene_Component_SequenceComponent, Scene_ComponentMap } from '@dmx-controller/proto/scene_pb';
+import { Scene, Scene_Tile, Scene_Tile_EffectGroupTile, Scene_Tile_EffectGroupTile_EffectChannel, Scene_Tile_SequenceTile, Scene_TileMap } from '@dmx-controller/proto/scene_pb';
 import { SerialContext } from '../contexts/SerialContext';
 import { UniverseSequenceEditor } from '../components/UniverseSequenceEditor';
 import { getOutputName, OutputSelector } from '../components/OutputSelector';
@@ -22,17 +22,17 @@ import { PaletteContext } from '../contexts/PaletteContext';
 import { PaletteSwatch } from '../components/Palette';
 import { getAvailableChannels } from '../engine/fixture';
 import { ControllerContext } from '../contexts/ControllerContext';
-import { ControllerMapping_Action, ControllerMapping_ComponentStrength } from '@dmx-controller/proto/controller_pb';
+import { ControllerMapping_Action, ControllerMapping_TileStrength } from '@dmx-controller/proto/controller_pb';
 import { ControllerConnection } from '../components/ControllerConnection';
 
 export function LivePage(): JSX.Element {
   const { project, save } = useContext(ProjectContext);
   const projectRef = useRef<Project>(project);
   const { beat: beatMetadata } = useContext(BeatContext);
-  const [addComponentIndex, setAddComponentIndex] = useState<{ x: number, y: number } | null>(null);
+  const [addTileIndex, setAddTileIndex] = useState<{ x: number, y: number } | null>(null);
   const { setRenderUniverse, clearRenderUniverse } = useContext(SerialContext);
 
-  const [selected, setSelected] = useState<Scene_ComponentMap | null>(null);
+  const [selected, setSelected] = useState<Scene_TileMap | null>(null);
 
   const scene = project?.scenes[0];
 
@@ -71,13 +71,13 @@ export function LivePage(): JSX.Element {
         </div>
         <div className={styles.body}>
           <div className={styles.gridWrapper}>
-            <ComponentGrid
+            <TileGrid
               className={styles.sceneEditor}
               sceneId={0}
               onSelect={setSelected}
-              setAddComponentIndex={setAddComponentIndex}
-              maxX={scene.componentMap.map(c => c.x).reduce((a, b) => a > b ? a : b, 0) + 2}
-              maxY={scene.componentMap.map(c => c.y).reduce((a, b) => a > b ? a : b, 0) + 2} />
+              setAddTileIndex={setAddTileIndex}
+              maxX={scene.tileMap.map(c => c.x).reduce((a, b) => a > b ? a : b, 0) + 2}
+              maxY={scene.tileMap.map(c => c.y).reduce((a, b) => a > b ? a : b, 0) + 2} />
           </div>
           <div className={styles.palettes}>
             {
@@ -120,45 +120,45 @@ export function LivePage(): JSX.Element {
         </div>
       </div>
       {
-        addComponentIndex != null &&
+        addTileIndex != null &&
         <AddNewDialog
           scene={project.scenes[0]}
-          x={addComponentIndex.x}
-          y={addComponentIndex.y}
+          x={addTileIndex.x}
+          y={addTileIndex.y}
           onSelect={setSelected}
-          onClose={() => setAddComponentIndex(null)} />
+          onClose={() => setAddTileIndex(null)} />
       }
       {
         selected &&
-        <ComponentEditor componentMap={selected} onClose={() => setSelected(null)} />
+        <TileEditor tileMap={selected} onClose={() => setSelected(null)} />
       }
     </PaletteContext.Provider>
   );
 }
 
-interface ComponentEditorProps {
-  componentMap: Scene_ComponentMap;
+interface TileEditorProps {
+  tileMap: Scene_TileMap;
   onClose: () => void;
 }
 
-function ComponentEditor({ componentMap, onClose }: ComponentEditorProps) {
+function TileEditor({ tileMap, onClose }: TileEditorProps) {
   const { project, save } = useContext(ProjectContext);
   const { controllerName } = useContext(ControllerContext);
-  const [existingComponent, setExistingComponent] = useState<string | null>(null);
+  const [existingTile, setExistingTile] = useState<string | null>(null);
 
-  const component = componentMap.component!;
+  const tile = tileMap.tile!;
 
   const action = useMemo(() => ({
-    case: 'componentStrength',
-    value: new ControllerMapping_ComponentStrength({
+    case: 'tileStrength',
+    value: new ControllerMapping_TileStrength({
       scene: 0,
-      componentId: componentMap.id,
+      tileId: tileMap.id,
     }),
   } as ControllerMapping_Action['action']), []);
 
   return (
     <Modal
-      title={`Edit Component "${component.name}"`}
+      title={`Edit Tile "${tile.name}"`}
       fullScreen={true}
       onClose={onClose}>
       <HorizontalSplitPane
@@ -170,10 +170,10 @@ function ComponentEditor({ componentMap, onClose }: ComponentEditorProps) {
             <div className={styles.row}>
               <label>Name</label>
               <TextInput
-                value={component.name}
+                value={tile.name}
                 onChange={(v) => {
-                  component.name = v;
-                  save(`Change component name to "${v}".`);
+                  tile.name = v;
+                  save(`Change tile name to "${v}".`);
                 }} />
             </div>
             <div className={styles.row}>
@@ -182,10 +182,10 @@ function ComponentEditor({ componentMap, onClose }: ComponentEditorProps) {
                 min={-1000}
                 max={1000}
                 type="integer"
-                value={componentMap.priority}
+                value={tileMap.priority}
                 onChange={(v) => {
-                  componentMap.priority = v;
-                  save(`Set priority to ${v} for ${component.name}.`);
+                  tileMap.priority = v;
+                  save(`Set priority to ${v} for ${tile.name}.`);
                 }} />
             </div>
             <div className={styles.row}>
@@ -194,13 +194,13 @@ function ComponentEditor({ componentMap, onClose }: ComponentEditorProps) {
                 onChange={() => { }}
                 onKeyDown={(e) => {
                   if (e.code.startsWith('Digit')) {
-                    componentMap.shortcut = e.code.substring(5);
-                    save(`Add shortcut ${componentMap.shortcut} for component ${component.name}.`);
+                    tileMap.shortcut = e.code.substring(5);
+                    save(`Add shortcut ${tileMap.shortcut} for tile ${tile.name}.`);
                   } else if (e.code === 'Backspace' || e.code === 'Delete') {
-                    save(`Remove shortcut for component ${component.name}.`);
+                    save(`Remove shortcut for tile ${tile.name}.`);
                   }
                 }}
-                value={componentMap.shortcut} />
+                value={tileMap.shortcut} />
             </div>
             {
               controllerName != null &&
@@ -211,47 +211,47 @@ function ComponentEditor({ componentMap, onClose }: ComponentEditorProps) {
             <div className={styles.row}>
               <ToggleInput
                 className={styles.switch}
-                value={component.oneShot}
+                value={tile.oneShot}
                 onChange={(value) => {
-                  component.oneShot = value;
-                  save(`Set  ${component.name} to ${value ? 'one-shot' : 'looping'}.`);
+                  tile.oneShot = value;
+                  save(`Set  ${tile.name} to ${value ? 'one-shot' : 'looping'}.`);
                 }}
                 labels={{ left: 'Loop', right: 'One-shot' }} />
             </div>
             <div className={styles.row}>
               <ToggleInput
                 className={styles.switch}
-                value={component.duration?.case === 'durationMs'}
+                value={tile.duration?.case === 'durationMs'}
                 onChange={(value) => {
                   if (value) {
-                    component.duration = {
+                    tile.duration = {
                       case: 'durationMs',
                       value: 1000,
                     }
                   } else {
-                    component.duration = {
+                    tile.duration = {
                       case: 'durationBeat',
                       value: 1,
                     }
                   }
-                  save(`Set timing type for component ${component.name} to ${value ? 'seconds' : 'beats'}.`);
+                  save(`Set timing type for tile ${tile.name} to ${value ? 'seconds' : 'beats'}.`);
                 }}
                 labels={{ left: 'Beat', right: 'Seconds' }} />
             </div>
             {
-              component.duration.case === 'durationMs' &&
+              tile.duration.case === 'durationMs' &&
               <div className={styles.row}>
                 <label>Loop Duration</label>
                 <NumberInput
                   type='float'
                   min={0.001}
                   max={300}
-                  value={component.duration?.value / 1000 || NaN}
+                  value={tile.duration?.value / 1000 || NaN}
                   onChange={(value) => {
-                    component.duration.value = Math.floor(value * 1000);
-                    save(`Set duration for component ${component.name}.`);
+                    tile.duration.value = Math.floor(value * 1000);
+                    save(`Set duration for tile ${tile.name}.`);
                   }}
-                  disabled={component.duration?.case !== 'durationMs'} />
+                  disabled={tile.duration?.case !== 'durationMs'} />
               </div>
             }
             <div className={styles.row}>
@@ -261,13 +261,13 @@ function ComponentEditor({ componentMap, onClose }: ComponentEditorProps) {
                 title='Fade in seconds'
                 min={0}
                 max={300}
-                value={(component.fadeInDuration.value || 0) / 1000}
+                value={(tile.fadeInDuration.value || 0) / 1000}
                 onChange={(value) => {
-                  component.fadeInDuration = {
+                  tile.fadeInDuration = {
                     case: 'fadeInMs',
                     value: Math.floor(value * 1000),
                   };
-                  save(`Set fade in duration for ${component.name}.`);
+                  save(`Set fade in duration for ${tile.name}.`);
                 }} />
             </div>
             <div className={styles.row}>
@@ -277,45 +277,45 @@ function ComponentEditor({ componentMap, onClose }: ComponentEditorProps) {
                 title='Fade out seconds'
                 min={0}
                 max={300}
-                value={(component.fadeOutDuration.value || 0) / 1000}
+                value={(tile.fadeOutDuration.value || 0) / 1000}
                 onChange={(value) => {
-                  component.fadeOutDuration = {
+                  tile.fadeOutDuration = {
                     case: 'fadeOutMs',
                     value: Math.floor(value * 1000),
                   };
-                  save(`Set fade out duration for ${component.name}.`);
+                  save(`Set fade out duration for ${tile.name}.`);
                 }} />
             </div>
             <Button
               variant="warning"
               onClick={() => {
-                const componentMap = project.scenes[0].componentMap;
-                const index = componentMap.findIndex((c) => c.component === component);
+                const tileMap = project.scenes[0].tileMap;
+                const index = tileMap.findIndex((c) => c.tile === tile);
                 if (index > -1) {
-                  componentMap.splice(index, 1);
+                  tileMap.splice(index, 1);
 
                   onClose();
-                  save(`Delete component ${component.name}.`);
+                  save(`Delete tile ${tile.name}.`);
                 }
               }}>
-              Delete Component
+              Delete Tile
             </Button>
           </div>
         }
         right={<>
           {
-            component.description.case === 'effectGroup' &&
-            <EffectGroupEditor effect={component.description.value} name={component.name} />
+            tile.description.case === 'effectGroup' &&
+            <EffectGroupEditor effect={tile.description.value} name={tile.name} />
           }
           {
-            component.description.case === 'sequence' &&
-            <SequenceEditor sequence={component.description.value} />
+            tile.description.case === 'sequence' &&
+            <SequenceEditor sequence={tile.description.value} />
           }
         </>} />
       {
-        existingComponent &&
-        <Modal title='Controller mapping error' onClose={() => setExistingComponent(null)}>
-          This input is already mapped to {existingComponent}.
+        existingTile &&
+        <Modal title='Controller mapping error' onClose={() => setExistingTile(null)}>
+          This input is already mapped to {existingTile}.
         </Modal>
       }
     </Modal>
@@ -323,7 +323,7 @@ function ComponentEditor({ componentMap, onClose }: ComponentEditorProps) {
 }
 
 interface EffectGroupEditorProps {
-  effect: Scene_Component_EffectGroupComponent;
+  effect: Scene_Tile_EffectGroupTile;
   name: string;
 }
 
@@ -384,16 +384,16 @@ interface AddNewDialogProps {
   scene: Scene;
   x: number;
   y: number;
-  onSelect: (componentMap: Scene_ComponentMap) => void;
+  onSelect: (tileMap: Scene_TileMap) => void;
   onClose: () => void;
 }
 
 function AddNewDialog({ scene, x, y, onSelect, onClose }: AddNewDialogProps) {
   const { save } = useContext(ProjectContext);
 
-  const addComponent = (description: Scene_Component['description'], x: number, y: number) => {
-    const component = new Scene_Component({
-      name: 'New Component',
+  const addTile = (description: Scene_Tile['description'], x: number, y: number) => {
+    const tile = new Scene_Tile({
+      name: 'New Tile',
       description: description,
       duration: {
         case: 'durationMs',
@@ -404,54 +404,54 @@ function AddNewDialog({ scene, x, y, onSelect, onClose }: AddNewDialogProps) {
         value: 0n,
       },
     });
-    const componentMap = new Scene_ComponentMap({
-      component: component,
+    const tileMap = new Scene_TileMap({
+      tile: tile,
       x: x,
       y: y,
     });
-    scene.componentMap.push(componentMap);
-    return componentMap;
+    scene.tileMap.push(tileMap);
+    return tileMap;
   }
   return (
     <Modal
-      bodyClass={styles.addComponent}
-      title={`Add new component`}
+      bodyClass={styles.addTile}
+      title={`Add new tile`}
       onClose={onClose}>
-      <div className={styles.addComponentDescription}>
+      <div className={styles.addTileDescription}>
         Static effects simply set a fixture or group of fixtures to a specific
         state. They do not change over time.
       </div>
       <Button
         icon={<IconBxPlus />}
         onClick={() => {
-          const componentMap = addComponent({
+          const tileMap = addTile({
             case: 'effectGroup',
-            value: new Scene_Component_EffectGroupComponent({
+            value: new Scene_Tile_EffectGroupTile({
               channels: [createEffectChannel()],
             }),
           }, x, y);
-          save(`Add new effect component.`);
+          save(`Add new effect tile.`);
           onClose();
-          onSelect(componentMap);
+          onSelect(tileMap);
         }}>
         Add Static Effect
       </Button>
-      <div className={styles.addComponentDescription}>
+      <div className={styles.addTileDescription}>
         Sequences can change over time and loop over a specified duration. They
         may control multiple fixtures and groups.
       </div>
       <Button
         icon={<IconBxPlus />}
         onClick={() => {
-          const component = addComponent({
+          const tile = addTile({
             case: 'sequence',
-            value: new Scene_Component_SequenceComponent({
+            value: new Scene_Tile_SequenceTile({
               nativeBeats: 1,
             }),
           }, x, y);
-          save(`Add new sequence component.`);
+          save(`Add new sequence tile.`);
           onClose();
-          onSelect(component);
+          onSelect(tile);
         }}>
         Add Sequence
       </Button>
@@ -460,7 +460,7 @@ function AddNewDialog({ scene, x, y, onSelect, onClose }: AddNewDialogProps) {
 }
 
 interface SequenceEditorProps {
-  sequence: Scene_Component_SequenceComponent;
+  sequence: Scene_Tile_SequenceTile;
 }
 
 function SequenceEditor({ sequence }: SequenceEditorProps) {
@@ -474,7 +474,7 @@ function SequenceEditor({ sequence }: SequenceEditorProps) {
 }
 
 function createEffectChannel() {
-  return new Scene_Component_EffectGroupComponent_EffectChannel({
+  return new Scene_Tile_EffectGroupTile_EffectChannel({
     effect: {
       effect: {
         case: 'staticEffect',

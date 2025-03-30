@@ -4,7 +4,7 @@ $element-size: 100px;
 $border-size: 2px;
 $triangle-diag: 40px;
 
-.component-grid {
+.tile-grid {
   display: grid;
   gap: spacing(1);
   grid-template-columns: repeat(auto-fill, $element-size);
@@ -12,7 +12,7 @@ $triangle-diag: 40px;
   margin: 0 spacing(1) spacing(1);
 }
 
-.component-placeholder {
+.tile-placeholder {
   cursor: pointer;
 
   &:hover {
@@ -20,8 +20,8 @@ $triangle-diag: 40px;
   }
 }
 
-.component,
-.component-placeholder {
+.tile,
+.tile-placeholder {
   border-radius: $dim-border-radius;
   box-sizing: border-box;
   cursor: pointer;

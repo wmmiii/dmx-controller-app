@@ -36,7 +36,7 @@ export function universeToUint8Array(project: Project, universe: DmxUniverse) {
         if (type.indexOf('-fine') > -1) {
           const fineIndex = parseInt(channel[0]) + f.channelOffset - 1;
           const coarseType = type.substring(0, type.length - 5) as ChannelTypes;
-          const courseEntry = Object.entries(m.channels).find(c => c[1].type === coarseType);
+          const courseEntry = Object.entries(m.channels).find(t => t[1].type === coarseType);
           if (courseEntry == null) {
             continue;
           }

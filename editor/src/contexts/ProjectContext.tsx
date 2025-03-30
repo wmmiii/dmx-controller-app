@@ -34,7 +34,7 @@ const DEFAULT_PROJECT = new Project({
   physicalFixtures: {},
   scenes: [{
     name: 'Default scene',
-    componentMap: [],
+    tileMap: [],
     colorPalettes: DEFAULT_COLOR_PALETTES,
     activeColorPalette: DEFAULT_COLOR_PALETTE_ID,
     lastActiveColorPalette: DEFAULT_COLOR_PALETTE_ID,

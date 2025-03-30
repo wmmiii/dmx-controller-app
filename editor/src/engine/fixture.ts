@@ -157,10 +157,10 @@ export function deleteFixture(project: Project, fixtureId: bigint) {
 
   // Delete from scenes.
   project.scenes
-    .flatMap(s => s.componentMap)
-    .map(r => r.component!)
-    .forEach(c => {
-      const description = c.description;
+    .flatMap(s => s.tileMap)
+    .map(r => r.tile!)
+    .forEach(t => {
+      const description = t.description;
       if (description.case === 'effectGroup') {
         description.value.channels.forEach(c => {
           if (c.outputId == null) {
@@ -283,10 +283,10 @@ export function deleteFixtureGroup(project: Project, fixtureGroupId: bigint) {
 
   // Delete from scenes.
   project.scenes
-    .flatMap(s => s.componentMap)
-    .map(c => c.component!)
-    .forEach(c => {
-      const description = c.description;
+    .flatMap(s => s.tileMap)
+    .map(t => t.tile!)
+    .forEach(t => {
+      const description = t.description;
       if (description.case === 'effectGroup') {
         description.value.channels.forEach(c => {
           if (c.outputId == null) {

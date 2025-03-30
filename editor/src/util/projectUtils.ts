@@ -1,6 +1,6 @@
 import { Effect, FixtureState } from "@dmx-controller/proto/effect_pb";
 import { Project } from "@dmx-controller/proto/project_pb";
-import { Scene_Component } from "@dmx-controller/proto/scene_pb";
+import { Scene_Tile } from "@dmx-controller/proto/scene_pb";
 
 export function getActiveUniverse(project: Project) {
   return project?.universes[project.activeUniverse.toString()];
@@ -8,7 +8,7 @@ export function getActiveUniverse(project: Project) {
 
 type Color = FixtureState['lightColor'];
 
-export function componentTileDetails(component: Scene_Component) {
+export function tileTileDetails(tile: Scene_Tile) {
   const colors: Color[] = [];
 
   const collect = (effect: Effect) => {
@@ -30,17 +30,17 @@ export function componentTileDetails(component: Scene_Component) {
     }
   }
 
-  if (component.description.case === 'sequence') {
-    const sequence = component.description.value;
+  if (tile.description.case === 'sequence') {
+    const sequence = tile.description.value;
     sequence.lightTracks
       .flatMap(t => t.layers)
       .flatMap(t => t.effects)
       .filter(e => e != null)
       .forEach(collect);
-  } else if (component.description.case === 'effectGroup') {
-    const group = component.description.value;
+  } else if (tile.description.case === 'effectGroup') {
+    const group = tile.description.value;
     group.channels
-      .map(c => c.effect!)
+      .map(t => t.effect!)
       .filter(e => e != null)
       .forEach(collect)
   }

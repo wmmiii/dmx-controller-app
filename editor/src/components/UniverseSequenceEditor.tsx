@@ -7,14 +7,14 @@ import { getAudioBlob } from '../util/metronome';
 
 import styles from './UniverseSequenceEditor.module.scss';
 import { NumberInput } from './Input';
-import { Scene_Component_SequenceComponent } from '@dmx-controller/proto/scene_pb';
+import { Scene_Tile_SequenceTile } from '@dmx-controller/proto/scene_pb';
 
 // Good resolution, nice divisors (2, 3, 4, 5, 6, 12 etc.)
 export const SEQUENCE_BEAT_RESOLUTION = 36000;
 
 interface UniverseSequenceEditorProps {
   className?: string;
-  sequence: Scene_Component_SequenceComponent;
+  sequence: Scene_Tile_SequenceTile;
 }
 
 export function UniverseSequenceEditor({
