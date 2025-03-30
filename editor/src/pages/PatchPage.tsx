@@ -48,7 +48,7 @@ interface FixtureListProps {
   setDraggingFixture: (id: bigint | null) => void;
 }
 
-function FixtureList({ draggingFixture: draggingFixture, setDraggingFixture: setDraggingFixture }: FixtureListProps): JSX.Element | null {
+function FixtureList({ draggingFixture, setDraggingFixture }: FixtureListProps): JSX.Element | null {
   const { project, save, update } = useContext(ProjectContext);
   const [selectedFixtureId, setSelectedFixtureId] =
     useState<bigint | null>(null);

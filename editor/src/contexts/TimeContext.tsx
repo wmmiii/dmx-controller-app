@@ -1,20 +1,33 @@
-import { PropsWithChildren, createContext, useEffect, useState } from 'react';
+import { PropsWithChildren, createContext, useEffect, useRef } from 'react';
+
+type TimeListener = (t: bigint) => void;
 
 export const TimeContext = createContext({
-  t: 0n,
+  addListener: (_listener: TimeListener) => {},
+  removeListener: (_listener: TimeListener) => {},
 });
 
 export function TimeProvider({ children }: PropsWithChildren): JSX.Element {
-  const [t, setT] = useState(BigInt(new Date().getTime()));
+  const listeners = useRef<Array<TimeListener>>([]);
 
   useEffect(() => {
-    setInterval(() => {
-      setT(BigInt(new Date().getTime()));
+    const handle = setInterval(() => { 
+      const t = BigInt(new Date().getTime());
+      listeners.current.forEach(l => l(t));
     }, 100);
+    return () => clearInterval(handle);
   }, []);
 
   return (
-    <TimeContext.Provider value={{t}}>
+    <TimeContext.Provider value={{
+      addListener: (l) => listeners.current.push(l),
+      removeListener: (l) => {
+        const index = listeners.current.indexOf(l);
+        if (index > -1) {
+          listeners.current.splice(index, 1);
+        }
+      }
+    }}>
       {children}
     </TimeContext.Provider>
   );

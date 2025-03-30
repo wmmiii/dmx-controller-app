@@ -38,8 +38,9 @@ export function ControllerProvider({ children, }: ControllerProviderImplProps): 
   useEffect(() => {
     projectRef.current = project;
   }, [project]);
-  const { t } = useContext(TimeContext);
+
   const { addBeatSample } = useContext(BeatContext);
+  const { addListener: addTimeListener, removeListener: removeTimeListener } = useContext(TimeContext);
 
   const [controller, setController] = useState<MidiDevice | null>(null);
   const [candidateList, setCandidateList] = useState<any[] | null>(null);
@@ -163,10 +164,14 @@ export function ControllerProvider({ children, }: ControllerProviderImplProps): 
   }, [controller]);
 
   useEffect(() => {
-    if (controller?.name) {
-      outputValues(project, controller?.name, t, output);
+    const name = controller?.name;
+    if (name) {
+      const listener = (t: bigint) => outputValues(project, name, t, output);
+      addTimeListener(listener);
+      return () => removeTimeListener(listener);
     }
-  }, [project, controller, output, t]);
+    return () => {};
+  }, [project, controller, output, addTimeListener, removeTimeListener]);
 
   const addListener = useCallback((listener: Listener) => {
     inputListeners.current.push(listener);

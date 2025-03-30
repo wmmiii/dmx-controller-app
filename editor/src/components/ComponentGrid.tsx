@@ -1,4 +1,4 @@
-import { useCallback, useContext, useMemo, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import styles from './ComponentGrid.module.scss';
 import { BeatContext } from '../contexts/BeatContext';
 import { ProjectContext } from '../contexts/ProjectContext';
@@ -123,7 +123,15 @@ function Component({ id, component, onDragComponent, onDropComponent, onSelect, 
   const { beat } = useContext(BeatContext);
   const { palette } = useContext(PaletteContext);
   const { project, save } = useContext(ProjectContext);
-  const { t } = useContext(TimeContext);
+  const { addListener, removeListener } = useContext(TimeContext);
+
+  const [t, setT] = useState(0n);
+
+  useEffect(() => {
+    const listener = (t: bigint) => setT(t);
+    addListener(listener);
+    return () => removeListener(listener);
+  }, [setT, addListener, removeListener]);
 
   const details = useMemo(() => componentTileDetails(component), [component.toJson()]);
 
