@@ -3,6 +3,7 @@ import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
 import { ProjectContext } from './ProjectContext';
 import { createRealTimeBpmProcessor } from 'realtime-bpm-analyzer';
 
+const MAX_SAMPLES = 16;
 const DEVIATION_THRESHOLD = 75;
 
 type BeatDetectionStrategy = 'manual' | 'microphone';
@@ -18,7 +19,7 @@ export const BeatContext = createContext({
 });
 
 export function BeatProvider({ children }: PropsWithChildren): JSX.Element {
-  const { project, save } = useContext(ProjectContext);
+  const { project, save, update } = useContext(ProjectContext);
   const [strategy, setStrategy] = useState<BeatDetectionStrategy>('manual');
   const [beatSamples, setBeatSamples] = useState<number[]>([]);
   const [beatTimeout, setBeatTimeout] = useState<any>(null);
@@ -65,11 +66,15 @@ export function BeatProvider({ children }: PropsWithChildren): JSX.Element {
   const beat = useMemo(() => project?.liveBeat || new BeatMetadata({ lengthMs: Number.MAX_SAFE_INTEGER, offsetMs: BigInt(0) }), [project]);
 
   const addBeatSample = useCallback((t: number) => {
-    setBeatSamples([...beatSamples, t]);
+    setBeatSamples((beatSamples) => {
+      const newSamples = [t, ...beatSamples];
+      return newSamples.slice(0, MAX_SAMPLES);
+    });
 
     const handle = setTimeout(() => {
+      save(`Set beat to ${Math.round(60_000 / (project.liveBeat?.lengthMs || 1))} BPM.`);
       setBeatSamples([]);
-    }, 3_000);
+    }, 2_000);
     clearTimeout(beatTimeout);
     setBeatTimeout(handle);
   }, [beatSamples, beatTimeout]);
@@ -97,12 +102,16 @@ export function BeatProvider({ children }: PropsWithChildren): JSX.Element {
     }
 
     const durations = sampleDurations(beatSamples);
+    const count = Math.min(durations.length, MAX_SAMPLES);
+    let divisor = 0;
     let sum = 0;
-    for (let d of sampleDurations(beatSamples)) {
-      sum += d;
+    for (let i = 0; i < count; ++i) {
+      const strength = (count - i) / count;
+      sum += durations[i] * strength;
+      divisor += strength;
     }
 
-    let length = sum / durations.length;
+    let length = sum / divisor;
     const bpm = 60_000 / length;
 
     // Try to snap to whole nearest BPM.
@@ -121,13 +130,13 @@ export function BeatProvider({ children }: PropsWithChildren): JSX.Element {
         lengthMs: length,
         offsetMs: offset,
       });
-      save(`Set beat to ${Math.round(bpm)} BPM.`);
+      update();
     } else {
       if (project.liveBeat == null) {
         throw new Error('Project does not have live beat!');
       }
       project.liveBeat.offsetMs = offset;
-      save(`Set beat offset to ${offset}.`);
+      update();
     }
   }, [beatSamples, project?.liveBeat?.toJsonString()]);
 
@@ -159,7 +168,7 @@ function maxDevianceMs(beatSamples: number[]) {
 function sampleDurations(beatSamples: number[]) {
   const durations: number[] = [];
   for (let i = 1; i < beatSamples.length; i++) {
-    durations.push(beatSamples[i] - beatSamples[i - 1]);
+    durations.push(beatSamples[i - 1] - beatSamples[i]);
   }
   return durations;
 }
