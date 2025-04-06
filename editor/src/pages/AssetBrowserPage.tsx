@@ -1,13 +1,16 @@
+import { create } from '@bufbuild/protobuf';
+import { AudioFile, AudioFileSchema } from '@dmx-controller/proto/audio_pb';
+import { Project_AssetsSchema } from '@dmx-controller/proto/project_pb';
 import { JSX, useContext, useState } from 'react';
-import styles from './AssetBrowserPage.module.scss';
-import { AudioFile } from '@dmx-controller/proto/audio_pb';
+
 import { BeatEditor } from '../components/BeatEditor';
 import { Button } from '../components/Button';
 import { HorizontalSplitPane } from '../components/SplitPane';
 import { ProjectContext } from '../contexts/ProjectContext';
-import { Project_Assets } from '@dmx-controller/proto/project_pb';
-import { formatBytes } from '../util/numberUtils';
 import { idMapToArray, nextId } from '../util/mapUtils';
+import { formatBytes } from '../util/numberUtils';
+
+import styles from './AssetBrowserPage.module.scss';
 
 export default function AssetBrowserPage(): JSX.Element {
   const [selectedAudio, setSelectedAudio] = useState<AudioFile | null>(null);
@@ -61,14 +64,14 @@ function AudioFileList({
             if (item.kind === 'file') {
               const file = item.getAsFile() as File;
               if (file.type.startsWith('audio/')) {
-                const audioFile = new AudioFile({
+                const audioFile = create(AudioFileSchema, {
                   name: file.name,
                   contents: new Uint8Array(await file.arrayBuffer()),
                   mime: file.type,
                 });
 
                 if (!project.assets) {
-                  project.assets = new Project_Assets();
+                  project.assets = create(Project_AssetsSchema);
                 }
 
                 const newId = nextId(project.assets.audioFiles);

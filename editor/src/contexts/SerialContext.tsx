@@ -8,9 +8,11 @@ import {
   useRef,
   useState,
 } from 'react';
+
 import { Modal } from '../components/Modal';
-import { DialogContext } from './DialogContext';
 import IconBxErrorAlt from '../icons/IconBxErrorAlt';
+
+import { DialogContext } from './DialogContext';
 
 type SerialPort = any;
 

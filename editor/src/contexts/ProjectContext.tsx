@@ -1,3 +1,11 @@
+import { create, fromBinary, toBinary } from '@bufbuild/protobuf';
+import { ColorPalette } from '@dmx-controller/proto/color_pb';
+import {
+  Project,
+  ProjectSchema,
+  Project_AssetsSchema,
+} from '@dmx-controller/proto/project_pb';
+import { Universe, UniverseSchema } from '@dmx-controller/proto/universe_pb';
 import {
   JSX,
   PropsWithChildren,
@@ -8,15 +16,14 @@ import {
   useRef,
   useState,
 } from 'react';
-import upgradeProject from '../util/projectUpgrader';
-import { Project, Project_Assets } from '@dmx-controller/proto/project_pb';
-import { ShortcutContext } from './ShortcutContext';
-import { downloadBlob, escapeForFilesystem } from '../util/fileUtils';
-import { getBlob, storeBlob } from '../util/storageUtil';
-import { Universe } from '@dmx-controller/proto/universe_pb';
-import { randomUint64 } from '../util/numberUtils';
+
 import { DEFAULT_COLOR_PALETTE } from '../engine/universe';
-import { ColorPalette } from '@dmx-controller/proto/color_pb';
+import { downloadBlob, escapeForFilesystem } from '../util/fileUtils';
+import { randomUint64 } from '../util/numberUtils';
+import upgradeProject from '../util/projectUpgrader';
+import { getBlob, storeBlob } from '../util/storageUtil';
+
+import { ShortcutContext } from './ShortcutContext';
 
 const PROJECT_KEY = 'tmp-project-1';
 const ASSETS_KEY = 'tmp-assets-1';
@@ -26,7 +33,7 @@ let globalOpened = false;
 
 const DEFAULT_UNIVERSE_MAP: { [id: string]: Universe } = {};
 const DEFAULT_UNIVERSE_ID = randomUint64();
-DEFAULT_UNIVERSE_MAP[DEFAULT_UNIVERSE_ID.toString()] = new Universe({
+DEFAULT_UNIVERSE_MAP[DEFAULT_UNIVERSE_ID.toString()] = create(UniverseSchema, {
   name: 'Default Universe',
   fixtures: {},
 });
@@ -35,7 +42,7 @@ const DEFAULT_COLOR_PALETTES: { [id: string]: ColorPalette } = {};
 const DEFAULT_COLOR_PALETTE_ID = crypto.randomUUID();
 DEFAULT_COLOR_PALETTES[DEFAULT_COLOR_PALETTE_ID] = DEFAULT_COLOR_PALETTE;
 
-const DEFAULT_PROJECT = new Project({
+const DEFAULT_PROJECT = create(ProjectSchema, {
   name: 'Untitled Project',
   updateFrequencyMs: 15,
   timingOffsetMs: 0,
@@ -64,7 +71,7 @@ interface Operation {
 }
 
 export const ProjectContext = createContext({
-  project: new Project(),
+  project: create(ProjectSchema),
   lastLoad: new Date(),
   save: (_changeDescription: string, _undoable?: boolean) => {},
   update: () => {},
@@ -105,9 +112,9 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
           setProject(DEFAULT_PROJECT);
           return;
         } else {
-          const p = Project.fromBinary(projectBlob);
+          const p = fromBinary(ProjectSchema, projectBlob);
           if (assetsBlob != null) {
-            p.assets = Project_Assets.fromBinary(assetsBlob);
+            p.assets = fromBinary(Project_AssetsSchema, assetsBlob);
           }
           upgradeProject(p);
           setProject(p);
@@ -131,11 +138,11 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
     async (project: Project, changeDescription: string) => {
       console.time(changeDescription);
       try {
-        const minProject = new Project(project);
+        const minProject = create(ProjectSchema, project);
         minProject.assets = undefined;
         await storeBlob(
           PROJECT_KEY,
-          minProject.toBinary({ writeUnknownFields: false }),
+          toBinary(ProjectSchema, minProject, { writeUnknownFields: false }),
         );
       } catch (t) {
         throw t;
@@ -150,7 +157,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
     if (projectRef.current == null) {
       throw new Error('Tried to update without project loaded!');
     }
-    setProject(new Project(projectRef.current));
+    setProject(create(ProjectSchema, projectRef.current));
   }, [projectRef, setProject]);
 
   const save = useCallback(
@@ -159,7 +166,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
         throw new Error('Tried to save without project loaded!');
       }
       await saveImpl(projectRef.current, changeDescription);
-      const minProject = new Project(projectRef.current);
+      const minProject = create(ProjectSchema, projectRef.current);
       minProject.assets = undefined;
 
       if (undoable !== false) {
@@ -170,7 +177,9 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
         );
 
         operationStack.current.push({
-          projectState: minProject.toBinary({ writeUnknownFields: false }),
+          projectState: toBinary(ProjectSchema, minProject, {
+            writeUnknownFields: false,
+          }),
           description: changeDescription,
         });
         // Truncate operation stack to MAX_UNDO length.
@@ -183,7 +192,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
         setOperationIndex(operationStack.current.length - 1);
       }
 
-      setProject(new Project(projectRef.current));
+      setProject(create(ProjectSchema, projectRef.current));
       setLastOperation(changeDescription);
     },
     [projectRef, operationStack, operationIndex, setProject, setOperationIndex],
@@ -191,8 +200,11 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
 
   const saveAssetsImpl = useCallback(async (project: Project) => {
     console.time('save assets');
-    const assets = new Project_Assets(project.assets);
-    await storeBlob(ASSETS_KEY, assets.toBinary({ writeUnknownFields: false }));
+    const assets = create(Project_AssetsSchema, project.assets);
+    await storeBlob(
+      ASSETS_KEY,
+      toBinary(Project_AssetsSchema, assets, { writeUnknownFields: false }),
+    );
     console.timeEnd('save assets');
   }, []);
 
@@ -211,7 +223,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
     if (operationIndex > 0) {
       const state = operationStack.current[operationIndex - 1].projectState;
       const description = operationStack.current[operationIndex].description;
-      const p = Project.fromBinary(state);
+      const p = fromBinary(ProjectSchema, state);
       await saveImpl(p, `Undo: ${description}`);
       setOperationIndex(operationIndex - 1);
       setProject(Object.assign({}, p, { assets: project.assets }));
@@ -234,7 +246,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
       const state = operationStack.current[operationIndex + 1].projectState;
       const description =
         operationStack.current[operationIndex + 1].description;
-      const p = Project.fromBinary(state);
+      const p = fromBinary(ProjectSchema, state);
       await saveImpl(p, `Redo: ${description}`);
       setOperationIndex(operationIndex + 1);
       setProject(Object.assign({}, p, { assets: project.assets }));
@@ -253,7 +265,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
     if (project == null) {
       throw new Error('Tried to download without project loaded!');
     }
-    const blob = new Blob([project.toBinary()], {
+    const blob = new Blob([toBinary(ProjectSchema, project)], {
       type: 'application/protobuf',
     });
 
@@ -262,7 +274,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
 
   const openProject = useCallback(
     async (projectBlob: Uint8Array) => {
-      const p = Project.fromBinary(projectBlob);
+      const p = fromBinary(ProjectSchema, projectBlob);
       upgradeProject(p);
       await saveAssetsImpl(p);
       await saveImpl(p, 'Open project.');

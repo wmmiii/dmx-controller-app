@@ -1,24 +1,26 @@
-import { Project } from '@dmx-controller/proto/project_pb';
-import { getAllFixtures } from './group';
-import {
-  OutputId,
-  OutputId_FixtureMapping,
-} from '@dmx-controller/proto/output_id_pb';
-import { getActiveUniverse } from '../util/projectUtils';
-import { LightTrack } from '@dmx-controller/proto/light_track_pb';
 import {
   FixtureDefinition_Channel_ColorWheelMapping,
   FixtureDefinition_Mode,
   PhysicalFixture,
 } from '@dmx-controller/proto/fixture_pb';
+import { LightTrack } from '@dmx-controller/proto/light_track_pb';
+import {
+  OutputId,
+  OutputId_FixtureMapping,
+} from '@dmx-controller/proto/output_id_pb';
+import { Project } from '@dmx-controller/proto/project_pb';
+
+import { getActiveUniverse } from '../util/projectUtils';
+
 import {
   AmountChannel,
   AngleChannel,
-  ChannelTypes,
   COLOR_CHANNELS,
+  ChannelTypes,
   isAmountChannel,
   isAngleChannel,
 } from './channel';
+import { getAllFixtures } from './group';
 
 export type DmxUniverse = number[];
 

@@ -1,21 +1,23 @@
+import { create } from '@bufbuild/protobuf';
 import {
   PhysicalFixtureGroup,
-  PhysicalFixtureGroup_FixtureList,
+  PhysicalFixtureGroup_FixtureListSchema,
 } from '@dmx-controller/proto/fixture_pb';
+import { Project } from '@dmx-controller/proto/project_pb';
 import { JSX, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { ProjectContext } from '../contexts/ProjectContext';
-import { getApplicableMembers } from '../engine/group';
-import { Modal } from './Modal';
 
-import styles from './EditGroupDialog.module.scss';
-import { Button, IconButton } from './Button';
-import { TextInput } from './Input';
+import { ProjectContext } from '../contexts/ProjectContext';
+import { SerialContext } from '../contexts/SerialContext';
+import { getApplicableMembers } from '../engine/group';
+import { renderGroupDebugToUniverse } from '../engine/universe';
+import { universeToUint8Array } from '../engine/utils';
 import IconBxX from '../icons/IconBxX';
 import { getActiveUniverse } from '../util/projectUtils';
-import { Project } from '@dmx-controller/proto/project_pb';
-import { universeToUint8Array } from '../engine/utils';
-import { renderGroupDebugToUniverse } from '../engine/universe';
-import { SerialContext } from '../contexts/SerialContext';
+
+import { Button, IconButton } from './Button';
+import styles from './EditGroupDialog.module.scss';
+import { TextInput } from './Input';
+import { Modal } from './Modal';
 
 interface EditGroupDialogProps {
   groupId: bigint;
@@ -190,10 +192,12 @@ export function EditGroupDialog({
                   project.activeUniverse.toString()
                 ];
               if (group.fixtures[project.activeUniverse.toString()] == null) {
-                group.fixtures[project.activeUniverse.toString()] =
-                  new PhysicalFixtureGroup_FixtureList({
+                group.fixtures[project.activeUniverse.toString()] = create(
+                  PhysicalFixtureGroup_FixtureListSchema,
+                  {
                     fixtures: [],
-                  });
+                  },
+                );
               }
               group.fixtures[project.activeUniverse.toString()].fixtures.push(
                 id,

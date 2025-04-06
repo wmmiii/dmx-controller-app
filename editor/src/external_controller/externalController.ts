@@ -1,14 +1,17 @@
+import { create } from '@bufbuild/protobuf';
+import {
+  ControllerMappingSchema,
+  ControllerMapping_Action,
+  ControllerMapping_ControllerSchema,
+  ControllerMapping_TileStrength,
+} from '@dmx-controller/proto/controller_pb';
 import { Project } from '@dmx-controller/proto/project_pb';
+
 import {
   ControlCommandType,
   ControllerChannel,
 } from '../contexts/ControllerContext';
-import {
-  ControllerMapping,
-  ControllerMapping_Action,
-  ControllerMapping_TileStrength,
-  ControllerMapping_Controller,
-} from '@dmx-controller/proto/controller_pb';
+
 import { outputTileStrength, performTileStrength } from './tileStrength';
 
 export function performAction(
@@ -149,11 +152,13 @@ export function getActionDescription(
 
 export function getActionMap(project: Project, controllerName: string) {
   if (project.controllerMapping == null) {
-    project.controllerMapping = new ControllerMapping();
+    project.controllerMapping = create(ControllerMappingSchema);
   }
   if (project.controllerMapping.controllers[controllerName] == null) {
-    project.controllerMapping.controllers[controllerName] =
-      new ControllerMapping_Controller({ actions: {} });
+    project.controllerMapping.controllers[controllerName] = create(
+      ControllerMapping_ControllerSchema,
+      { actions: {} },
+    );
   }
   return project.controllerMapping.controllers[controllerName].actions;
 }

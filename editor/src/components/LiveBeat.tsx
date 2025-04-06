@@ -1,12 +1,15 @@
-import { JSX, useContext, useEffect, useMemo } from 'react';
-import { ShortcutContext } from '../contexts/ShortcutContext';
-import { BeatContext } from '../contexts/BeatContext';
-import { NumberInput } from './Input';
+import { create } from '@bufbuild/protobuf';
 import {
   ControllerMapping_Action,
-  ControllerMapping_BeatMatch,
+  ControllerMapping_BeatMatchSchema,
 } from '@dmx-controller/proto/controller_pb';
+import { JSX, useContext, useEffect, useMemo } from 'react';
+
+import { BeatContext } from '../contexts/BeatContext';
+import { ShortcutContext } from '../contexts/ShortcutContext';
+
 import { ControllerConnection } from './ControllerConnection';
+import { NumberInput } from './Input';
 import styles from './LiveBeat.module.scss';
 
 interface LiveBeatProps {
@@ -57,7 +60,7 @@ export function LiveBeat({ className }: LiveBeatProps): JSX.Element {
     () =>
       ({
         case: 'beatMatch',
-        value: new ControllerMapping_BeatMatch(),
+        value: create(ControllerMapping_BeatMatchSchema),
       }) as ControllerMapping_Action['action'],
     [],
   );

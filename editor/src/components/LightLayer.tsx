@@ -1,9 +1,12 @@
-import styles from './LightLayer.module.scss';
-import { Effect as EffectComponent, EffectSelectContext } from './Effect';
-import { Effect } from '@dmx-controller/proto/effect_pb';
+import { create } from '@bufbuild/protobuf';
+import { EffectSchema } from '@dmx-controller/proto/effect_pb';
 import { LightLayer as LightLayerProto } from '@dmx-controller/proto/light_layer_pb';
 import { JSX, useContext, useState } from 'react';
+
 import { ProjectContext } from '../contexts/ProjectContext';
+
+import { Effect as EffectComponent, EffectSelectContext } from './Effect';
+import styles from './LightLayer.module.scss';
 
 interface NewEffect {
   firstMs: number;
@@ -90,7 +93,7 @@ export function LightLayer({
                 return;
               }
 
-              const e = new Effect({
+              const e = create(EffectSchema, {
                 startMs: Math.min(newEffect.firstMs, newEffect.secondMs),
                 endMs: Math.max(newEffect.firstMs, newEffect.secondMs),
                 effect: {

@@ -1,3 +1,4 @@
+import { Project } from '@dmx-controller/proto/project_pb';
 import {
   JSX,
   createContext,
@@ -7,16 +8,17 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Modal } from '../components/Modal';
+
 import { Button } from '../components/Button';
-import { ProjectContext } from './ProjectContext';
+import { Modal } from '../components/Modal';
 import {
   outputValues,
   performAction,
 } from '../external_controller/externalController';
-import { Project } from '@dmx-controller/proto/project_pb';
-import { TimeContext } from './TimeContext';
+
 import { BeatContext } from './BeatContext';
+import { ProjectContext } from './ProjectContext';
+import { TimeContext } from './TimeContext';
 
 export type ControllerChannel = string;
 export type ControlCommandType = 'msb' | 'lsb' | null;

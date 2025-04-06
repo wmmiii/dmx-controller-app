@@ -1,8 +1,10 @@
 import { JSX, useContext } from 'react';
-import styles from './ProjectPage.module.scss';
-import { ProjectContext } from '../contexts/ProjectContext';
+
 import { TextInput } from '../components/Input';
+import { ProjectContext } from '../contexts/ProjectContext';
 import { escapeForFilesystem } from '../util/fileUtils';
+
+import styles from './ProjectPage.module.scss';
 
 export default function ProjectPage(): JSX.Element {
   const { project, save } = useContext(ProjectContext);

@@ -1,21 +1,25 @@
-import IconBxPlus from '../icons/IconBxPlus';
-import IconBxX from '../icons/IconBxX';
-import styles from './EffectState.module.scss';
-import {
-  AMOUNT_CHANNELS,
-  ANGLE_CHANNELS,
-  ChannelTypes,
-  COLOR_CHANNELS,
-} from '../engine/channel';
-import { Button, IconButton } from './Button';
-import { Color, PaletteColor } from '@dmx-controller/proto/color_pb';
-import { ColorSwatch } from './ColorSwatch';
+import { create } from '@bufbuild/protobuf';
+import { ColorSchema, PaletteColor } from '@dmx-controller/proto/color_pb';
 import {
   FixtureState as FixtureStateProto,
   FixtureState_Channel,
+  FixtureState_ChannelSchema,
 } from '@dmx-controller/proto/effect_pb';
-import { NumberInput } from './Input';
 import { JSX, useCallback } from 'react';
+
+import {
+  AMOUNT_CHANNELS,
+  ANGLE_CHANNELS,
+  COLOR_CHANNELS,
+  ChannelTypes,
+} from '../engine/channel';
+import IconBxPlus from '../icons/IconBxPlus';
+import IconBxX from '../icons/IconBxX';
+
+import { Button, IconButton } from './Button';
+import { ColorSwatch } from './ColorSwatch';
+import styles from './EffectState.module.scss';
+import { NumberInput } from './Input';
 
 type ColorSelectorType = 'none' | 'color' | PaletteColor;
 
@@ -40,7 +44,7 @@ export function EffectState({
       } else if (type === 'color') {
         state.lightColor = {
           case: 'color',
-          value: new Color({
+          value: create(ColorSchema, {
             red: 1,
             green: 1,
             blue: 1,
@@ -120,7 +124,7 @@ export function EffectState({
       {(
         availableChannels.filter(
           (channel) => ANGLE_CHANNELS.indexOf(channel as any) > -1,
-        ) as Array<keyof FixtureStateProto>
+        ) as Array<keyof Omit<FixtureStateProto, '$typeName'>>
       ).map((channel, i) => (
         <label className={styles.stateRow} key={i}>
           <span>{channel}</span>
@@ -163,7 +167,7 @@ export function EffectState({
       {(
         availableChannels.filter(
           (channel) => AMOUNT_CHANNELS.indexOf(channel as any) > -1,
-        ) as Array<keyof FixtureStateProto>
+        ) as Array<keyof Omit<FixtureStateProto, '$typeName'>>
       ).map((channel, i) => (
         <RangeChannel
           key={i}
@@ -214,7 +218,7 @@ export function EffectState({
       <Button
         onClick={() => {
           state.channels.push(
-            new FixtureState_Channel({
+            create(FixtureState_ChannelSchema, {
               index: 0,
               value: 0,
             }),

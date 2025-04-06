@@ -1,22 +1,29 @@
-import { JSX, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import LightTimeline from '../components/LightTimeline';
-import styles from './ShowPage.module.scss';
-import { Button } from '../components/Button';
+import { create } from '@bufbuild/protobuf';
+import { LightTrackSchema } from '@dmx-controller/proto/light_track_pb';
 import {
-  DEFAULT_COLOR_PALETTE,
-  renderShowToUniverse,
-} from '../engine/universe';
-import { LightTrack as LightTrackProto } from '@dmx-controller/proto/light_track_pb';
+  Show,
+  ShowSchema,
+  Show_AudioTrackSchema,
+} from '@dmx-controller/proto/show_pb';
+import { JSX, useContext, useEffect, useMemo, useRef, useState } from 'react';
+
+import { Button } from '../components/Button';
+import { TextInput } from '../components/Input';
+import LightTimeline from '../components/LightTimeline';
 import { Modal } from '../components/Modal';
 import { PaletteContext } from '../contexts/PaletteContext';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { SerialContext } from '../contexts/SerialContext';
-import { Show, Show_AudioTrack } from '@dmx-controller/proto/show_pb';
-import { TextInput } from '../components/Input';
-import { UNSET_INDEX, idMapToArray } from '../util/mapUtils';
+import {
+  DEFAULT_COLOR_PALETTE,
+  renderShowToUniverse,
+} from '../engine/universe';
 import { universeToUint8Array } from '../engine/utils';
+import { UNSET_INDEX, idMapToArray } from '../util/mapUtils';
 
-const DEFAULT_SHOW = new Show({
+import styles from './ShowPage.module.scss';
+
+const DEFAULT_SHOW = create(ShowSchema, {
   name: 'Untitled Show',
   audioTrack: {
     audioFileId: UNSET_INDEX + 1,
@@ -150,7 +157,7 @@ export default function ShowPage(): JSX.Element {
             <br />
             <select
               onChange={(e) => {
-                show.audioTrack = new Show_AudioTrack({
+                show.audioTrack = create(Show_AudioTrackSchema, {
                   audioFileId: parseInt(e.target.value),
                 });
                 save(`Set audio track for show ${show.name}.`);
@@ -173,7 +180,7 @@ export default function ShowPage(): JSX.Element {
           show.lightTracks[b] = temp;
         }}
         addLayer={() => {
-          show?.lightTracks.push(new LightTrackProto());
+          show?.lightTracks.push(create(LightTrackSchema));
           save(`Add layer to show ${show.name}.`);
         }}
         t={t}

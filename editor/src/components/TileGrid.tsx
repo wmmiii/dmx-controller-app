@@ -1,8 +1,10 @@
-import styles from './Tile.module.scss';
-import { ProjectContext } from '../contexts/ProjectContext';
 import { Scene_TileMap } from '@dmx-controller/proto/scene_pb';
-import { Tile } from './Tile';
 import { JSX, useContext, useMemo, useState } from 'react';
+
+import { ProjectContext } from '../contexts/ProjectContext';
+
+import { Tile } from './Tile';
+import styles from './Tile.module.scss';
 
 interface TileGridProps {
   className?: string;

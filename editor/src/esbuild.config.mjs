@@ -1,9 +1,14 @@
-import { ScssModulesPlugin } from 'esbuild-scss-modules-plugin';
+import esbuild from 'esbuild';
+import CssModulesPlugin from 'esbuild-css-modules-plugin';
 
-export default {
+esbuild.build({
   plugins: [
-    ScssModulesPlugin({
+    CssModulesPlugin({
+      force: true,
+      emitDeclarationFile: true,
+      localsConvention: 'camelCaseOnly',
+      namedExports: true,
       inject: true,
     }),
   ],
-};
+});

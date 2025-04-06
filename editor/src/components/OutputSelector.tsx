@@ -1,13 +1,17 @@
-import { JSX, useContext, useMemo } from 'react';
-import { ProjectContext } from '../contexts/ProjectContext';
-import { Project } from '@dmx-controller/proto/project_pb';
+import { create } from '@bufbuild/protobuf';
 import {
   OutputId,
-  OutputId_FixtureMapping,
+  OutputIdSchema,
+  OutputId_FixtureMappingSchema,
 } from '@dmx-controller/proto/output_id_pb';
-import { getActiveUniverse } from '../util/projectUtils';
-import styles from './OutputSelector.module.scss';
+import { Project } from '@dmx-controller/proto/project_pb';
+import { JSX, useContext, useMemo } from 'react';
+
+import { ProjectContext } from '../contexts/ProjectContext';
 import { GROUP_ALL_ID } from '../engine/fixture';
+import { getActiveUniverse } from '../util/projectUtils';
+
+import styles from './OutputSelector.module.scss';
 
 interface OutputSelectorProps {
   value: OutputId | undefined;
@@ -118,13 +122,13 @@ export function OutputSelector({
         // Set new output value.
         const [idString, typeString] = newInput.split(' ');
         const id = BigInt(idString);
-        const newValue = new OutputId(value);
+        const newValue = create(OutputIdSchema, value);
         if (typeString === 'fixture') {
           if (newValue.output.case === 'fixtures') {
             newValue.output.value.fixtures[project.activeUniverse.toString()] =
               id;
           } else {
-            const fixtures = new OutputId_FixtureMapping();
+            const fixtures = create(OutputId_FixtureMappingSchema);
             fixtures.fixtures[project.activeUniverse.toString()] = id;
             newValue.output = {
               case: 'fixtures',

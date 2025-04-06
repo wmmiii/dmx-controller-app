@@ -1,9 +1,10 @@
 import { Color } from '@dmx-controller/proto/color_pb';
-
 import styles from 'ColorSwatch.module.scss';
 import { useContext } from 'react';
-import { ProjectContext } from '../contexts/ProjectContext';
 import ColorPicker, { themes } from 'react-pick-color';
+
+import { ProjectContext } from '../contexts/ProjectContext';
+
 import { Popover } from './Popover';
 
 interface ColorSwatchProps {

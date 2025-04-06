@@ -1,50 +1,59 @@
-import {
-  JSX,
-  CSSProperties,
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-} from 'react';
-import IconBxsBinoculars from '../icons/IconBxsBinoculars';
-import IconBxsBolt from '../icons/IconBxsBolt';
-import IconBxsSun from '../icons/IconBxsSun';
-import IconPanTilt from '../icons/IconPanTilt';
-import IconRgb from '../icons/IconRgb';
-import styles from './Effect.module.scss';
-import { Button, IconButton } from './Button';
-import {
-  DEFAULT_EFFECT_COLOR,
-  DEFAULT_EFFECT_COLOR_ALT,
-} from '../util/styleUtils';
-import {
-  Effect as EffectProto,
-  EffectTiming,
-  Effect_RampEffect,
-  Effect_RampEffect_EasingFunction,
-  Effect_StaticEffect,
-  FixtureState,
-  FixtureState as FixtureStateProto,
-  Effect_StrobeEffect,
-  Effect_RandomEffect,
-} from '@dmx-controller/proto/effect_pb';
-import { EffectState } from './EffectState';
-import { NumberInput, ToggleInput } from './Input';
-import { ProjectContext } from '../contexts/ProjectContext';
-import { RenderingContext } from '../contexts/RenderingContext';
-import { ShortcutContext } from '../contexts/ShortcutContext';
-import IconBxLineChart from '../icons/IconBxLineChart';
-import IconBxMove from '../icons/IconBxMove';
-import IconBxPalette from '../icons/IconBxPalette';
+import { clone, create } from '@bufbuild/protobuf';
 import {
   Color,
   ColorPalette,
   PaletteColor,
 } from '@dmx-controller/proto/color_pb';
-import { PaletteContext } from '../contexts/PaletteContext';
+import {
+  Effect as EffectProto,
+  EffectSchema,
+  EffectTiming,
+  Effect_RampEffect,
+  Effect_RampEffectSchema,
+  Effect_RampEffect_EasingFunction,
+  Effect_RandomEffect,
+  Effect_RandomEffectSchema,
+  Effect_StaticEffect,
+  Effect_StaticEffectSchema,
+  Effect_StrobeEffect,
+  Effect_StrobeEffectSchema,
+  FixtureState,
+  FixtureState as FixtureStateProto,
+  FixtureStateSchema,
+} from '@dmx-controller/proto/effect_pb';
+import {
+  CSSProperties,
+  JSX,
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
 import { BiDice6, BiPause } from 'react-icons/bi';
-import { getStates } from '../util/effectUtils';
+
+import { PaletteContext } from '../contexts/PaletteContext';
+import { ProjectContext } from '../contexts/ProjectContext';
+import { RenderingContext } from '../contexts/RenderingContext';
+import { ShortcutContext } from '../contexts/ShortcutContext';
 import { ChannelTypes } from '../engine/channel';
+import IconBxLineChart from '../icons/IconBxLineChart';
+import IconBxMove from '../icons/IconBxMove';
+import IconBxPalette from '../icons/IconBxPalette';
+import IconBxsBinoculars from '../icons/IconBxsBinoculars';
+import IconBxsBolt from '../icons/IconBxsBolt';
+import IconBxsSun from '../icons/IconBxsSun';
+import IconPanTilt from '../icons/IconPanTilt';
+import IconRgb from '../icons/IconRgb';
+import { getStates } from '../util/effectUtils';
+import {
+  DEFAULT_EFFECT_COLOR,
+  DEFAULT_EFFECT_COLOR_ALT,
+} from '../util/styleUtils';
+
+import { Button, IconButton } from './Button';
+import styles from './Effect.module.scss';
+import { EffectState } from './EffectState';
+import { NumberInput, ToggleInput } from './Input';
 
 export interface EffectAddress {
   track: number;
@@ -100,7 +109,7 @@ export function Effect({
         {
           shortcut: { key: 'KeyV', modifiers: ['ctrl'] },
           action: () => {
-            Object.assign(effect, copyEffect.clone(), {
+            Object.assign(effect, clone(EffectSchema, copyEffect), {
               endMs: effect.endMs,
               startMs: effect.startMs,
             });
@@ -837,8 +846,8 @@ function EffectSelector({
           setEffect(
             {
               case: 'staticEffect',
-              value: new Effect_StaticEffect({
-                state: getStates(effect.value).a.clone(),
+              value: create(Effect_StaticEffectSchema, {
+                state: clone(FixtureStateSchema, getStates(effect.value).a),
               }),
             },
             'Change effect type to static.',
@@ -858,9 +867,12 @@ function EffectSelector({
           setEffect(
             {
               case: 'rampEffect',
-              value: new Effect_RampEffect({
-                stateStart: getStates(effect.value).a.clone(),
-                stateEnd: getStates(effect.value).b.clone(),
+              value: create(Effect_RampEffectSchema, {
+                stateStart: clone(
+                  FixtureStateSchema,
+                  getStates(effect.value).a,
+                ),
+                stateEnd: clone(FixtureStateSchema, getStates(effect.value).b),
               }),
             },
             'Change effect type to ramp.',
@@ -880,9 +892,9 @@ function EffectSelector({
           setEffect(
             {
               case: 'strobeEffect',
-              value: new Effect_StrobeEffect({
-                stateA: getStates(effect.value).a.clone(),
-                stateB: getStates(effect.value).b.clone(),
+              value: create(Effect_StrobeEffectSchema, {
+                stateA: clone(FixtureStateSchema, getStates(effect.value).a),
+                stateB: clone(FixtureStateSchema, getStates(effect.value).b),
                 stateAFames: 3,
                 stateBFames: 3,
               }),
@@ -905,7 +917,7 @@ function EffectSelector({
             setEffect(
               {
                 case: 'randomEffect',
-                value: new Effect_RandomEffect({
+                value: create(Effect_RandomEffectSchema, {
                   seed: 0,
                   effectAMin: 0,
                   effectAVariation: 1000,
@@ -914,14 +926,20 @@ function EffectSelector({
 
                   effectA: {
                     case: 'aStaticEffect',
-                    value: new Effect_StaticEffect({
-                      state: getStates(effect.value).a.clone(),
+                    value: create(Effect_StaticEffectSchema, {
+                      state: clone(
+                        FixtureStateSchema,
+                        getStates(effect.value).a,
+                      ),
                     }),
                   },
                   effectB: {
                     case: 'bStaticEffect',
-                    value: new Effect_StaticEffect({
-                      state: getStates(effect.value).b.clone(),
+                    value: create(Effect_StaticEffectSchema, {
+                      state: clone(
+                        FixtureStateSchema,
+                        getStates(effect.value).b,
+                      ),
                     }),
                   },
                 }),

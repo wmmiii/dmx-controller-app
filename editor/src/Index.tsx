@@ -1,4 +1,17 @@
-import AssetBrowserPage from './pages/AssetBrowserPage';
+import { JSX, createRef, useContext, useEffect, useState } from 'react';
+import { SiMidi } from 'react-icons/si';
+import { Route, Routes, useNavigate } from 'react-router';
+
+import styles from './Index.module.scss';
+import { Button, IconButton } from './components/Button';
+import { Dropdown } from './components/Dropdown';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { Modal } from './components/Modal';
+import { UniverseVisualizer } from './components/UniverseVisualizer';
+import { ControllerContext } from './contexts/ControllerContext';
+import { DialogContext } from './contexts/DialogContext';
+import { ProjectContext } from './contexts/ProjectContext';
+import { SerialContext } from './contexts/SerialContext';
 import IconBxBulb from './icons/IconBxBulb';
 import IconBxDownload from './icons/IconBxDownload';
 import IconBxError from './icons/IconBxError';
@@ -9,23 +22,11 @@ import IconBxUpload from './icons/IconBxUpload';
 import IconBxlGithub from './icons/IconBxlGithub';
 import IconBxlWindows from './icons/IconBxlWindows';
 import IconBxsBulb from './icons/IconBxsBulb';
+import AssetBrowserPage from './pages/AssetBrowserPage';
+import { LivePage } from './pages/LivePage';
 import PatchPage from './pages/PatchPage';
 import ProjectPage from './pages/ProjectPage';
 import ShowPage from './pages/ShowPage';
-import styles from './Index.module.scss';
-import { Button, IconButton } from './components/Button';
-import { ControllerContext } from './contexts/ControllerContext';
-import { DialogContext } from './contexts/DialogContext';
-import { Dropdown } from './components/Dropdown';
-import { ErrorBoundary } from './components/ErrorBoundary';
-import { JSX, createRef, useContext, useEffect, useState } from 'react';
-import { LivePage } from './pages/LivePage';
-import { Modal } from './components/Modal';
-import { ProjectContext } from './contexts/ProjectContext';
-import { Routes, Route, useNavigate } from 'react-router';
-import { SerialContext } from './contexts/SerialContext';
-import { SiMidi } from 'react-icons/si';
-import { UniverseVisualizer } from './components/UniverseVisualizer';
 
 export default function Index(): JSX.Element {
   const { port, blackout, setBlackout, connect, disconnect } =

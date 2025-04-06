@@ -1,3 +1,7 @@
+import { create } from '@bufbuild/protobuf';
+import { BeatMetadataSchema } from '@dmx-controller/proto/beat_pb';
+import { LightTrackSchema } from '@dmx-controller/proto/light_track_pb';
+import { Scene_Tile_SequenceTile } from '@dmx-controller/proto/scene_pb';
 import {
   JSX,
   useCallback,
@@ -7,15 +11,13 @@ import {
   useRef,
   useState,
 } from 'react';
-import LightTimeline from './LightTimeline';
-import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
-import { LightTrack as LightTrackProto } from '@dmx-controller/proto/light_track_pb';
+
 import { ProjectContext } from '../contexts/ProjectContext';
 import { getAudioBlob } from '../util/metronome';
 
-import styles from './UniverseSequenceEditor.module.scss';
 import { NumberInput } from './Input';
-import { Scene_Tile_SequenceTile } from '@dmx-controller/proto/scene_pb';
+import LightTimeline from './LightTimeline';
+import styles from './UniverseSequenceEditor.module.scss';
 
 // Good resolution, nice divisors (2, 3, 4, 5, 6, 12 etc.)
 export const SEQUENCE_BEAT_RESOLUTION = 36000;
@@ -54,7 +56,7 @@ export function UniverseSequenceEditor({
   }, [beats, beatSubdivisions, setAudioBlob]);
 
   const beatMetadata = useMemo(() => {
-    return new BeatMetadata({
+    return create(BeatMetadataSchema, {
       lengthMs: wsMsToSceneMs((audioDuration || 600) / (beats || 1)),
       offsetMs: BigInt(0),
     });
@@ -91,7 +93,7 @@ export function UniverseSequenceEditor({
         lightTracks={sequence.lightTracks}
         addLayer={() => {
           sequence?.lightTracks.push(
-            new LightTrackProto({
+            create(LightTrackSchema, {
               outputId: {
                 output: {
                   case: undefined,

@@ -2,8 +2,9 @@ import {
   Effect_RampEffect,
   Effect_RampEffect_EasingFunction,
 } from '@dmx-controller/proto/effect_pb';
-import { RenderContext } from './universe';
+
 import { applyState } from './effect';
+import { RenderContext } from './universe';
 import { interpolateUniverses } from './utils';
 
 export function rampEffect(

@@ -1,3 +1,6 @@
+import { create } from '@bufbuild/protobuf';
+import { AudioFile } from '@dmx-controller/proto/audio_pb';
+import { BeatMetadataSchema } from '@dmx-controller/proto/beat_pb';
 import {
   JSX,
   createRef,
@@ -7,31 +10,31 @@ import {
   useMemo,
   useState,
 } from 'react';
+import WaveSurfer from 'wavesurfer.js';
+import MinimapPlugin from 'wavesurfer.js/dist/plugins/minimap.js';
+import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions.js';
+import SpectrogramPlugin from 'wavesurfer.js/dist/plugins/spectrogram.js';
+
+import { ProjectContext } from '../contexts/ProjectContext';
+import { ShortcutContext } from '../contexts/ShortcutContext';
 import IconBxPause from '../icons/IconBxPause';
 import IconBxPlay from '../icons/IconBxPlay';
 import IconBxPulse from '../icons/IconBxPulse';
 import IconBxSkipNext from '../icons/IconBxSkipNext';
 import IconBxSkipPrevious from '../icons/IconBxSkipPrevious';
-import IconBxZoomIn from '../icons/IconBxZoomin';
 import IconBxZoomOut from '../icons/IconBxZoomOut';
-import MinimapPlugin from 'wavesurfer.js/dist/plugins/minimap.js';
-import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions.js';
-import SpectrogramPlugin from 'wavesurfer.js/dist/plugins/spectrogram.js';
-import WaveSurfer from 'wavesurfer.js';
-import styles from './BeatEditor.module.scss';
-import { AudioFile } from '@dmx-controller/proto/audio_pb';
-import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
-import { Button } from './Button';
-import { Modal } from './Modal';
-import { NumberInput } from './Input';
-import { ProjectContext } from '../contexts/ProjectContext';
-import { ShortcutContext } from '../contexts/ShortcutContext';
+import IconBxZoomIn from '../icons/IconBxZoomin';
 import {
   WAVEFORM_COLOR,
   WAVEFORM_CURSOR_COLOR,
   WAVEFORM_PROGRESS_COLOR,
   WAVEFORM_SAMPLE_RATE,
 } from '../util/styleUtils';
+
+import styles from './BeatEditor.module.scss';
+import { Button } from './Button';
+import { NumberInput } from './Input';
+import { Modal } from './Modal';
 
 interface BeatEditorProps {
   file: AudioFile;
@@ -262,7 +265,7 @@ export function BeatEditor({ file, onCancel }: BeatEditorProps): JSX.Element {
   const bpm = Math.floor(60_000 / beatDuration);
 
   const onSave = useCallback(() => {
-    file.beatMetadata = new BeatMetadata({
+    file.beatMetadata = create(BeatMetadataSchema, {
       lengthMs: beatDuration,
       offsetMs: BigInt(Math.floor(firstBeat)),
     });

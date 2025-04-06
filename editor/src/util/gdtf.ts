@@ -1,20 +1,25 @@
+import { create } from '@bufbuild/protobuf';
+import { Color } from '@dmx-controller/proto/color_pb';
 import {
-  FixtureDefinition,
+  FixtureDefinitionSchema,
   FixtureDefinition_Channel,
-  FixtureDefinition_Channel_AmountMapping,
-  FixtureDefinition_Channel_AngleMapping,
-  FixtureDefinition_Channel_ColorWheelMapping,
-  FixtureDefinition_Channel_ColorWheelMapping_ColorWheelColor,
+  FixtureDefinition_ChannelSchema,
+  FixtureDefinition_Channel_AmountMappingSchema,
+  FixtureDefinition_Channel_AngleMappingSchema,
+  FixtureDefinition_Channel_ColorWheelMappingSchema,
+  FixtureDefinition_Channel_ColorWheelMapping_ColorWheelColorSchema,
   FixtureDefinition_Mode,
+  FixtureDefinition_ModeSchema,
 } from '@dmx-controller/proto/fixture_pb';
 import { BlobReader, TextWriter, ZipReader } from '@zip.js/zip.js';
 import getUuidByString from 'uuid-by-string';
+
 import {
   AMOUNT_CHANNELS,
   ANGLE_CHANNELS,
   COLOR_CHANNELS,
 } from '../engine/channel';
-import { Color } from '@dmx-controller/proto/color_pb';
+
 import { cieToColor } from './colorUtil';
 
 export async function extractGdtf(arrayBuffer: Blob) {
@@ -37,7 +42,7 @@ export async function extractGdtf(arrayBuffer: Blob) {
 
   const type = description.querySelector('FixtureType');
 
-  const definition = new FixtureDefinition({
+  const definition = create(FixtureDefinitionSchema, {
     globalId: getAttributeNotEmpty(type, 'FixtureTypeID'),
     name: getAttributeNotEmpty(type, 'LongName'),
     manufacturer: getAttributeNotEmpty(type, 'Manufacturer'),
@@ -46,7 +51,7 @@ export async function extractGdtf(arrayBuffer: Blob) {
   const modes = description.querySelectorAll('DMXMode');
 
   for (const modeElement of Array.from(modes)) {
-    const mode = new FixtureDefinition_Mode({
+    const mode = create(FixtureDefinition_ModeSchema, {
       name: getAttributeNotEmpty(modeElement, 'Name'),
     });
 
@@ -89,7 +94,7 @@ export async function extractGdtf(arrayBuffer: Blob) {
           );
           addChannels(mode, channelName, offset, {
             case: 'angleMapping',
-            value: new FixtureDefinition_Channel_AngleMapping({
+            value: create(FixtureDefinition_Channel_AngleMappingSchema, {
               minDegrees: Math.round(Math.min(fromDegrees, toDegrees)),
               maxDegrees: Math.round(Math.max(fromDegrees, toDegrees)),
             }),
@@ -105,7 +110,7 @@ export async function extractGdtf(arrayBuffer: Blob) {
             offset,
             {
               case: 'amountMapping',
-              value: new FixtureDefinition_Channel_AmountMapping({
+              value: create(FixtureDefinition_Channel_AmountMappingSchema, {
                 minValue: 0,
                 maxValue: 255,
               }),
@@ -116,7 +121,7 @@ export async function extractGdtf(arrayBuffer: Blob) {
         }
       }
       if (initialFunction.indexOf('shutter') >= 0) {
-        mode.channels[offset[0]] = new FixtureDefinition_Channel({
+        mode.channels[offset[0]] = create(FixtureDefinition_ChannelSchema, {
           type: 'other',
           defaultValue: 255,
           mapping: {
@@ -152,7 +157,9 @@ export async function extractGdtf(arrayBuffer: Blob) {
               }
             }
 
-            const mapping = new FixtureDefinition_Channel_ColorWheelMapping();
+            const mapping = create(
+              FixtureDefinition_Channel_ColorWheelMappingSchema,
+            );
             for (const set of Array.from(
               colorElement!.querySelectorAll('ChannelSet'),
             )) {
@@ -163,7 +170,8 @@ export async function extractGdtf(arrayBuffer: Blob) {
               const color = colors[name.toLowerCase()];
 
               mapping.colors.push(
-                new FixtureDefinition_Channel_ColorWheelMapping_ColorWheelColor(
+                create(
+                  FixtureDefinition_Channel_ColorWheelMapping_ColorWheelColorSchema,
                   {
                     name: name,
                     value: value,
@@ -173,7 +181,7 @@ export async function extractGdtf(arrayBuffer: Blob) {
               );
             }
 
-            mode.channels[offset[0]] = new FixtureDefinition_Channel({
+            mode.channels[offset[0]] = create(FixtureDefinition_ChannelSchema, {
               type: 'color_wheel',
               defaultValue: 0,
               mapping: {
@@ -214,13 +222,13 @@ function addChannels(
       `Channel ${name} has an unexpected offset length of ${offset.length}!`,
     );
   }
-  mode.channels[offset[0]] = new FixtureDefinition_Channel({
+  mode.channels[offset[0]] = create(FixtureDefinition_ChannelSchema, {
     type: name,
     defaultValue: defaultValue,
     mapping: mapping,
   });
   if (offset.length > 1) {
-    mode.channels[offset[1]] = new FixtureDefinition_Channel({
+    mode.channels[offset[1]] = create(FixtureDefinition_ChannelSchema, {
       type: name + '-fine',
       defaultValue: defaultValue,
       mapping: mapping,

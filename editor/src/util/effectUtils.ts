@@ -1,9 +1,11 @@
+import { create } from '@bufbuild/protobuf';
 import {
   Effect_RampEffect,
   Effect_RandomEffect,
   Effect_StaticEffect,
   Effect_StrobeEffect,
   FixtureState,
+  FixtureStateSchema,
 } from '@dmx-controller/proto/effect_pb';
 
 export function getStates(
@@ -16,8 +18,8 @@ export function getStates(
 ) {
   if (!effect) {
     return {
-      a: new FixtureState(),
-      b: new FixtureState(),
+      a: create(FixtureStateSchema),
+      b: create(FixtureStateSchema),
     };
   }
   const e: any = effect;
@@ -26,13 +28,13 @@ export function getStates(
     e.stateStart ??
     e.stateA ??
     getStates(e.effectA.value)?.a ??
-    new FixtureState();
+    create(FixtureStateSchema);
   const b: FixtureState =
     e.state ??
     e.stateEnd ??
     e.stateB ??
     getStates(e.effectB.value)?.a ??
-    new FixtureState();
+    create(FixtureStateSchema);
   return {
     a: a,
     b: b,

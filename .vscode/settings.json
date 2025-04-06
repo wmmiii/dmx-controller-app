@@ -2,12 +2,12 @@
   "search.exclude": {
     "bazel-*": true
   },
-  "files.exclude": {
-    "bazel-*": true
-  },
   "files.watcherExclude": {
     "bazel-*": true
   },
   "editor.formatOnSave": true,
-  "editor.defaultFormatter": "esbenp.prettier-vscode"
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[starlark]": {
+    "editor.defaultFormatter": "BazelBuild.vscode-bazel"
+  }
 }

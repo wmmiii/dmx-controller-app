@@ -26,10 +26,9 @@ COMMON_DEPS = [
 esbuild(
     name = "bundle",
     srcs = glob([
-        "**/*.scss",
-        "**/*.ts",
         "**/*.tsx",
-    ]),
+        "**/*.ts",
+    ]) + [":scss"],
     config = "esbuild.config.mjs",
     entry_point = "app.tsx",
     minify = select({
@@ -39,7 +38,10 @@ esbuild(
     target = "ES2022",
     tsconfig = "//:tsconfig",
     visibility = ["//editor:__pkg__"],
-    deps = COMMON_DEPS,
+    deps = COMMON_DEPS + [
+        "//:node_modules/esbuild",
+        "//:node_modules/esbuild-css-modules-plugin",
+    ],
 )
 
 ts_project(
@@ -48,6 +50,7 @@ ts_project(
         "**/*.ts",
         "**/*.tsx",
     ]),
+    source_map = True,
     tsconfig = "//:tsconfig",
     deps = COMMON_DEPS,
 )
@@ -55,5 +58,11 @@ ts_project(
 copy_to_bin(
     name = "types",
     srcs = ["types.d.ts"],
+    visibility = ["//:__subpackages__"],
+)
+
+copy_to_bin(
+    name = "scss",
+    srcs = glob(["**/*.scss"]),
     visibility = ["//:__subpackages__"],
 )

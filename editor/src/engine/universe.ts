@@ -1,35 +1,45 @@
-import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
-import { ColorPalette } from '@dmx-controller/proto/color_pb';
+import { create } from '@bufbuild/protobuf';
+import {
+  BeatMetadata,
+  BeatMetadataSchema,
+} from '@dmx-controller/proto/beat_pb';
+import {
+  ColorPalette,
+  ColorPaletteSchema,
+} from '@dmx-controller/proto/color_pb';
+import {
+  Effect,
+  EffectTiming,
+  Effect_RampEffect,
+} from '@dmx-controller/proto/effect_pb';
+import { LightLayer } from '@dmx-controller/proto/light_layer_pb';
+import {
+  OutputId,
+  OutputIdSchema,
+  OutputId_FixtureMappingSchema,
+} from '@dmx-controller/proto/output_id_pb';
+import { Project } from '@dmx-controller/proto/project_pb';
+import { Scene_Tile_SequenceTile } from '@dmx-controller/proto/scene_pb';
+
+import { SEQUENCE_BEAT_RESOLUTION } from '../components/UniverseSequenceEditor';
+import { hsvToColor, interpolatePalettes } from '../util/colorUtil';
+import { getActiveUniverse } from '../util/projectUtils';
+import { getTileDurationMs } from '../util/tile';
+
+import { applyState } from './effect';
 import {
   DmxUniverse,
   WritableDevice,
   getWritableDevice,
   mapDegrees,
 } from './fixture';
-import {
-  Effect,
-  Effect_RampEffect,
-  EffectTiming,
-} from '@dmx-controller/proto/effect_pb';
-import { LightLayer } from '@dmx-controller/proto/light_layer_pb';
-import {
-  OutputId,
-  OutputId_FixtureMapping,
-} from '@dmx-controller/proto/output_id_pb';
-import { Project } from '@dmx-controller/proto/project_pb';
-import { SEQUENCE_BEAT_RESOLUTION } from '../components/UniverseSequenceEditor';
-import { Scene_Tile_SequenceTile } from '@dmx-controller/proto/scene_pb';
-import { applyState } from './effect';
-import { getActiveUniverse } from '../util/projectUtils';
 import { getAllFixtures } from './group';
-import { getTileDurationMs } from '../util/tile';
-import { hsvToColor, interpolatePalettes } from '../util/colorUtil';
-import { interpolateUniverses } from './utils';
 import { rampEffect } from './rampEffect';
 import { randomEffect } from './randomEffect';
 import { strobeEffect } from './strobeEffect';
+import { interpolateUniverses } from './utils';
 
-export const DEFAULT_COLOR_PALETTE = new ColorPalette({
+export const DEFAULT_COLOR_PALETTE = create(ColorPaletteSchema, {
   name: 'Unset palette',
   primary: {
     color: {
@@ -346,12 +356,12 @@ export function renderGroupDebugToUniverse(project: Project, groupId: bigint) {
       project.activeUniverse.toString()
     ].fixtures;
   for (let index = 0; index < fixtures.length; index++) {
-    const fixtureMapping = new OutputId_FixtureMapping();
+    const fixtureMapping = create(OutputId_FixtureMappingSchema);
     fixtureMapping.fixtures[project.activeUniverse.toString()] =
       fixtures[index];
     const output = getWritableDevice(
       project,
-      new OutputId({
+      create(OutputIdSchema, {
         output: {
           case: 'fixtures',
           value: fixtureMapping,
@@ -403,7 +413,7 @@ function renderUniverseSequence(
           t,
           track.layers,
           trackContext,
-          new BeatMetadata({
+          create(BeatMetadataSchema, {
             lengthMs: SEQUENCE_BEAT_RESOLUTION,
             offsetMs: 0n,
           }),
@@ -586,7 +596,7 @@ function applyToEachFixture(
   for (let i = 0; i < fixtures.length; ++i) {
     const fixtureMapping: { [key: string]: bigint } = {};
     fixtureMapping[context.project.activeUniverse.toString()] = fixtures[i];
-    const outputId = new OutputId({
+    const outputId = create(OutputIdSchema, {
       output: {
         case: 'fixtures',
         value: {

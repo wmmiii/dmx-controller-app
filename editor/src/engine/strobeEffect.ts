@@ -1,4 +1,5 @@
 import { Effect_StrobeEffect } from '@dmx-controller/proto/effect_pb';
+
 import { applyState } from './effect';
 import { RenderContext } from './universe';
 
