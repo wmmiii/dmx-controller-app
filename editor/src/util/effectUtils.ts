@@ -1,6 +1,19 @@
-import { Effect_RampEffect, Effect_RandomEffect, Effect_StaticEffect, Effect_StrobeEffect, FixtureState } from "@dmx-controller/proto/effect_pb";
+import {
+  Effect_RampEffect,
+  Effect_RandomEffect,
+  Effect_StaticEffect,
+  Effect_StrobeEffect,
+  FixtureState,
+} from "@dmx-controller/proto/effect_pb";
 
-export function getStates(effect: Effect_StaticEffect | Effect_RampEffect | Effect_StrobeEffect | Effect_RandomEffect | undefined) {
+export function getStates(
+  effect:
+    | Effect_StaticEffect
+    | Effect_RampEffect
+    | Effect_StrobeEffect
+    | Effect_RandomEffect
+    | undefined,
+) {
   if (!effect) {
     return {
       a: new FixtureState(),

@@ -1,14 +1,14 @@
-import { StrictMode } from 'react';
-import Index from './Index';
-import { BrowserRouter } from 'react-router';
-import { DialogProvider } from './contexts/DialogContext';
-import { ProjectProvider } from './contexts/ProjectContext';
-import { SerialProvider } from './contexts/SerialContext';
-import { ShortcutProvider } from './contexts/ShortcutContext';
-import { TimeProvider } from './contexts/TimeContext';
-import { createRoot } from 'react-dom/client';
-import { ControllerProvider } from './contexts/ControllerContext';
-import { BeatProvider } from './contexts/BeatContext';
+import { StrictMode } from "react";
+import Index from "./Index";
+import { BrowserRouter } from "react-router";
+import { DialogProvider } from "./contexts/DialogContext";
+import { ProjectProvider } from "./contexts/ProjectContext";
+import { SerialProvider } from "./contexts/SerialContext";
+import { ShortcutProvider } from "./contexts/ShortcutContext";
+import { TimeProvider } from "./contexts/TimeContext";
+import { createRoot } from "react-dom/client";
+import { ControllerProvider } from "./contexts/ControllerContext";
+import { BeatProvider } from "./contexts/BeatContext";
 
 // import wasm, {hello_world} from '@dmx-controller/core_interface/core_wasm';
 
@@ -16,7 +16,7 @@ import { BeatProvider } from './contexts/BeatContext';
 //   console.log(hello_world());
 // });
 
-const root = createRoot(document.getElementById('root')!);
+const root = createRoot(document.getElementById("root")!);
 root.render(
   <StrictMode>
     <BrowserRouter basename="/">
@@ -36,5 +36,5 @@ root.render(
         </DialogProvider>
       </TimeProvider>
     </BrowserRouter>
-  </StrictMode>
+  </StrictMode>,
 );

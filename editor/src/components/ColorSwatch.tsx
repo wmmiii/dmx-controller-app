@@ -1,6 +1,6 @@
 import { Color } from "@dmx-controller/proto/color_pb";
 
-import styles from 'ColorSwatch.module.scss';
+import styles from "ColorSwatch.module.scss";
 import { useContext } from "react";
 import { ProjectContext } from "../contexts/ProjectContext";
 import ColorPicker, { themes } from "react-pick-color";
@@ -14,8 +14,8 @@ interface ColorSwatchProps {
 export function ColorSwatch({ color, updateDescription }: ColorSwatchProps) {
   const { save, update } = useContext(ProjectContext);
 
-  themes.dark.borderColor = 'transparent';
-  themes.dark.background = 'transparent';
+  themes.dark.borderColor = "transparent";
+  themes.dark.background = "transparent";
 
   if (updateDescription) {
     return (
@@ -31,7 +31,7 @@ export function ColorSwatch({ color, updateDescription }: ColorSwatchProps) {
             }}
             onChange={({ rgb }) => {
               if (color == null) {
-                throw new Error('Color not defined!');
+                throw new Error("Color not defined!");
               }
 
               color.red = rgb.r / 255;
@@ -40,21 +40,26 @@ export function ColorSwatch({ color, updateDescription }: ColorSwatchProps) {
               update();
             }}
             hideAlpha={true}
-            theme={themes.dark} />
-        }>
+            theme={themes.dark}
+          />
+        }
+      >
         <div
           className={styles.colorSwatch}
-          style={{ backgroundColor: `rgb(${color.red * 255},${color.green * 255},${color.blue * 255})` }}>
-        </div>
+          style={{
+            backgroundColor: `rgb(${color.red * 255},${color.green * 255},${color.blue * 255})`,
+          }}
+        ></div>
       </Popover>
     );
   } else {
     return (
       <div
         className={`${styles.colorSwatch} ${styles.nonInteractive}`}
-        style={{ backgroundColor: `rgb(${color.red * 255},${color.green * 255},${color.blue * 255})` }}>
-      </div>
+        style={{
+          backgroundColor: `rgb(${color.red * 255},${color.green * 255},${color.blue * 255})`,
+        }}
+      ></div>
     );
   }
-
 }

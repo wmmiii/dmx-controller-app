@@ -1,6 +1,14 @@
 import { Project } from "@dmx-controller/proto/project_pb";
-import { ControlCommandType, ControllerChannel } from "../contexts/ControllerContext";
-import { ControllerMapping, ControllerMapping_Action, ControllerMapping_TileStrength, ControllerMapping_Controller } from "@dmx-controller/proto/controller_pb";
+import {
+  ControlCommandType,
+  ControllerChannel,
+} from "../contexts/ControllerContext";
+import {
+  ControllerMapping,
+  ControllerMapping_Action,
+  ControllerMapping_TileStrength,
+  ControllerMapping_Controller,
+} from "@dmx-controller/proto/controller_pb";
 import { outputTileStrength, performTileStrength } from "./tileStrength";
 
 export function performAction(
@@ -10,26 +18,30 @@ export function performAction(
   value: number,
   cct: ControlCommandType,
   addBeatSample: (t: number) => void,
-  output: (channel: ControllerChannel, value: number) => void) {
-  const action = project.controllerMapping!.controllers[controllerName]?.actions[channel]?.action;
+  output: (channel: ControllerChannel, value: number) => void,
+) {
+  const action =
+    project.controllerMapping!.controllers[controllerName]?.actions[channel]
+      ?.action;
 
   switch (action?.case) {
-    case 'beatMatch':
+    case "beatMatch":
       if (cct === null && value > 0.5) {
         addBeatSample(new Date().getTime());
       }
       return false;
-    case 'colorPaletteSelection':
+    case "colorPaletteSelection":
       const scene = project.scenes[action.value.scene];
       if (scene.activeColorPalette === action.value.paletteId) {
         return false;
       } else {
-        scene.lastActiveColorPalette = project.scenes[action.value.scene].activeColorPalette;
+        scene.lastActiveColorPalette =
+          project.scenes[action.value.scene].activeColorPalette;
         scene.activeColorPalette = action.value.paletteId;
         scene.colorPaletteStartTransition = BigInt(new Date().getTime());
         return true;
       }
-    case 'tileStrength':
+    case "tileStrength":
       return performTileStrength(project, action.value, value, cct);
     default:
       output(channel, value);
@@ -41,27 +53,35 @@ export function assignAction(
   project: Project,
   controllerName: string,
   channel: ControllerChannel,
-  action: ControllerMapping_Action) {
+  action: ControllerMapping_Action,
+) {
   deleteAction(project, controllerName, action.action);
   getActionMap(project, controllerName)[channel] = action;
 }
 
-export function findAction(project: Project, controllerName: string, action: ControllerMapping_Action['action']) {
+export function findAction(
+  project: Project,
+  controllerName: string,
+  action: ControllerMapping_Action["action"],
+) {
   return Object.values(getActionMap(project, controllerName))
-    .map(a => a.action)
-    .filter(a => a.case === action.case)
-    .find(a => JSON.stringify(a.value) === JSON.stringify(action.value));
+    .map((a) => a.action)
+    .filter((a) => a.case === action.case)
+    .find((a) => JSON.stringify(a.value) === JSON.stringify(action.value));
 }
 
 export function deleteAction(
   project: Project,
   controllerName: string,
-  action: ControllerMapping_Action['action']) {
+  action: ControllerMapping_Action["action"],
+) {
   const controllerActions = getActionMap(project, controllerName);
   for (const channel in controllerActions) {
     const foundAction = controllerActions[channel];
-    if (foundAction.action.case === action.case &&
-      JSON.stringify(foundAction.action.value) === JSON.stringify(action.value)) {
+    if (
+      foundAction.action.case === action.case &&
+      JSON.stringify(foundAction.action.value) === JSON.stringify(action.value)
+    ) {
       controllerActions[channel].action = {
         case: undefined,
         value: undefined,
@@ -74,22 +94,27 @@ export function outputValues(
   project: Project,
   controllerName: string,
   t: bigint,
-  output: (channel: ControllerChannel, value: number) => void) {
-  const actions = Object.entries(project.controllerMapping?.controllers[controllerName].actions || {});
+  output: (channel: ControllerChannel, value: number) => void,
+) {
+  const actions = Object.entries(
+    project.controllerMapping?.controllers[controllerName].actions || {},
+  );
   for (const entry of actions) {
     const channel = entry[0];
     const action = entry[1].action;
     let value = 0;
     switch (action.case) {
-      case 'beatMatch':
+      case "beatMatch":
         const beatMetadata = project.liveBeat!;
-        const beatT = Number(t + BigInt(project.timingOffsetMs) - beatMetadata.offsetMs);
+        const beatT = Number(
+          t + BigInt(project.timingOffsetMs) - beatMetadata.offsetMs,
+        );
         value = 1 - Math.round((beatT / beatMetadata.lengthMs) % 1);
         break;
-      case 'colorPaletteSelection':
+      case "colorPaletteSelection":
         value = 1;
         break;
-      case 'tileStrength':
+      case "tileStrength":
         value = outputTileStrength(project, action.value, t);
         break;
     }
@@ -97,15 +122,21 @@ export function outputValues(
   }
 }
 
-export function getActionDescription(project: Project, controllerName: string, channel: ControllerChannel) {
+export function getActionDescription(
+  project: Project,
+  controllerName: string,
+  channel: ControllerChannel,
+) {
   const actionMapping = getActionMap(project, controllerName)[channel];
   switch (actionMapping?.action.case) {
-    case 'beatMatch':
-      return 'Samples the beat during beat-matching.';
-    case 'tileStrength':
-      const action: ControllerMapping_TileStrength = actionMapping?.action.value!;
-      const tile = Array.from(project.scenes[action.scene].tileMap.values())
-        .find(m => m.id === action.tileId);
+    case "beatMatch":
+      return "Samples the beat during beat-matching.";
+    case "tileStrength":
+      const action: ControllerMapping_TileStrength =
+        actionMapping?.action.value!;
+      const tile = Array.from(
+        project.scenes[action.scene].tileMap.values(),
+      ).find((m) => m.id === action.tileId);
       if (tile) {
         return `Toggles the strength of ${tile.tile?.name}.`;
       } else {
@@ -121,17 +152,18 @@ export function getActionMap(project: Project, controllerName: string) {
     project.controllerMapping = new ControllerMapping();
   }
   if (project.controllerMapping.controllers[controllerName] == null) {
-    project.controllerMapping.controllers[controllerName] = new ControllerMapping_Controller({ actions: {} });
+    project.controllerMapping.controllers[controllerName] =
+      new ControllerMapping_Controller({ actions: {} });
   }
   return project.controllerMapping.controllers[controllerName].actions;
 }
 
 let timeoutHandle: any;
 export function debounceInput(cct: ControlCommandType, action: () => void) {
-  if (cct === 'lsb' || cct === null) {
+  if (cct === "lsb" || cct === null) {
     clearTimeout(timeoutHandle);
     action();
-  } else if (cct === 'msb') {
+  } else if (cct === "msb") {
     // Wait for lsb to see if this channel supports it.
     timeoutHandle = setTimeout(() => action, 100);
   } else {

@@ -7,13 +7,16 @@ export function performTileStrength(
   project: Project,
   action: ControllerMapping_TileStrength,
   value: number,
-  cct: ControlCommandType) {
-  const tileMapping = project.scenes[action.scene].tileMap.find(t => t.id === action.tileId);
+  cct: ControlCommandType,
+) {
+  const tileMapping = project.scenes[action.scene].tileMap.find(
+    (t) => t.id === action.tileId,
+  );
   if (tileMapping && tileMapping.tile) {
     if (cct != null) {
       // Fader input.
       tileMapping.tile.transition = {
-        case: 'absoluteStrength',
+        case: "absoluteStrength",
         value: value,
       };
       return true;
@@ -25,8 +28,14 @@ export function performTileStrength(
   return true;
 }
 
-export function outputTileStrength(project: Project, action: ControllerMapping_TileStrength, t: bigint) {
-  const tile = project.scenes[action.scene].tileMap.find(m => m.id === action.tileId)?.tile;
+export function outputTileStrength(
+  project: Project,
+  action: ControllerMapping_TileStrength,
+  t: bigint,
+) {
+  const tile = project.scenes[action.scene].tileMap.find(
+    (m) => m.id === action.tileId,
+  )?.tile;
   if (tile && project.liveBeat) {
     return tileActiveAmount(tile, project.liveBeat, t);
   } else {

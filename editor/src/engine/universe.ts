@@ -1,9 +1,21 @@
 import { BeatMetadata } from "@dmx-controller/proto/beat_pb";
 import { ColorPalette } from "@dmx-controller/proto/color_pb";
-import { DmxUniverse, WritableDevice, getWritableDevice, mapDegrees } from "./fixture";
-import { Effect, Effect_RampEffect, EffectTiming } from "@dmx-controller/proto/effect_pb";
+import {
+  DmxUniverse,
+  WritableDevice,
+  getWritableDevice,
+  mapDegrees,
+} from "./fixture";
+import {
+  Effect,
+  Effect_RampEffect,
+  EffectTiming,
+} from "@dmx-controller/proto/effect_pb";
 import { LightLayer } from "@dmx-controller/proto/light_layer_pb";
-import { OutputId, OutputId_FixtureMapping } from "@dmx-controller/proto/output_id_pb";
+import {
+  OutputId,
+  OutputId_FixtureMapping,
+} from "@dmx-controller/proto/output_id_pb";
 import { Project } from "@dmx-controller/proto/project_pb";
 import { SEQUENCE_BEAT_RESOLUTION } from "../components/UniverseSequenceEditor";
 import { Scene_Tile_SequenceTile } from "@dmx-controller/proto/scene_pb";
@@ -18,7 +30,7 @@ import { randomEffect } from "./randomEffect";
 import { strobeEffect } from "./strobeEffect";
 
 export const DEFAULT_COLOR_PALETTE = new ColorPalette({
-  name: 'Unset palette',
+  name: "Unset palette",
   primary: {
     color: {
       red: 1,
@@ -53,8 +65,11 @@ export interface RenderContext {
   readonly nonInterpolatedIndices: number[];
 }
 
-export function renderShowToUniverse(t: number, frame: number, project: Project):
-  DmxUniverse {
+export function renderShowToUniverse(
+  t: number,
+  frame: number,
+  project: Project,
+): DmxUniverse {
   t += project.timingOffsetMs;
 
   const universe = new Array(512).fill(0);
@@ -65,19 +80,18 @@ export function renderShowToUniverse(t: number, frame: number, project: Project)
 
   if (show) {
     if (show.audioTrack?.audioFileId == null) {
-
     }
     let beatMetadata: BeatMetadata | undefined;
     if (show.audioTrack?.audioFileId != null) {
-      beatMetadata = project
-        .assets
-        ?.audioFiles[show.audioTrack?.audioFileId]
-        ?.beatMetadata;
+      beatMetadata =
+        project.assets?.audioFiles[show.audioTrack?.audioFileId]?.beatMetadata;
     }
     if (beatMetadata == null) {
-      throw new Error('Tried to render a frame for a show with an audio file without beat metadata!');
+      throw new Error(
+        "Tried to render a frame for a show with an audio file without beat metadata!",
+      );
     }
-    const context: Omit<Omit<RenderContext, 'output'>, 'outputId'> = {
+    const context: Omit<Omit<RenderContext, "output">, "outputId"> = {
       globalT: t,
       t: t,
       project: project,
@@ -92,8 +106,17 @@ export function renderShowToUniverse(t: number, frame: number, project: Project)
       }
       const output = getWritableDevice(project, track.outputId);
       if (output) {
-        const trackContext = Object.assign({}, context, { outputId: track.outputId, output });
-        renderLayersToUniverse(t, track.layers, trackContext, beatMetadata, frame);
+        const trackContext = Object.assign({}, context, {
+          outputId: track.outputId,
+          output,
+        });
+        renderLayersToUniverse(
+          t,
+          track.layers,
+          trackContext,
+          beatMetadata,
+          frame,
+        );
       }
     }
   }
@@ -119,11 +142,16 @@ export function renderSceneToUniverse(
     return universe;
   }
 
-  const colorPaletteT = Math.min(1, Number(BigInt(t) - scene.colorPaletteStartTransition) / scene.colorPaletteTransitionDurationMs);
+  const colorPaletteT = Math.min(
+    1,
+    Number(BigInt(t) - scene.colorPaletteStartTransition) /
+      scene.colorPaletteTransitionDurationMs,
+  );
   const colorPalette = interpolatePalettes(
     scene.colorPalettes[scene.lastActiveColorPalette],
     scene.colorPalettes[scene.activeColorPalette],
-    colorPaletteT);
+    colorPaletteT,
+  );
 
   const sortedTiles = scene.tileMap
     .sort((a, b) => {
@@ -138,33 +166,40 @@ export function renderSceneToUniverse(
       }
       return 0;
     })
-    .map(t => t.tile!);
+    .map((t) => t.tile!);
 
   for (const tile of sortedTiles) {
-    if (tile.oneShot && tile.transition.case === 'startFadeOutMs') {
+    if (tile.oneShot && tile.transition.case === "startFadeOutMs") {
       continue;
     }
 
-    const sinceTransition = Number(BigInt(absoluteT) - (tile.transition.case != 'absoluteStrength' ? tile.transition.value || 0n: 0n));
+    const sinceTransition = Number(
+      BigInt(absoluteT) -
+        (tile.transition.case != "absoluteStrength"
+          ? tile.transition.value || 0n
+          : 0n),
+    );
 
     let amount: number = 0;
-    if (tile.transition.case === 'startFadeInMs') {
-      const fadeInMs = tile.fadeInDuration.case === 'fadeInBeat' ?
-        (tile.fadeInDuration.value || 0) * beatMetadata.lengthMs :
-        (tile.fadeInDuration.value || 0);
+    if (tile.transition.case === "startFadeInMs") {
+      const fadeInMs =
+        tile.fadeInDuration.case === "fadeInBeat"
+          ? (tile.fadeInDuration.value || 0) * beatMetadata.lengthMs
+          : tile.fadeInDuration.value || 0;
 
       amount = Math.min(1, sinceTransition / fadeInMs);
-    } else if (tile.transition.case === 'startFadeOutMs') {
-      const fadeOutMs = tile.fadeOutDuration.case === 'fadeOutBeat' ?
-        (tile.fadeOutDuration.value || 0) * beatMetadata.lengthMs :
-        (tile.fadeOutDuration.value || 0);
+    } else if (tile.transition.case === "startFadeOutMs") {
+      const fadeOutMs =
+        tile.fadeOutDuration.case === "fadeOutBeat"
+          ? (tile.fadeOutDuration.value || 0) * beatMetadata.lengthMs
+          : tile.fadeOutDuration.value || 0;
 
       if (sinceTransition > fadeOutMs) {
         continue;
       }
 
       amount = Math.max(0, 1 - sinceTransition / fadeOutMs);
-    } else if (tile.transition.case === 'absoluteStrength') {
+    } else if (tile.transition.case === "absoluteStrength") {
       amount = tile.transition.value;
     }
 
@@ -172,7 +207,7 @@ export function renderSceneToUniverse(
     const after = [...universe];
 
     switch (tile.description.case) {
-      case 'effectGroup':
+      case "effectGroup":
         for (const channel of tile.description.value.channels) {
           if (channel.outputId == null) {
             continue;
@@ -180,15 +215,16 @@ export function renderSceneToUniverse(
 
           const effect = channel.effect;
           if (effect == null) {
-            throw new Error('Tried to render tile without effect!');
+            throw new Error("Tried to render tile without effect!");
           }
           const effectLength = effect.endMs - effect.startMs;
 
           const durationEffect = getTileDurationMs(tile, beatMetadata);
           let effectT: number;
           if (tile.oneShot) {
-            if (tile.duration.case === 'durationBeat') {
-              effectT = (sinceTransition * effectLength) / beatMetadata.lengthMs;
+            if (tile.duration.case === "durationBeat") {
+              effectT =
+                (sinceTransition * effectLength) / beatMetadata.lengthMs;
             } else {
               effectT = (sinceTransition * effectLength) / durationEffect;
             }
@@ -197,13 +233,14 @@ export function renderSceneToUniverse(
             if (effectT > effectLength) {
               break;
             }
-
           } else {
-            if (tile.duration.case === 'durationBeat') {
+            if (tile.duration.case === "durationBeat") {
               effectT = (beatT * effectLength) / beatMetadata.lengthMs;
             } else {
               if (tile.duration.value == null) {
-                throw new Error('Tried to render effect group tile without a duration!');
+                throw new Error(
+                  "Tried to render effect group tile without a duration!",
+                );
               }
               effectT = (absoluteT * effectLength) / tile.duration.value;
             }
@@ -211,49 +248,65 @@ export function renderSceneToUniverse(
 
           const output = getWritableDevice(project, channel.outputId);
           if (output != null) {
-            applyEffect({
-              globalT: t,
-              t: effectT,
-              outputId: channel.outputId,
-              output: output,
-              project: project,
-              colorPalette: colorPalette,
-              universe: after,
-              nonInterpolatedIndices: nonInterpolatedIndices,
-            }, beatMetadata, frame, effect);
+            applyEffect(
+              {
+                globalT: t,
+                t: effectT,
+                outputId: channel.outputId,
+                output: output,
+                project: project,
+                colorPalette: colorPalette,
+                universe: after,
+                nonInterpolatedIndices: nonInterpolatedIndices,
+              },
+              beatMetadata,
+              frame,
+              effect,
+            );
           }
         }
         break;
 
-      case 'sequence':
+      case "sequence":
         const sequence = tile.description.value;
 
-        const durationSequence = SEQUENCE_BEAT_RESOLUTION * sequence.nativeBeats;
+        const durationSequence =
+          SEQUENCE_BEAT_RESOLUTION * sequence.nativeBeats;
         let sequenceT: number;
         if (tile.oneShot) {
           const relativeT = sinceTransition * SEQUENCE_BEAT_RESOLUTION;
-          if (tile.duration.case === 'durationBeat') {
+          if (tile.duration.case === "durationBeat") {
             sequenceT = relativeT / beatMetadata.lengthMs;
           } else {
             if (tile.duration.value == null) {
-              throw new Error('Tried to render sequence tile without a duration!');
+              throw new Error(
+                "Tried to render sequence tile without a duration!",
+              );
             }
-            sequenceT = (relativeT * sequence.nativeBeats) / tile.duration.value;
+            sequenceT =
+              (relativeT * sequence.nativeBeats) / tile.duration.value;
           }
 
           // Only play once
           if (sequenceT > durationSequence) {
             break;
           }
-
         } else {
-          if (tile.duration?.case === 'durationBeat') {
-            sequenceT = (beatT % (beatMetadata.lengthMs * sequence.nativeBeats)) * SEQUENCE_BEAT_RESOLUTION / beatMetadata.lengthMs;
+          if (tile.duration?.case === "durationBeat") {
+            sequenceT =
+              ((beatT % (beatMetadata.lengthMs * sequence.nativeBeats)) *
+                SEQUENCE_BEAT_RESOLUTION) /
+              beatMetadata.lengthMs;
           } else {
             if (tile.duration.value == null) {
-              throw new Error('Tried to render effect group tile without a duration!');
+              throw new Error(
+                "Tried to render effect group tile without a duration!",
+              );
             }
-            sequenceT = (absoluteT * SEQUENCE_BEAT_RESOLUTION * sequence.nativeBeats / tile.duration.value) % (sequence.nativeBeats * SEQUENCE_BEAT_RESOLUTION);
+            sequenceT =
+              ((absoluteT * SEQUENCE_BEAT_RESOLUTION * sequence.nativeBeats) /
+                tile.duration.value) %
+              (sequence.nativeBeats * SEQUENCE_BEAT_RESOLUTION);
           }
         }
 
@@ -264,7 +317,8 @@ export function renderSceneToUniverse(
           sequence,
           project,
           colorPalette,
-          after);
+          after,
+        );
         break;
 
       default:
@@ -272,7 +326,13 @@ export function renderSceneToUniverse(
         return universe;
     }
 
-    interpolateUniverses(universe, amount, before, after, nonInterpolatedIndices);
+    interpolateUniverses(
+      universe,
+      amount,
+      before,
+      after,
+      nonInterpolatedIndices,
+    );
   }
 
   return universe;
@@ -281,20 +341,27 @@ export function renderSceneToUniverse(
 export function renderGroupDebugToUniverse(project: Project, groupId: bigint) {
   const universe = new Array(512).fill(0);
 
-  const fixtures = project.groups[groupId.toString()].fixtures[project.activeUniverse.toString()].fixtures;
+  const fixtures =
+    project.groups[groupId.toString()].fixtures[
+      project.activeUniverse.toString()
+    ].fixtures;
   for (let index = 0; index < fixtures.length; index++) {
     const fixtureMapping = new OutputId_FixtureMapping();
-    fixtureMapping.fixtures[project.activeUniverse.toString()] = fixtures[index];
-    const output = getWritableDevice(project, new OutputId({
-      output: {
-        case: 'fixtures',
-        value: fixtureMapping,
-      }
-    }));
+    fixtureMapping.fixtures[project.activeUniverse.toString()] =
+      fixtures[index];
+    const output = getWritableDevice(
+      project,
+      new OutputId({
+        output: {
+          case: "fixtures",
+          value: fixtureMapping,
+        },
+      }),
+    );
 
     const color = hsvToColor(index / fixtures.length, 1, 1);
 
-    output?.setAmount(universe, 'dimmer', 1);
+    output?.setAmount(universe, "dimmer", 1);
     output?.setColor(universe, color.red, color.green, color.blue);
   }
 
@@ -313,7 +380,7 @@ function renderUniverseSequence(
   if (universeSequence) {
     const nonInterpolatedIndices = applyDefaults(project, [...universe]);
 
-    const context: Omit<Omit<RenderContext, 'output'>, 'outputId'> = {
+    const context: Omit<Omit<RenderContext, "output">, "outputId"> = {
       globalT: globalT,
       t: t,
       project: project,
@@ -328,7 +395,10 @@ function renderUniverseSequence(
       }
       const output = getWritableDevice(project, track.outputId);
       if (output != null) {
-        const trackContext = Object.assign({}, context, { outputId: track.outputId, output });
+        const trackContext = Object.assign({}, context, {
+          outputId: track.outputId,
+          output,
+        });
         renderLayersToUniverse(
           t,
           track.layers,
@@ -337,7 +407,8 @@ function renderUniverseSequence(
             lengthMs: SEQUENCE_BEAT_RESOLUTION,
             offsetMs: 0n,
           }),
-          frame);
+          frame,
+        );
       }
     }
   }
@@ -362,7 +433,8 @@ function renderLayersToUniverse(
 function applyDefaults(project: Project, universe: DmxUniverse): number[] {
   const nonInterpolatedIndices: number[] = [];
   for (const fixture of Object.values(getActiveUniverse(project).fixtures)) {
-    const fixtureDefinition = project.fixtureDefinitions[fixture.fixtureDefinitionId];
+    const fixtureDefinition =
+      project.fixtureDefinitions[fixture.fixtureDefinitionId];
     // Can happen if fixture has not yet set a definition.
     if (!fixtureDefinition) {
       continue;
@@ -377,11 +449,11 @@ function applyDefaults(project: Project, universe: DmxUniverse): number[] {
     for (const channel of Object.entries(fixtureMode.channels)) {
       const index = parseInt(channel[0]) - 1 + fixture.channelOffset;
       let value = channel[1].defaultValue;
-      if (channel[1].mapping.case === 'angleMapping') {
+      if (channel[1].mapping.case === "angleMapping") {
         const mapping = channel[1].mapping.value;
         value += fixture.channelOffsets[channel[1].type] || 0;
         value = mapDegrees(value, mapping.minDegrees, mapping.maxDegrees);
-      } else if (channel[1].mapping.case === 'colorWheelMapping') {
+      } else if (channel[1].mapping.case === "colorWheelMapping") {
         nonInterpolatedIndices.push(index);
       }
       universe[index] = value;
@@ -390,43 +462,82 @@ function applyDefaults(project: Project, universe: DmxUniverse): number[] {
   return nonInterpolatedIndices;
 }
 
-function applyEffect(context: RenderContext, beat: BeatMetadata, frame: number, effect: Effect): void {
-  if (effect.effect.case === 'staticEffect') {
+function applyEffect(
+  context: RenderContext,
+  beat: BeatMetadata,
+  frame: number,
+  effect: Effect,
+): void {
+  if (effect.effect.case === "staticEffect") {
     if (effect.effect.value.state == null) {
-      throw new Error('Tried to render static effect without state!');
+      throw new Error("Tried to render static effect without state!");
     }
     applyState(effect.effect.value.state, context);
-  } else if (effect.effect.case === 'strobeEffect') {
+  } else if (effect.effect.case === "strobeEffect") {
     strobeEffect(context, effect.effect.value, frame);
-  } else if (effect.effect.case === 'rampEffect') {
+  } else if (effect.effect.case === "rampEffect") {
     const ramp = effect.effect.value;
 
-    if (ramp.phase != 0 && context.outputId.output.case === 'group') {
-      applyToEachFixture(context, context.outputId.output.value, (i, total, outputId, output) => {
-        const amount = ramp.phase / total;
-        const effectT = calculateEffectT(context, beat, effect, ramp, amount * i);
-        rampEffect(Object.assign({}, context, { output, outputId }), ramp, effectT);
-      });
+    if (ramp.phase != 0 && context.outputId.output.case === "group") {
+      applyToEachFixture(
+        context,
+        context.outputId.output.value,
+        (i, total, outputId, output) => {
+          const amount = ramp.phase / total;
+          const effectT = calculateEffectT(
+            context,
+            beat,
+            effect,
+            ramp,
+            amount * i,
+          );
+          rampEffect(
+            Object.assign({}, context, { output, outputId }),
+            ramp,
+            effectT,
+          );
+        },
+      );
     } else {
       const effectT = calculateEffectT(context, beat, effect, ramp, 0);
       rampEffect(context, ramp, effectT);
     }
-  } else if (effect.effect.case === 'randomEffect') {
-    if (effect.effect.value.treatFixturesIndividually && context.outputId.output.case === 'group') {
+  } else if (effect.effect.case === "randomEffect") {
+    if (
+      effect.effect.value.treatFixturesIndividually &&
+      context.outputId.output.case === "group"
+    ) {
       const e = effect.effect.value;
-      applyToEachFixture(context, context.outputId.output.value, (i, _, outputId, output) => {
-        randomEffect(Object.assign({}, context, { output, outputId }), e, frame, i);
-      })
+      applyToEachFixture(
+        context,
+        context.outputId.output.value,
+        (i, _, outputId, output) => {
+          randomEffect(
+            Object.assign({}, context, { output, outputId }),
+            e,
+            frame,
+            i,
+          );
+        },
+      );
     } else {
       randomEffect(context, effect.effect.value, frame);
     }
   }
 }
 
-function calculateEffectT(context: RenderContext, beat: BeatMetadata, effect: Effect, ramp: Effect_RampEffect, phaseOffset: number) {
+function calculateEffectT(
+  context: RenderContext,
+  beat: BeatMetadata,
+  effect: Effect,
+  ramp: Effect_RampEffect,
+  phaseOffset: number,
+) {
   // Calculate beat
-  const virtualBeat = (context.t - Number(beat.offsetMs)) *
-    (ramp.timingMultiplier || 1) * (ramp.mirrored ? 2 : 1) +
+  const virtualBeat =
+    (context.t - Number(beat.offsetMs)) *
+      (ramp.timingMultiplier || 1) *
+      (ramp.mirrored ? 2 : 1) +
     phaseOffset * Number(beat.lengthMs);
   const beatIndex = Math.floor(virtualBeat / beat.lengthMs);
   const beatT = ((virtualBeat % beat.lengthMs) / beat.lengthMs) % 1;
@@ -436,11 +547,11 @@ function calculateEffectT(context: RenderContext, beat: BeatMetadata, effect: Ef
   switch (ramp.timingMode) {
     case EffectTiming.ONE_SHOT:
       const relativeT =
-        (context.t - effect.startMs) /
-        (effect.endMs - effect.startMs) *
-        (ramp.timingMultiplier || 1) * (ramp.mirrored ? 2 : 1) +
+        ((context.t - effect.startMs) / (effect.endMs - effect.startMs)) *
+          (ramp.timingMultiplier || 1) *
+          (ramp.mirrored ? 2 : 1) +
         phaseOffset;
-      let effectT = (relativeT) % 1;
+      let effectT = relativeT % 1;
       if (ramp.mirrored && Math.floor(relativeT) % 2) {
         return 1 - effectT;
       } else {
@@ -457,22 +568,31 @@ function calculateEffectT(context: RenderContext, beat: BeatMetadata, effect: Ef
         return 0;
       }
     default:
-      throw Error('Unknown effect timing!');
+      throw Error("Unknown effect timing!");
   }
 }
 
-function applyToEachFixture(context: RenderContext, groupId: bigint, action: (i: number, total: number, outputId: OutputId, device: WritableDevice) => void) {
+function applyToEachFixture(
+  context: RenderContext,
+  groupId: bigint,
+  action: (
+    i: number,
+    total: number,
+    outputId: OutputId,
+    device: WritableDevice,
+  ) => void,
+) {
   const fixtures = getAllFixtures(context.project, groupId);
   for (let i = 0; i < fixtures.length; ++i) {
     const fixtureMapping: { [key: string]: bigint } = {};
     fixtureMapping[context.project.activeUniverse.toString()] = fixtures[i];
     const outputId = new OutputId({
       output: {
-        case: 'fixtures',
+        case: "fixtures",
         value: {
           fixtures: fixtureMapping,
-        }
-      }
+        },
+      },
     });
 
     const device = getWritableDevice(context.project, outputId);

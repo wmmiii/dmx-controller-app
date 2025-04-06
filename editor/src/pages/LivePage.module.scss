@@ -1,4 +1,4 @@
-@import '../vars';
+@import "../vars";
 
 .wrapper {
   @include fill;
@@ -92,12 +92,12 @@
     padding: spacing(1) spacing(2);
     width: 100%;
 
-    >label {
+    > label {
       flex-shrink: 0;
     }
 
-    >input,
-    >div {
+    > input,
+    > div {
       flex: 1;
       min-width: 0;
     }
@@ -135,7 +135,7 @@
   flex-direction: row;
   padding: spacing(2) spacing(1) 0;
 
-  &>* {
+  & > * {
     flex: 1;
   }
 }

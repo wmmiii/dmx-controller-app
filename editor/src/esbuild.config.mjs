@@ -1,4 +1,4 @@
-import {ScssModulesPlugin} from "esbuild-scss-modules-plugin";
+import { ScssModulesPlugin } from "esbuild-scss-modules-plugin";
 
 export default {
   plugins: [
@@ -6,4 +6,4 @@ export default {
       inject: true,
     }),
   ],
-}
+};

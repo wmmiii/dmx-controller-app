@@ -1,28 +1,55 @@
-import { JSX, createRef, useContext, useEffect, useMemo, useState } from 'react';
-import IconBxCopyAlt from '../icons/IconBxCopy';
-import IconBxDownload from '../icons/IconBxDownload';
-import IconBxUpload from '../icons/IconBxUpload';
-import IconBxX from '../icons/IconBxX';
-import RangeInput from '../components/RangeInput';
-import styles from './PatchPage.module.scss';
-import { Button, IconButton } from '../components/Button';
-import { FixtureDefinition, FixtureDefinition_Channel, FixtureDefinition_Channel_AmountMapping, FixtureDefinition_Channel_AngleMapping, FixtureDefinition_Channel_ColorWheelMapping, FixtureDefinition_Channel_ColorWheelMapping_ColorWheelColor, FixtureDefinition_Mode, PhysicalFixture, PhysicalFixtureGroup } from '@dmx-controller/proto/fixture_pb';
-import { HorizontalSplitPane } from '../components/SplitPane';
-import { Modal } from '../components/Modal';
-import { NumberInput, TextInput } from '../components/Input';
-import { ProjectContext } from '../contexts/ProjectContext';
-import { SerialContext } from '../contexts/SerialContext';
-import { SerializedUniverse, Universe } from '@dmx-controller/proto/universe_pb';
-import { downloadBlob, escapeForFilesystem } from '../util/fileUtils';
-import { getActiveUniverse } from '../util/projectUtils';
-import { randomUint64 } from '../util/numberUtils';
-import { EditGroupDialog } from '../components/EditGroupDialog';
-import { extractGdtf } from '../util/gdtf';
-import { Warning } from '../components/Warning';
-import { deleteFixture, deleteFixtureGroup } from '../engine/fixture';
-import { AMOUNT_CHANNELS, ANGLE_CHANNELS, ChannelTypes, COLOR_CHANNELS, isAmountChannel, isAngleChannel } from '../engine/channel';
-import { BiGridVertical, BiPlus, BiX } from 'react-icons/bi';
-import { ColorSwatch } from '../components/ColorSwatch';
+import {
+  JSX,
+  createRef,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import IconBxCopyAlt from "../icons/IconBxCopy";
+import IconBxDownload from "../icons/IconBxDownload";
+import IconBxUpload from "../icons/IconBxUpload";
+import IconBxX from "../icons/IconBxX";
+import RangeInput from "../components/RangeInput";
+import styles from "./PatchPage.module.scss";
+import { Button, IconButton } from "../components/Button";
+import {
+  FixtureDefinition,
+  FixtureDefinition_Channel,
+  FixtureDefinition_Channel_AmountMapping,
+  FixtureDefinition_Channel_AngleMapping,
+  FixtureDefinition_Channel_ColorWheelMapping,
+  FixtureDefinition_Channel_ColorWheelMapping_ColorWheelColor,
+  FixtureDefinition_Mode,
+  PhysicalFixture,
+  PhysicalFixtureGroup,
+} from "@dmx-controller/proto/fixture_pb";
+import { HorizontalSplitPane } from "../components/SplitPane";
+import { Modal } from "../components/Modal";
+import { NumberInput, TextInput } from "../components/Input";
+import { ProjectContext } from "../contexts/ProjectContext";
+import { SerialContext } from "../contexts/SerialContext";
+import {
+  SerializedUniverse,
+  Universe,
+} from "@dmx-controller/proto/universe_pb";
+import { downloadBlob, escapeForFilesystem } from "../util/fileUtils";
+import { getActiveUniverse } from "../util/projectUtils";
+import { randomUint64 } from "../util/numberUtils";
+import { EditGroupDialog } from "../components/EditGroupDialog";
+import { extractGdtf } from "../util/gdtf";
+import { Warning } from "../components/Warning";
+import { deleteFixture, deleteFixtureGroup } from "../engine/fixture";
+import {
+  AMOUNT_CHANNELS,
+  ANGLE_CHANNELS,
+  ChannelTypes,
+  COLOR_CHANNELS,
+  isAmountChannel,
+  isAngleChannel,
+} from "../engine/channel";
+import { BiGridVertical, BiPlus, BiX } from "react-icons/bi";
+import { ColorSwatch } from "../components/ColorSwatch";
 
 export default function PatchPage(): JSX.Element {
   const [draggingFixture, setDraggingFixture] = useState<bigint | null>(null);
@@ -32,12 +59,18 @@ export default function PatchPage(): JSX.Element {
       <HorizontalSplitPane
         className={styles.splitPane}
         defaultAmount={0.65}
-        left={<FixtureList
-          draggingFixture={draggingFixture}
-          setDraggingFixture={setDraggingFixture} />}
-        right={<FixtureDefinitionList
-          draggingFixture={draggingFixture}
-          setDraggingFixture={setDraggingFixture} />}
+        left={
+          <FixtureList
+            draggingFixture={draggingFixture}
+            setDraggingFixture={setDraggingFixture}
+          />
+        }
+        right={
+          <FixtureDefinitionList
+            draggingFixture={draggingFixture}
+            setDraggingFixture={setDraggingFixture}
+          />
+        }
       />
     </div>
   );
@@ -48,19 +81,25 @@ interface FixtureListProps {
   setDraggingFixture: (id: bigint | null) => void;
 }
 
-function FixtureList({ draggingFixture, setDraggingFixture }: FixtureListProps): JSX.Element | null {
+function FixtureList({
+  draggingFixture,
+  setDraggingFixture,
+}: FixtureListProps): JSX.Element | null {
   const { project, save, update } = useContext(ProjectContext);
-  const [selectedFixtureId, setSelectedFixtureId] =
-    useState<bigint | null>(null);
+  const [selectedFixtureId, setSelectedFixtureId] = useState<bigint | null>(
+    null,
+  );
   const [selectedGroupId, setSelectedGroupId] = useState<bigint | null>(null);
   const uploadButtonRef = createRef<HTMLInputElement>();
 
   const selectedFixture = useMemo(
     () => getActiveUniverse(project)?.fixtures[String(selectedFixtureId)],
-    [project, selectedFixtureId]);
+    [project, selectedFixtureId],
+  );
   const selectedGroup = useMemo(
     () => project?.groups[String(selectedGroupId)],
-    [project, selectedGroupId]);
+    [project, selectedGroupId],
+  );
 
   useEffect(() => {
     if (uploadButtonRef.current) {
@@ -70,22 +109,25 @@ function FixtureList({ draggingFixture, setDraggingFixture }: FixtureListProps):
           return;
         }
         const file = button.files![0];
-        const body = new Uint8Array(await file.arrayBuffer())
+        const body = new Uint8Array(await file.arrayBuffer());
         const serialized = SerializedUniverse.fromBinary(body);
-        project.fixtureDefinitions =
-          Object.assign({}, serialized.fixtureDefinitions, project.fixtureDefinitions);
+        project.fixtureDefinitions = Object.assign(
+          {},
+          serialized.fixtureDefinitions,
+          project.fixtureDefinitions,
+        );
         if (project.universes == null) {
-          throw new Error('Project universe array was not set!');
+          throw new Error("Project universe array was not set!");
         }
         if (serialized.universe == null) {
-          throw new Error('Serialized universes was not set!');
+          throw new Error("Serialized universes was not set!");
         }
         project.universes[serialized.id.toString()] = serialized.universe;
         project.activeUniverse = serialized.id;
         save(`Upload patch ${serialized.universe.name}.`);
       };
-      button.addEventListener('change', handleUpload);
-      return () => button.removeEventListener('change', handleUpload);
+      button.addEventListener("change", handleUpload);
+      return () => button.removeEventListener("change", handleUpload);
     }
     return undefined;
   }, [uploadButtonRef.current, project, save]);
@@ -146,14 +188,13 @@ function FixtureList({ draggingFixture, setDraggingFixture }: FixtureListProps):
         onChange={(e) => {
           project.activeUniverse = BigInt(e.target.value);
           save(`Change active patch to ${getActiveUniverse(project).name}.`);
-        }}>
-        {
-          Object.entries(project.universes).map(([i, u]) =>
-            <option key={i} value={i.toString()}>
-              {u.name}
-            </option>
-          )
-        }
+        }}
+      >
+        {Object.entries(project.universes).map(([i, u]) => (
+          <option key={i} value={i.toString()}>
+            {u.name}
+          </option>
+        ))}
       </select>
       <TextInput
         value={getActiveUniverse(project).name}
@@ -167,11 +208,10 @@ function FixtureList({ draggingFixture, setDraggingFixture }: FixtureListProps):
         onClick={() => {
           const fixtures: { [id: string]: FixtureDefinition } = {};
           const universe = getActiveUniverse(project);
-          Object.values(universe.fixtures)
-            .map(f => {
-              const id = f.fixtureDefinitionId;
-              fixtures[id] = project.fixtureDefinitions[id];
-            });
+          Object.values(universe.fixtures).map((f) => {
+            const id = f.fixtureDefinitionId;
+            fixtures[id] = project.fixtureDefinitions[id];
+          });
           const serialized = new SerializedUniverse({
             id: project.activeUniverse,
             universe: universe,
@@ -179,27 +219,34 @@ function FixtureList({ draggingFixture, setDraggingFixture }: FixtureListProps):
           });
 
           const blob = new Blob([serialized.toBinary()], {
-            type: 'application/protobuf',
+            type: "application/protobuf",
           });
 
-          downloadBlob(blob, escapeForFilesystem(universe.name) + '.patch.dmxapp');
-        }}>
+          downloadBlob(
+            blob,
+            escapeForFilesystem(universe.name) + ".patch.dmxapp",
+          );
+        }}
+      >
         <IconBxDownload />
       </IconButton>
       <IconButton
         title="Upload patch"
-        onClick={() => uploadButtonRef.current?.click()}>
+        onClick={() => uploadButtonRef.current?.click()}
+      >
         <IconBxUpload />
       </IconButton>
       <input ref={uploadButtonRef} type="file" hidden></input>
-      <Button onClick={() => {
-        const id = randomUint64();
-        project.universes[id.toString()] = new Universe({
-          name: 'New Patch'
-        });
-        project.activeUniverse = id;
-        save('Create a new patch.');
-      }}>
+      <Button
+        onClick={() => {
+          const id = randomUint64();
+          project.universes[id.toString()] = new Universe({
+            name: "New Patch",
+          });
+          project.activeUniverse = id;
+          save("Create a new patch.");
+        }}
+      >
         Create new patch
       </Button>
       <div>
@@ -213,146 +260,144 @@ function FixtureList({ draggingFixture, setDraggingFixture }: FixtureListProps):
               project.timingOffsetMs = v;
               save(`Update project timing offset to ${v}ms.`);
             }
-          }} />
+          }}
+        />
       </div>
       <h2>⧇ Fixtures</h2>
       <div className={styles.universeGrid}>
-        {
-          channels
-            .map((ciArray, i) => {
-              const classes = [styles.channel];
+        {channels.map((ciArray, i) => {
+          const classes = [styles.channel];
 
-              let channelDescriptions: JSX.Element;
+          let channelDescriptions: JSX.Element;
 
-              if (ciArray.length > 1) {
-                classes.push(styles.warning);
-                channelDescriptions = (
-                  <div className={styles.collisionWarning}>
-                    Collision:
-                    {
-                      ciArray.map((ci, i) => (
-                        <div key={i}>{ci.fixtureName}</div>
-                      ))
-                    }
-                  </div>
-                );
-              } else {
-                channelDescriptions = (
-                  <>
-                    {
-                      ciArray.map((ci, i) => (
-                        <div
-                          key={i}
-                          className={styles.channelDescription}
-                          title={`${ci.fixtureName}: ${ci.type || 'unset'}`}>
-                          <div className={styles.fixtureName}>
-                            {ci.fixtureName}:
-                          </div>
-                          <div className={styles.channelType}>
-                            {ci.type || 'unset'}
-                          </div>
-                        </div>
-                      ))
-                    }
-                  </>
-                );
-              }
-
-              const fixtureStartCi = ciArray.find((ci) => ci.id);
-              if (fixtureStartCi) {
-                classes.push(styles.startChannel);
-                return (
+          if (ciArray.length > 1) {
+            classes.push(styles.warning);
+            channelDescriptions = (
+              <div className={styles.collisionWarning}>
+                Collision:
+                {ciArray.map((ci, i) => (
+                  <div key={i}>{ci.fixtureName}</div>
+                ))}
+              </div>
+            );
+          } else {
+            channelDescriptions = (
+              <>
+                {ciArray.map((ci, i) => (
                   <div
                     key={i}
-                    className={classes.join(' ')}
-                    onClick={() => {
-                      setSelectedFixtureId(BigInt(fixtureStartCi.id!));
-                    }}
-                    draggable={true}
-                    onDragStart={() => setDraggingFixture(BigInt(fixtureStartCi.id!))}>
-                    <div className={styles.channelNumber}>
-                      {i + 1}
+                    className={styles.channelDescription}
+                    title={`${ci.fixtureName}: ${ci.type || "unset"}`}
+                  >
+                    <div className={styles.fixtureName}>{ci.fixtureName}:</div>
+                    <div className={styles.channelType}>
+                      {ci.type || "unset"}
                     </div>
-                    <div className={styles.fixtureTitle}>
-                      {fixtureStartCi.fixtureName}
-                    </div>
-                    {channelDescriptions}
                   </div>
-                );
-              } else {
-                const fixture = getActiveUniverse(project).fixtures[String(draggingFixture)];
-                return (
-                  <div key={i} className={classes.join(' ')}
-                    onDragOver={() => {
-                      if (draggingFixture) {
-                        fixture.channelOffset = i;
-                        update();
-                      }
-                    }}
-                    onDragEnd={() => {
-                      if (draggingFixture) {
-                        save(`Change fixture ${fixture.name} start channel to ${fixture.channelOffset + 1}.`);
-                        setDraggingFixture(null);
-                      }
-                    }}>
-                    <div className={styles.channelNumber}>
-                      {i + 1}
-                    </div>
-                    {channelDescriptions}
-                  </div>
-                );
-              }
-            })
-        }
+                ))}
+              </>
+            );
+          }
+
+          const fixtureStartCi = ciArray.find((ci) => ci.id);
+          if (fixtureStartCi) {
+            classes.push(styles.startChannel);
+            return (
+              <div
+                key={i}
+                className={classes.join(" ")}
+                onClick={() => {
+                  setSelectedFixtureId(BigInt(fixtureStartCi.id!));
+                }}
+                draggable={true}
+                onDragStart={() =>
+                  setDraggingFixture(BigInt(fixtureStartCi.id!))
+                }
+              >
+                <div className={styles.channelNumber}>{i + 1}</div>
+                <div className={styles.fixtureTitle}>
+                  {fixtureStartCi.fixtureName}
+                </div>
+                {channelDescriptions}
+              </div>
+            );
+          } else {
+            const fixture =
+              getActiveUniverse(project).fixtures[String(draggingFixture)];
+            return (
+              <div
+                key={i}
+                className={classes.join(" ")}
+                onDragOver={() => {
+                  if (draggingFixture) {
+                    fixture.channelOffset = i;
+                    update();
+                  }
+                }}
+                onDragEnd={() => {
+                  if (draggingFixture) {
+                    save(
+                      `Change fixture ${fixture.name} start channel to ${fixture.channelOffset + 1}.`,
+                    );
+                    setDraggingFixture(null);
+                  }
+                }}
+              >
+                <div className={styles.channelNumber}>{i + 1}</div>
+                {channelDescriptions}
+              </div>
+            );
+          }
+        })}
       </div>
       <h2>⧉ Groups</h2>
       <ul>
-        {
-          Object.entries(project.groups)
-            .map(([id, group]) => (
-              <li key={id} onClick={() => setSelectedGroupId(BigInt(id))}>
-                {group.name}
-              </li>
-            ))
-        }
+        {Object.entries(project.groups).map(([id, group]) => (
+          <li key={id} onClick={() => setSelectedGroupId(BigInt(id))}>
+            {group.name}
+          </li>
+        ))}
       </ul>
-      <Button onClick={() => {
-        const newId = randomUint64();
-        project.groups[newId.toString()] = new PhysicalFixtureGroup({
-          name: 'New Group',
-        });
-        setSelectedGroupId(newId);
-        save('Create new group.');
-      }}>
+      <Button
+        onClick={() => {
+          const newId = randomUint64();
+          project.groups[newId.toString()] = new PhysicalFixtureGroup({
+            name: "New Group",
+          });
+          setSelectedGroupId(newId);
+          save("Create new group.");
+        }}
+      >
         + Add New Group
       </Button>
-      {
-        selectedFixture &&
+      {selectedFixture && (
         <EditFixtureDialog
           fixture={selectedFixture}
           close={() => setSelectedFixtureId(null)}
           onDelete={() => {
             if (selectedFixtureId == null) {
-              throw new Error('SelectedFixture ID was not set!');
+              throw new Error("SelectedFixture ID was not set!");
             }
-            const name = getActiveUniverse(project).fixtures[selectedFixtureId.toString()].name;
+            const name =
+              getActiveUniverse(project).fixtures[selectedFixtureId.toString()]
+                .name;
             deleteFixture(project, selectedFixtureId);
             save(`Delete fixture ${name}.`);
-          }} />
-      }
-      {
-        selectedGroup != null && selectedGroupId != null ?
-          <EditGroupDialog
-            groupId={selectedGroupId}
-            group={selectedGroup}
-            close={() => setSelectedGroupId(null)}
-            onDelete={() => {
-              const name = project.groups[selectedGroupId.toString()].name;
-              deleteFixtureGroup(project, selectedGroupId);
-              save(`Delete fixture group ${name}.`);
-            }} />
-          : null
-      }
+          }}
+        />
+      )}
+      {selectedGroup != null && selectedGroupId != null ? (
+        <EditGroupDialog
+          groupId={selectedGroupId}
+          group={selectedGroup}
+          close={() => setSelectedGroupId(null)}
+          onDelete={() => {
+            const name = project.groups[selectedGroupId.toString()].name;
+            deleteFixtureGroup(project, selectedGroupId);
+            save(`Delete fixture group ${name}.`);
+          }}
+        />
+      ) : null}
     </div>
   );
 }
@@ -372,7 +417,8 @@ function EditFixtureDialog({
 
   const definition: FixtureDefinition | undefined = useMemo(
     () => project.fixtureDefinitions[fixture.fixtureDefinitionId],
-    [project, fixture]);
+    [project, fixture],
+  );
 
   return (
     <Modal
@@ -385,11 +431,10 @@ function EditFixtureDialog({
             Done
           </Button>
         </div>
-      }>
+      }
+    >
       <div>
-        <Button
-          variant='warning'
-          onClick={onDelete}>
+        <Button variant="warning" onClick={onDelete}>
           Delete Fixture
         </Button>
       </div>
@@ -400,7 +445,8 @@ function EditFixtureDialog({
           onChange={(v) => {
             fixture.name = v;
             save(`Change fixture name to ${v}.`);
-          }} />
+          }}
+        />
       </label>
       <label>
         <span>Profile</span>
@@ -408,53 +454,61 @@ function EditFixtureDialog({
           value={fixture.fixtureDefinitionId}
           onChange={(e) => {
             fixture.fixtureDefinitionId = e.target.value;
-            fixture.fixtureMode = Object.keys(project.fixtureDefinitions[fixture.fixtureDefinitionId].modes)[0];
-            let definitionName = '<unset>';
-            if (fixture.fixtureDefinitionId !== '') {
-              definitionName = project.fixtureDefinitions[fixture.fixtureDefinitionId].name;
+            fixture.fixtureMode = Object.keys(
+              project.fixtureDefinitions[fixture.fixtureDefinitionId].modes,
+            )[0];
+            let definitionName = "<unset>";
+            if (fixture.fixtureDefinitionId !== "") {
+              definitionName =
+                project.fixtureDefinitions[fixture.fixtureDefinitionId].name;
             }
-            save(`Change fixture profile for ${fixture.name} to ${definitionName}`);
-          }}>
-          <option key="unset" value={''}>
+            save(
+              `Change fixture profile for ${fixture.name} to ${definitionName}`,
+            );
+          }}
+        >
+          <option key="unset" value={""}>
             &lt;unset&gt;
           </option>
-          {
-            Object.entries(project.fixtureDefinitions)
-              .sort((a, b) => a[1].name.localeCompare(b[1].name))
-              .map(([id, definition]) => (
-                <option key={id} value={id}>
-                  {definition.name}
-                </option>
-              ))
-          }
+          {Object.entries(project.fixtureDefinitions)
+            .sort((a, b) => a[1].name.localeCompare(b[1].name))
+            .map(([id, definition]) => (
+              <option key={id} value={id}>
+                {definition.name}
+              </option>
+            ))}
         </select>
         <select
           value={fixture.fixtureMode}
           onChange={(e) => {
             fixture.fixtureMode = e.target.value;
-            let modeName = '<unset>';
-            if (fixture.fixtureMode !== '') {
-              modeName = project.fixtureDefinitions[fixture.fixtureDefinitionId].modes[fixture.fixtureMode].name;
+            let modeName = "<unset>";
+            if (fixture.fixtureMode !== "") {
+              modeName =
+                project.fixtureDefinitions[fixture.fixtureDefinitionId].modes[
+                  fixture.fixtureMode
+                ].name;
             }
             save(`Change fixture profile for ${fixture.name} to ${modeName}`);
-          }}>
-          <option disabled={true} key="unset" value={''}>
+          }}
+        >
+          <option disabled={true} key="unset" value={""}>
             &lt;unset&gt;
           </option>
-          {
-            Object.entries(project.fixtureDefinitions[fixture.fixtureDefinitionId]?.modes || {})
-              .sort((a, b) => a[1].name.localeCompare(b[1].name))
-              .map(([id, mode]) => (
-                <option key={id} value={id}>
-                  {mode.name}
-                </option>
-              ))
-          }
+          {Object.entries(
+            project.fixtureDefinitions[fixture.fixtureDefinitionId]?.modes ||
+              {},
+          )
+            .sort((a, b) => a[1].name.localeCompare(b[1].name))
+            .map(([id, mode]) => (
+              <option key={id} value={id}>
+                {mode.name}
+              </option>
+            ))}
         </select>
-        {
-          (fixture.fixtureDefinitionId == '' || fixture.fixtureMode == '') &&
-          <Warning title='Fixture does not have profile set!' />
-        }
+        {(fixture.fixtureDefinitionId == "" || fixture.fixtureMode == "") && (
+          <Warning title="Fixture does not have profile set!" />
+        )}
       </label>
       <label>
         <span>Channel</span>
@@ -465,27 +519,28 @@ function EditFixtureDialog({
           onChange={(v) => {
             fixture.channelOffset = v - 1;
             save(`Change channel offset of ${fixture.name} to ${v}.`);
-          }} />
+          }}
+        />
       </label>
-      {
-        definition != null &&
-        ANGLE_CHANNELS
-          .filter(t => Object.values(definition.channels)
-            .some(c => c.type === t))
-          .map((t, i) => (
-            <label key={i}>
-              <span>{String(t).charAt(0).toUpperCase() + String(t).slice(1)} Offset</span>
-              <NumberInput
-                min={-360}
-                max={360}
-                value={fixture.channelOffsets[t] || 0}
-                onChange={(v) => {
-                  fixture.channelOffsets[t] = v;
-                  save(`Change ${t} offset of ${fixture.name} to ${v}.`);
-                }} />
-            </label>
-          ))
-      }
+      {definition != null &&
+        ANGLE_CHANNELS.filter((t) =>
+          Object.values(definition.channels).some((c) => c.type === t),
+        ).map((t, i) => (
+          <label key={i}>
+            <span>
+              {String(t).charAt(0).toUpperCase() + String(t).slice(1)} Offset
+            </span>
+            <NumberInput
+              min={-360}
+              max={360}
+              value={fixture.channelOffsets[t] || 0}
+              onChange={(v) => {
+                fixture.channelOffsets[t] = v;
+                save(`Change ${t} offset of ${fixture.name} to ${v}.`);
+              }}
+            />
+          </label>
+        ))}
     </Modal>
   );
 }
@@ -495,22 +550,23 @@ interface FixtureDefinitionListProps {
   setDraggingFixture: (id: bigint | null) => void;
 }
 
-function FixtureDefinitionList({ draggingFixture, setDraggingFixture }: FixtureDefinitionListProps): JSX.Element | null {
+function FixtureDefinitionList({
+  draggingFixture,
+  setDraggingFixture,
+}: FixtureDefinitionListProps): JSX.Element | null {
   const { project, save, update } = useContext(ProjectContext);
-  const [selectedDefinitionId, setSelectedDefinitionId] =
-    useState<string | null>(null);
+  const [selectedDefinitionId, setSelectedDefinitionId] = useState<
+    string | null
+  >(null);
   const [highlightDrop, setHighlightDrop] = useState(false);
 
-  const selectedDefinition = useMemo(
-    () => {
-      const id = selectedDefinitionId?.toString();
-      if (id == null) {
-        return undefined;
-      }
-      return project?.fixtureDefinitions[id];
-    },
-    [project, selectedDefinitionId]);
-
+  const selectedDefinition = useMemo(() => {
+    const id = selectedDefinitionId?.toString();
+    if (id == null) {
+      return undefined;
+    }
+    return project?.fixtureDefinitions[id];
+  }, [project, selectedDefinitionId]);
 
   const classes = [styles.pane];
   if (highlightDrop) {
@@ -518,7 +574,8 @@ function FixtureDefinitionList({ draggingFixture, setDraggingFixture }: FixtureD
   }
 
   return (
-    <div className={classes.join(' ')}
+    <div
+      className={classes.join(" ")}
       onDragOver={(e) => {
         if (e.dataTransfer.items.length > 1) {
           setHighlightDrop(true);
@@ -538,92 +595,100 @@ function FixtureDefinitionList({ draggingFixture, setDraggingFixture }: FixtureD
         (async () => {
           for (let i = 0; i < e.dataTransfer.items.length; ++i) {
             const item = e.dataTransfer.items[i];
-            if (item.kind === 'file') {
+            if (item.kind === "file") {
               const file = item.getAsFile() as File;
               const fixtureDefinition = await extractGdtf(file);
-              project.fixtureDefinitions[fixtureDefinition.globalId] = fixtureDefinition;
+              project.fixtureDefinitions[fixtureDefinition.globalId] =
+                fixtureDefinition;
               save(`Add ${fixtureDefinition.name} fixture profile.`);
             }
           }
         })();
 
         setHighlightDrop(false);
-      }}>
+      }}
+    >
       <h2>Fixture Profiles</h2>
       <ul>
-        {
-          Object.entries(project.fixtureDefinitions)
-            .sort((a, b) => a[1].name.localeCompare(b[1].name))
-            .map(([id, definition]) => (
-              <li key={id} onClick={() => setSelectedDefinitionId(id)}>
-                {definition.name}
+        {Object.entries(project.fixtureDefinitions)
+          .sort((a, b) => a[1].name.localeCompare(b[1].name))
+          .map(([id, definition]) => (
+            <li key={id} onClick={() => setSelectedDefinitionId(id)}>
+              {definition.name}
 
-                <ul className={styles.fixtureModes}>
-                  {
-                    Object.entries(definition.modes)
-                      .map((e, i) => (
-                        <li
-                          key={i}
-                          draggable={true}
-                          onDragStart={() => {
-                            const newFixtureId = randomUint64();
-                            getActiveUniverse(project).fixtures[String(newFixtureId)] =
-                              new PhysicalFixture({
-                                name: 'New Fixture',
-                                // -1 is transient.
-                                // This should always be set before saving.
-                                channelOffset: -1,
-                                fixtureDefinitionId: id,
-                                fixtureMode: e[0],
-                              });
-                            setDraggingFixture(newFixtureId);
-                            update();
-                          }}
-                          onDragEnd={() => {
-                            if (draggingFixture != null) {
-                              const fixture = getActiveUniverse(project).fixtures[String(draggingFixture)];
-                              if (fixture.channelOffset !== -1) {
-                                save(`Add new fixture at ${fixture.channelOffset}`);
-                              } else {
-                                setDraggingFixture(null);
-                                deleteFixture(project, draggingFixture);
-                                update();
-                              }
-                            }
-                          }}>
-                          <BiGridVertical />
-                          {e[1].name}
-                        </li>
-                      ))
-                  }
-                </ul>
-              </li>
-            ))
-        }
+              <ul className={styles.fixtureModes}>
+                {Object.entries(definition.modes).map((e, i) => (
+                  <li
+                    key={i}
+                    draggable={true}
+                    onDragStart={() => {
+                      const newFixtureId = randomUint64();
+                      getActiveUniverse(project).fixtures[
+                        String(newFixtureId)
+                      ] = new PhysicalFixture({
+                        name: "New Fixture",
+                        // -1 is transient.
+                        // This should always be set before saving.
+                        channelOffset: -1,
+                        fixtureDefinitionId: id,
+                        fixtureMode: e[0],
+                      });
+                      setDraggingFixture(newFixtureId);
+                      update();
+                    }}
+                    onDragEnd={() => {
+                      if (draggingFixture != null) {
+                        const fixture =
+                          getActiveUniverse(project).fixtures[
+                            String(draggingFixture)
+                          ];
+                        if (fixture.channelOffset !== -1) {
+                          save(`Add new fixture at ${fixture.channelOffset}`);
+                        } else {
+                          setDraggingFixture(null);
+                          deleteFixture(project, draggingFixture);
+                          update();
+                        }
+                      }
+                    }}
+                  >
+                    <BiGridVertical />
+                    {e[1].name}
+                  </li>
+                ))}
+              </ul>
+            </li>
+          ))}
       </ul>
-      <Button onClick={() => {
-        const newId = crypto.randomUUID();
-        const newDefinition = new FixtureDefinition({
-          name: 'New Fixture Profile',
-        });
-        newDefinition.modes[crypto.randomUUID()] = new FixtureDefinition_Mode({
-          name: 'Default',
-        });
-        project.fixtureDefinitions[newId.toString()] = newDefinition;
-        setSelectedDefinitionId(newId);
-        save('Create new fixture profile.');
-      }}>
+      <Button
+        onClick={() => {
+          const newId = crypto.randomUUID();
+          const newDefinition = new FixtureDefinition({
+            name: "New Fixture Profile",
+          });
+          newDefinition.modes[crypto.randomUUID()] = new FixtureDefinition_Mode(
+            {
+              name: "Default",
+            },
+          );
+          project.fixtureDefinitions[newId.toString()] = newDefinition;
+          setSelectedDefinitionId(newId);
+          save("Create new fixture profile.");
+        }}
+      >
         + Add New Fixture Profile
       </Button>
       <p className={styles.hint}>
         <strong>Hint:</strong> You can drag and drop .gdtf fixture profile files
         downloaded from&nbsp;
-        <a href="https://gdtf-share.com/share.php" target="_blank">GDTF Share</a>
+        <a href="https://gdtf-share.com/share.php" target="_blank">
+          GDTF Share
+        </a>
         &nbsp;onto this pane to quickly import profiles.
       </p>
-      {
-        selectedDefinition &&
-        <EditDefinitionDialog definition={selectedDefinition}
+      {selectedDefinition && (
+        <EditDefinitionDialog
+          definition={selectedDefinition}
           close={() => setSelectedDefinitionId(null)}
           copy={() => {
             if (selectedDefinition == null) {
@@ -644,8 +709,9 @@ function FixtureDefinitionList({ draggingFixture, setDraggingFixture }: FixtureD
             const name = project.fixtureDefinitions[id].name;
             delete project.fixtureDefinitions[id];
             save(`Delete fixture profile ${name}.`);
-          }} />
-      }
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -665,10 +731,13 @@ function EditDefinitionDialog({
 }: EditDefinitionDialogProps): JSX.Element {
   const { save } = useContext(ProjectContext);
   const { setRenderUniverse, clearRenderUniverse } = useContext(SerialContext);
-  const [modeId, setModeId] = useState<string>(Object.keys(definition.modes)[0]);
+  const [modeId, setModeId] = useState<string>(
+    Object.keys(definition.modes)[0],
+  );
   const [testIndex, setTestIndex] = useState(0);
   const [testValues, setTestValues] = useState([] as number[]);
-  const [wheel, setWheel] = useState<FixtureDefinition_Channel_ColorWheelMapping | null>(null);
+  const [wheel, setWheel] =
+    useState<FixtureDefinition_Channel_ColorWheelMapping | null>(null);
 
   useEffect(() => {
     const testValues: number[] = [];
@@ -689,7 +758,13 @@ function EditDefinitionDialog({
 
     setRenderUniverse(render);
     return () => clearRenderUniverse(render);
-  }, [definition, testIndex, testValues, setRenderUniverse, clearRenderUniverse]);
+  }, [
+    definition,
+    testIndex,
+    testValues,
+    setRenderUniverse,
+    clearRenderUniverse,
+  ]);
 
   const mode = definition.modes[modeId];
 
@@ -704,16 +779,16 @@ function EditDefinitionDialog({
             Done
           </Button>
         </div>
-      }>
-      <IconButton
-        title="Copy Fixture Profile"
-        onClick={copy}>
+      }
+    >
+      <IconButton title="Copy Fixture Profile" onClick={copy}>
         <IconBxCopyAlt />
       </IconButton>
       <IconButton
-        variant='warning'
+        variant="warning"
         title="Delete Fixture Profile"
-        onClick={deleteDefinition}>
+        onClick={deleteDefinition}
+      >
         <IconBxX />
       </IconButton>
       <div>
@@ -724,7 +799,8 @@ function EditDefinitionDialog({
             onChange={(v) => {
               definition.name = v;
               save(`Change fixture profile name to ${v}.`);
-            }} />
+            }}
+          />
         </label>
         <label>
           <span>Manufacturer</span>
@@ -732,31 +808,39 @@ function EditDefinitionDialog({
             value={definition.manufacturer}
             onChange={(v) => {
               definition.manufacturer = v;
-              save(`Set manufacturer of fixture profile ${definition.name} to ${v}.`);
-            }} />
+              save(
+                `Set manufacturer of fixture profile ${definition.name} to ${v}.`,
+              );
+            }}
+          />
         </label>
       </div>
 
       <label>
         <span>Mode</span>
         <select value={modeId} onChange={(e) => setModeId(e.target.value)}>
-          {
-            Object.keys(definition.modes)
-              .map((m) => <option key={m} value={m}>{definition.modes[m].name}</option>)
-          }
+          {Object.keys(definition.modes).map((m) => (
+            <option key={m} value={m}>
+              {definition.modes[m].name}
+            </option>
+          ))}
         </select>
       </label>
 
       <label>
         <span>Total channels</span>
         <NumberInput
-          min={Math.max(0, ...Object.keys(mode.channels).map(i => parseInt(i)))}
+          min={Math.max(
+            0,
+            ...Object.keys(mode.channels).map((i) => parseInt(i)),
+          )}
           max={512}
           value={mode.numChannels}
           onChange={(v) => {
             mode.numChannels = v;
             save(`Set number of channels of ${mode.name} to ${v}.`);
-          }} />
+          }}
+        />
       </label>
       <label>
         <span>Test fixture index</span>
@@ -764,7 +848,8 @@ function EditDefinitionDialog({
           min={1}
           max={512}
           value={testIndex + 1}
-          onChange={(v) => setTestIndex(v - 1)} />
+          onChange={(v) => setTestIndex(v - 1)}
+        />
       </label>
       <table>
         <thead>
@@ -780,118 +865,130 @@ function EditDefinitionDialog({
           </tr>
         </thead>
         <tbody>
-          {
-            Array.from(Array(mode.numChannels), (_, i) => {
-              const index = i + 1;
-              const channel = mode.channels[index];
-              return (
-                <tr key={index}>
-                  <td>{index}</td>
-                  <td>
-                    <select
-                      value={channel?.type || 'unset'}
-                      onChange={(e) => {
-                        if (e.target.value === 'unset') {
-                          delete mode.channels[index];
-                          save(`Delete mapping for channel ${index}.`);
-                          return;
-                        }
+          {Array.from(Array(mode.numChannels), (_, i) => {
+            const index = i + 1;
+            const channel = mode.channels[index];
+            return (
+              <tr key={index}>
+                <td>{index}</td>
+                <td>
+                  <select
+                    value={channel?.type || "unset"}
+                    onChange={(e) => {
+                      if (e.target.value === "unset") {
+                        delete mode.channels[index];
+                        save(`Delete mapping for channel ${index}.`);
+                        return;
+                      }
 
-                        const newType = e.target.value as ChannelTypes;
-                        if (mode.channels[index] == null) {
-                          mode.channels[index] = new FixtureDefinition_Channel({
-                            type: newType,
-                            mapping: {
-                              case: undefined,
-                              value: undefined,
-                            },
-                          });
-                        }
-
-                        const channel = mode.channels[index];
-
-                        if (isAngleChannel(newType) && channel.mapping.case !== 'angleMapping') {
-                          channel.mapping = {
-                            case: 'angleMapping',
-                            value: new FixtureDefinition_Channel_AngleMapping({
-                              minDegrees: 0,
-                              maxDegrees: 360,
-                            }),
-                          };
-                        } else if (isAmountChannel(newType) && channel.mapping.case !== 'amountMapping') {
-                          channel.mapping = {
-                            case: 'amountMapping',
-                            value: new FixtureDefinition_Channel_AmountMapping({
-                              minValue: 0,
-                              maxValue: 255,
-                            }),
-                          };
-                        } else if (newType === 'color_wheel' && channel.mapping.case !== 'colorWheelMapping') {
-                          channel.mapping = {
-                            case: 'colorWheelMapping',
-                            value: new FixtureDefinition_Channel_ColorWheelMapping(),
-                          };
-                        } else if (channel.mapping.case != undefined) {
-                          channel.mapping = {
+                      const newType = e.target.value as ChannelTypes;
+                      if (mode.channels[index] == null) {
+                        mode.channels[index] = new FixtureDefinition_Channel({
+                          type: newType,
+                          mapping: {
                             case: undefined,
                             value: undefined,
-                          };
-                        }
-                        channel.type = newType;
-                        save(`Change type of mapping for channel ${index}.`);
-                      }}>
-                      <option value="unset">Unset</option>
-                      <option value="other">Other</option>
-                      {
-                        [...COLOR_CHANNELS, ...AMOUNT_CHANNELS, ...ANGLE_CHANNELS]
-                          .flatMap(t => [t, `${t}-fine`])
-                          .map((t, i) => (
-                            <option key={i} value={t}>{t}</option>
-                          ))
+                          },
+                        });
                       }
-                      <option value="color_wheel">color wheel</option>
-                    </select>
-                  </td>
-                  <td>
-                    {
-                      channel != null &&
-                      <NumberInput
-                        min={0}
-                        max={255}
-                        value={channel.defaultValue}
-                        onChange={(v) => {
-                          channel.defaultValue = v;
-                          save(`Set default value of channel mapping ${index} to ${v}.`);
-                        }} />
-                    }
-                  </td>
-                  <ChannelMapping
-                    index={index}
-                    type={channel?.type}
-                    mapping={channel?.mapping}
-                    setWheel={setWheel} />
-                  <td>
+
+                      const channel = mode.channels[index];
+
+                      if (
+                        isAngleChannel(newType) &&
+                        channel.mapping.case !== "angleMapping"
+                      ) {
+                        channel.mapping = {
+                          case: "angleMapping",
+                          value: new FixtureDefinition_Channel_AngleMapping({
+                            minDegrees: 0,
+                            maxDegrees: 360,
+                          }),
+                        };
+                      } else if (
+                        isAmountChannel(newType) &&
+                        channel.mapping.case !== "amountMapping"
+                      ) {
+                        channel.mapping = {
+                          case: "amountMapping",
+                          value: new FixtureDefinition_Channel_AmountMapping({
+                            minValue: 0,
+                            maxValue: 255,
+                          }),
+                        };
+                      } else if (
+                        newType === "color_wheel" &&
+                        channel.mapping.case !== "colorWheelMapping"
+                      ) {
+                        channel.mapping = {
+                          case: "colorWheelMapping",
+                          value:
+                            new FixtureDefinition_Channel_ColorWheelMapping(),
+                        };
+                      } else if (channel.mapping.case != undefined) {
+                        channel.mapping = {
+                          case: undefined,
+                          value: undefined,
+                        };
+                      }
+                      channel.type = newType;
+                      save(`Change type of mapping for channel ${index}.`);
+                    }}
+                  >
+                    <option value="unset">Unset</option>
+                    <option value="other">Other</option>
+                    {[...COLOR_CHANNELS, ...AMOUNT_CHANNELS, ...ANGLE_CHANNELS]
+                      .flatMap((t) => [t, `${t}-fine`])
+                      .map((t, i) => (
+                        <option key={i} value={t}>
+                          {t}
+                        </option>
+                      ))}
+                    <option value="color_wheel">color wheel</option>
+                  </select>
+                </td>
+                <td>
+                  {channel != null && (
                     <NumberInput
                       min={0}
                       max={255}
-                      value={testValues[i] || 0}
+                      value={channel.defaultValue}
                       onChange={(v) => {
-                        setTestValues(testValues => {
-                          testValues[i] = v;
-                          return [...testValues];
-                        })
-                      }} />
-                  </td>
-                </tr>
-              );
-            })
-          }
+                        channel.defaultValue = v;
+                        save(
+                          `Set default value of channel mapping ${index} to ${v}.`,
+                        );
+                      }}
+                    />
+                  )}
+                </td>
+                <ChannelMapping
+                  index={index}
+                  type={channel?.type}
+                  mapping={channel?.mapping}
+                  setWheel={setWheel}
+                />
+                <td>
+                  <NumberInput
+                    min={0}
+                    max={255}
+                    value={testValues[i] || 0}
+                    onChange={(v) => {
+                      setTestValues((testValues) => {
+                        testValues[i] = v;
+                        return [...testValues];
+                      });
+                    }}
+                  />
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
-      {
-        wheel &&
+      {wheel && (
         <ColorWheelEditor wheel={wheel} onClose={() => setWheel(null)} />
-      }
+      )}
     </Modal>
   );
 }
@@ -899,21 +996,24 @@ function EditDefinitionDialog({
 interface ChannelMappingProps {
   index: number;
   type: string | undefined;
-  mapping: FixtureDefinition_Channel['mapping'] | undefined;
+  mapping: FixtureDefinition_Channel["mapping"] | undefined;
   setWheel: (wheel: FixtureDefinition_Channel_ColorWheelMapping) => void;
 }
 
-function ChannelMapping({ index, type, mapping, setWheel }: ChannelMappingProps) {
+function ChannelMapping({
+  index,
+  type,
+  mapping,
+  setWheel,
+}: ChannelMappingProps) {
   const { save } = useContext(ProjectContext);
 
   if (type == null || mapping == null) {
-    return (
-      <td colSpan={4}></td>
-    );
+    return <td colSpan={4}></td>;
   }
 
   switch (mapping.case) {
-    case 'angleMapping':
+    case "angleMapping":
       return (
         <>
           <td>
@@ -922,11 +1022,12 @@ function ChannelMapping({ index, type, mapping, setWheel }: ChannelMappingProps)
               max={720}
               value={mapping.value.minDegrees}
               onChange={(v) => {
-                if (mapping.case === 'angleMapping') {
+                if (mapping.case === "angleMapping") {
                   mapping.value.minDegrees = v;
                   save(`Set channel ${index} min degrees to ${v}.`);
                 }
-              }} />
+              }}
+            />
           </td>
           <td>
             <NumberInput
@@ -934,16 +1035,17 @@ function ChannelMapping({ index, type, mapping, setWheel }: ChannelMappingProps)
               max={720}
               value={mapping.value.maxDegrees}
               onChange={(v) => {
-                if (mapping.case === 'angleMapping') {
+                if (mapping.case === "angleMapping") {
                   mapping.value.maxDegrees = v;
                   save(`Set channel ${index} max degrees to ${v}.`);
                 }
-              }} />
+              }}
+            />
           </td>
           <td colSpan={2}></td>
         </>
       );
-    case 'amountMapping':
+    case "amountMapping":
       return (
         <>
           <td colSpan={2}></td>
@@ -952,28 +1054,30 @@ function ChannelMapping({ index, type, mapping, setWheel }: ChannelMappingProps)
               title={`Minimum value for ${type} channel.`}
               value={mapping.value.minValue}
               onChange={(value) => {
-                if (mapping.case === 'amountMapping') {
+                if (mapping.case === "amountMapping") {
                   mapping.value.minValue = value;
                   save(`Set channel ${index} min value to ${value}.`);
                 }
               }}
-              max="255" />
+              max="255"
+            />
           </td>
           <td>
             <RangeInput
               title={`Maximum value for ${type} channel.`}
               value={mapping.value.maxValue}
               onChange={(value) => {
-                if (mapping.case === 'amountMapping') {
+                if (mapping.case === "amountMapping") {
                   mapping.value.maxValue = value;
                   save(`Set channel ${index} max value to ${value}.`);
                 }
               }}
-              max="255" />
+              max="255"
+            />
           </td>
         </>
       );
-    case 'colorWheelMapping':
+    case "colorWheelMapping":
       return (
         <td colSpan={4}>
           <Button onClick={() => setWheel(mapping.value)}>
@@ -982,10 +1086,7 @@ function ChannelMapping({ index, type, mapping, setWheel }: ChannelMappingProps)
         </td>
       );
     default:
-      return (
-        <td colSpan={4}>
-        </td>
-      );
+      return <td colSpan={4}></td>;
   }
 }
 
@@ -1000,7 +1101,8 @@ function ColorWheelEditor({ wheel, onClose }: ColorWheelEditorProps) {
     <Modal
       title="Edit Color Wheel"
       onClose={onClose}
-      footer={<Button onClick={onClose}>Done</Button>}>
+      footer={<Button onClick={onClose}>Done</Button>}
+    >
       <table>
         <thead>
           <tr>
@@ -1011,61 +1113,70 @@ function ColorWheelEditor({ wheel, onClose }: ColorWheelEditorProps) {
           </tr>
         </thead>
         <tbody>
-          {
-            wheel.colors
-              .filter((c) => c.color != null)
-              .map((c, i) => (
-                <tr key={i}>
-                  <td>
-                    <NumberInput
-                      min={0}
-                      max={512}
-                      value={c.value}
-                      onChange={(value) => {
-                        c.value = value;
-                        save(`Change color wheel value to ${value}.`);
-                      }} />
-                  </td>
-                  <td>
-                    <ColorSwatch color={c.color!} updateDescription="Update color wheel color." />
-                  </td>
-                  <td>
-                    <TextInput
-                      value={c.name}
-                      onChange={(value) => {
-                        c.name = value;
-                        save(`Change name of color on wheel to ${value};`)
-                      }} />
-                  </td>
-                  <td>
-                    <IconButton
-                      title={`Delete ${c.name}`}
-                      onClick={() => {
-                        wheel.colors = wheel.colors.filter((color) => color != c);
-                        save(`Deleted color ${c.name} from wheel.`);
-                      }}>
-                      <BiX />
-                    </IconButton>
-                  </td>
-                </tr>
-              ))
-          }
+          {wheel.colors
+            .filter((c) => c.color != null)
+            .map((c, i) => (
+              <tr key={i}>
+                <td>
+                  <NumberInput
+                    min={0}
+                    max={512}
+                    value={c.value}
+                    onChange={(value) => {
+                      c.value = value;
+                      save(`Change color wheel value to ${value}.`);
+                    }}
+                  />
+                </td>
+                <td>
+                  <ColorSwatch
+                    color={c.color!}
+                    updateDescription="Update color wheel color."
+                  />
+                </td>
+                <td>
+                  <TextInput
+                    value={c.name}
+                    onChange={(value) => {
+                      c.name = value;
+                      save(`Change name of color on wheel to ${value};`);
+                    }}
+                  />
+                </td>
+                <td>
+                  <IconButton
+                    title={`Delete ${c.name}`}
+                    onClick={() => {
+                      wheel.colors = wheel.colors.filter((color) => color != c);
+                      save(`Deleted color ${c.name} from wheel.`);
+                    }}
+                  >
+                    <BiX />
+                  </IconButton>
+                </td>
+              </tr>
+            ))}
           <tr>
             <td colSpan={4}>
               <Button
                 icon={<BiPlus />}
                 onClick={() => {
-                  wheel.colors.push(new FixtureDefinition_Channel_ColorWheelMapping_ColorWheelColor({
-                    name: 'New color',
-                    value: 512,
-                    color: {
-                      red: 1,
-                      green: 1,
-                      blue: 1,
-                    },
-                  }));
-                  save('Added color to color wheel.');
-                }}>
+                  wheel.colors.push(
+                    new FixtureDefinition_Channel_ColorWheelMapping_ColorWheelColor(
+                      {
+                        name: "New color",
+                        value: 512,
+                        color: {
+                          red: 1,
+                          green: 1,
+                          blue: 1,
+                        },
+                      },
+                    ),
+                  );
+                  save("Added color to color wheel.");
+                }}
+              >
                 Add new Color
               </Button>
             </td>
@@ -1073,5 +1184,5 @@ function ColorWheelEditor({ wheel, onClose }: ColorWheelEditorProps) {
         </tbody>
       </table>
     </Modal>
-  )
+  );
 }

@@ -1,6 +1,6 @@
 import { ColorPalette } from "@dmx-controller/proto/color_pb";
 import IconBxsCog from "../icons/IconBxsCog";
-import styles from './Palette.module.scss';
+import styles from "./Palette.module.scss";
 import { Button, IconButton } from "./Button";
 import { Modal } from "./Modal";
 import { ProjectContext } from "../contexts/ProjectContext";
@@ -11,7 +11,7 @@ import { ControllerConnection } from "./ControllerConnection";
 import { ControllerMapping_ColorPaletteSelection } from "@dmx-controller/proto/controller_pb";
 
 interface PaletteSwatchProps {
-  id: string,
+  id: string;
   palette: ColorPalette;
   active: boolean;
   onClick: () => void;
@@ -19,7 +19,14 @@ interface PaletteSwatchProps {
   className?: string;
 }
 
-export function PaletteSwatch({ id, palette, active, onClick, onDelete, className }: PaletteSwatchProps) {
+export function PaletteSwatch({
+  id,
+  palette,
+  active,
+  onClick,
+  onDelete,
+  className,
+}: PaletteSwatchProps) {
   const [editPalette, setEditPalette] = useState(false);
 
   const classes = [styles.paletteSwatch];
@@ -29,90 +36,110 @@ export function PaletteSwatch({ id, palette, active, onClick, onDelete, classNam
   if (className) {
     classes.push(className);
   }
-  if (palette.primary?.color == null || palette.secondary?.color == null || palette.tertiary?.color == null) {
-    throw new Error('Palette color not set!');
+  if (
+    palette.primary?.color == null ||
+    palette.secondary?.color == null ||
+    palette.tertiary?.color == null
+  ) {
+    throw new Error("Palette color not set!");
   }
 
   return (
-    <div
-      className={classes.join(' ')} onClick={onClick}
-      title={palette.name}>
+    <div className={classes.join(" ")} onClick={onClick} title={palette.name}>
       <ColorSwatch color={palette.primary!.color} />
       <ColorSwatch color={palette.secondary!.color} />
       <ColorSwatch color={palette.tertiary!.color} />
-      <IconButton
-        title="Modify palette"
-        onClick={() => setEditPalette(true)}>
+      <IconButton title="Modify palette" onClick={() => setEditPalette(true)}>
         <IconBxsCog />
       </IconButton>
-      {
-        editPalette &&
+      {editPalette && (
         <EditPaletteDialog
           id={id}
           palette={palette}
           onDelete={onDelete}
-          onClose={() => setEditPalette(false)} />
-      }
+          onClose={() => setEditPalette(false)}
+        />
+      )}
     </div>
   );
 }
 
 interface EditPaletteDialogProps {
-  id: string,
+  id: string;
   palette: ColorPalette;
   onDelete: () => void;
   onClose: () => void;
 }
 
-function EditPaletteDialog({ id, palette, onDelete, onClose }: EditPaletteDialogProps) {
+function EditPaletteDialog({
+  id,
+  palette,
+  onDelete,
+  onClose,
+}: EditPaletteDialogProps) {
   const { save, update } = useContext(ProjectContext);
 
-  if (palette.primary?.color == null || palette.secondary?.color == null || palette.tertiary?.color == null) {
-    throw new Error('Palette color not set!');
+  if (
+    palette.primary?.color == null ||
+    palette.secondary?.color == null ||
+    palette.tertiary?.color == null
+  ) {
+    throw new Error("Palette color not set!");
   }
 
   const done = () => {
-    save(`Edit color palette ${palette.name}.`)
+    save(`Edit color palette ${palette.name}.`);
     onClose();
   };
 
-  const action = useMemo(() => new ControllerMapping_ColorPaletteSelection({ scene: 0, paletteId: id }), [id]);
+  const action = useMemo(
+    () =>
+      new ControllerMapping_ColorPaletteSelection({ scene: 0, paletteId: id }),
+    [id],
+  );
 
   return (
     <Modal
       title={`Edit ${palette.name}`}
       onClose={done}
-      bodyClass={styles.editModal}>
+      bodyClass={styles.editModal}
+    >
       <TextInput
         value={palette.name}
         onChange={(v) => {
           palette.name = v;
           update();
-        }} />
+        }}
+      />
       <ControllerConnection
         title="Color Palette"
         action={{
-          case: 'colorPaletteSelection',
+          case: "colorPaletteSelection",
           value: action,
-        }} />
+        }}
+      />
       <Button
         variant="warning"
         onClick={() => {
           onClose();
           onDelete();
-        }}>
+        }}
+      >
         <>Delete palette {palette.name}</>
       </Button>
       <div className={styles.colorSelectors}>
         <ColorSwatch
           color={palette.primary!.color}
-          updateDescription={`Update primary color for ${palette.name}`} />
+          updateDescription={`Update primary color for ${palette.name}`}
+        />
         <ColorSwatch
           color={palette.secondary!.color}
-          updateDescription={`Update secondary color for ${palette.name}`} />
+          updateDescription={`Update secondary color for ${palette.name}`}
+        />
         <ColorSwatch
           color={palette.tertiary!.color}
-          updateDescription={`Update tertiary color for ${palette.name}`} />
+          updateDescription={`Update tertiary color for ${palette.name}`}
+        />
       </div>
     </Modal>
   );

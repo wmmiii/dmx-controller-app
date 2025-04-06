@@ -1,36 +1,39 @@
-import AssetBrowserPage from './pages/AssetBrowserPage';
-import IconBxBulb from './icons/IconBxBulb';
-import IconBxDownload from './icons/IconBxDownload';
-import IconBxError from './icons/IconBxError';
-import IconBxLink from './icons/IconBxLink';
-import IconBxMenu from './icons/IconBxMenu';
-import IconBxUnlink from './icons/IconBxUnlink';
-import IconBxUpload from './icons/IconBxUpload';
-import IconBxlGithub from './icons/IconBxlGithub';
-import IconBxlWindows from './icons/IconBxlWindows';
-import IconBxsBulb from './icons/IconBxsBulb';
-import PatchPage from './pages/PatchPage';
-import ProjectPage from './pages/ProjectPage';
-import ShowPage from './pages/ShowPage';
-import styles from './Index.module.scss';
-import { Button, IconButton } from './components/Button';
-import { ControllerContext } from './contexts/ControllerContext';
-import { DialogContext } from './contexts/DialogContext';
-import { Dropdown } from './components/Dropdown';
-import { ErrorBoundary } from './components/ErrorBoundary';
-import { JSX, createRef, useContext, useEffect, useState } from 'react';
-import { LivePage } from './pages/LivePage';
-import { Modal } from './components/Modal';
-import { ProjectContext } from './contexts/ProjectContext';
-import { Routes, Route, useNavigate } from 'react-router';
-import { SerialContext } from './contexts/SerialContext';
+import AssetBrowserPage from "./pages/AssetBrowserPage";
+import IconBxBulb from "./icons/IconBxBulb";
+import IconBxDownload from "./icons/IconBxDownload";
+import IconBxError from "./icons/IconBxError";
+import IconBxLink from "./icons/IconBxLink";
+import IconBxMenu from "./icons/IconBxMenu";
+import IconBxUnlink from "./icons/IconBxUnlink";
+import IconBxUpload from "./icons/IconBxUpload";
+import IconBxlGithub from "./icons/IconBxlGithub";
+import IconBxlWindows from "./icons/IconBxlWindows";
+import IconBxsBulb from "./icons/IconBxsBulb";
+import PatchPage from "./pages/PatchPage";
+import ProjectPage from "./pages/ProjectPage";
+import ShowPage from "./pages/ShowPage";
+import styles from "./Index.module.scss";
+import { Button, IconButton } from "./components/Button";
+import { ControllerContext } from "./contexts/ControllerContext";
+import { DialogContext } from "./contexts/DialogContext";
+import { Dropdown } from "./components/Dropdown";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import { JSX, createRef, useContext, useEffect, useState } from "react";
+import { LivePage } from "./pages/LivePage";
+import { Modal } from "./components/Modal";
+import { ProjectContext } from "./contexts/ProjectContext";
+import { Routes, Route, useNavigate } from "react-router";
+import { SerialContext } from "./contexts/SerialContext";
 import { SiMidi } from "react-icons/si";
-import { UniverseVisualizer } from './components/UniverseVisualizer';
+import { UniverseVisualizer } from "./components/UniverseVisualizer";
 
 export default function Index(): JSX.Element {
-  const { port, blackout, setBlackout, connect, disconnect } = useContext(SerialContext);
-  const { controllerName, connect: connectMidi } = useContext(ControllerContext);
-  const { downloadProject, openProject, lastOperation } = useContext(ProjectContext);
+  const { port, blackout, setBlackout, connect, disconnect } =
+    useContext(SerialContext);
+  const { controllerName, connect: connectMidi } =
+    useContext(ControllerContext);
+  const { downloadProject, openProject, lastOperation } =
+    useContext(ProjectContext);
   const navigate = useNavigate();
 
   const [showMenu, setShowMenu] = useState(false);
@@ -41,14 +44,14 @@ export default function Index(): JSX.Element {
       const button = uploadButtonRef.current;
       const handleUpload = async () => {
         if (button?.files == null) {
-          throw new Error('Cannot find input button files!');
+          throw new Error("Cannot find input button files!");
         }
         const file = button.files[0];
-        const body = new Uint8Array(await file.arrayBuffer())
+        const body = new Uint8Array(await file.arrayBuffer());
         openProject(body);
       };
-      button.addEventListener('change', handleUpload);
-      return () => button.removeEventListener('change', handleUpload);
+      button.addEventListener("change", handleUpload);
+      return () => button.removeEventListener("change", handleUpload);
     }
     return undefined;
   }, [uploadButtonRef.current]);
@@ -64,78 +67,80 @@ export default function Index(): JSX.Element {
           onClick={(e) => {
             setShowMenu(!showMenu);
             e.stopPropagation();
-          }}>
+          }}
+        >
           <IconBxMenu className={styles.menuIcon} />
-          {
-            showMenu &&
-            <Dropdown
-              onClose={() => setShowMenu(false)}>
+          {showMenu && (
+            <Dropdown onClose={() => setShowMenu(false)}>
               {[
                 {
-                  title: 'Live',
-                  onSelect: () => navigate('/live'),
+                  title: "Live",
+                  onSelect: () => navigate("/live"),
                 },
                 {
-                  title: 'Show',
-                  onSelect: () => navigate('/show'),
+                  title: "Show",
+                  onSelect: () => navigate("/show"),
                 },
                 {
-                  title: 'Assets',
-                  onSelect: () => navigate('/assets'),
+                  title: "Assets",
+                  onSelect: () => navigate("/assets"),
                 },
                 {
-                  title: 'Patch',
-                  onSelect: () => navigate('/patch'),
+                  title: "Patch",
+                  onSelect: () => navigate("/patch"),
                 },
                 {
-                  title: 'Project Settings',
-                  onSelect: () => navigate('/project'),
+                  title: "Project Settings",
+                  onSelect: () => navigate("/project"),
                 },
-                { type: 'separator' },
+                { type: "separator" },
                 {
-                  title: 'Download',
+                  title: "Download",
                   icon: <IconBxDownload />,
                   onSelect: downloadProject,
                 },
                 {
-                  title: 'Upload',
+                  title: "Upload",
                   icon: <IconBxUpload />,
                   onSelect: () => uploadButtonRef.current?.click(),
                 },
-                { type: 'separator' },
+                { type: "separator" },
                 {
-                  title: 'Connect to serial',
+                  title: "Connect to serial",
                   icon: port ? <IconBxLink /> : <IconBxUnlink />,
-                  onSelect: () => port ? disconnect() : connect(),
+                  onSelect: () => (port ? disconnect() : connect()),
                 },
                 {
-                  title: 'Toggle Blackout',
+                  title: "Toggle Blackout",
                   icon: blackout ? <IconBxBulb /> : <IconBxsBulb />,
                   onSelect: () => setBlackout(!blackout),
                 },
-                { type: 'separator' },
+                { type: "separator" },
                 {
-                  title: 'GitHub Page',
+                  title: "GitHub Page",
                   icon: <IconBxlGithub />,
-                  onSelect: () => window.open('https://github.com/wmmiii/dmx-controller-app/', '_blank'),
-                }
+                  onSelect: () =>
+                    window.open(
+                      "https://github.com/wmmiii/dmx-controller-app/",
+                      "_blank",
+                    ),
+                },
               ]}
             </Dropdown>
-          }
+          )}
         </div>
         <UniverseVisualizer />
         <div className={styles.spacer}></div>
-        <div className={styles.message}>
-          {lastOperation}
-        </div>
+        <div className={styles.message}>{lastOperation}</div>
         <FpsIndicator />
         <IconButton
           title="Midi Controller"
-          variant={controllerName ? 'primary' : 'default'}
-          onClick={connectMidi}>
+          variant={controllerName ? "primary" : "default"}
+          onClick={connectMidi}
+        >
           <SiMidi />
         </IconButton>
-      </header >
+      </header>
       <main>
         <ErrorBoundary>
           <Routes>
@@ -148,7 +153,7 @@ export default function Index(): JSX.Element {
           </Routes>
         </ErrorBoundary>
       </main>
-    </div >
+    </div>
   );
 }
 
@@ -162,25 +167,25 @@ function FpsIndicator() {
 
   return (
     <div className={styles.fps}>
-      Fps: {
-        Number.isNaN(fps) ?
-          <>N/A</> :
-          fps < 30 ?
-            <span className={styles.warning}>
-              {fps}
-            </span> :
-            <>{fps}</>
-      }
+      Fps:{" "}
+      {Number.isNaN(fps) ? (
+        <>N/A</>
+      ) : fps < 30 ? (
+        <span className={styles.warning}>{fps}</span>
+      ) : (
+        <>{fps}</>
+      )}
     </div>
   );
 }
 
-const WARNING_DIALOG_KEY = 'instability-warning';
+const WARNING_DIALOG_KEY = "instability-warning";
 
 function WarningDialog() {
   const dialogContext = useContext(DialogContext);
-  const [open, setOpen] =
-    useState(!dialogContext.isDismissed(WARNING_DIALOG_KEY));
+  const [open, setOpen] = useState(
+    !dialogContext.isDismissed(WARNING_DIALOG_KEY),
+  );
 
   if (!open) {
     return null;
@@ -194,20 +199,20 @@ function WarningDialog() {
       footer={
         <div className={styles.buttonRow}>
           <Button
-            variant='warning'
+            variant="warning"
             onClick={() => {
               dialogContext.setDismissed(WARNING_DIALOG_KEY);
               setOpen(false);
-            }}>
+            }}
+          >
             Don't show this dialog again
           </Button>
-          <Button
-            variant='primary'
-            onClick={() => setOpen(false)}>
+          <Button variant="primary" onClick={() => setOpen(false)}>
             Close
           </Button>
         </div>
-      }>
+      }
+    >
       <p>
         This app attempts to provide an experimental playground for easily
         creating and playing DMX lighting performances! All the features have
@@ -219,10 +224,16 @@ function WarningDialog() {
         on the&nbsp;
         <a
           href="https://github.com/wmmiii/dmx-controller-app/issues"
-          target="_blank">
-          project's GitHub page</a>. Thanks!
+          target="_blank"
+        >
+          project's GitHub page
+        </a>
+        . Thanks!
       </p>
-      <h3><IconBxError />&nbsp;Warning</h3>
+      <h3>
+        <IconBxError />
+        &nbsp;Warning
+      </h3>
       <p>
         This web-app is currently in development and there is a&nbsp;
         <strong>significant risk of data-loss</strong>!
@@ -230,20 +241,24 @@ function WarningDialog() {
         <br />
         Use at your own risk!
       </p>
-      {
-        navigator.userAgent.toLowerCase().indexOf('win') > -1 &&
+      {navigator.userAgent.toLowerCase().indexOf("win") > -1 && (
         <>
-          <h3><IconBxlWindows /> Windows Users</h3>
+          <h3>
+            <IconBxlWindows /> Windows Users
+          </h3>
           <p>
-            You may need to install <a
+            You may need to install{" "}
+            <a
               href="https://www.silabs.com/developer-tools/usb-to-uart-bridge-vcp-drivers?tab=downloads"
-              target="_blank">
+              target="_blank"
+            >
               additional drivers
-            </a> such that serial UART devices can be recognized by your
-            operating system.
+            </a>{" "}
+            such that serial UART devices can be recognized by your operating
+            system.
           </p>
         </>
-      }
+      )}
       <p></p>
     </Modal>
   );

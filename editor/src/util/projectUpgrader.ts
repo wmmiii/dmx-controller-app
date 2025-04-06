@@ -3,10 +3,23 @@ import { idMapToArray } from "./mapUtils";
 import { Effect, FixtureState } from "@dmx-controller/proto/effect_pb";
 import { randomUint64 } from "./numberUtils";
 import { Universe } from "@dmx-controller/proto/universe_pb";
-import { OutputId, OutputId_FixtureMapping } from "@dmx-controller/proto/output_id_pb";
+import {
+  OutputId,
+  OutputId_FixtureMapping,
+} from "@dmx-controller/proto/output_id_pb";
 import { LightTrack } from "@dmx-controller/proto/light_track_pb";
-import { FixtureDefinition, FixtureDefinition_Channel_AmountMapping, FixtureDefinition_Channel_AngleMapping, FixtureDefinition_Mode, PhysicalFixtureGroup, PhysicalFixtureGroup_FixtureList } from "@dmx-controller/proto/fixture_pb";
-import { Scene_Tile_EffectGroupTile_EffectChannel, Scene_TileMap } from "@dmx-controller/proto/scene_pb";
+import {
+  FixtureDefinition,
+  FixtureDefinition_Channel_AmountMapping,
+  FixtureDefinition_Channel_AngleMapping,
+  FixtureDefinition_Mode,
+  PhysicalFixtureGroup,
+  PhysicalFixtureGroup_FixtureList,
+} from "@dmx-controller/proto/fixture_pb";
+import {
+  Scene_Tile_EffectGroupTile_EffectChannel,
+  Scene_TileMap,
+} from "@dmx-controller/proto/scene_pb";
 import { isAmountChannel, isAngleChannel } from "../engine/channel";
 import { ControllerMapping } from "@dmx-controller/proto/controller_pb";
 
@@ -33,10 +46,9 @@ function upgradeIndices(project: Project): void {
         if (project.assets != null) {
           project.assets.audioFiles[i + 1] = a;
         }
-      }
-      );
+      });
 
-      project.shows.forEach(s => {
+      project.shows.forEach((s) => {
         if (s.audioTrack != null) {
           s.audioTrack.audioFileId += 1;
         }
@@ -50,14 +62,14 @@ function upgradeIndices(project: Project): void {
   if (shiftMapping(project.physicalFixtures)) {
     for (const s of project.shows) {
       for (const t of s.lightTracks) {
-        if (t.output.case === 'physicalFixtureId') {
+        if (t.output.case === "physicalFixtureId") {
           t.output.value += 1;
         }
       }
     }
 
     for (const d of project.defaultChannelValues) {
-      if (d.output.case === 'physicalFixtureId') {
+      if (d.output.case === "physicalFixtureId") {
         d.output.value += 1;
       }
     }
@@ -74,14 +86,14 @@ function upgradeIndices(project: Project): void {
   if (shiftMapping(project.physicalFixtureGroups)) {
     for (const s of project.shows) {
       for (const t of s.lightTracks) {
-        if (t.output.case === 'physicalFixtureGroupId') {
+        if (t.output.case === "physicalFixtureGroupId") {
           t.output.value += 1;
         }
       }
     }
 
     for (const d of project.defaultChannelValues) {
-      if (d.output.case === 'physicalFixtureGroupId') {
+      if (d.output.case === "physicalFixtureGroupId") {
         d.output.value += 1;
       }
     }
@@ -113,8 +125,7 @@ function upgradeIndices(project: Project): void {
 
 function shiftMapping(map: { [id: number]: any }): boolean {
   if (map[0] != null) {
-    idMapToArray(map)
-      .forEach(([id, d]) => map[id + 1] = d);
+    idMapToArray(map).forEach(([id, d]) => (map[id + 1] = d));
     delete map[0];
     return true;
   } else {
@@ -134,7 +145,10 @@ function upgradeLive(project: Project) {
 
 function upgradeUniverse(project: Project) {
   // Check to see if this has been applied already.
-  if (project?.universes == null || Object.keys(project.universes).length !== 0) {
+  if (
+    project?.universes == null ||
+    Object.keys(project.universes).length !== 0
+  ) {
     return;
   }
 
@@ -142,7 +156,7 @@ function upgradeUniverse(project: Project) {
 
   // Create new universe.
   const universe = new Universe({
-    name: 'Default',
+    name: "Default",
   });
 
   const fixtureMapping: { [id: number]: bigint } = {};
@@ -163,14 +177,15 @@ function upgradeUniverse(project: Project) {
     groupMapping[oldGroupId] = newGroupId;
     const oldGroup = project.physicalFixtureGroups[oldGroupId];
 
-    const fixtures: { [universe: string]: PhysicalFixtureGroup_FixtureList } = {};
+    const fixtures: { [universe: string]: PhysicalFixtureGroup_FixtureList } =
+      {};
     fixtures[universeId.toString()] = new PhysicalFixtureGroup_FixtureList({
-      fixtures: oldGroup.physicalFixtureIds.map(id => fixtureMapping[id]),
+      fixtures: oldGroup.physicalFixtureIds.map((id) => fixtureMapping[id]),
     });
     const newGroup = new PhysicalFixtureGroup({
       name: oldGroup.name,
       fixtures: fixtures,
-      groups: oldGroup.physicalFixtureGroupIds.map(id => groupMapping[id]),
+      groups: oldGroup.physicalFixtureGroupIds.map((id) => groupMapping[id]),
     });
 
     project.groups[newGroupId.toString()] = newGroup;
@@ -180,20 +195,21 @@ function upgradeUniverse(project: Project) {
   project.universes[universeId.toString()] = universe;
 
   const updateLightTrack = (track: LightTrack) => {
-    if (track.output.case === 'physicalFixtureGroupId') {
+    if (track.output.case === "physicalFixtureGroupId") {
       track.outputId = new OutputId({
         output: {
-          case: 'group',
+          case: "group",
           value: groupMapping[track.output.value],
         },
       });
-    } else if (track.output.case === 'physicalFixtureId') {
+    } else if (track.output.case === "physicalFixtureId") {
       const fixtureMap = new OutputId_FixtureMapping();
-      fixtureMap.fixtures[universeId.toString()] = fixtureMapping[track.output.value];
+      fixtureMap.fixtures[universeId.toString()] =
+        fixtureMapping[track.output.value];
 
       track.outputId = new OutputId({
         output: {
-          case: 'fixtures',
+          case: "fixtures",
           value: fixtureMap,
         },
       });
@@ -208,32 +224,31 @@ function upgradeUniverse(project: Project) {
   };
 
   // Update shows.
-  project.shows
-    .flatMap(s => s.lightTracks)
-    .forEach(updateLightTrack);
+  project.shows.flatMap((s) => s.lightTracks).forEach(updateLightTrack);
 
   // Update scenes.
   project.scenes
-    .flatMap(s => s.rows)
-    .flatMap(r => r.components)
-    .forEach(c => {
-      if (c.description.case === 'effectGroup') {
+    .flatMap((s) => s.rows)
+    .flatMap((r) => r.components)
+    .forEach((c) => {
+      if (c.description.case === "effectGroup") {
         const description = c.description.value;
 
-        if (description.output.case === 'physicalFixtureGroupId') {
+        if (description.output.case === "physicalFixtureGroupId") {
           description.outputId = new OutputId({
             output: {
-              case: 'group',
+              case: "group",
               value: groupMapping[description.output.value],
             },
           });
-        } else if (description.output.case === 'physicalFixtureId') {
+        } else if (description.output.case === "physicalFixtureId") {
           const fixtureMap = new OutputId_FixtureMapping();
-          fixtureMap.fixtures[universeId.toString()] = fixtureMapping[description.output.value];
+          fixtureMap.fixtures[universeId.toString()] =
+            fixtureMapping[description.output.value];
 
           description.outputId = new OutputId({
             output: {
-              case: 'fixtures',
+              case: "fixtures",
               value: fixtureMap,
             },
           });
@@ -242,7 +257,7 @@ function upgradeUniverse(project: Project) {
           case: undefined,
           value: undefined,
         };
-      } else if (c.description.case === 'sequence') {
+      } else if (c.description.case === "sequence") {
         c.description.value.lightTracks.forEach(updateLightTrack);
       }
     });
@@ -253,36 +268,40 @@ function upgradeUniverse(project: Project) {
 
 function upgradeLiveEffects(project: Project) {
   project.scenes
-    .flatMap(s => s.rows)
-    .flatMap(r => r.components)
-    .forEach(c => {
-      if (c.description.case === 'effectGroup') {
+    .flatMap((s) => s.rows)
+    .flatMap((r) => r.components)
+    .forEach((c) => {
+      if (c.description.case === "effectGroup") {
         const effect = c.description.value;
         if (effect.outputId != null) {
-          effect.channels = [new Scene_Tile_EffectGroupTile_EffectChannel({
-            outputId: effect.outputId,
-            effect: effect.effect,
-          })];
+          effect.channels = [
+            new Scene_Tile_EffectGroupTile_EffectChannel({
+              outputId: effect.outputId,
+              effect: effect.effect,
+            }),
+          ];
         }
-        effect.channels.forEach(c => {
+        effect.channels.forEach((c) => {
           if (!c.outputId?.output) {
             c.outputId = new OutputId({
               output: {
                 case: undefined,
                 value: undefined,
-              }
+              },
             });
           }
           if (!c.effect) {
             c.effect = new Effect();
           }
-        })
+        });
       }
     });
 }
 
 function upgradeFixtures(project: Project) {
-  for (const entry of Object.entries(project.deprecatedUint32FixtureDefinitions)) {
+  for (const entry of Object.entries(
+    project.deprecatedUint32FixtureDefinitions,
+  )) {
     const definitionId = randomUint64();
 
     const oldId = parseInt(entry[0]);
@@ -307,12 +326,12 @@ function upgradeFixtures(project: Project) {
 
 function updateFixtureDefinitionMapping(project: Project) {
   Object.values(project.fixtureDefinitions)
-    .flatMap(d => Object.values(d.channels))
-    .filter(c => c.mapping?.case == null)
-    .forEach(c => {
+    .flatMap((d) => Object.values(d.channels))
+    .filter((c) => c.mapping?.case == null)
+    .forEach((c) => {
       if (isAngleChannel(c.type)) {
         c.mapping = {
-          case: 'angleMapping',
+          case: "angleMapping",
           value: new FixtureDefinition_Channel_AngleMapping({
             minDegrees: c.deprecatedMinDegrees,
             maxDegrees: c.deprecatedMaxDegrees,
@@ -320,7 +339,7 @@ function updateFixtureDefinitionMapping(project: Project) {
         };
       } else if (isAmountChannel(c.type)) {
         c.mapping = {
-          case: 'amountMapping',
+          case: "amountMapping",
           value: new FixtureDefinition_Channel_AmountMapping({
             minValue: c.deprecatedMinValue,
             maxValue: c.deprecatedMaxValue,
@@ -332,9 +351,9 @@ function updateFixtureDefinitionMapping(project: Project) {
 
 function upgradeColorTypes(project: Project) {
   const upgradeState = (state: FixtureState) => {
-    if (state?.lightColor.case === 'rgb' || state?.lightColor.case === 'rgbw') {
+    if (state?.lightColor.case === "rgb" || state?.lightColor.case === "rgbw") {
       state.lightColor = {
-        case: 'color',
+        case: "color",
         value: state.lightColor.value,
       };
     }
@@ -367,15 +386,20 @@ function upgradeColorTypes(project: Project) {
   };
 
   project.scenes
-    .flatMap(s => s.rows)
-    .flatMap(r => r.components)
-    .flatMap(c => {
-      if (c.description.case === 'sequence') {
-        return c.description.value.lightTracks.flatMap(t => t.layers).flatMap(l => l.effects);
-      } else if (c.description.case === 'effectGroup') {
-        return c.description.value.channels.map(c => c.effect);
+    .flatMap((s) => s.rows)
+    .flatMap((r) => r.components)
+    .flatMap((c) => {
+      if (c.description.case === "sequence") {
+        return c.description.value.lightTracks
+          .flatMap((t) => t.layers)
+          .flatMap((l) => l.effects);
+      } else if (c.description.case === "effectGroup") {
+        return c.description.value.channels.map((c) => c.effect);
       }
-      throw new Error('Tried to upgrade effects in unknown component effect description: ' + c.description.case);
+      throw new Error(
+        "Tried to upgrade effects in unknown component effect description: " +
+          c.description.case,
+      );
     })
     .forEach((e) => {
       if (e != null) {
@@ -384,12 +408,12 @@ function upgradeColorTypes(project: Project) {
     });
 
   project.shows
-    .flatMap(s => s.lightTracks)
-    .flatMap(t => t.layers)
-    .flatMap(l => l.effects)
+    .flatMap((s) => s.lightTracks)
+    .flatMap((t) => t.layers)
+    .flatMap((l) => l.effects)
     .forEach(upgradeEffect);
 
-  project.scenes.forEach(s => {
+  project.scenes.forEach((s) => {
     if (!s.deprecatedColorPalettes) {
       s.deprecatedColorPalettes = [];
     }
@@ -407,11 +431,13 @@ function upgradeTileMapping(project: Project) {
         for (let x = 0; x < row.components.length; x++) {
           const component = row.components[x];
 
-          scene.tileMap.push(new Scene_TileMap({
-            tile: component,
-            x: x,
-            y: y,
-          }));
+          scene.tileMap.push(
+            new Scene_TileMap({
+              tile: component,
+              x: x,
+              y: y,
+            }),
+          );
         }
       }
     }
@@ -425,7 +451,7 @@ function upgradeTileMapping(project: Project) {
 }
 
 function upgradeFixtureDefinitions(project: Project) {
-  const idMapping = new Map<bigint, { id: string, mode: string }>();
+  const idMapping = new Map<bigint, { id: string; mode: string }>();
 
   if (Object.keys(project.deprecatedUint64FixtureDefinitions).length === 0) {
     return;
@@ -444,7 +470,7 @@ function upgradeFixtureDefinitions(project: Project) {
       manufacturer: oldDefinition.manufacturer,
     });
     project.fixtureDefinitions[newId].modes[mode] = new FixtureDefinition_Mode({
-      name: 'Default',
+      name: "Default",
       numChannels: oldDefinition.numChannels,
       channels: oldDefinition.channels,
     });
@@ -458,7 +484,9 @@ function upgradeFixtureDefinitions(project: Project) {
       const fixture = universe.fixtures[fixtureId];
       const newId = idMapping.get(fixture.deprecatedUint64FixtureDefinitionId);
       if (!newId) {
-        throw new Error(`Could not find ID mapping for ${fixture.deprecatedUint64FixtureDefinitionId}!`)
+        throw new Error(
+          `Could not find ID mapping for ${fixture.deprecatedUint64FixtureDefinitionId}!`,
+        );
       }
       fixture.fixtureDefinitionId = newId.id;
       fixture.fixtureMode = newId.mode;
@@ -470,26 +498,35 @@ function upgradeFixtureDefinitions(project: Project) {
 
 function upgradeEffectTiming(project: Project) {
   const upgradeEffect = (effect: Effect) => {
-    if (effect.effect.case === 'rampEffect') {
+    if (effect.effect.case === "rampEffect") {
       const ramp = effect.effect.value;
-      if (ramp.timingMode == 0 && ramp.timingMultiplier == 0 && !ramp.mirrored) {
+      if (
+        ramp.timingMode == 0 &&
+        ramp.timingMultiplier == 0 &&
+        !ramp.mirrored
+      ) {
         ramp.timingMode = effect.timingMode;
         ramp.timingMultiplier = effect.timingMultiplier;
         ramp.mirrored = effect.mirrored;
       }
     }
-  }
+  };
 
   project.scenes
-    .flatMap(s => s.tileMap)
-    .flatMap(t => t.tile!)
-    .flatMap(t => {
-      if (t.description.case === 'sequence') {
-        return t.description.value.lightTracks.flatMap(t => t.layers).flatMap(l => l.effects);
-      } else if (t.description.case === 'effectGroup') {
-        return t.description.value.channels.map(c => c.effect);
+    .flatMap((s) => s.tileMap)
+    .flatMap((t) => t.tile!)
+    .flatMap((t) => {
+      if (t.description.case === "sequence") {
+        return t.description.value.lightTracks
+          .flatMap((t) => t.layers)
+          .flatMap((l) => l.effects);
+      } else if (t.description.case === "effectGroup") {
+        return t.description.value.channels.map((c) => c.effect);
       }
-      throw new Error('Tried to upgrade effects in unknown component effect description: ' + t.description.case);
+      throw new Error(
+        "Tried to upgrade effects in unknown component effect description: " +
+          t.description.case,
+      );
     })
     .forEach((e) => {
       if (e != null) {
@@ -498,12 +535,12 @@ function upgradeEffectTiming(project: Project) {
     });
 
   project.shows
-    .flatMap(s => s.lightTracks)
-    .flatMap(t => t.layers)
-    .flatMap(l => l.effects)
+    .flatMap((s) => s.lightTracks)
+    .flatMap((t) => t.layers)
+    .flatMap((l) => l.effects)
     .forEach(upgradeEffect);
 
-  project.scenes.forEach(s => {
+  project.scenes.forEach((s) => {
     if (!s.colorPaletteTransitionDurationMs) {
       s.colorPaletteTransitionDurationMs = 2_000;
     }

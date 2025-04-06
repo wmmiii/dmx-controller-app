@@ -1,13 +1,21 @@
-import { JSX, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import LightTimeline from './LightTimeline';
-import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
-import { LightTrack as LightTrackProto } from '@dmx-controller/proto/light_track_pb';
-import { ProjectContext } from '../contexts/ProjectContext';
-import { getAudioBlob } from '../util/metronome';
+import {
+  JSX,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import LightTimeline from "./LightTimeline";
+import { BeatMetadata } from "@dmx-controller/proto/beat_pb";
+import { LightTrack as LightTrackProto } from "@dmx-controller/proto/light_track_pb";
+import { ProjectContext } from "../contexts/ProjectContext";
+import { getAudioBlob } from "../util/metronome";
 
-import styles from './UniverseSequenceEditor.module.scss';
-import { NumberInput } from './Input';
-import { Scene_Tile_SequenceTile } from '@dmx-controller/proto/scene_pb';
+import styles from "./UniverseSequenceEditor.module.scss";
+import { NumberInput } from "./Input";
+import { Scene_Tile_SequenceTile } from "@dmx-controller/proto/scene_pb";
 
 // Good resolution, nice divisors (2, 3, 4, 5, 6, 12 etc.)
 export const SEQUENCE_BEAT_RESOLUTION = 36000;
@@ -27,21 +35,21 @@ export function UniverseSequenceEditor({
 
   const [beatSubdivisions, setBeatSubdivisions] = useState(4);
   const [audioBlob, setAudioBlob] = useState<Blob | undefined>();
-  const [audioDuration, setAudioDuration] = useState<number>(SEQUENCE_BEAT_RESOLUTION);
+  const [audioDuration, setAudioDuration] = useState<number>(
+    SEQUENCE_BEAT_RESOLUTION,
+  );
 
   const beats = sequence?.nativeBeats;
 
-  const wsMsToSceneMs = useCallback
-    ((ms: number) => ms *
-      (beats || 1) *
-      SEQUENCE_BEAT_RESOLUTION /
-      (audioDuration || 1),
-      [beats, audioDuration]);
+  const wsMsToSceneMs = useCallback(
+    (ms: number) =>
+      (ms * (beats || 1) * SEQUENCE_BEAT_RESOLUTION) / (audioDuration || 1),
+    [beats, audioDuration],
+  );
 
   useEffect(() => {
     if (beats) {
-      getAudioBlob(beats, beatSubdivisions)
-        .then(setAudioBlob);
+      getAudioBlob(beats, beatSubdivisions).then(setAudioBlob);
     }
   }, [beats, beatSubdivisions, setAudioBlob]);
 
@@ -55,7 +63,7 @@ export function UniverseSequenceEditor({
   const classes = [styles.universeSequenceEditor, className];
 
   return (
-    <div className={classes.join(' ')}>
+    <div className={classes.join(" ")}>
       <LightTimeline
         audioBlob={audioBlob}
         audioDuration={audioDuration}
@@ -75,24 +83,28 @@ export function UniverseSequenceEditor({
               onChange={(v) => {
                 sequence.nativeBeats = v;
                 save(`Set number of beats for sequence ${sequence.name}.`);
-              }} />
+              }}
+            />
           </span>
         }
         leftOptions={<></>}
         lightTracks={sequence.lightTracks}
         addLayer={() => {
-          sequence?.lightTracks.push(new LightTrackProto({
-            outputId: {
-              output: {
-                case: undefined,
-                value: undefined,
+          sequence?.lightTracks.push(
+            new LightTrackProto({
+              outputId: {
+                output: {
+                  case: undefined,
+                  value: undefined,
+                },
               },
-            },
-          }));
+            }),
+          );
           save(`Add new light track to sequence ${sequence.name}.`);
         }}
         audioToTrack={wsMsToSceneMs}
-        t={t} />
+        t={t}
+      />
     </div>
   );
 }

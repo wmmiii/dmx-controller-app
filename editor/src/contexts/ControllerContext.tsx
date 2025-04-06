@@ -1,29 +1,41 @@
-import { JSX, createContext, useCallback, useContext, useEffect, useRef, useState, } from "react";
+import {
+  JSX,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { Modal } from "../components/Modal";
 import { Button } from "../components/Button";
 import { ProjectContext } from "./ProjectContext";
-import { outputValues, performAction } from "../external_controller/externalController";
+import {
+  outputValues,
+  performAction,
+} from "../external_controller/externalController";
 import { Project } from "@dmx-controller/proto/project_pb";
 import { TimeContext } from "./TimeContext";
 import { BeatContext } from "./BeatContext";
 
 export type ControllerChannel = string;
-export type ControlCommandType = 'msb' | 'lsb' | null;
+export type ControlCommandType = "msb" | "lsb" | null;
 type Listener = (
   _project: Project,
   _channel: ControllerChannel,
   _value: number,
-  _controlType: ControlCommandType) => void;
+  _controlType: ControlCommandType,
+) => void;
 
 export const ControllerContext = createContext({
   controllerName: null as string | null,
-  connect: () => { },
-  addListener: (_listener: Listener) => { },
-  removeListener: (_listener: Listener) => { },
+  connect: () => {},
+  addListener: (_listener: Listener) => {},
+  removeListener: (_listener: Listener) => {},
 });
 
 interface MidiDevice {
-  name: string,
+  name: string;
   input: MIDIInput;
   output: MIDIOutput;
 }
@@ -32,7 +44,9 @@ interface ControllerProviderImplProps {
   children: React.ReactNode;
 }
 
-export function ControllerProvider({ children, }: ControllerProviderImplProps): JSX.Element {
+export function ControllerProvider({
+  children,
+}: ControllerProviderImplProps): JSX.Element {
   const { project, lastLoad, save, update } = useContext(ProjectContext);
   const projectRef = useRef<Project>(project);
   useEffect(() => {
@@ -40,7 +54,8 @@ export function ControllerProvider({ children, }: ControllerProviderImplProps): 
   }, [project]);
 
   const { addBeatSample } = useContext(BeatContext);
-  const { addListener: addTimeListener, removeListener: removeTimeListener } = useContext(TimeContext);
+  const { addListener: addTimeListener, removeListener: removeTimeListener } =
+    useContext(TimeContext);
 
   const [controller, setController] = useState<MidiDevice | null>(null);
   const [candidateList, setCandidateList] = useState<any[] | null>(null);
@@ -77,12 +92,12 @@ export function ControllerProvider({ children, }: ControllerProviderImplProps): 
       // Try to reconnect if last controller is known.
       if (controllerMapping.lastControllerName != null) {
         const access = await navigator.requestMIDIAccess();
-        const input =
-          Array.from((access.inputs as any).values() as Iterable<MIDIInput>)
-            .find((input) => input.name == controllerMapping.lastControllerName);
-        const output =
-          Array.from((access.outputs as any).values() as Iterable<MIDIOutput>)
-            .find((input) => input.name == controllerMapping.lastControllerName);
+        const input = Array.from(
+          (access.inputs as any).values() as Iterable<MIDIInput>,
+        ).find((input) => input.name == controllerMapping.lastControllerName);
+        const output = Array.from(
+          (access.outputs as any).values() as Iterable<MIDIOutput>,
+        ).find((input) => input.name == controllerMapping.lastControllerName);
         if (input != null && output != null) {
           setController({
             name: input.name,
@@ -96,7 +111,7 @@ export function ControllerProvider({ children, }: ControllerProviderImplProps): 
 
   useEffect(() => {
     if (controller == null) {
-      return () => { };
+      return () => {};
     }
 
     let msbBuffer: Map<number, number> = new Map();
@@ -129,39 +144,52 @@ export function ControllerProvider({ children, }: ControllerProviderImplProps): 
         if (data[1] < 32) {
           msbBuffer.set(data[1], data[2]);
           value = data[2] + (lsbBuffer.get(data[1] + 32) || 0) / 128;
-          controlCommandType = 'msb';
+          controlCommandType = "msb";
         } else if (data[1] > 31 && data[1] < 64) {
           lsbBuffer.set(data[1], data[2]);
           value = (msbBuffer.get(data[1] - 32) || 0) + data[2] / 128;
-          controlCommandType = 'lsb';
+          controlCommandType = "lsb";
         }
         value /= 128;
       } else {
-        console.error('Unrecognized MIDI command!', command);
+        console.error("Unrecognized MIDI command!", command);
         return;
       }
 
-      inputListeners.current.forEach((l) => l(projectRef.current, `${command}, ${data[1]}`, value, controlCommandType));
+      inputListeners.current.forEach((l) =>
+        l(
+          projectRef.current,
+          `${command}, ${data[1]}`,
+          value,
+          controlCommandType,
+        ),
+      );
     };
 
-    return () => controller.input.onmidimessage = null;
+    return () => (controller.input.onmidimessage = null);
   }, [controller, inputListeners, projectRef]);
 
-  const output = useCallback((c: ControllerChannel, value: number) => {
-    try {
-      const channel = c.split(' ').map((i) => parseInt(i)) as [number, number];
-      value *= 127;
-      if (channel[0] < 32) {
-        controller?.output.send([channel[0], channel[1], Math.floor(value)]);
-        const lsb = Math.floor((value % 1) * 127);
-        controller?.output.send([channel[0], channel[1] + 32, lsb]);
-      } else {
-        controller?.output.send([channel[0], channel[1], value]);
+  const output = useCallback(
+    (c: ControllerChannel, value: number) => {
+      try {
+        const channel = c.split(" ").map((i) => parseInt(i)) as [
+          number,
+          number,
+        ];
+        value *= 127;
+        if (channel[0] < 32) {
+          controller?.output.send([channel[0], channel[1], Math.floor(value)]);
+          const lsb = Math.floor((value % 1) * 127);
+          controller?.output.send([channel[0], channel[1] + 32, lsb]);
+        } else {
+          controller?.output.send([channel[0], channel[1], value]);
+        }
+      } catch (ex) {
+        console.error("Failed to send MIDI output!", ex);
       }
-    } catch (ex) {
-      console.error('Failed to send MIDI output!', ex);
-    }
-  }, [controller]);
+    },
+    [controller],
+  );
 
   useEffect(() => {
     const name = controller?.name;
@@ -192,13 +220,14 @@ export function ControllerProvider({ children, }: ControllerProviderImplProps): 
           value,
           cct,
           addBeatSample,
-          output);
+          output,
+        );
         if (modified) {
           update();
           // Debounce midi input.
           clearTimeout(timeout);
           timeout = setTimeout(() => {
-            save('Update via controller input.');
+            save("Update via controller input.");
           }, 500);
         }
       }
@@ -210,55 +239,57 @@ export function ControllerProvider({ children, }: ControllerProviderImplProps): 
   // Expose output function for debugging purposes.
   useEffect(() => {
     const global = (window || globalThis) as any;
-    global['debugMidiOutput'] = output;
+    global["debugMidiOutput"] = output;
   }, [output]);
 
   return (
     <>
-      <ControllerContext.Provider value={{
-        controllerName: controller?.name || null,
-        connect: connect,
-        addListener: addListener,
-        removeListener: removeListener,
-      }}>
+      <ControllerContext.Provider
+        value={{
+          controllerName: controller?.name || null,
+          connect: connect,
+          addListener: addListener,
+          removeListener: removeListener,
+        }}
+      >
         {children}
       </ControllerContext.Provider>
-      {
-        candidateList &&
+      {candidateList && (
         <ControllerSelectionDialog
           candidateList={candidateList}
           setController={(controller) => {
-            project.controllerMapping!.lastControllerName = controller?.name || '';
+            project.controllerMapping!.lastControllerName =
+              controller?.name || "";
             if (controller?.name) {
-              save('Enable auto-reconnect for midi controller.');
+              save("Enable auto-reconnect for midi controller.");
             } else {
-              save('Disable auto-reconnect for midi controller.');
+              save("Disable auto-reconnect for midi controller.");
             }
             setController(controller);
             setCandidateList(null);
-          }} />
-      }
+          }}
+        />
+      )}
     </>
   );
 }
 
 interface ControllerSelectionDialogProps {
-  candidateList: Array<{ name: string, device: MidiDevice }>;
+  candidateList: Array<{ name: string; device: MidiDevice }>;
   setController: (controller: MidiDevice | null) => void;
 }
 
-function ControllerSelectionDialog({ candidateList, setController }: ControllerSelectionDialogProps) {
+function ControllerSelectionDialog({
+  candidateList,
+  setController,
+}: ControllerSelectionDialogProps) {
   return (
     <Modal title="Select Midi device" onClose={() => setController(null)}>
-      {
-        candidateList.map((c, i) => (
-          <Button
-            key={i}
-            onClick={() => setController(c.device)}>
-            {c.name}
-          </Button>
-        ))
-      }
+      {candidateList.map((c, i) => (
+        <Button key={i} onClick={() => setController(c.device)}>
+          {c.name}
+        </Button>
+      ))}
     </Modal>
   );
 }

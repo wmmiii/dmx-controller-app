@@ -1,13 +1,13 @@
-import { JSX, useContext, useState } from 'react';
-import styles from './AssetBrowserPage.module.scss';
-import { AudioFile } from '@dmx-controller/proto/audio_pb';
-import { BeatEditor } from '../components/BeatEditor';
-import { Button } from '../components/Button';
-import { HorizontalSplitPane } from '../components/SplitPane';
-import { ProjectContext } from '../contexts/ProjectContext';
-import { Project_Assets } from '@dmx-controller/proto/project_pb';
-import { formatBytes } from '../util/numberUtils';
-import { idMapToArray, nextId } from '../util/mapUtils';
+import { JSX, useContext, useState } from "react";
+import styles from "./AssetBrowserPage.module.scss";
+import { AudioFile } from "@dmx-controller/proto/audio_pb";
+import { BeatEditor } from "../components/BeatEditor";
+import { Button } from "../components/Button";
+import { HorizontalSplitPane } from "../components/SplitPane";
+import { ProjectContext } from "../contexts/ProjectContext";
+import { Project_Assets } from "@dmx-controller/proto/project_pb";
+import { formatBytes } from "../util/numberUtils";
+import { idMapToArray, nextId } from "../util/mapUtils";
 
 export default function AssetBrowserPage(): JSX.Element {
   const [selectedAudio, setSelectedAudio] = useState<AudioFile | null>(null);
@@ -27,7 +27,9 @@ interface AudioFileListProps {
   selectAudioFile: (f: AudioFile) => void;
 }
 
-function AudioFileList({ selectAudioFile }: AudioFileListProps): JSX.Element | null {
+function AudioFileList({
+  selectAudioFile,
+}: AudioFileListProps): JSX.Element | null {
   const { project, saveAssets } = useContext(ProjectContext);
   const [highlightDrop, setHighlightDrop] = useState(false);
 
@@ -37,7 +39,8 @@ function AudioFileList({ selectAudioFile }: AudioFileListProps): JSX.Element | n
   }
 
   return (
-    <div className={classes.join(' ')}
+    <div
+      className={classes.join(" ")}
       onDragOver={(e) => {
         setHighlightDrop(true);
         e.preventDefault();
@@ -55,9 +58,9 @@ function AudioFileList({ selectAudioFile }: AudioFileListProps): JSX.Element | n
         (async () => {
           for (let i = 0; i < e.dataTransfer.items.length; ++i) {
             const item = e.dataTransfer.items[i];
-            if (item.kind === 'file') {
+            if (item.kind === "file") {
               const file = item.getAsFile() as File;
-              if (file.type.startsWith('audio/')) {
+              if (file.type.startsWith("audio/")) {
                 const audioFile = new AudioFile({
                   name: file.name,
                   contents: new Uint8Array(await file.arrayBuffer()),
@@ -78,20 +81,17 @@ function AudioFileList({ selectAudioFile }: AudioFileListProps): JSX.Element | n
         })();
 
         setHighlightDrop(false);
-      }}>
+      }}
+    >
       <ol>
-        {
-          idMapToArray(project.assets?.audioFiles)
-            .map(([id, f]) => (
-              <li key={id} onClick={() => selectAudioFile(f)}>
-                {f.name}
-              </li>
-            ))
-        }
-        {
-          (Object.keys(project.assets?.audioFiles || {}).length) < 1 &&
+        {idMapToArray(project.assets?.audioFiles).map(([id, f]) => (
+          <li key={id} onClick={() => selectAudioFile(f)}>
+            {f.name}
+          </li>
+        ))}
+        {Object.keys(project.assets?.audioFiles || {}).length < 1 && (
           <li>No items</li>
-        }
+        )}
       </ol>
       <p className={styles.faint}>
         Drag audio files onto pane to add to project.
@@ -116,19 +116,16 @@ function AudioDetails({ file }: AudioDetailsProps): JSX.Element {
   }
   return (
     <div className={styles.audioDetails}>
-      Name: {file.name}<br />
-      Size: {formatBytes(file.contents.length)}<br />
-      Type: {file.mime}<br />
-      <Button onClick={() =>
-        setBeatFile(file)}>
-        Edit Beat
-      </Button>
-      {
-        beatFile &&
-        <BeatEditor
-          file={file}
-          onCancel={() => setBeatFile(null)} />
-      }
+      Name: {file.name}
+      <br />
+      Size: {formatBytes(file.contents.length)}
+      <br />
+      Type: {file.mime}
+      <br />
+      <Button onClick={() => setBeatFile(file)}>Edit Beat</Button>
+      {beatFile && (
+        <BeatEditor file={file} onCancel={() => setBeatFile(null)} />
+      )}
     </div>
   );
 }

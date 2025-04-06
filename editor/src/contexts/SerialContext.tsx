@@ -1,5 +1,13 @@
-import { JSX } from 'react';
-import { PropsWithChildren, createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { JSX } from "react";
+import {
+  PropsWithChildren,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { Modal } from "../components/Modal";
 import { DialogContext } from "./DialogContext";
 import IconBxErrorAlt from "../icons/IconBxErrorAlt";
@@ -12,35 +20,36 @@ const FPS_BUFFER_SIZE = 100;
 type RenderUniverse = (frame: number) => Uint8Array;
 
 const EMPTY_CONTEXT = {
-  port: null as (SerialPort | null),
-  connect: () => { },
-  disconnect: () => { },
+  port: null as SerialPort | null,
+  connect: () => {},
+  disconnect: () => {},
   blackout: true,
-  setBlackout: (_blackout: boolean) => { },
-  setRenderUniverse: (_render: RenderUniverse) => { },
-  clearRenderUniverse: (_render: RenderUniverse) => { },
-  subscribeToUniverseUpdates: (_callback: (universe: Uint8Array) => void) => { },
-  subscribeToFspUpdates: (_callback: (fps: number) => void) => { },
+  setBlackout: (_blackout: boolean) => {},
+  setRenderUniverse: (_render: RenderUniverse) => {},
+  clearRenderUniverse: (_render: RenderUniverse) => {},
+  subscribeToUniverseUpdates: (_callback: (universe: Uint8Array) => void) => {},
+  subscribeToFspUpdates: (_callback: (fps: number) => void) => {},
 };
 
 export const SerialContext = createContext(EMPTY_CONTEXT);
-const SERIAL_MISSING_KEY = 'serial-missing';
+const SERIAL_MISSING_KEY = "serial-missing";
 
 export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
   const dialogContext = useContext(DialogContext);
-  const [open, setOpen] =
-    useState(!dialogContext.isDismissed(SERIAL_MISSING_KEY));
+  const [open, setOpen] = useState(
+    !dialogContext.isDismissed(SERIAL_MISSING_KEY),
+  );
 
   if (!(navigator as any).serial) {
     return (
       <SerialContext.Provider value={EMPTY_CONTEXT}>
         {children}
-        {
-          open &&
+        {open && (
           <Modal
             title="Unsupported Browser"
             icon={<IconBxErrorAlt />}
-            onClose={() => setOpen(false)}>
+            onClose={() => setOpen(false)}
+          >
             <p>
               This browser does not support the <code>navigator.serial</code>
               &nbsp;api required for this app to function.
@@ -51,12 +60,14 @@ export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
             </p>
             <p>
               Please download&nbsp;
-              <a href="https://www.google.com/chrome/" target="_blank">Google
-                Chrome</a> or another Chromium based browser that supports the
-              &nbsp;<code>navigator.serial</code> api.
+              <a href="https://www.google.com/chrome/" target="_blank">
+                Google Chrome
+              </a>{" "}
+              or another Chromium based browser that supports the &nbsp;
+              <code>navigator.serial</code> api.
             </p>
           </Modal>
-        }
+        )}
       </SerialContext.Provider>
     );
   } else {
@@ -77,7 +88,7 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
   // Expose render function for debugging purposes.
   useEffect(() => {
     const global = (window || globalThis) as any;
-    global['debugRender'] = () => renderUniverse.current(frameRef.current);
+    global["debugRender"] = () => renderUniverse.current(frameRef.current);
   }, [renderUniverse]);
 
   const connect = useCallback(async () => {
@@ -92,15 +103,15 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
       await port.open({
         baudRate: 192_000,
         dataBits: 8,
-        flowControl: 'none',
-        parity: 'none',
+        flowControl: "none",
+        parity: "none",
         stopBits: 2,
         bufferSize: 512,
       });
 
       setPort(port);
     } catch (e) {
-      console.error('Could not open serial port!', e);
+      console.error("Could not open serial port!", e);
     }
   }, [port]);
 
@@ -115,7 +126,7 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
   }, [connect, disconnect]);
 
   const resetFps = useCallback(() => {
-    fpsSubscribers.current.forEach(s => s(NaN));
+    fpsSubscribers.current.forEach((s) => s(NaN));
     fpsBuffer.current = [0];
   }, [fpsBuffer]);
 
@@ -124,7 +135,7 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
       const handle = setInterval(() => {
         frameRef.current += 1;
         const universe = renderUniverse.current(frameRef.current);
-        updateSubscribers.current.forEach(c => c(universe));
+        updateSubscribers.current.forEach((c) => c(universe));
       }, 30);
       return () => clearInterval(handle);
     }
@@ -146,9 +157,9 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
         try {
           await writer.ready;
           await writer.write(universe);
-          updateSubscribers.current.forEach(c => c(universe));
+          updateSubscribers.current.forEach((c) => c(universe));
         } catch (e) {
-          console.error('Could not write to serial port!', e);
+          console.error("Could not write to serial port!", e);
           closed = true;
           resetFps();
           disconnect();
@@ -156,7 +167,10 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
 
         const now = new Date().getTime();
         fpsBuffer.current.push(now - lastFrame);
-        fpsBuffer.current = fpsBuffer.current.slice(fpsBuffer.current.length - FPS_BUFFER_SIZE, fpsBuffer.current.length);
+        fpsBuffer.current = fpsBuffer.current.slice(
+          fpsBuffer.current.length - FPS_BUFFER_SIZE,
+          fpsBuffer.current.length,
+        );
         let average = 0;
         for (const fps of fpsBuffer.current) {
           average += fps;
@@ -171,35 +185,36 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
       closed = true;
       resetFps();
       writer.releaseLock();
-    }
-
-  }, [
-    blackout,
-    disconnect,
-    port,
-    renderUniverse,
-    resetFps,
-  ]);
+    };
+  }, [blackout, disconnect, port, renderUniverse, resetFps]);
 
   return (
-    <SerialContext.Provider value={{
-      port: port,
-      connect: connect,
-      disconnect: disconnect,
-      blackout: blackoutState,
-      setBlackout: (b: boolean) => {
-        blackout.current = b;
-        setBlackoutState(b);
-      },
-      setRenderUniverse: (r: RenderUniverse) => renderUniverse.current = r,
-      clearRenderUniverse: (r: RenderUniverse) => {
-        if (renderUniverse.current === r) {
-          renderUniverse.current = () => BLACKOUT_UNIVERSE;
-        }
-      },
-      subscribeToUniverseUpdates: useCallback((callback) => updateSubscribers.current.push(callback), [updateSubscribers]),
-      subscribeToFspUpdates: useCallback((callback) => fpsSubscribers.current.push(callback), [fpsSubscribers]),
-    }}>
+    <SerialContext.Provider
+      value={{
+        port: port,
+        connect: connect,
+        disconnect: disconnect,
+        blackout: blackoutState,
+        setBlackout: (b: boolean) => {
+          blackout.current = b;
+          setBlackoutState(b);
+        },
+        setRenderUniverse: (r: RenderUniverse) => (renderUniverse.current = r),
+        clearRenderUniverse: (r: RenderUniverse) => {
+          if (renderUniverse.current === r) {
+            renderUniverse.current = () => BLACKOUT_UNIVERSE;
+          }
+        },
+        subscribeToUniverseUpdates: useCallback(
+          (callback) => updateSubscribers.current.push(callback),
+          [updateSubscribers],
+        ),
+        subscribeToFspUpdates: useCallback(
+          (callback) => fpsSubscribers.current.push(callback),
+          [fpsSubscribers],
+        ),
+      }}
+    >
       {children}
     </SerialContext.Provider>
   );

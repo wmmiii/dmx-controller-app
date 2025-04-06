@@ -1,6 +1,13 @@
-import { JSX, createRef, useCallback, useEffect, useMemo, useState } from "react";
+import {
+  JSX,
+  createRef,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
-import styles from './Input.module.scss';
+import styles from "./Input.module.scss";
 
 interface TextInputProps {
   value: string;
@@ -27,29 +34,29 @@ export function TextInput({ value, onChange }: TextInputProps): JSX.Element {
   return (
     <input
       ref={inputRef}
-      className={classes.join(' ')}
+      className={classes.join(" ")}
       onKeyDown={(e) => {
         switch (e.code) {
-          case 'Enter':
+          case "Enter":
             flushValue();
             break;
-          case 'Escape':
+          case "Escape":
             setInput(String(value));
             break;
         }
       }}
       value={input}
       onChange={(e) => setInput(e.target.value)}
-      onBlur={flushValue} />
-  )
+      onBlur={flushValue}
+    />
+  );
 }
-
 
 interface NumberInputProps {
   className?: string;
   title?: string;
   disabled?: boolean;
-  type?: 'float' | 'integer';
+  type?: "float" | "integer";
   value: number;
   onChange: (value: number) => void;
   min: number;
@@ -69,21 +76,24 @@ export function NumberInput({
   const [input, setInput] = useState(String(value));
   const inputRef = createRef<HTMLInputElement>();
 
-  const step = useMemo(() => max > 1 ? 1 : 1 / 16, [max]);
+  const step = useMemo(() => (max > 1 ? 1 : 1 / 16), [max]);
 
   useEffect(() => setInput(String(value)), [value]);
 
-  const parseValue = useCallback((input: string) => {
-    try {
-      if (type === 'float') {
-        return parseFloat(input);
-      } else {
-        return parseInt(input);
+  const parseValue = useCallback(
+    (input: string) => {
+      try {
+        if (type === "float") {
+          return parseFloat(input);
+        } else {
+          return parseInt(input);
+        }
+      } catch (e) {
+        return NaN;
       }
-    } catch (e) {
-      return NaN;
-    }
-  }, [type, min, max]);
+    },
+    [type, min, max],
+  );
 
   const flushValue = useCallback(() => {
     const parsed = Math.max(Math.min(parseValue(input), max), min);
@@ -111,36 +121,36 @@ export function NumberInput({
   return (
     <input
       ref={inputRef}
-      className={classes.join(' ')}
+      className={classes.join(" ")}
       title={title}
       disabled={disabled}
       onKeyDown={(e) => {
         switch (e.code) {
-          case 'Enter':
+          case "Enter":
             inputRef.current?.blur();
             break;
-          case 'Escape':
+          case "Escape":
             setInput(String(value));
             inputRef.current?.blur();
             break;
-          case 'ArrowUp':
+          case "ArrowUp":
             if (parsed != null) {
               setInput(String(parsed + step));
-            };
+            }
             break;
-          case 'ArrowDown':
+          case "ArrowDown":
             if (parsed != null) {
               setInput(String(parsed - step));
-            };
+            }
             break;
         }
       }}
       value={input}
       onChange={(e) => setInput(e.target.value)}
-      onBlur={flushValue} />
-  )
+      onBlur={flushValue}
+    />
+  );
 }
-
 
 interface ToggleInputProps {
   className?: string;
@@ -148,9 +158,9 @@ interface ToggleInputProps {
   disabled?: boolean;
   value: boolean;
   labels?: {
-    left: string,
-    right: string,
-  },
+    left: string;
+    right: string;
+  };
   onChange: (value: boolean) => void;
 }
 
@@ -162,7 +172,6 @@ export function ToggleInput({
   labels,
   onChange,
 }: ToggleInputProps): JSX.Element {
-
   const toggle = useCallback(() => {
     if (!disabled) {
       onChange(!value);
@@ -178,35 +187,34 @@ export function ToggleInput({
   }
 
   return (
-    <div
-      className={classes.join(' ')}
-      title={title}
-      onClick={toggle}>
-      {
-        labels &&
-        <label onClick={(ev) => {
-          if (!disabled) {
-            onChange(false);
-          }
-          ev.stopPropagation();
-        }}>
+    <div className={classes.join(" ")} title={title} onClick={toggle}>
+      {labels && (
+        <label
+          onClick={(ev) => {
+            if (!disabled) {
+              onChange(false);
+            }
+            ev.stopPropagation();
+          }}
+        >
           {labels.left}
         </label>
-      }
+      )}
       <div className={styles.toggleSlide}>
         <div className={styles.toggleSwitch}></div>
       </div>
-      {
-        labels &&
-        <label onClick={(ev) => {
-          if (!disabled) {
-            onChange(true);
-          }
-          ev.stopPropagation();
-        }}>
+      {labels && (
+        <label
+          onClick={(ev) => {
+            if (!disabled) {
+              onChange(true);
+            }
+            ev.stopPropagation();
+          }}
+        >
           {labels.right}
         </label>
-      }
+      )}
     </div>
   );
 }

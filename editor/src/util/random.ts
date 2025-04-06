@@ -13,9 +13,9 @@ for (let i = 0; i < 16384; i++) {
   state = (a * state + c) % m;
   const num = state / (m - 1);
   if (i % 2) {
-    evenSum += num
+    evenSum += num;
   } else {
-    oddSum += num
+    oddSum += num;
   }
 
   RANDOM_NUMBERS.push(num);

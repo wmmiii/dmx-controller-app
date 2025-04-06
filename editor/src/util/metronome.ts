@@ -1,12 +1,16 @@
 import Crunker from "crunker";
 
-const audioSegments =
-  new Crunker().fetchAudio('/static/tick.mp3', '/static/tock.mp3');
+const audioSegments = new Crunker().fetchAudio(
+  "/static/tick.mp3",
+  "/static/tock.mp3",
+);
 
 const blobCache: { [key: string]: Blob } = {};
 
-export async function getAudioBlob(beats: number, subdivisions: number):
-  Promise<Blob> {
+export async function getAudioBlob(
+  beats: number,
+  subdivisions: number,
+): Promise<Blob> {
   const key = `${beats}x${subdivisions}`;
   if (blobCache[key]) {
     return blobCache[key];
@@ -24,7 +28,7 @@ export async function getAudioBlob(beats: number, subdivisions: number):
   }
 
   const concatenated = await crunker.concatAudio(segments);
-  const exported = await crunker.export(concatenated, 'audio/mpeg');
+  const exported = await crunker.export(concatenated, "audio/mpeg");
 
   blobCache[key] = exported.blob;
   return exported.blob;

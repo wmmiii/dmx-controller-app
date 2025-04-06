@@ -1,16 +1,32 @@
 import { Color, ColorPalette } from "@dmx-controller/proto/color_pb";
-import ColorConverter from 'cie-rgb-color-converter';
+import ColorConverter from "cie-rgb-color-converter";
 
 export function stringifyColor(color: Color) {
   return `rgb(${color.red * 255}, ${color.green * 255}, ${color.blue * 255})`;
 }
 
-export function interpolatePalettes(a: ColorPalette, b: ColorPalette, t: number) {
-  if (a.primary?.color == null || a.secondary?.color == null || a.tertiary?.color == null) {
-    throw new Error('Tried to interpolate palette but palette "a" does not have color set!');
+export function interpolatePalettes(
+  a: ColorPalette,
+  b: ColorPalette,
+  t: number,
+) {
+  if (
+    a.primary?.color == null ||
+    a.secondary?.color == null ||
+    a.tertiary?.color == null
+  ) {
+    throw new Error(
+      'Tried to interpolate palette but palette "a" does not have color set!',
+    );
   }
-  if (b.primary?.color == null || b.secondary?.color == null || b.tertiary?.color == null) {
-    throw new Error('Tried to interpolate palette but palette "b" does not have color set!');
+  if (
+    b.primary?.color == null ||
+    b.secondary?.color == null ||
+    b.tertiary?.color == null
+  ) {
+    throw new Error(
+      'Tried to interpolate palette but palette "b" does not have color set!',
+    );
   }
   return new ColorPalette({
     primary: {
@@ -47,12 +63,24 @@ export function hsvToColor(h: number, s: number, v: number) {
   let g = 0;
   let b = 0;
   switch (i % 6) {
-    case 0: r = v, g = t, b = p; break;
-    case 1: r = q, g = v, b = p; break;
-    case 2: r = p, g = v, b = t; break;
-    case 3: r = p, g = q, b = v; break;
-    case 4: r = t, g = p, b = v; break;
-    case 5: r = v, g = p, b = q; break;
+    case 0:
+      (r = v), (g = t), (b = p);
+      break;
+    case 1:
+      (r = q), (g = v), (b = p);
+      break;
+    case 2:
+      (r = p), (g = v), (b = t);
+      break;
+    case 3:
+      (r = p), (g = q), (b = v);
+      break;
+    case 4:
+      (r = t), (g = p), (b = v);
+      break;
+    case 5:
+      (r = v), (g = p), (b = q);
+      break;
   }
   return new Color({
     red: r,

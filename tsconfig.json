@@ -4,10 +4,7 @@
     "jsxImportSource": "react",
     "module": "ESNext",
     "target": "ESNext",
-    "lib": [
-      "DOM",
-      "ESNext",
-    ],
+    "lib": ["DOM", "ESNext"],
     "skipLibCheck": true,
     "moduleResolution": "node",
     "sourceMap": true,
@@ -19,20 +16,15 @@
     "noUnusedParameters": true,
     "allowSyntheticDefaultImports": true,
     "paths": {
-      "@dmx-controller/*": [
-        "./bazel-bin/*",
-        "./*"
-      ]
+      "@dmx-controller/*": ["./bazel-bin/*", "./*"]
     },
-    "types": [
-      "./editor/src/types"
-    ],
+    "types": ["./editor/src/types"]
   },
   "include": [
     "bazel-bin/*",
     "core/**/*.js",
     "editor/src/**/*.d.ts",
     "editor/src/**/*.ts",
-    "editor/src/**/*.tsx",
+    "editor/src/**/*.tsx"
   ]
 }

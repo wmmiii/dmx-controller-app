@@ -1,27 +1,32 @@
-import { JSX, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import LightTimeline from '../components/LightTimeline';
+import { JSX, useContext, useEffect, useMemo, useRef, useState } from "react";
+import LightTimeline from "../components/LightTimeline";
 import styles from "./ShowPage.module.scss";
-import { Button } from '../components/Button';
-import { DEFAULT_COLOR_PALETTE, renderShowToUniverse } from '../engine/universe';
-import { LightTrack as LightTrackProto } from '@dmx-controller/proto/light_track_pb';
-import { Modal } from '../components/Modal';
-import { PaletteContext } from '../contexts/PaletteContext';
-import { ProjectContext } from '../contexts/ProjectContext';
-import { SerialContext } from '../contexts/SerialContext';
-import { Show, Show_AudioTrack } from '@dmx-controller/proto/show_pb';
-import { TextInput } from '../components/Input';
-import { UNSET_INDEX, idMapToArray } from '../util/mapUtils';
-import { universeToUint8Array } from '../engine/utils';
+import { Button } from "../components/Button";
+import {
+  DEFAULT_COLOR_PALETTE,
+  renderShowToUniverse,
+} from "../engine/universe";
+import { LightTrack as LightTrackProto } from "@dmx-controller/proto/light_track_pb";
+import { Modal } from "../components/Modal";
+import { PaletteContext } from "../contexts/PaletteContext";
+import { ProjectContext } from "../contexts/ProjectContext";
+import { SerialContext } from "../contexts/SerialContext";
+import { Show, Show_AudioTrack } from "@dmx-controller/proto/show_pb";
+import { TextInput } from "../components/Input";
+import { UNSET_INDEX, idMapToArray } from "../util/mapUtils";
+import { universeToUint8Array } from "../engine/utils";
 
 const DEFAULT_SHOW = new Show({
-  name: 'Untitled Show',
+  name: "Untitled Show",
   audioTrack: {
     audioFileId: UNSET_INDEX + 1,
   },
-  lightTracks: [{
-    collapsed: false,
-    layers: [],
-  }],
+  lightTracks: [
+    {
+      collapsed: false,
+      layers: [],
+    },
+  ],
 });
 
 export default function ShowPage(): JSX.Element {
@@ -34,27 +39,29 @@ export default function ShowPage(): JSX.Element {
 
   const [showDetailsModal, setShowDetailsModal] = useState(false);
 
-  const show =
-    useMemo(() => project?.shows[project.selectedShow || 0], [project]);
+  const show = useMemo(
+    () => project?.shows[project.selectedShow || 0],
+    [project],
+  );
 
   useEffect(() => {
-    const render = (frame: number) => universeToUint8Array(
-      project,
-      renderShowToUniverse(t.current, frame, project));
+    const render = (frame: number) =>
+      universeToUint8Array(
+        project,
+        renderShowToUniverse(t.current, frame, project),
+      );
     setRenderUniverse(render);
 
     return () => clearRenderUniverse(render);
   }, [project, t]);
 
-  const audioFile = useMemo(
-    () => {
-      if (show?.audioTrack?.audioFileId != null) {
-        return project?.assets?.audioFiles[show?.audioTrack.audioFileId]
-      } else {
-        return undefined;
-      }
-    },
-    [show?.audioTrack?.audioFileId, project]);
+  const audioFile = useMemo(() => {
+    if (show?.audioTrack?.audioFileId != null) {
+      return project?.assets?.audioFiles[show?.audioTrack.audioFileId];
+    } else {
+      return undefined;
+    }
+  }, [show?.audioTrack?.audioFileId, project]);
   const audioBlob = useMemo(() => {
     if (!audioFile) {
       return undefined;
@@ -73,14 +80,16 @@ export default function ShowPage(): JSX.Element {
           Please <a href="/assets">upload an audio asset</a> before creating a
           show!
         </p>
-      )
+      );
     } else {
       return (
         <>
-          <Button onClick={() => {
-            project.shows = [DEFAULT_SHOW];
-            save('Create default show.');
-          }}>
+          <Button
+            onClick={() => {
+              project.shows = [DEFAULT_SHOW];
+              save("Create default show.");
+            }}
+          >
             Create a show!
           </Button>
         </>
@@ -93,9 +102,11 @@ export default function ShowPage(): JSX.Element {
   }
 
   return (
-    <PaletteContext.Provider value={{
-      palette: show.colorPalette || DEFAULT_COLOR_PALETTE
-    }}>
+    <PaletteContext.Provider
+      value={{
+        palette: show.colorPalette || DEFAULT_COLOR_PALETTE,
+      }}
+    >
       <LightTimeline
         audioBlob={audioBlob}
         audioDuration={audioDuration}
@@ -109,23 +120,24 @@ export default function ShowPage(): JSX.Element {
             <br />
             <select
               onChange={(e) => {
-                if (e.target.value === '-1') {
+                if (e.target.value === "-1") {
                   project.shows.push(DEFAULT_SHOW);
                   project.selectedShow = project.shows.length - 1;
                 } else {
                   project.selectedShow = parseInt(e.target.value);
                 }
-                save(`Set selected show to ${project.shows[project.selectedShow].name}.`);
+                save(
+                  `Set selected show to ${project.shows[project.selectedShow].name}.`,
+                );
               }}
-              value={project?.selectedShow || 0}>
-              {
-                project?.shows.map((s: Show, i: number) => (
-                  <option key={i} value={i}>{s.name}</option>
-                ))
-              }
-              <option value={-1}>
-                + Create New Show
-              </option>
+              value={project?.selectedShow || 0}
+            >
+              {project?.shows.map((s: Show, i: number) => (
+                <option key={i} value={i}>
+                  {s.name}
+                </option>
+              ))}
+              <option value={-1}>+ Create New Show</option>
             </select>
           </>
         }
@@ -143,18 +155,14 @@ export default function ShowPage(): JSX.Element {
                 });
                 save(`Set audio track for show ${show.name}.`);
               }}
-              value={show?.audioTrack?.audioFileId}>
-              <option value={UNSET_INDEX}>
-                &lt;Unset&gt;
-              </option>
-              {
-                idMapToArray(project?.assets?.audioFiles)
-                  .map(([id, f]) => (
-                    <option key={id} value={id}>
-                      {f.name}
-                    </option>
-                  ))
-              }
+              value={show?.audioTrack?.audioFileId}
+            >
+              <option value={UNSET_INDEX}>&lt;Unset&gt;</option>
+              {idMapToArray(project?.assets?.audioFiles).map(([id, f]) => (
+                <option key={id} value={id}>
+                  {f.name}
+                </option>
+              ))}
             </select>
           </>
         }
@@ -168,12 +176,13 @@ export default function ShowPage(): JSX.Element {
           show?.lightTracks.push(new LightTrackProto());
           save(`Add layer to show ${show.name}.`);
         }}
-        t={t} />
-      {
-        showDetailsModal &&
+        t={t}
+      />
+      {showDetailsModal && (
         <Modal
-          title={show?.name + ' Metadata'}
-          onClose={() => setShowDetailsModal(false)}>
+          title={show?.name + " Metadata"}
+          onClose={() => setShowDetailsModal(false)}
+        >
           <div className={styles.detailsModal}>
             <div>
               Title:&nbsp;
@@ -182,23 +191,25 @@ export default function ShowPage(): JSX.Element {
                 onChange={(v) => {
                   show.name = v;
                   save(`Change show name to ${show.name}.`);
-                }} />
+                }}
+              />
             </div>
             <div>
               <Button
-                variant='warning'
+                variant="warning"
                 onClick={() => {
                   project.shows.splice(project.selectedShow, 1);
                   project.selectedShow = 0;
                   save(`Delete show ${show.name}.`);
                   setShowDetailsModal(false);
-                }}>
+                }}
+              >
                 Delete Show
               </Button>
             </div>
           </div>
         </Modal>
-      }
+      )}
     </PaletteContext.Provider>
   );
 }

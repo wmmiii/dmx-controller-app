@@ -1,6 +1,12 @@
-import { JSX, PropsWithChildren, createContext, useCallback, useState } from "react";
+import {
+  JSX,
+  PropsWithChildren,
+  createContext,
+  useCallback,
+  useState,
+} from "react";
 
-const DIALOG_DISMISSED_KEY = 'dialogs-dismissed';
+const DIALOG_DISMISSED_KEY = "dialogs-dismissed";
 
 export const DialogContext = createContext({
   isDismissed: (dialogName: string) => loadDismissed()[dialogName],
@@ -8,25 +14,32 @@ export const DialogContext = createContext({
 });
 
 export function DialogProvider({ children }: PropsWithChildren): JSX.Element {
-  const [dismissed, setDismissed] = useState<{[dialogName: string]: boolean}>(loadDismissed());
+  const [dismissed, setDismissed] = useState<{ [dialogName: string]: boolean }>(
+    loadDismissed(),
+  );
 
-  const setDismissedImpl = useCallback((dialogName: string) => {
-    dismissed[dialogName] = true;
-    localStorage.setItem(DIALOG_DISMISSED_KEY, JSON.stringify(dismissed));
-    setDismissed(Object.assign({}, dismissed));
-  }, [dismissed, setDismissed]);
+  const setDismissedImpl = useCallback(
+    (dialogName: string) => {
+      dismissed[dialogName] = true;
+      localStorage.setItem(DIALOG_DISMISSED_KEY, JSON.stringify(dismissed));
+      setDismissed(Object.assign({}, dismissed));
+    },
+    [dismissed, setDismissed],
+  );
 
   return (
-    <DialogContext.Provider value={{
-      isDismissed: (dialogName) => dismissed[dialogName] || false,
-      setDismissed: setDismissedImpl,
-    }}>
+    <DialogContext.Provider
+      value={{
+        isDismissed: (dialogName) => dismissed[dialogName] || false,
+        setDismissed: setDismissedImpl,
+      }}
+    >
       {children}
     </DialogContext.Provider>
   );
 }
 
-function loadDismissed(): {[dialogName: string]: boolean} {
+function loadDismissed(): { [dialogName: string]: boolean } {
   const jsonString = localStorage.getItem(DIALOG_DISMISSED_KEY);
   if (jsonString) {
     try {
@@ -36,4 +49,4 @@ function loadDismissed(): {[dialogName: string]: boolean} {
     }
   }
   return {};
-} 
+}

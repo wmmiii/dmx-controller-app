@@ -758,7 +758,7 @@
         "bzlTransitiveDigest": "goOLvHeH++sft9p6Q55Vu1aErXTC1p5j27bfZ0he1mU=",
         "usagesDigest": "bJqg+9by4wZOpx8S9JJC1D7T478qXrWRgToobYGVq0k=",
         "recordedFileInputs": {
-          "@@//pnpm-lock.yaml": "de558add474c44af706e8e4fd0aef57848550709504dc41ad3115642e8107db9"
+          "@@//pnpm-lock.yaml": "835c4788186781eab3a19c271cb5e8b6f7fa3111edc96278da1799951397f6a4"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -12457,6 +12457,63 @@
                 ],
                 "source-map-js": [
                   "1.0.2"
+                ]
+              },
+              "lifecycle_build_target": false,
+              "lifecycle_hooks_env": [],
+              "lifecycle_hooks_execution_requirements": [],
+              "bins": {},
+              "npm_translate_lock_repo": "npm",
+              "package_visibility": [
+                "//visibility:public"
+              ]
+            }
+          },
+          "npm__prettier__3.5.3": {
+            "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
+            "ruleClassName": "npm_import_rule",
+            "attributes": {
+              "package": "prettier",
+              "version": "3.5.3",
+              "root_package": "",
+              "link_workspace": "",
+              "link_packages": {
+                "": [
+                  "prettier"
+                ]
+              },
+              "integrity": "sha512-QQtaxnoDJeAkDvDKWCLiwIXkTgRhwYDEQCghU9Z6q03iyek/rxRh/2lC3HB7P8sWT2xC/y5JDctPLBIGzHKbhw==",
+              "url": "https://registry.npmjs.org/prettier/-/prettier-3.5.3.tgz",
+              "commit": "",
+              "patch_args": [],
+              "patches": [],
+              "custom_postinstall": "",
+              "npm_auth": "",
+              "npm_auth_basic": "",
+              "npm_auth_username": "",
+              "npm_auth_password": "",
+              "lifecycle_hooks": [],
+              "extra_build_content": "",
+              "generate_bzl_library_targets": false
+            }
+          },
+          "npm__prettier__3.5.3__links": {
+            "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
+            "ruleClassName": "npm_import_links",
+            "attributes": {
+              "package": "prettier",
+              "version": "3.5.3",
+              "dev": false,
+              "root_package": "",
+              "link_packages": {
+                "": [
+                  "prettier"
+                ]
+              },
+              "deps": {},
+              "transitive_closure": {
+                "prettier": [
+                  "3.5.3"
                 ]
               },
               "lifecycle_build_target": false,

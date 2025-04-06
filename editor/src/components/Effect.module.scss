@@ -1,5 +1,5 @@
-@use 'sass:color';
-@import '../vars';
+@use "sass:color";
+@import "../vars";
 
 $handle-size: 30px;
 
@@ -32,7 +32,6 @@ $handle-size: 30px;
   }
 
   &:hover {
-
     .dragStart,
     .dragEnd {
       opacity: 1;
@@ -72,7 +71,7 @@ $handle-size: 30px;
 
 .drag-start {
   background-color: rgba(255, 255, 255, 0.1);
-  border-right: 1px solid #FFFFFF;
+  border-right: 1px solid #ffffff;
   bottom: 0;
   cursor: w-resize;
   left: 0;
@@ -86,7 +85,7 @@ $handle-size: 30px;
 
 .drag-end {
   background-color: rgba(255, 255, 255, 0.1);
-  border-left: 1px solid #FFFFFF;
+  border-left: 1px solid #ffffff;
   bottom: 0;
   cursor: e-resize;
   max-width: 30%;
@@ -109,11 +108,11 @@ $handle-size: 30px;
     display: flex;
     flex-direction: row;
 
-    &>* {
+    & > * {
       flex: 1;
     }
 
-    &>:last-child {
+    & > :last-child {
       flex: 0;
     }
   }

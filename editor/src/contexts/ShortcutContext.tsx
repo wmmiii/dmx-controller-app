@@ -1,19 +1,27 @@
-import { JSX } from 'react';
-import { PropsWithChildren, createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { JSX } from "react";
+import {
+  PropsWithChildren,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { Modal } from "../components/Modal";
 import { SerialContext } from "./SerialContext";
 
 type ShortcutBundle = Array<{
   shortcut: {
     key: string;
-    modifiers?: ('alt' | 'ctrl' | 'shift')[];
-  },
+    modifiers?: ("alt" | "ctrl" | "shift")[];
+  };
   action: () => void;
   description: string;
 }>;
 
 export const ShortcutContext = createContext({
-  setShortcuts: (_shortcuts: ShortcutBundle) => (() => { }),
+  setShortcuts: (_shortcuts: ShortcutBundle) => () => {},
 });
 
 export function ShortcutProvider({ children }: PropsWithChildren): JSX.Element {
@@ -27,8 +35,7 @@ export function ShortcutProvider({ children }: PropsWithChildren): JSX.Element {
         return;
       }
 
-      outerLoop:
-      for (const b of [...shortcutBundles.current].reverse()) {
+      outerLoop: for (const b of [...shortcutBundles.current].reverse()) {
         if (b) {
           for (const s of b) {
             if (matchesShortcut(ev, s.shortcut)) {
@@ -42,8 +49,8 @@ export function ShortcutProvider({ children }: PropsWithChildren): JSX.Element {
       }
     };
 
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
   }, []);
 
   const setShortcuts = useCallback((shortcuts: ShortcutBundle) => {
@@ -59,64 +66,63 @@ export function ShortcutProvider({ children }: PropsWithChildren): JSX.Element {
   useEffect(() => {
     const defaultBundle: ShortcutBundle = [
       {
-        shortcut: { key: 'KeyB' },
+        shortcut: { key: "KeyB" },
         action: () => serialContext.setBlackout(!serialContext.blackout),
-        description: 'Toggle output blackout.'
+        description: "Toggle output blackout.",
       },
       {
-        shortcut: { key: 'KeyC' },
+        shortcut: { key: "KeyC" },
         action: () => serialContext.connect(),
-        description: 'Connect to serial output.'
+        description: "Connect to serial output.",
       },
       {
-        shortcut: { key: 'Slash', modifiers: ['ctrl'] },
+        shortcut: { key: "Slash", modifiers: ["ctrl"] },
         action: () => setShowHelp(!showHelp),
-        description: 'Shows the Keyboard Shortcuts dialog.'
+        description: "Shows the Keyboard Shortcuts dialog.",
       },
     ];
     shortcutBundles.current[0] = defaultBundle;
   }, [shortcutBundles.current, serialContext.blackout, showHelp]);
 
   return (
-    <ShortcutContext.Provider value={{
-      setShortcuts: setShortcuts,
-    }}>
+    <ShortcutContext.Provider
+      value={{
+        setShortcuts: setShortcuts,
+      }}
+    >
       {children}
-      {
-        showHelp &&
-        <Modal
-          title="Keyboard Shortcuts"
-          onClose={() => setShowHelp(false)}>
-          <p>
-            These are the keyboard shortcuts available right now.
-          </p>
-          {
-            shortcutBundles.current.map(b => b.map(s => {
+      {showHelp && (
+        <Modal title="Keyboard Shortcuts" onClose={() => setShowHelp(false)}>
+          <p>These are the keyboard shortcuts available right now.</p>
+          {shortcutBundles.current.map((b) =>
+            b.map((s) => {
               const shortcut = [
                 ...(s.shortcut.modifiers || []),
-                s.shortcut.key];
+                s.shortcut.key,
+              ];
               return (
                 <p key={s.description}>
-                  <strong>
-                    {shortcut.join(' + ')}
-                  </strong>:&nbsp;
+                  <strong>{shortcut.join(" + ")}</strong>:&nbsp;
                   {s.description}
                 </p>
               );
-            }))
-          }
+            }),
+          )}
         </Modal>
-      }
+      )}
     </ShortcutContext.Provider>
   );
 }
 
 function matchesShortcut(
   event: KeyboardEvent,
-  shortcut: ShortcutBundle[0]['shortcut']): boolean {
+  shortcut: ShortcutBundle[0]["shortcut"],
+): boolean {
   const modifiers = shortcut.modifiers || [];
-  return shortcut.key === event.code &&
-    event.altKey === modifiers.includes('alt') &&
-    event.ctrlKey === modifiers.includes('ctrl') &&
-    event.shiftKey === modifiers.includes('shift');
+  return (
+    shortcut.key === event.code &&
+    event.altKey === modifiers.includes("alt") &&
+    event.ctrlKey === modifiers.includes("ctrl") &&
+    event.shiftKey === modifiers.includes("shift")
+  );
 }

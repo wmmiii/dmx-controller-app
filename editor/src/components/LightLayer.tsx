@@ -1,9 +1,9 @@
-import styles from './LightLayer.module.scss';
+import styles from "./LightLayer.module.scss";
 import { Effect as EffectComponent, EffectSelectContext } from "./Effect";
 import { Effect } from "@dmx-controller/proto/effect_pb";
 import { LightLayer as LightLayerProto } from "@dmx-controller/proto/light_layer_pb";
 import { JSX, useContext, useState } from "react";
-import { ProjectContext } from '../contexts/ProjectContext';
+import { ProjectContext } from "../contexts/ProjectContext";
 
 interface NewEffect {
   firstMs: number;
@@ -43,41 +43,46 @@ export function LightLayer({
       className={className || styles.layer}
       onMouseDown={(e) => {
         const ms = pxToMs(e.clientX);
-        let index = layer.effects.findIndex(e => e.startMs > ms);
+        let index = layer.effects.findIndex((e) => e.startMs > ms);
         if (index < 0) {
           index = layer.effects.length;
         }
         setNewEffect({
           firstMs: ms,
           secondMs: ms,
-          minMs: Math.max(
-            layer.effects[index - 1]?.endMs || 0,
-            0),
+          minMs: Math.max(layer.effects[index - 1]?.endMs || 0, 0),
           maxMs: Math.min(
             layer.effects[index]?.startMs || Number.MAX_SAFE_INTEGER,
-            Number.MAX_SAFE_INTEGER),
+            Number.MAX_SAFE_INTEGER,
+          ),
           effectIndex: index,
-        })
-      }}>
-      {
-        newEffect &&
+        });
+      }}
+    >
+      {newEffect && (
         <>
           <div
             className={styles.newEffect}
             style={{
               left: msToPx(Math.min(newEffect.firstMs, newEffect.secondMs)),
-              width: msToPx(Math.max(newEffect.firstMs, newEffect.secondMs)) -
+              width:
+                msToPx(Math.max(newEffect.firstMs, newEffect.secondMs)) -
                 msToPx(Math.min(newEffect.firstMs, newEffect.secondMs)),
-            }}>
-          </div>
+            }}
+          ></div>
           <div
             className={styles.createMask}
             onMouseMove={(e) => {
               const ms = pxToMs(e.clientX);
-              setNewEffect(Object.assign({}, newEffect, {
-                secondMs: Math.min(Math.max(
-                  ms, newEffect.minMs), newEffect.maxMs, maxMs),
-              }));
+              setNewEffect(
+                Object.assign({}, newEffect, {
+                  secondMs: Math.min(
+                    Math.max(ms, newEffect.minMs),
+                    newEffect.maxMs,
+                    maxMs,
+                  ),
+                }),
+              );
             }}
             onMouseUp={() => {
               if (Math.abs(newEffect.firstMs - newEffect.secondMs) < 100) {
@@ -93,21 +98,21 @@ export function LightLayer({
                     stateStart: {},
                     stateEnd: {},
                   },
-                  case: 'rampEffect',
+                  case: "rampEffect",
                 },
               });
               layer.effects.splice(newEffect.effectIndex, 0, e);
-              save('Add new effect.');
+              save("Add new effect.");
               setNewEffect(null);
               selectEffect({
                 track: trackIndex,
                 layer: layerIndex,
                 effect: newEffect.effectIndex,
-              })
-            }}>
-          </div>
+              });
+            }}
+          ></div>
         </>
-      }
+      )}
       {layer.effects.map((e, i) => (
         <EffectComponent
           key={i}
@@ -116,12 +121,13 @@ export function LightLayer({
             left: msToPx(e.startMs),
             width: msToPx(e.endMs) - msToPx(e.startMs),
           }}
-          address={{track: trackIndex, layer: layerIndex, effect: i}}
+          address={{ track: trackIndex, layer: layerIndex, effect: i }}
           effect={e}
           minMs={layer.effects[i - 1]?.endMs || 0}
           maxMs={layer.effects[i + 1]?.startMs || maxMs}
           pxToMs={pxToMs}
-          snapToBeat={snapToBeat} />
+          snapToBeat={snapToBeat}
+        />
       ))}
     </div>
   );

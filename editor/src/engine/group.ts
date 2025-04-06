@@ -1,4 +1,7 @@
-import { OutputId, OutputId_FixtureMapping } from "@dmx-controller/proto/output_id_pb";
+import {
+  OutputId,
+  OutputId_FixtureMapping,
+} from "@dmx-controller/proto/output_id_pb";
 import { Project } from "@dmx-controller/proto/project_pb";
 import { GROUP_ALL_ID } from "./fixture";
 import { getActiveUniverse } from "../util/projectUtils";
@@ -11,7 +14,10 @@ interface GroupMember {
 /**
  * Returns fixtures and groups that may be added to the provided group.
  */
-export function getApplicableMembers(project: Project, groupId: bigint): GroupMember[] {
+export function getApplicableMembers(
+  project: Project,
+  groupId: bigint,
+): GroupMember[] {
   const group = project.groups[groupId.toString()];
   const members: GroupMember[] = [];
 
@@ -26,9 +32,9 @@ export function getApplicableMembers(project: Project, groupId: bigint): GroupMe
       members.push({
         id: new OutputId({
           output: {
-            case: 'group',
+            case: "group",
             value: id,
-          }
+          },
         }),
         name: project.groups[id.toString()].name,
       });
@@ -36,22 +42,28 @@ export function getApplicableMembers(project: Project, groupId: bigint): GroupMe
   }
 
   const existingFixtures = getAllFixtures(project, groupId);
-  members.push(...Object.keys(project.universes[project.activeUniverse.toString()].fixtures)
-    .map((id) => BigInt(id))
-    .filter((id) => !existingFixtures.includes(id))
-    .map((id) => {
-      const mapping = new OutputId_FixtureMapping();
-      mapping.fixtures[project.activeUniverse.toString()] = id;
-      return {
-        id: new OutputId({
-          output: {
-            case: 'fixtures',
-            value: mapping,
-          }
-        }),
-        name: project.universes[project.activeUniverse.toString()].fixtures[id.toString()].name,
-      };
-    }));
+  members.push(
+    ...Object.keys(
+      project.universes[project.activeUniverse.toString()].fixtures,
+    )
+      .map((id) => BigInt(id))
+      .filter((id) => !existingFixtures.includes(id))
+      .map((id) => {
+        const mapping = new OutputId_FixtureMapping();
+        mapping.fixtures[project.activeUniverse.toString()] = id;
+        return {
+          id: new OutputId({
+            output: {
+              case: "fixtures",
+              value: mapping,
+            },
+          }),
+          name: project.universes[project.activeUniverse.toString()].fixtures[
+            id.toString()
+          ].name,
+        };
+      }),
+  );
 
   return members;
 }
@@ -60,22 +72,28 @@ export function getAllFixtures(project: Project, groupId: bigint): bigint[] {
   if (groupId === GROUP_ALL_ID) {
     return Object.entries(getActiveUniverse(project).fixtures)
       .sort((a, b) => a[1].channelOffset - b[1].channelOffset)
-      .map(e => BigInt(e[0]));
+      .map((e) => BigInt(e[0]));
   }
   const group = project.groups[groupId.toString()];
   if (!group) {
     return [];
   }
 
-  const fixtures = new Set(group.fixtures?.[project.activeUniverse.toString()]?.fixtures);
+  const fixtures = new Set(
+    group.fixtures?.[project.activeUniverse.toString()]?.fixtures,
+  );
   for (const g of group.groups) {
-    getAllFixtures(project, g).forEach(f => fixtures.add(f));
+    getAllFixtures(project, g).forEach((f) => fixtures.add(f));
   }
 
   return Array.from(fixtures);
 }
 
-function recursivelyGetDepMap(id: bigint, project: Project, depMap: { [key: string]: Set<bigint> }): Set<bigint> {
+function recursivelyGetDepMap(
+  id: bigint,
+  project: Project,
+  depMap: { [key: string]: Set<bigint> },
+): Set<bigint> {
   if (depMap[id.toString()] != null) {
     return depMap[id.toString()];
   }
@@ -89,9 +107,10 @@ function recursivelyGetDepMap(id: bigint, project: Project, depMap: { [key: stri
   depMap[id.toString()].add(id);
 
   const addRecursive = (dep: bigint) => {
-    recursivelyGetDepMap(dep, project, depMap)
-      .forEach(d => depMap[id.toString()].add(d));
-  }
+    recursivelyGetDepMap(dep, project, depMap).forEach((d) =>
+      depMap[id.toString()].add(d),
+    );
+  };
 
   for (let g of group.groups) {
     addRecursive(g);

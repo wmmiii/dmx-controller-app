@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -8,7 +8,10 @@ interface ErrorBoundaryState {
   error: unknown;
 }
 
-export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+export class ErrorBoundary extends React.Component<
+  ErrorBoundaryProps,
+  ErrorBoundaryState
+> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = {
@@ -22,7 +25,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   componentDidCatch(error: unknown, _errorInfo: unknown) {
-    console.error('ErrorBoundary caught error', error);
+    console.error("ErrorBoundary caught error", error);
     this.setState({
       error,
     });
@@ -39,6 +42,6 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
       );
     }
 
-    return this.props.children; 
+    return this.props.children;
   }
 }

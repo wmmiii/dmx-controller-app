@@ -1,4 +1,4 @@
-@import '../vars';
+@import "../vars";
 
 .dropdown {
   @include drop-shadow;
@@ -22,7 +22,7 @@
   gap: spacing(1);
   padding: spacing(1) spacing(2);
   text-wrap: nowrap;
-  
+
   &:hover {
     color: $col-interactive-hover;
   }

@@ -1,22 +1,27 @@
-import { JSX, useContext, useMemo } from 'react';
-import { ProjectContext } from '../contexts/ProjectContext';
-import { Project } from '@dmx-controller/proto/project_pb';
-import { OutputId, OutputId_FixtureMapping } from '@dmx-controller/proto/output_id_pb';
-import { getActiveUniverse } from '../util/projectUtils';
-import styles from './OutputSelector.module.scss';
-import { GROUP_ALL_ID } from '../engine/fixture';
+import { JSX, useContext, useMemo } from "react";
+import { ProjectContext } from "../contexts/ProjectContext";
+import { Project } from "@dmx-controller/proto/project_pb";
+import {
+  OutputId,
+  OutputId_FixtureMapping,
+} from "@dmx-controller/proto/output_id_pb";
+import { getActiveUniverse } from "../util/projectUtils";
+import styles from "./OutputSelector.module.scss";
+import { GROUP_ALL_ID } from "../engine/fixture";
 
 interface OutputSelectorProps {
   value: OutputId | undefined;
   setValue: (value: OutputId | undefined) => void;
 }
 
-export function OutputSelector({ value, setValue }: OutputSelectorProps):
-  JSX.Element {
+export function OutputSelector({
+  value,
+  setValue,
+}: OutputSelectorProps): JSX.Element {
   const { project } = useContext(ProjectContext);
 
   interface InternalOutput {
-    type: 'fixture' | 'group';
+    type: "fixture" | "group";
     id: bigint;
     name: string;
   }
@@ -28,22 +33,24 @@ export function OutputSelector({ value, setValue }: OutputSelectorProps):
 
     const outputs: InternalOutput[] = [];
     outputs.push({
-      type: 'group',
+      type: "group",
       id: GROUP_ALL_ID,
-      name: '⧉ All Fixtures',
+      name: "⧉ All Fixtures",
     });
     for (const [id, group] of Object.entries(project.groups)) {
       outputs.push({
-        type: 'group',
+        type: "group",
         id: BigInt(id),
-        name: '⧉ ' + group.name,
+        name: "⧉ " + group.name,
       });
     }
-    for (const [id, fixture] of Object.entries(getActiveUniverse(project).fixtures)) {
+    for (const [id, fixture] of Object.entries(
+      getActiveUniverse(project).fixtures,
+    )) {
       outputs.push({
-        type: 'fixture',
+        type: "fixture",
         id: BigInt(id),
-        name: '⧇ ' + fixture.name,
+        name: "⧇ " + fixture.name,
       });
     }
     return outputs;
@@ -54,25 +61,28 @@ export function OutputSelector({ value, setValue }: OutputSelectorProps):
       return undefined;
     }
     switch (value.output.case) {
-      case 'fixtures':
-        const fixtureId = value.output.value.fixtures[project.activeUniverse.toString()];
+      case "fixtures":
+        const fixtureId =
+          value.output.value.fixtures[project.activeUniverse.toString()];
         if (fixtureId == null) {
           return undefined;
         }
         return {
-          type: 'fixture',
+          type: "fixture",
           id: fixtureId,
-          name: project.universes[project.activeUniverse.toString()].fixtures[fixtureId.toString()].name,
+          name: project.universes[project.activeUniverse.toString()].fixtures[
+            fixtureId.toString()
+          ].name,
         };
-      case 'group':
+      case "group":
         let name: string;
         if (value.output.value === GROUP_ALL_ID) {
-          name = 'All Fixtures';
+          name = "All Fixtures";
         } else {
           name = project.groups[value.output.value.toString()].name;
         }
         return {
-          type: 'group',
+          type: "group",
           id: value.output.value,
           name: name,
         };
@@ -88,15 +98,17 @@ export function OutputSelector({ value, setValue }: OutputSelectorProps):
 
   return (
     <select
-      className={classes.join(' ')}
-      value={String(internalValue?.id) + ' ' + internalValue?.type}
+      className={classes.join(" ")}
+      value={String(internalValue?.id) + " " + internalValue?.type}
       onChange={(e) => {
         const newInput = e.target.value;
 
         // Handle case where output is unset.
-        if (newInput === ' ') {
-          if (value?.output.case === 'fixtures') {
-            delete value.output.value.fixtures[project.activeUniverse.toString()];
+        if (newInput === " ") {
+          if (value?.output.case === "fixtures") {
+            delete value.output.value.fixtures[
+              project.activeUniverse.toString()
+            ];
             setValue(value);
           } else {
             setValue(undefined);
@@ -104,31 +116,33 @@ export function OutputSelector({ value, setValue }: OutputSelectorProps):
         }
 
         // Set new output value.
-        const [idString, typeString] = newInput.split(' ');
+        const [idString, typeString] = newInput.split(" ");
         const id = BigInt(idString);
         const newValue = new OutputId(value);
-        if (typeString === 'fixture') {
-          if (newValue.output.case === 'fixtures') {
-            newValue.output.value.fixtures[project.activeUniverse.toString()] = id;
+        if (typeString === "fixture") {
+          if (newValue.output.case === "fixtures") {
+            newValue.output.value.fixtures[project.activeUniverse.toString()] =
+              id;
           } else {
             const fixtures = new OutputId_FixtureMapping();
             fixtures.fixtures[project.activeUniverse.toString()] = id;
             newValue.output = {
-              case: 'fixtures',
+              case: "fixtures",
               value: fixtures,
             };
           }
-        } else if (typeString === 'group') {
+        } else if (typeString === "group") {
           newValue.output = {
-            case: 'group',
+            case: "group",
             value: id,
-          }
+          };
         }
         setValue(newValue);
-      }}>
-      <option value={' '}>&lt;Unset&gt;</option>
+      }}
+    >
+      <option value={" "}>&lt;Unset&gt;</option>
       {outputs.map((d, i) => (
-        <option key={i} value={d.id + ' ' + d.type}>
+        <option key={i} value={d.id + " " + d.type}>
           {d.name}
         </option>
       ))}
@@ -136,25 +150,30 @@ export function OutputSelector({ value, setValue }: OutputSelectorProps):
   );
 }
 
-export function getOutputName(project: Project, outputId: OutputId | undefined) {
+export function getOutputName(
+  project: Project,
+  outputId: OutputId | undefined,
+) {
   if (outputId == null) {
-    return '<Unset>';
+    return "<Unset>";
   }
   const universeId = project.activeUniverse.toString();
   switch (outputId.output.case) {
-    case 'fixtures':
+    case "fixtures":
       const fixtureId = outputId.output.value.fixtures[universeId];
       if (fixtureId == null) {
-        return '<Unset>';
+        return "<Unset>";
       } else {
-        return '⧇ ' + getActiveUniverse(project).fixtures[fixtureId.toString()].name;
+        return (
+          "⧇ " + getActiveUniverse(project).fixtures[fixtureId.toString()].name
+        );
       }
-    case 'group':
+    case "group":
       if (outputId.output.value === GROUP_ALL_ID) {
-        return '⧉ All Fixtures';
+        return "⧉ All Fixtures";
       }
-      return '⧇ ' + project.groups[outputId.output.value.toString()].name;
+      return "⧇ " + project.groups[outputId.output.value.toString()].name;
     default:
-      return '<Unset>';
+      return "<Unset>";
   }
 }

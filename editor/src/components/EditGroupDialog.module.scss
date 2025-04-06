@@ -1,4 +1,4 @@
-@import '../vars';
+@import "../vars";
 
 .editor {
   display: flex;
@@ -6,7 +6,8 @@
   gap: spacing(2);
   min-width: 40em;
 
-  th, td {
+  th,
+  td {
     padding: spacing(1);
   }
 }

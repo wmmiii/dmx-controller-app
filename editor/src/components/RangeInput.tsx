@@ -6,18 +6,26 @@ interface RangeInputProps {
   title?: string;
   value: number;
   onChange: (value: number) => void;
-  max: '1' | '255';
+  max: "1" | "255";
 }
 
-export default function RangeInput(
-  { className, title, value, onChange, max }: RangeInputProps): JSX.Element {
-  const set = useCallback((value: number) => {
-    if (max === '255') {
-      onChange(Math.min(value));
-    } else {
-      onChange(value);
-    }
-  }, [max]);
+export default function RangeInput({
+  className,
+  title,
+  value,
+  onChange,
+  max,
+}: RangeInputProps): JSX.Element {
+  const set = useCallback(
+    (value: number) => {
+      if (max === "255") {
+        onChange(Math.min(value));
+      } else {
+        onChange(value);
+      }
+    },
+    [max],
+  );
 
   return (
     <NumberInput
@@ -27,6 +35,7 @@ export default function RangeInput(
       value={value}
       min={0}
       max={parseInt(max)}
-      onChange={set} />
+      onChange={set}
+    />
   );
 }
