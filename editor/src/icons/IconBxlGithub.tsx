@@ -1,5 +1,5 @@
 // icon:bxl-github | Boxicons https://boxicons.com/ | Atisa
-import * as React from "react";
+import * as React from 'react';
 
 function IconBxlGithub(props: React.SVGProps<SVGSVGElement>) {
   return (

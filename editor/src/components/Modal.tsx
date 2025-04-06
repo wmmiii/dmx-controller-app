@@ -1,9 +1,9 @@
-import { JSX, useContext, useEffect } from "react";
+import { JSX, useContext, useEffect } from 'react';
 
-import styles from "./Modal.module.scss";
-import { IconButton } from "./Button";
-import IconBxX from "../icons/IconBxX";
-import { ShortcutContext } from "../contexts/ShortcutContext";
+import styles from './Modal.module.scss';
+import { IconButton } from './Button';
+import IconBxX from '../icons/IconBxX';
+import { ShortcutContext } from '../contexts/ShortcutContext';
 
 interface ModalProps {
   title: string;
@@ -27,22 +27,22 @@ export function Modal({
   const { setShortcuts } = useContext(ShortcutContext);
 
   useEffect(() => {
-    history.pushState(title, "");
+    history.pushState(title, '');
 
     const listener = (ev: PopStateEvent) => {
       if (ev.state === title) {
         onClose();
       }
     };
-    window.addEventListener("popstate", listener);
-    return () => window.removeEventListener("popstate", listener);
+    window.addEventListener('popstate', listener);
+    return () => window.removeEventListener('popstate', listener);
   }, [title, onClose]);
 
   useEffect(
     () =>
       setShortcuts([
         {
-          shortcut: { key: "Escape" },
+          shortcut: { key: 'Escape' },
           action: onClose,
           description: `Close "${title}" modal.`,
         },
@@ -63,7 +63,7 @@ export function Modal({
   return (
     <div className={styles.wrapper} onClick={() => onClose()}>
       <div
-        className={classes.join(" ")}
+        className={classes.join(' ')}
         onClick={(e) => {
           e.stopPropagation();
         }}
@@ -76,7 +76,7 @@ export function Modal({
             <IconBxX />
           </IconButton>
         </div>
-        <div className={bodyClasses.join(" ")}>{children}</div>
+        <div className={bodyClasses.join(' ')}>{children}</div>
         {footer && <div className={styles.footer}>{footer}</div>}
       </div>
     </div>

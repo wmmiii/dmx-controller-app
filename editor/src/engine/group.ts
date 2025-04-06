@@ -1,10 +1,10 @@
 import {
   OutputId,
   OutputId_FixtureMapping,
-} from "@dmx-controller/proto/output_id_pb";
-import { Project } from "@dmx-controller/proto/project_pb";
-import { GROUP_ALL_ID } from "./fixture";
-import { getActiveUniverse } from "../util/projectUtils";
+} from '@dmx-controller/proto/output_id_pb';
+import { Project } from '@dmx-controller/proto/project_pb';
+import { GROUP_ALL_ID } from './fixture';
+import { getActiveUniverse } from '../util/projectUtils';
 
 interface GroupMember {
   id: OutputId;
@@ -32,7 +32,7 @@ export function getApplicableMembers(
       members.push({
         id: new OutputId({
           output: {
-            case: "group",
+            case: 'group',
             value: id,
           },
         }),
@@ -54,7 +54,7 @@ export function getApplicableMembers(
         return {
           id: new OutputId({
             output: {
-              case: "fixtures",
+              case: 'fixtures',
               value: mapping,
             },
           }),

@@ -1,5 +1,5 @@
 // icon:bx-time-five | Boxicons https://boxicons.com/ | Atisa
-import * as React from "react";
+import * as React from 'react';
 
 function IconBxTimeFive(props: React.SVGProps<SVGSVGElement>) {
   return (

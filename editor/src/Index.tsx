@@ -1,31 +1,31 @@
-import AssetBrowserPage from "./pages/AssetBrowserPage";
-import IconBxBulb from "./icons/IconBxBulb";
-import IconBxDownload from "./icons/IconBxDownload";
-import IconBxError from "./icons/IconBxError";
-import IconBxLink from "./icons/IconBxLink";
-import IconBxMenu from "./icons/IconBxMenu";
-import IconBxUnlink from "./icons/IconBxUnlink";
-import IconBxUpload from "./icons/IconBxUpload";
-import IconBxlGithub from "./icons/IconBxlGithub";
-import IconBxlWindows from "./icons/IconBxlWindows";
-import IconBxsBulb from "./icons/IconBxsBulb";
-import PatchPage from "./pages/PatchPage";
-import ProjectPage from "./pages/ProjectPage";
-import ShowPage from "./pages/ShowPage";
-import styles from "./Index.module.scss";
-import { Button, IconButton } from "./components/Button";
-import { ControllerContext } from "./contexts/ControllerContext";
-import { DialogContext } from "./contexts/DialogContext";
-import { Dropdown } from "./components/Dropdown";
-import { ErrorBoundary } from "./components/ErrorBoundary";
-import { JSX, createRef, useContext, useEffect, useState } from "react";
-import { LivePage } from "./pages/LivePage";
-import { Modal } from "./components/Modal";
-import { ProjectContext } from "./contexts/ProjectContext";
-import { Routes, Route, useNavigate } from "react-router";
-import { SerialContext } from "./contexts/SerialContext";
-import { SiMidi } from "react-icons/si";
-import { UniverseVisualizer } from "./components/UniverseVisualizer";
+import AssetBrowserPage from './pages/AssetBrowserPage';
+import IconBxBulb from './icons/IconBxBulb';
+import IconBxDownload from './icons/IconBxDownload';
+import IconBxError from './icons/IconBxError';
+import IconBxLink from './icons/IconBxLink';
+import IconBxMenu from './icons/IconBxMenu';
+import IconBxUnlink from './icons/IconBxUnlink';
+import IconBxUpload from './icons/IconBxUpload';
+import IconBxlGithub from './icons/IconBxlGithub';
+import IconBxlWindows from './icons/IconBxlWindows';
+import IconBxsBulb from './icons/IconBxsBulb';
+import PatchPage from './pages/PatchPage';
+import ProjectPage from './pages/ProjectPage';
+import ShowPage from './pages/ShowPage';
+import styles from './Index.module.scss';
+import { Button, IconButton } from './components/Button';
+import { ControllerContext } from './contexts/ControllerContext';
+import { DialogContext } from './contexts/DialogContext';
+import { Dropdown } from './components/Dropdown';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { JSX, createRef, useContext, useEffect, useState } from 'react';
+import { LivePage } from './pages/LivePage';
+import { Modal } from './components/Modal';
+import { ProjectContext } from './contexts/ProjectContext';
+import { Routes, Route, useNavigate } from 'react-router';
+import { SerialContext } from './contexts/SerialContext';
+import { SiMidi } from 'react-icons/si';
+import { UniverseVisualizer } from './components/UniverseVisualizer';
 
 export default function Index(): JSX.Element {
   const { port, blackout, setBlackout, connect, disconnect } =
@@ -44,14 +44,14 @@ export default function Index(): JSX.Element {
       const button = uploadButtonRef.current;
       const handleUpload = async () => {
         if (button?.files == null) {
-          throw new Error("Cannot find input button files!");
+          throw new Error('Cannot find input button files!');
         }
         const file = button.files[0];
         const body = new Uint8Array(await file.arrayBuffer());
         openProject(body);
       };
-      button.addEventListener("change", handleUpload);
-      return () => button.removeEventListener("change", handleUpload);
+      button.addEventListener('change', handleUpload);
+      return () => button.removeEventListener('change', handleUpload);
     }
     return undefined;
   }, [uploadButtonRef.current]);
@@ -74,55 +74,55 @@ export default function Index(): JSX.Element {
             <Dropdown onClose={() => setShowMenu(false)}>
               {[
                 {
-                  title: "Live",
-                  onSelect: () => navigate("/live"),
+                  title: 'Live',
+                  onSelect: () => navigate('/live'),
                 },
                 {
-                  title: "Show",
-                  onSelect: () => navigate("/show"),
+                  title: 'Show',
+                  onSelect: () => navigate('/show'),
                 },
                 {
-                  title: "Assets",
-                  onSelect: () => navigate("/assets"),
+                  title: 'Assets',
+                  onSelect: () => navigate('/assets'),
                 },
                 {
-                  title: "Patch",
-                  onSelect: () => navigate("/patch"),
+                  title: 'Patch',
+                  onSelect: () => navigate('/patch'),
                 },
                 {
-                  title: "Project Settings",
-                  onSelect: () => navigate("/project"),
+                  title: 'Project Settings',
+                  onSelect: () => navigate('/project'),
                 },
-                { type: "separator" },
+                { type: 'separator' },
                 {
-                  title: "Download",
+                  title: 'Download',
                   icon: <IconBxDownload />,
                   onSelect: downloadProject,
                 },
                 {
-                  title: "Upload",
+                  title: 'Upload',
                   icon: <IconBxUpload />,
                   onSelect: () => uploadButtonRef.current?.click(),
                 },
-                { type: "separator" },
+                { type: 'separator' },
                 {
-                  title: "Connect to serial",
+                  title: 'Connect to serial',
                   icon: port ? <IconBxLink /> : <IconBxUnlink />,
                   onSelect: () => (port ? disconnect() : connect()),
                 },
                 {
-                  title: "Toggle Blackout",
+                  title: 'Toggle Blackout',
                   icon: blackout ? <IconBxBulb /> : <IconBxsBulb />,
                   onSelect: () => setBlackout(!blackout),
                 },
-                { type: "separator" },
+                { type: 'separator' },
                 {
-                  title: "GitHub Page",
+                  title: 'GitHub Page',
                   icon: <IconBxlGithub />,
                   onSelect: () =>
                     window.open(
-                      "https://github.com/wmmiii/dmx-controller-app/",
-                      "_blank",
+                      'https://github.com/wmmiii/dmx-controller-app/',
+                      '_blank',
                     ),
                 },
               ]}
@@ -135,7 +135,7 @@ export default function Index(): JSX.Element {
         <FpsIndicator />
         <IconButton
           title="Midi Controller"
-          variant={controllerName ? "primary" : "default"}
+          variant={controllerName ? 'primary' : 'default'}
           onClick={connectMidi}
         >
           <SiMidi />
@@ -167,7 +167,7 @@ function FpsIndicator() {
 
   return (
     <div className={styles.fps}>
-      Fps:{" "}
+      Fps:{' '}
       {Number.isNaN(fps) ? (
         <>N/A</>
       ) : fps < 30 ? (
@@ -179,7 +179,7 @@ function FpsIndicator() {
   );
 }
 
-const WARNING_DIALOG_KEY = "instability-warning";
+const WARNING_DIALOG_KEY = 'instability-warning';
 
 function WarningDialog() {
   const dialogContext = useContext(DialogContext);
@@ -241,19 +241,19 @@ function WarningDialog() {
         <br />
         Use at your own risk!
       </p>
-      {navigator.userAgent.toLowerCase().indexOf("win") > -1 && (
+      {navigator.userAgent.toLowerCase().indexOf('win') > -1 && (
         <>
           <h3>
             <IconBxlWindows /> Windows Users
           </h3>
           <p>
-            You may need to install{" "}
+            You may need to install{' '}
             <a
               href="https://www.silabs.com/developer-tools/usb-to-uart-bridge-vcp-drivers?tab=downloads"
               target="_blank"
             >
               additional drivers
-            </a>{" "}
+            </a>{' '}
             such that serial UART devices can be recognized by your operating
             system.
           </p>

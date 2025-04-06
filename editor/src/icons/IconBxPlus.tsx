@@ -1,5 +1,5 @@
 // icon:bx-plus | Boxicons https://boxicons.com/ | Atisa
-import * as React from "react";
+import * as React from 'react';
 
 function IconBxPlus(props: React.SVGProps<SVGSVGElement>) {
   return (

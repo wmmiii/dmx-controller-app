@@ -1,5 +1,5 @@
 // icon:bx-right-arrow-alt | Boxicons https://boxicons.com/ | Atisa
-import * as React from "react";
+import * as React from 'react';
 
 function IconBxRightArrowAlt(props: React.SVGProps<SVGSVGElement>) {
   return (

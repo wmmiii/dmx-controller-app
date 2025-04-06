@@ -1,5 +1,5 @@
 // icon:bx-download | Boxicons https://boxicons.com/ | Atisa
-import * as React from "react";
+import * as React from 'react';
 
 function IconBxDownload(props: React.SVGProps<SVGSVGElement>) {
   return (

@@ -1,10 +1,10 @@
 import {
   Effect_RampEffect,
   Effect_RampEffect_EasingFunction,
-} from "@dmx-controller/proto/effect_pb";
-import { RenderContext } from "./universe";
-import { applyState } from "./effect";
-import { interpolateUniverses } from "./utils";
+} from '@dmx-controller/proto/effect_pb';
+import { RenderContext } from './universe';
+import { applyState } from './effect';
+import { interpolateUniverses } from './utils';
 
 export function rampEffect(
   context: RenderContext,
@@ -15,13 +15,13 @@ export function rampEffect(
   const end = [...context.universe];
 
   if (effect.stateStart == null) {
-    throw new Error("Tried to render ramp effect without start state!");
+    throw new Error('Tried to render ramp effect without start state!');
   }
   const startContext = Object.assign({}, context, { universe: start });
   applyState(effect.stateStart, startContext);
 
   if (effect.stateEnd == null) {
-    throw new Error("Tried to render ramp effect without end state!");
+    throw new Error('Tried to render ramp effect without end state!');
   }
   const endContext = Object.assign({}, context, { universe: end });
   applyState(effect.stateEnd, endContext);

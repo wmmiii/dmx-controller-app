@@ -1,16 +1,16 @@
-import { Project } from "@dmx-controller/proto/project_pb";
-import { getAllFixtures } from "./group";
+import { Project } from '@dmx-controller/proto/project_pb';
+import { getAllFixtures } from './group';
 import {
   OutputId,
   OutputId_FixtureMapping,
-} from "@dmx-controller/proto/output_id_pb";
-import { getActiveUniverse } from "../util/projectUtils";
-import { LightTrack } from "@dmx-controller/proto/light_track_pb";
+} from '@dmx-controller/proto/output_id_pb';
+import { getActiveUniverse } from '../util/projectUtils';
+import { LightTrack } from '@dmx-controller/proto/light_track_pb';
 import {
   FixtureDefinition_Channel_ColorWheelMapping,
   FixtureDefinition_Mode,
   PhysicalFixture,
-} from "@dmx-controller/proto/fixture_pb";
+} from '@dmx-controller/proto/fixture_pb';
 import {
   AmountChannel,
   AngleChannel,
@@ -18,7 +18,7 @@ import {
   COLOR_CHANNELS,
   isAmountChannel,
   isAngleChannel,
-} from "./channel";
+} from './channel';
 
 export type DmxUniverse = number[];
 
@@ -54,12 +54,12 @@ export interface WritableDevice {
 
 export function getWritableDevice(project: Project, outputId: OutputId) {
   switch (outputId.output.case) {
-    case "fixtures":
+    case 'fixtures':
       return getPhysicalWritableDevice(project, outputId.output.value);
-    case "group":
+    case 'group':
       return getPhysicalWritableDeviceFromGroup(project, outputId.output.value);
     default:
-      throw new Error("Unknown writable device: " + outputId.output.case);
+      throw new Error('Unknown writable device: ' + outputId.output.case);
   }
 }
 
@@ -145,11 +145,11 @@ export function getAvailableChannels(
   project: Project,
 ): ChannelTypes[] {
   let fixtureIds: BigInt[];
-  if (outputId?.output.case === "fixtures") {
+  if (outputId?.output.case === 'fixtures') {
     fixtureIds = [
       outputId.output.value.fixtures[String(project.activeUniverse)],
     ];
-  } else if (outputId?.output.case === "group") {
+  } else if (outputId?.output.case === 'group') {
     fixtureIds = getAllFixtures(project, outputId.output.value);
   } else {
     fixtureIds = Object.keys(getActiveUniverse(project).fixtures).map((id) =>
@@ -189,7 +189,7 @@ export function deleteFixture(project: Project, fixtureId: bigint) {
     if (t.outputId == null) {
       return;
     }
-    if (t.outputId.output.case === "fixtures") {
+    if (t.outputId.output.case === 'fixtures') {
       if (
         t.outputId.output.value.fixtures[project.activeUniverse.toString()] ===
         fixtureId
@@ -210,17 +210,17 @@ export function deleteFixture(project: Project, fixtureId: bigint) {
     .map((r) => r.tile!)
     .forEach((t) => {
       const description = t.description;
-      if (description.case === "effectGroup") {
+      if (description.case === 'effectGroup') {
         description.value.channels.forEach((c) => {
           if (c.outputId == null) {
             return;
           }
-          if (c.outputId.output.case === "fixtures") {
+          if (c.outputId.output.case === 'fixtures') {
             const fixtures = c.outputId.output.value.fixtures;
             delete fixtures[project.activeUniverse.toString()];
           }
         });
-      } else if (description.case === "sequence") {
+      } else if (description.case === 'sequence') {
         description.value.lightTracks.forEach(deleteFromLightTrack);
       }
     });
@@ -267,10 +267,10 @@ function collectFunctions(
       const offset = fixture.channelOffsets[channelType] || 0;
       const functions = collection.angleFunctions.get(channelType);
       if (functions == null) {
-        throw new Error("Angle channel does not have function map defined!");
+        throw new Error('Angle channel does not have function map defined!');
       }
       functions.push((universe, d) => {
-        if (channel.mapping.case === "angleMapping") {
+        if (channel.mapping.case === 'angleMapping') {
           universe[index] = mapDegrees(
             d + offset,
             channel.mapping.value.minDegrees,
@@ -284,10 +284,10 @@ function collectFunctions(
       }
       const functions = collection.amountFunctions.get(channelType);
       if (functions == null) {
-        throw new Error("Amount channel does not have function map defined!");
+        throw new Error('Amount channel does not have function map defined!');
       }
       functions.push((universe, a) => {
-        if (channel.mapping.case === "amountMapping") {
+        if (channel.mapping.case === 'amountMapping') {
           universe[index] =
             (a *
               (channel.mapping.value.maxValue -
@@ -340,9 +340,9 @@ export function deleteFixtureGroup(project: Project, fixtureGroupId: bigint) {
 
   const deleteFromLightTrack = (t: LightTrack) => {
     if (t.outputId == null) {
-      throw new Error("Tried to delete track without output ID!");
+      throw new Error('Tried to delete track without output ID!');
     }
-    if (t.outputId.output.case === "group") {
+    if (t.outputId.output.case === 'group') {
       if (t.outputId.output.value === fixtureGroupId) {
         delete t.outputId;
       }
@@ -358,19 +358,19 @@ export function deleteFixtureGroup(project: Project, fixtureGroupId: bigint) {
     .map((t) => t.tile!)
     .forEach((t) => {
       const description = t.description;
-      if (description.case === "effectGroup") {
+      if (description.case === 'effectGroup') {
         description.value.channels.forEach((c) => {
           if (c.outputId == null) {
-            throw new Error("Tried to delete channel without output ID!");
+            throw new Error('Tried to delete channel without output ID!');
           }
           if (
-            c.outputId.output.case === "group" &&
+            c.outputId.output.case === 'group' &&
             c.outputId.output.value === fixtureGroupId
           ) {
             delete c.outputId;
           }
         });
-      } else if (description.case === "sequence") {
+      } else if (description.case === 'sequence') {
         description.value.lightTracks.forEach(deleteFromLightTrack);
       }
     });
@@ -385,9 +385,9 @@ function collectColorChannels(
   mode: FixtureDefinition_Mode,
   collection: FunctionCollection,
 ) {
-  const hasWhite = "white" in Object.values(mode.channels);
+  const hasWhite = 'white' in Object.values(mode.channels);
   switch (channelType) {
-    case "red":
+    case 'red':
       if (hasWhite) {
         collection.colorFunctions.push((universe, r, _g, _b, _w) => {
           universe[index] = r * 255;
@@ -398,7 +398,7 @@ function collectColorChannels(
         });
       }
       break;
-    case "green":
+    case 'green':
       if (hasWhite) {
         collection.colorFunctions.push((universe, _r, g, _b, _w) => {
           universe[index] = g * 255;
@@ -409,7 +409,7 @@ function collectColorChannels(
         });
       }
       break;
-    case "blue":
+    case 'blue':
       if (hasWhite) {
         collection.colorFunctions.push((universe, _r, _g, b, _w) => {
           universe[index] = b * 255;
@@ -420,29 +420,29 @@ function collectColorChannels(
         });
       }
       break;
-    case "cyan":
+    case 'cyan':
       collection.colorFunctions.push((universe, r, _g, _b, _w) => {
         universe[index] = (1 - r) * 255;
       });
       break;
-    case "magenta":
+    case 'magenta':
       collection.colorFunctions.push((universe, _r, g, _b, _w) => {
         universe[index] = (1 - g) * 255;
       });
       break;
-    case "yellow":
+    case 'yellow':
       collection.colorFunctions.push((universe, _r, _g, b, _w) => {
         universe[index] = (1 - b) * 255;
       });
       break;
-    case "white":
+    case 'white':
       collection.colorFunctions.push((universe, _r, _g, _b, w) => {
         if (w != null) {
           universe[index] = w * 255;
         }
       });
       break;
-    case "color_wheel":
+    case 'color_wheel':
       // Check to see if this fixture only supports a color wheel.
       if (
         Object.values(mode.channels)

@@ -5,18 +5,18 @@ import {
   useContext,
   useEffect,
   useState,
-} from "react";
-import IconBxsBinoculars from "../icons/IconBxsBinoculars";
-import IconBxsBolt from "../icons/IconBxsBolt";
-import IconBxsSun from "../icons/IconBxsSun";
-import IconPanTilt from "../icons/IconPanTilt";
-import IconRgb from "../icons/IconRgb";
-import styles from "./Effect.module.scss";
-import { Button, IconButton } from "./Button";
+} from 'react';
+import IconBxsBinoculars from '../icons/IconBxsBinoculars';
+import IconBxsBolt from '../icons/IconBxsBolt';
+import IconBxsSun from '../icons/IconBxsSun';
+import IconPanTilt from '../icons/IconPanTilt';
+import IconRgb from '../icons/IconRgb';
+import styles from './Effect.module.scss';
+import { Button, IconButton } from './Button';
 import {
   DEFAULT_EFFECT_COLOR,
   DEFAULT_EFFECT_COLOR_ALT,
-} from "../util/styleUtils";
+} from '../util/styleUtils';
 import {
   Effect as EffectProto,
   EffectTiming,
@@ -27,24 +27,24 @@ import {
   FixtureState as FixtureStateProto,
   Effect_StrobeEffect,
   Effect_RandomEffect,
-} from "@dmx-controller/proto/effect_pb";
-import { EffectState } from "./EffectState";
-import { NumberInput, ToggleInput } from "./Input";
-import { ProjectContext } from "../contexts/ProjectContext";
-import { RenderingContext } from "../contexts/RenderingContext";
-import { ShortcutContext } from "../contexts/ShortcutContext";
-import IconBxLineChart from "../icons/IconBxLineChart";
-import IconBxMove from "../icons/IconBxMove";
-import IconBxPalette from "../icons/IconBxPalette";
+} from '@dmx-controller/proto/effect_pb';
+import { EffectState } from './EffectState';
+import { NumberInput, ToggleInput } from './Input';
+import { ProjectContext } from '../contexts/ProjectContext';
+import { RenderingContext } from '../contexts/RenderingContext';
+import { ShortcutContext } from '../contexts/ShortcutContext';
+import IconBxLineChart from '../icons/IconBxLineChart';
+import IconBxMove from '../icons/IconBxMove';
+import IconBxPalette from '../icons/IconBxPalette';
 import {
   Color,
   ColorPalette,
   PaletteColor,
-} from "@dmx-controller/proto/color_pb";
-import { PaletteContext } from "../contexts/PaletteContext";
-import { BiDice6, BiPause } from "react-icons/bi";
-import { getStates } from "../util/effectUtils";
-import { ChannelTypes } from "../engine/channel";
+} from '@dmx-controller/proto/color_pb';
+import { PaletteContext } from '../contexts/PaletteContext';
+import { BiDice6, BiPause } from 'react-icons/bi';
+import { getStates } from '../util/effectUtils';
+import { ChannelTypes } from '../engine/channel';
 
 export interface EffectAddress {
   track: number;
@@ -98,15 +98,15 @@ export function Effect({
     if (copyEffect && effect === selectedEffect) {
       return setShortcuts([
         {
-          shortcut: { key: "KeyV", modifiers: ["ctrl"] },
+          shortcut: { key: 'KeyV', modifiers: ['ctrl'] },
           action: () => {
             Object.assign(effect, copyEffect.clone(), {
               endMs: effect.endMs,
               startMs: effect.startMs,
             });
-            save("Paste effect.");
+            save('Paste effect.');
           },
-          description: "Paste effect from clipboard onto selected effect.",
+          description: 'Paste effect from clipboard onto selected effect.',
         },
       ]);
     }
@@ -116,12 +116,12 @@ export function Effect({
   // React makes the original style immutable so we clone it to modify it.
   const style = Object.assign({}, originalStyle);
   const icons: Set<(props: any) => JSX.Element> = new Set();
-  if (effect.effect.case === "staticEffect") {
+  if (effect.effect.case === 'staticEffect') {
     if (effect.effect.value.state) {
       style.background = effectColor(effect.effect.value.state, palette);
       effectIcons(effect.effect.value.state).forEach((i) => icons.add(i));
     }
-  } else if (effect.effect.case === "rampEffect") {
+  } else if (effect.effect.case === 'rampEffect') {
     if (
       effect.effect.value.stateStart != null &&
       effect.effect.value.stateEnd
@@ -145,7 +145,7 @@ export function Effect({
       effectIcons(effect.effect.value.stateStart).forEach((i) => icons.add(i));
       effectIcons(effect.effect.value.stateEnd).forEach((i) => icons.add(i));
     }
-  } else if (effect.effect.case === "strobeEffect") {
+  } else if (effect.effect.case === 'strobeEffect') {
     if (
       effect.effect.value.stateA != null &&
       effect.effect.value.stateB != null
@@ -166,11 +166,11 @@ export function Effect({
     containerClasses.push(styles.selected);
   }
 
-  const maskCursor = dragStart || dragEnd ? "ew-resize" : "grabbing";
+  const maskCursor = dragStart || dragEnd ? 'ew-resize' : 'grabbing';
 
   return (
     <div
-      className={containerClasses.join(" ")}
+      className={containerClasses.join(' ')}
       style={style}
       onMouseDown={(e) => {
         setChanged(false);
@@ -223,7 +223,7 @@ export function Effect({
             setDragEnd(false);
             setDrag(null);
             if (changed) {
-              save("Change effect timing.");
+              save('Change effect timing.');
             }
             e.preventDefault();
             e.stopPropagation();
@@ -284,7 +284,7 @@ export function EffectDetails({
   let details: JSX.Element;
 
   switch (effect.effect.case) {
-    case "staticEffect":
+    case 'staticEffect':
       details = (
         <StaticEffectDetails
           effect={effect.effect.value}
@@ -293,7 +293,7 @@ export function EffectDetails({
         />
       );
       break;
-    case "rampEffect":
+    case 'rampEffect':
       details = (
         <RampEffectDetails
           effect={effect.effect.value}
@@ -303,7 +303,7 @@ export function EffectDetails({
         />
       );
       break;
-    case "strobeEffect":
+    case 'strobeEffect':
       details = (
         <StrobeEffectDetails
           effect={effect.effect.value}
@@ -312,7 +312,7 @@ export function EffectDetails({
         />
       );
       break;
-    case "randomEffect":
+    case 'randomEffect':
       details = (
         <RandomEffectDetails
           effect={effect.effect.value}
@@ -328,7 +328,7 @@ export function EffectDetails({
   }
 
   return (
-    <div className={classes.join(" ")}>
+    <div className={classes.join(' ')}>
       <div className={styles.effectType}>
         <span>Effect type</span>
         <EffectSelector
@@ -351,24 +351,24 @@ function effectColor(
   palette: ColorPalette,
   alt = false,
 ): string {
-  if (state.lightColor.case === "color") {
+  if (state.lightColor.case === 'color') {
     const color = state.lightColor.value;
     const white = Math.floor((color.white || 0) * 255);
     const r = Math.min(Math.floor(color.red * 255) + white, 255);
     const g = Math.min(Math.floor(color.green * 255) + white, 255);
     const b = Math.min(Math.floor(color.blue * 255) + white, 255);
     return `rgb(${r}, ${g}, ${b})`;
-  } else if (state.lightColor.case === "paletteColor") {
+  } else if (state.lightColor.case === 'paletteColor') {
     let color: Color;
     switch (state.lightColor.value) {
       case PaletteColor.PALETTE_BLACK:
-        return "rgb(0, 0, 0)";
+        return 'rgb(0, 0, 0)';
       case PaletteColor.PALETTE_WHITE:
-        return "rgb(255, 255, 255)";
+        return 'rgb(255, 255, 255)';
       case PaletteColor.PALETTE_PRIMARY:
         if (palette.primary == null) {
           throw new Error(
-            "Tried to fetch primary color from undefined palette!",
+            'Tried to fetch primary color from undefined palette!',
           );
         }
         if (palette.primary.color == null) {
@@ -379,7 +379,7 @@ function effectColor(
       case PaletteColor.PALETTE_SECONDARY:
         if (palette.secondary == null) {
           throw new Error(
-            "Tried to fetch secondary color from undefined palette!",
+            'Tried to fetch secondary color from undefined palette!',
           );
         }
         if (palette.secondary.color == null) {
@@ -390,7 +390,7 @@ function effectColor(
       case PaletteColor.PALETTE_TERTIARY:
         if (palette.tertiary == null) {
           throw new Error(
-            "Tried to fetch tertiary color from undefined palette!",
+            'Tried to fetch tertiary color from undefined palette!',
           );
         }
         if (palette.tertiary.color == null) {
@@ -417,9 +417,9 @@ function effectIcons(
   effect: FixtureStateProto,
 ): Array<(props: any) => JSX.Element> {
   const icons: Array<(props: any) => JSX.Element> = [];
-  if (effect.lightColor.case === "color") {
+  if (effect.lightColor.case === 'color') {
     icons.push(IconRgb);
-  } else if (effect.lightColor.case === "paletteColor") {
+  } else if (effect.lightColor.case === 'paletteColor') {
     icons.push(IconBxPalette);
   }
   if (effect?.dimmer != null) {
@@ -447,7 +447,7 @@ function StaticEffectDetails({
   const { save } = useContext(ProjectContext);
 
   if (effect.state == null) {
-    throw new Error("Static effect does not have a state!");
+    throw new Error('Static effect does not have a state!');
   }
 
   return (
@@ -456,7 +456,7 @@ function StaticEffectDetails({
         state={effect.state}
         onChange={(s) => {
           effect.state = s;
-          save("Change static effect state.");
+          save('Change static effect state.');
         }}
         availableChannels={availableChannels}
       />
@@ -472,7 +472,7 @@ function RampEffectDetails({
 }: EffectDetailsBaseProps<Effect_RampEffect>): JSX.Element {
   const { save } = useContext(ProjectContext);
   if (effect.stateStart == null || effect.stateEnd == null) {
-    throw new Error("Ramp effect does not have a state!");
+    throw new Error('Ramp effect does not have a state!');
   }
 
   return (
@@ -483,7 +483,7 @@ function RampEffectDetails({
           value={effect.easing}
           onChange={(e) => {
             effect.easing = parseInt(e.target.value);
-            save("Change effect easing type.");
+            save('Change effect easing type.');
           }}
         >
           <option value={Effect_RampEffect_EasingFunction.LINEAR}>
@@ -509,7 +509,7 @@ function RampEffectDetails({
             onChange={(e) => {
               effect.timingMode = parseInt(e.target.value);
               save(
-                `Change effect timing to ${effect.timingMode === EffectTiming.ONE_SHOT ? "one shot" : "beat"}.`,
+                `Change effect timing to ${effect.timingMode === EffectTiming.ONE_SHOT ? 'one shot' : 'beat'}.`,
               );
             }}
           >
@@ -536,7 +536,7 @@ function RampEffectDetails({
       <label>
         <span>Mirrored</span>
         <Button
-          variant={effect.mirrored ? "primary" : "default"}
+          variant={effect.mirrored ? 'primary' : 'default'}
           onClick={() => {
             effect.mirrored = !effect.mirrored;
             save(`Changed effect mirrored status to ${effect.mirrored}.`);
@@ -568,7 +568,7 @@ function RampEffectDetails({
         state={effect.stateStart}
         onChange={(s) => {
           effect.stateStart = s;
-          save("Change ramp effect start state.");
+          save('Change ramp effect start state.');
         }}
         availableChannels={availableChannels}
       />
@@ -578,7 +578,7 @@ function RampEffectDetails({
         state={effect.stateEnd}
         onChange={(s) => {
           effect.stateEnd = s;
-          save("Change ramp effect end state.");
+          save('Change ramp effect end state.');
         }}
         availableChannels={availableChannels}
       />
@@ -593,7 +593,7 @@ function StrobeEffectDetails({
   const { save } = useContext(ProjectContext);
 
   if (effect.stateA == null || effect.stateB == null) {
-    throw new Error("Ramp effect does not have a state!");
+    throw new Error('Ramp effect does not have a state!');
   }
 
   return (
@@ -632,7 +632,7 @@ function StrobeEffectDetails({
         state={effect.stateA}
         onChange={(s) => {
           effect.stateA = s;
-          save("Change strobe effect A.");
+          save('Change strobe effect A.');
         }}
         availableChannels={availableChannels}
       />
@@ -642,7 +642,7 @@ function StrobeEffectDetails({
         state={effect.stateB}
         onChange={(s) => {
           effect.stateB = s;
-          save("Change strobe effect B.");
+          save('Change strobe effect B.');
         }}
         availableChannels={availableChannels}
       />
@@ -657,7 +657,7 @@ function RandomEffectDetails({
   const { save } = useContext(ProjectContext);
 
   const mapToStandardEffect = (
-    effect: Effect_RandomEffect["effectA"] | Effect_RandomEffect["effectB"],
+    effect: Effect_RandomEffect['effectA'] | Effect_RandomEffect['effectB'],
   ) => {
     if (effect.case) {
       const stripped = effect.case?.substring(1);
@@ -665,12 +665,12 @@ function RandomEffectDetails({
       return {
         case: stripped.substring(0, 1).toLowerCase() + stripped.substring(1),
         value: effect.value,
-      } as EffectProto["effect"];
+      } as EffectProto['effect'];
     }
     return {
       case: undefined,
       value: undefined,
-    } as EffectProto["effect"];
+    } as EffectProto['effect'];
   };
 
   return (
@@ -744,7 +744,7 @@ function RandomEffectDetails({
           onChange={(value) => {
             effect.treatFixturesIndividually = value;
             save(
-              `Change random effect to ${value ? "" : "not "}treat fixtures independently.`,
+              `Change random effect to ${value ? '' : 'not '}treat fixtures independently.`,
             );
           }}
         />
@@ -774,11 +774,11 @@ function RandomEffectDetails({
           setEffect={(e, description) => {
             effect.effectA = {
               case:
-                "a" +
+                'a' +
                 e.case?.substring(0, 1).toUpperCase() +
                 e.case?.substring(1),
               value: e.value,
-            } as Effect_RandomEffect["effectA"];
+            } as Effect_RandomEffect['effectA'];
             save(description);
           }}
         />
@@ -796,11 +796,11 @@ function RandomEffectDetails({
           setEffect={(e, description) => {
             effect.effectB = {
               case:
-                "b" +
+                'b' +
                 e.case?.substring(0, 1).toUpperCase() +
                 e.case?.substring(1),
               value: e.value,
-            } as Effect_RandomEffect["effectB"];
+            } as Effect_RandomEffect['effectB'];
             save(description);
           }}
         />
@@ -814,8 +814,8 @@ function RandomEffectDetails({
 }
 
 interface EffectSelectorProps {
-  effect: EffectProto["effect"];
-  setEffect: (effect: EffectProto["effect"], description: string) => void;
+  effect: EffectProto['effect'];
+  setEffect: (effect: EffectProto['effect'], description: string) => void;
   showRandom?: boolean;
 }
 
@@ -828,20 +828,20 @@ function EffectSelector({
     <>
       <IconButton
         title="Static Effect"
-        variant={effect.case === "staticEffect" ? "primary" : "default"}
+        variant={effect.case === 'staticEffect' ? 'primary' : 'default'}
         onClick={() => {
-          if (effect.case === "staticEffect") {
+          if (effect.case === 'staticEffect') {
             return;
           }
 
           setEffect(
             {
-              case: "staticEffect",
+              case: 'staticEffect',
               value: new Effect_StaticEffect({
                 state: getStates(effect.value).a.clone(),
               }),
             },
-            "Change effect type to static.",
+            'Change effect type to static.',
           );
         }}
       >
@@ -849,21 +849,21 @@ function EffectSelector({
       </IconButton>
       <IconButton
         title="Ramp Effect"
-        variant={effect.case === "rampEffect" ? "primary" : "default"}
+        variant={effect.case === 'rampEffect' ? 'primary' : 'default'}
         onClick={() => {
-          if (effect.case === "rampEffect") {
+          if (effect.case === 'rampEffect') {
             return;
           }
 
           setEffect(
             {
-              case: "rampEffect",
+              case: 'rampEffect',
               value: new Effect_RampEffect({
                 stateStart: getStates(effect.value).a.clone(),
                 stateEnd: getStates(effect.value).b.clone(),
               }),
             },
-            "Change effect type to ramp.",
+            'Change effect type to ramp.',
           );
         }}
       >
@@ -871,15 +871,15 @@ function EffectSelector({
       </IconButton>
       <IconButton
         title="Strobe Effect"
-        variant={effect.case === "strobeEffect" ? "primary" : "default"}
+        variant={effect.case === 'strobeEffect' ? 'primary' : 'default'}
         onClick={() => {
-          if (effect.case === "strobeEffect") {
+          if (effect.case === 'strobeEffect') {
             return;
           }
 
           setEffect(
             {
-              case: "strobeEffect",
+              case: 'strobeEffect',
               value: new Effect_StrobeEffect({
                 stateA: getStates(effect.value).a.clone(),
                 stateB: getStates(effect.value).b.clone(),
@@ -887,7 +887,7 @@ function EffectSelector({
                 stateBFames: 3,
               }),
             },
-            "Change effect type to strobe.",
+            'Change effect type to strobe.',
           );
         }}
       >
@@ -896,15 +896,15 @@ function EffectSelector({
       {showRandom && (
         <IconButton
           title="Random Effect"
-          variant={effect.case === "randomEffect" ? "primary" : "default"}
+          variant={effect.case === 'randomEffect' ? 'primary' : 'default'}
           onClick={() => {
-            if (effect.case === "randomEffect") {
+            if (effect.case === 'randomEffect') {
               return;
             }
 
             setEffect(
               {
-                case: "randomEffect",
+                case: 'randomEffect',
                 value: new Effect_RandomEffect({
                   seed: 0,
                   effectAMin: 0,
@@ -913,20 +913,20 @@ function EffectSelector({
                   effectBVariation: 1000,
 
                   effectA: {
-                    case: "aStaticEffect",
+                    case: 'aStaticEffect',
                     value: new Effect_StaticEffect({
                       state: getStates(effect.value).a.clone(),
                     }),
                   },
                   effectB: {
-                    case: "bStaticEffect",
+                    case: 'bStaticEffect',
                     value: new Effect_StaticEffect({
                       state: getStates(effect.value).b.clone(),
                     }),
                   },
                 }),
               },
-              "Change effect type to random.",
+              'Change effect type to random.',
             );
           }}
         >
@@ -938,7 +938,7 @@ function EffectSelector({
 }
 
 interface RandomEffectSubDetailsProps {
-  effect: Effect_RandomEffect["effectA"] | Effect_RandomEffect["effectB"];
+  effect: Effect_RandomEffect['effectA'] | Effect_RandomEffect['effectB'];
   availableChannels: ChannelTypes[];
 }
 
@@ -947,8 +947,8 @@ function RandomEffectSubDetails({
   availableChannels,
 }: RandomEffectSubDetailsProps) {
   switch (effect.case) {
-    case "aStaticEffect":
-    case "bStaticEffect":
+    case 'aStaticEffect':
+    case 'bStaticEffect':
       return (
         <StaticEffectDetails
           effect={effect.value}
@@ -956,8 +956,8 @@ function RandomEffectSubDetails({
           showPhase={false}
         />
       );
-    case "aRampEffect":
-    case "bRampEffect":
+    case 'aRampEffect':
+    case 'bRampEffect':
       return (
         <RampEffectDetails
           effect={effect.value}
@@ -965,8 +965,8 @@ function RandomEffectSubDetails({
           showPhase={false}
         />
       );
-    case "aStrobeEffect":
-    case "bStrobeEffect":
+    case 'aStrobeEffect':
+    case 'bStrobeEffect':
       return (
         <StrobeEffectDetails
           effect={effect.value}
@@ -975,6 +975,6 @@ function RandomEffectSubDetails({
         />
       );
     default:
-      return "Not Set";
+      return 'Not Set';
   }
 }

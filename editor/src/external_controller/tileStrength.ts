@@ -1,7 +1,7 @@
-import { ControllerMapping_TileStrength } from "@dmx-controller/proto/controller_pb";
-import { Project } from "@dmx-controller/proto/project_pb";
-import { ControlCommandType } from "../contexts/ControllerContext";
-import { tileActiveAmount, toggleTile } from "../util/tile";
+import { ControllerMapping_TileStrength } from '@dmx-controller/proto/controller_pb';
+import { Project } from '@dmx-controller/proto/project_pb';
+import { ControlCommandType } from '../contexts/ControllerContext';
+import { tileActiveAmount, toggleTile } from '../util/tile';
 
 export function performTileStrength(
   project: Project,
@@ -16,7 +16,7 @@ export function performTileStrength(
     if (cct != null) {
       // Fader input.
       tileMapping.tile.transition = {
-        case: "absoluteStrength",
+        case: 'absoluteStrength',
         value: value,
       };
       return true;

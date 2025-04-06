@@ -1,6 +1,6 @@
-import { FixtureState } from "@dmx-controller/proto/effect_pb";
-import { RenderContext } from "./universe";
-import { Color, PaletteColor } from "@dmx-controller/proto/color_pb";
+import { FixtureState } from '@dmx-controller/proto/effect_pb';
+import { RenderContext } from './universe';
+import { Color, PaletteColor } from '@dmx-controller/proto/color_pb';
 
 const COLOR_BLACK = new Color({ red: 0, green: 0, blue: 0, white: 0 });
 const COLOR_WHITE = new Color({ red: 0, green: 0, blue: 0, white: 1 });
@@ -13,7 +13,7 @@ export function applyState(state: FixtureState, context: RenderContext): void {
 
   const universe = context.universe;
   switch (state.lightColor.case) {
-    case "color":
+    case 'color':
       {
         const color = state.lightColor.value;
         device.setColor(
@@ -25,7 +25,7 @@ export function applyState(state: FixtureState, context: RenderContext): void {
         );
       }
       break;
-    case "paletteColor": {
+    case 'paletteColor': {
       let color: Color;
       switch (state.lightColor.value) {
         case PaletteColor.PALETTE_BLACK:
@@ -37,7 +37,7 @@ export function applyState(state: FixtureState, context: RenderContext): void {
         case PaletteColor.PALETTE_PRIMARY:
           if (context.colorPalette.primary?.color == null) {
             throw new Error(
-              "Tried to fetch primary color from undefined palette!",
+              'Tried to fetch primary color from undefined palette!',
             );
           }
           color = context.colorPalette.primary.color;
@@ -45,7 +45,7 @@ export function applyState(state: FixtureState, context: RenderContext): void {
         case PaletteColor.PALETTE_SECONDARY:
           if (context.colorPalette.secondary?.color == null) {
             throw new Error(
-              "Tried to fetch secondary color from undefined palette!",
+              'Tried to fetch secondary color from undefined palette!',
             );
           }
           color = context.colorPalette.secondary.color;
@@ -53,7 +53,7 @@ export function applyState(state: FixtureState, context: RenderContext): void {
         case PaletteColor.PALETTE_TERTIARY:
           if (context.colorPalette.tertiary?.color == null) {
             throw new Error(
-              "Tried to fetch tertiary color from undefined palette!",
+              'Tried to fetch tertiary color from undefined palette!',
             );
           }
           color = context.colorPalette.tertiary.color;
@@ -74,31 +74,31 @@ export function applyState(state: FixtureState, context: RenderContext): void {
   }
 
   if (state.pan != null) {
-    device.setAngle(universe, "pan", state.pan);
+    device.setAngle(universe, 'pan', state.pan);
   }
 
   if (state.tilt != null) {
-    device.setAngle(universe, "tilt", state.tilt);
+    device.setAngle(universe, 'tilt', state.tilt);
   }
 
   if (state.dimmer != null) {
-    device.setAmount(universe, "dimmer", state.dimmer);
+    device.setAmount(universe, 'dimmer', state.dimmer);
   }
 
   if (state.strobe != null) {
-    device.setAmount(universe, "strobe", state.strobe);
+    device.setAmount(universe, 'strobe', state.strobe);
   }
 
   if (state.width != null) {
-    device.setAmount(universe, "width", state.width);
+    device.setAmount(universe, 'width', state.width);
   }
 
   if (state.height != null) {
-    device.setAmount(universe, "height", state.height);
+    device.setAmount(universe, 'height', state.height);
   }
 
   if (state.zoom != null) {
-    device.setAmount(universe, "zoom", state.zoom);
+    device.setAmount(universe, 'zoom', state.zoom);
   }
 
   for (const channel of state.channels) {

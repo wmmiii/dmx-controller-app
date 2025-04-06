@@ -6,19 +6,19 @@ import {
   useMemo,
   useRef,
   useState,
-} from "react";
-import MinimapPlugin from "wavesurfer.js/dist/plugins/minimap.js";
-import RegionsPlugin from "wavesurfer.js/dist/plugins/regions.js";
-import WaveSurfer from "wavesurfer.js";
+} from 'react';
+import MinimapPlugin from 'wavesurfer.js/dist/plugins/minimap.js';
+import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions.js';
+import WaveSurfer from 'wavesurfer.js';
 import {
   BEAT_MARKER,
   WAVEFORM_COLOR,
   WAVEFORM_CURSOR_COLOR,
   WAVEFORM_PROGRESS_COLOR,
   WAVEFORM_SAMPLE_RATE,
-} from "../util/styleUtils";
-import { BeatMetadata } from "@dmx-controller/proto/beat_pb";
-import { ShortcutContext } from "../contexts/ShortcutContext";
+} from '../util/styleUtils';
+import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
+import { ShortcutContext } from '../contexts/ShortcutContext';
 
 export interface AudioController {
   play: () => void;
@@ -77,10 +77,10 @@ export function AudioTrackVisualizer({
         ],
       });
 
-      ws.on("timeupdate", (seconds: number) => onProgress(seconds * 1000));
-      ws.on("play", () => setPlaying(true));
-      ws.on("pause", () => setPlaying(false));
-      ws.on("decode", (seconds: number) => {
+      ws.on('timeupdate', (seconds: number) => onProgress(seconds * 1000));
+      ws.on('play', () => setPlaying(true));
+      ws.on('pause', () => setPlaying(false));
+      ws.on('decode', (seconds: number) => {
         const ms = seconds * 1000;
         setVisible && setVisible(0, ms);
         if (setTotalDuration) {
@@ -121,9 +121,9 @@ export function AudioTrackVisualizer({
         visibleDuration.current = endTime - startTime;
         setVisible(startTime * 1000, endTime * 1000);
       };
-      ws.on("scroll", callback);
+      ws.on('scroll', callback);
 
-      () => ws.un("scroll", callback);
+      () => ws.un('scroll', callback);
     }
   }, [ws, setVisible]);
 
@@ -135,9 +135,9 @@ export function AudioTrackVisualizer({
           ws.setTime(0);
         }
       };
-      ws.on("timeupdate", callback);
+      ws.on('timeupdate', callback);
 
-      () => ws.un("timeupdate", callback);
+      () => ws.un('timeupdate', callback);
     }
   }, [ws, loop]);
 
@@ -192,29 +192,29 @@ export function AudioTrackVisualizer({
     if (ws) {
       return setShortcuts([
         {
-          shortcut: { key: "Home" },
+          shortcut: { key: 'Home' },
           action: () => {
             ws.seekTo(0);
           },
-          description: "Jump to start of track.",
+          description: 'Jump to start of track.',
         },
         {
-          shortcut: { key: "End" },
+          shortcut: { key: 'End' },
           action: () => {
             ws.seekTo(1);
           },
-          description: "Jump to end of track.",
+          description: 'Jump to end of track.',
         },
         {
-          shortcut: { key: "PageUp" },
+          shortcut: { key: 'PageUp' },
           action: () => {
             const t = ws.getCurrentTime();
             ws.setTime(Math.max(t - (visibleDuration.current || 0) / 2, 0));
           },
-          description: "Jump backwards in track.",
+          description: 'Jump backwards in track.',
         },
         {
-          shortcut: { key: "PageDown" },
+          shortcut: { key: 'PageDown' },
           action: () => {
             const t = ws.getCurrentTime();
             ws.setTime(
@@ -224,7 +224,7 @@ export function AudioTrackVisualizer({
               ),
             );
           },
-          description: "Jump forwards in track",
+          description: 'Jump forwards in track',
         },
       ]);
     }

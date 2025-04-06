@@ -1,4 +1,4 @@
-import { JSX } from "react";
+import { JSX } from 'react';
 import {
   PropsWithChildren,
   createContext,
@@ -7,10 +7,10 @@ import {
   useEffect,
   useRef,
   useState,
-} from "react";
-import { Modal } from "../components/Modal";
-import { DialogContext } from "./DialogContext";
-import IconBxErrorAlt from "../icons/IconBxErrorAlt";
+} from 'react';
+import { Modal } from '../components/Modal';
+import { DialogContext } from './DialogContext';
+import IconBxErrorAlt from '../icons/IconBxErrorAlt';
 
 type SerialPort = any;
 
@@ -32,7 +32,7 @@ const EMPTY_CONTEXT = {
 };
 
 export const SerialContext = createContext(EMPTY_CONTEXT);
-const SERIAL_MISSING_KEY = "serial-missing";
+const SERIAL_MISSING_KEY = 'serial-missing';
 
 export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
   const dialogContext = useContext(DialogContext);
@@ -62,7 +62,7 @@ export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
               Please download&nbsp;
               <a href="https://www.google.com/chrome/" target="_blank">
                 Google Chrome
-              </a>{" "}
+              </a>{' '}
               or another Chromium based browser that supports the &nbsp;
               <code>navigator.serial</code> api.
             </p>
@@ -88,7 +88,7 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
   // Expose render function for debugging purposes.
   useEffect(() => {
     const global = (window || globalThis) as any;
-    global["debugRender"] = () => renderUniverse.current(frameRef.current);
+    global['debugRender'] = () => renderUniverse.current(frameRef.current);
   }, [renderUniverse]);
 
   const connect = useCallback(async () => {
@@ -103,15 +103,15 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
       await port.open({
         baudRate: 192_000,
         dataBits: 8,
-        flowControl: "none",
-        parity: "none",
+        flowControl: 'none',
+        parity: 'none',
         stopBits: 2,
         bufferSize: 512,
       });
 
       setPort(port);
     } catch (e) {
-      console.error("Could not open serial port!", e);
+      console.error('Could not open serial port!', e);
     }
   }, [port]);
 
@@ -159,7 +159,7 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
           await writer.write(universe);
           updateSubscribers.current.forEach((c) => c(universe));
         } catch (e) {
-          console.error("Could not write to serial port!", e);
+          console.error('Could not write to serial port!', e);
           closed = true;
           resetFps();
           disconnect();

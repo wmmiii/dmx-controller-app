@@ -1,10 +1,10 @@
-import { Color } from "@dmx-controller/proto/color_pb";
+import { Color } from '@dmx-controller/proto/color_pb';
 
-import styles from "ColorSwatch.module.scss";
-import { useContext } from "react";
-import { ProjectContext } from "../contexts/ProjectContext";
-import ColorPicker, { themes } from "react-pick-color";
-import { Popover } from "./Popover";
+import styles from 'ColorSwatch.module.scss';
+import { useContext } from 'react';
+import { ProjectContext } from '../contexts/ProjectContext';
+import ColorPicker, { themes } from 'react-pick-color';
+import { Popover } from './Popover';
 
 interface ColorSwatchProps {
   color: Color;
@@ -14,8 +14,8 @@ interface ColorSwatchProps {
 export function ColorSwatch({ color, updateDescription }: ColorSwatchProps) {
   const { save, update } = useContext(ProjectContext);
 
-  themes.dark.borderColor = "transparent";
-  themes.dark.background = "transparent";
+  themes.dark.borderColor = 'transparent';
+  themes.dark.background = 'transparent';
 
   if (updateDescription) {
     return (
@@ -31,7 +31,7 @@ export function ColorSwatch({ color, updateDescription }: ColorSwatchProps) {
             }}
             onChange={({ rgb }) => {
               if (color == null) {
-                throw new Error("Color not defined!");
+                throw new Error('Color not defined!');
               }
 
               color.red = rgb.r / 255;

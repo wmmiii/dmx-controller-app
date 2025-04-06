@@ -1,5 +1,5 @@
 // icon:bx-chevron-down | Boxicons https://boxicons.com/ | Atisa
-import * as React from "react";
+import * as React from 'react';
 
 function IconBxChevronDown(props: React.SVGProps<SVGSVGElement>) {
   return (

@@ -4,7 +4,7 @@ import {
   Effect_StaticEffect,
   Effect_StrobeEffect,
   FixtureState,
-} from "@dmx-controller/proto/effect_pb";
+} from '@dmx-controller/proto/effect_pb';
 
 export function getStates(
   effect:

@@ -1,5 +1,5 @@
 // icon:bxs-bolt | Boxicons https://boxicons.com/ | Atisa
-import * as React from "react";
+import * as React from 'react';
 
 function IconBxsBolt(props: React.SVGProps<SVGSVGElement>) {
   return (

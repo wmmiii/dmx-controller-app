@@ -4,9 +4,9 @@ import {
   createContext,
   useCallback,
   useState,
-} from "react";
+} from 'react';
 
-const DIALOG_DISMISSED_KEY = "dialogs-dismissed";
+const DIALOG_DISMISSED_KEY = 'dialogs-dismissed';
 
 export const DialogContext = createContext({
   isDismissed: (dialogName: string) => loadDismissed()[dialogName],

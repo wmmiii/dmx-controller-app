@@ -1,5 +1,5 @@
 // icon:bx-menu | Boxicons https://boxicons.com/ | Atisa
-import * as React from "react";
+import * as React from 'react';
 
 function IconBxMenu(props: React.SVGProps<SVGSVGElement>) {
   return (

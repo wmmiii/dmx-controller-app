@@ -1,5 +1,5 @@
 // icon:bxs-sun | Boxicons https://boxicons.com/ | Atisa
-import * as React from "react";
+import * as React from 'react';
 
 function IconBxsSun(props: React.SVGProps<SVGSVGElement>) {
   return (

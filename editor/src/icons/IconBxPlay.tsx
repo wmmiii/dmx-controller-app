@@ -1,5 +1,5 @@
 // icon:bx-play | Boxicons https://boxicons.com/ | Atisa
-import * as React from "react";
+import * as React from 'react';
 
 function IconBxPlay(props: React.SVGProps<SVGSVGElement>) {
   return (

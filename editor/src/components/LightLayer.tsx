@@ -1,9 +1,9 @@
-import styles from "./LightLayer.module.scss";
-import { Effect as EffectComponent, EffectSelectContext } from "./Effect";
-import { Effect } from "@dmx-controller/proto/effect_pb";
-import { LightLayer as LightLayerProto } from "@dmx-controller/proto/light_layer_pb";
-import { JSX, useContext, useState } from "react";
-import { ProjectContext } from "../contexts/ProjectContext";
+import styles from './LightLayer.module.scss';
+import { Effect as EffectComponent, EffectSelectContext } from './Effect';
+import { Effect } from '@dmx-controller/proto/effect_pb';
+import { LightLayer as LightLayerProto } from '@dmx-controller/proto/light_layer_pb';
+import { JSX, useContext, useState } from 'react';
+import { ProjectContext } from '../contexts/ProjectContext';
 
 interface NewEffect {
   firstMs: number;
@@ -98,11 +98,11 @@ export function LightLayer({
                     stateStart: {},
                     stateEnd: {},
                   },
-                  case: "rampEffect",
+                  case: 'rampEffect',
                 },
               });
               layer.effects.splice(newEffect.effectIndex, 0, e);
-              save("Add new effect.");
+              save('Add new effect.');
               setNewEffect(null);
               selectEffect({
                 track: trackIndex,

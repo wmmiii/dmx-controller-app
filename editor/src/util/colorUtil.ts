@@ -1,5 +1,5 @@
-import { Color, ColorPalette } from "@dmx-controller/proto/color_pb";
-import ColorConverter from "cie-rgb-color-converter";
+import { Color, ColorPalette } from '@dmx-controller/proto/color_pb';
+import ColorConverter from 'cie-rgb-color-converter';
 
 export function stringifyColor(color: Color) {
   return `rgb(${color.red * 255}, ${color.green * 255}, ${color.blue * 255})`;

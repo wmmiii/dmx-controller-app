@@ -1,12 +1,12 @@
-import { JSX } from "react";
+import { JSX } from 'react';
 
-import styles from "./Button.module.scss";
+import styles from './Button.module.scss';
 
 interface BaseButtonProps {
   className?: string;
   onClick: () => void;
   disabled?: boolean;
-  variant?: "default" | "primary" | "warning";
+  variant?: 'default' | 'primary' | 'warning';
 }
 
 interface ButtonProps extends BaseButtonProps {
@@ -29,7 +29,7 @@ export function Button({
 
   return (
     <button
-      className={classes.join(" ")}
+      className={classes.join(' ')}
       onClick={(e) => {
         onClick();
         e.stopPropagation();
@@ -65,17 +65,17 @@ export function IconButton({
   }
 
   return (
-    <button title={title} className={classes.join(" ")} onMouseDown={onClick}>
+    <button title={title} className={classes.join(' ')} onMouseDown={onClick}>
       {children}
     </button>
   );
 }
 
-function classFromVariant(variant: BaseButtonProps["variant"]) {
+function classFromVariant(variant: BaseButtonProps['variant']) {
   switch (variant) {
-    case "primary":
+    case 'primary':
       return styles.primaryVariant;
-    case "warning":
+    case 'warning':
       return styles.warningVariant;
     default:
       return styles.defaultVariant;

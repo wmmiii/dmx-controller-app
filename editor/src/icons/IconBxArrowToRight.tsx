@@ -1,5 +1,5 @@
 // icon:bx-arrow-to-right | Boxicons https://boxicons.com/ | Atisa
-import * as React from "react";
+import * as React from 'react';
 
 function IconBxArrowToRight(props: React.SVGProps<SVGSVGElement>) {
   return (

@@ -1,5 +1,5 @@
 // icon:bx-move | Boxicons https://boxicons.com/ | Atisa
-import * as React from "react";
+import * as React from 'react';
 
 function IconBxMove(props: React.SVGProps<SVGSVGElement>) {
   return (

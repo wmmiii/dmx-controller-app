@@ -1,23 +1,23 @@
-import IconBxPlus from "../icons/IconBxPlus";
-import IconBxX from "../icons/IconBxX";
-import styles from "./EffectState.module.scss";
+import IconBxPlus from '../icons/IconBxPlus';
+import IconBxX from '../icons/IconBxX';
+import styles from './EffectState.module.scss';
 import {
   AMOUNT_CHANNELS,
   ANGLE_CHANNELS,
   ChannelTypes,
   COLOR_CHANNELS,
-} from "../engine/channel";
-import { Button, IconButton } from "./Button";
-import { Color, PaletteColor } from "@dmx-controller/proto/color_pb";
-import { ColorSwatch } from "./ColorSwatch";
+} from '../engine/channel';
+import { Button, IconButton } from './Button';
+import { Color, PaletteColor } from '@dmx-controller/proto/color_pb';
+import { ColorSwatch } from './ColorSwatch';
 import {
   FixtureState as FixtureStateProto,
   FixtureState_Channel,
-} from "@dmx-controller/proto/effect_pb";
-import { NumberInput } from "./Input";
-import { JSX, useCallback } from "react";
+} from '@dmx-controller/proto/effect_pb';
+import { NumberInput } from './Input';
+import { JSX, useCallback } from 'react';
 
-type ColorSelectorType = "none" | "color" | PaletteColor;
+type ColorSelectorType = 'none' | 'color' | PaletteColor;
 
 interface EffectStateProps {
   state: FixtureStateProto;
@@ -32,14 +32,14 @@ export function EffectState({
 }: EffectStateProps): JSX.Element {
   const onColorTypeChange = useCallback(
     (type: ColorSelectorType) => {
-      if (type === "none") {
+      if (type === 'none') {
         state.lightColor = {
           case: undefined,
           value: undefined,
         };
-      } else if (type === "color") {
+      } else if (type === 'color') {
         state.lightColor = {
-          case: "color",
+          case: 'color',
           value: new Color({
             red: 1,
             green: 1,
@@ -49,7 +49,7 @@ export function EffectState({
         };
       } else {
         state.lightColor = {
-          case: "paletteColor",
+          case: 'paletteColor',
           value: parseInt(type.toString()),
         };
       }
@@ -60,10 +60,10 @@ export function EffectState({
 
   let colorType: ColorSelectorType;
   if (state.lightColor.case === undefined) {
-    colorType = "none";
-  } else if (state.lightColor.case === "color") {
-    colorType = "color";
-  } else if (state.lightColor.case === "paletteColor") {
+    colorType = 'none';
+  } else if (state.lightColor.case === 'color') {
+    colorType = 'color';
+  } else if (state.lightColor.case === 'paletteColor') {
     colorType = state.lightColor.value;
   } else {
     throw new Error(`Unrecognized light color type! ${state.lightColor}`);
@@ -74,7 +74,7 @@ export function EffectState({
       {availableChannels.findIndex(
         (channel) =>
           COLOR_CHANNELS.indexOf(channel as any) > -1 ||
-          channel === "color_wheel",
+          channel === 'color_wheel',
       ) > -1 && (
         <>
           <label>
@@ -94,7 +94,7 @@ export function EffectState({
               <option value={PaletteColor.PALETTE_BLACK}>Black</option>
             </select>
           </label>
-          {state.lightColor.case === "color" && (
+          {state.lightColor.case === 'color' && (
             <label>
               <span>Custom color</span>
               <ColorSwatch
@@ -103,12 +103,12 @@ export function EffectState({
               />
             </label>
           )}
-          {state.lightColor.case === "color" && (
+          {state.lightColor.case === 'color' && (
             <RangeChannel
               name="White"
               value={state.lightColor.value.white}
               onChange={(v) => {
-                if (state.lightColor.case === "color") {
+                if (state.lightColor.case === 'color') {
                   state.lightColor.value.white = v;
                   onChange(state);
                 }

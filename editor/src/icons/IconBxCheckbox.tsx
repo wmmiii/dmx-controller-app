@@ -1,5 +1,5 @@
 // icon:bx-checkbox | Boxicons https://boxicons.com/ | Atisa
-import * as React from "react";
+import * as React from 'react';
 
 function IconBxCheckbox(props: React.SVGProps<SVGSVGElement>) {
   return (

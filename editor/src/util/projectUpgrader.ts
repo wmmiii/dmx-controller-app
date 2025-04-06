@@ -1,13 +1,13 @@
-import { Project } from "@dmx-controller/proto/project_pb";
-import { idMapToArray } from "./mapUtils";
-import { Effect, FixtureState } from "@dmx-controller/proto/effect_pb";
-import { randomUint64 } from "./numberUtils";
-import { Universe } from "@dmx-controller/proto/universe_pb";
+import { Project } from '@dmx-controller/proto/project_pb';
+import { idMapToArray } from './mapUtils';
+import { Effect, FixtureState } from '@dmx-controller/proto/effect_pb';
+import { randomUint64 } from './numberUtils';
+import { Universe } from '@dmx-controller/proto/universe_pb';
 import {
   OutputId,
   OutputId_FixtureMapping,
-} from "@dmx-controller/proto/output_id_pb";
-import { LightTrack } from "@dmx-controller/proto/light_track_pb";
+} from '@dmx-controller/proto/output_id_pb';
+import { LightTrack } from '@dmx-controller/proto/light_track_pb';
 import {
   FixtureDefinition,
   FixtureDefinition_Channel_AmountMapping,
@@ -15,13 +15,13 @@ import {
   FixtureDefinition_Mode,
   PhysicalFixtureGroup,
   PhysicalFixtureGroup_FixtureList,
-} from "@dmx-controller/proto/fixture_pb";
+} from '@dmx-controller/proto/fixture_pb';
 import {
   Scene_Tile_EffectGroupTile_EffectChannel,
   Scene_TileMap,
-} from "@dmx-controller/proto/scene_pb";
-import { isAmountChannel, isAngleChannel } from "../engine/channel";
-import { ControllerMapping } from "@dmx-controller/proto/controller_pb";
+} from '@dmx-controller/proto/scene_pb';
+import { isAmountChannel, isAngleChannel } from '../engine/channel';
+import { ControllerMapping } from '@dmx-controller/proto/controller_pb';
 
 export default function upgradeProject(project: Project): void {
   upgradeIndices(project);
@@ -62,14 +62,14 @@ function upgradeIndices(project: Project): void {
   if (shiftMapping(project.physicalFixtures)) {
     for (const s of project.shows) {
       for (const t of s.lightTracks) {
-        if (t.output.case === "physicalFixtureId") {
+        if (t.output.case === 'physicalFixtureId') {
           t.output.value += 1;
         }
       }
     }
 
     for (const d of project.defaultChannelValues) {
-      if (d.output.case === "physicalFixtureId") {
+      if (d.output.case === 'physicalFixtureId') {
         d.output.value += 1;
       }
     }
@@ -86,14 +86,14 @@ function upgradeIndices(project: Project): void {
   if (shiftMapping(project.physicalFixtureGroups)) {
     for (const s of project.shows) {
       for (const t of s.lightTracks) {
-        if (t.output.case === "physicalFixtureGroupId") {
+        if (t.output.case === 'physicalFixtureGroupId') {
           t.output.value += 1;
         }
       }
     }
 
     for (const d of project.defaultChannelValues) {
-      if (d.output.case === "physicalFixtureGroupId") {
+      if (d.output.case === 'physicalFixtureGroupId') {
         d.output.value += 1;
       }
     }
@@ -156,7 +156,7 @@ function upgradeUniverse(project: Project) {
 
   // Create new universe.
   const universe = new Universe({
-    name: "Default",
+    name: 'Default',
   });
 
   const fixtureMapping: { [id: number]: bigint } = {};
@@ -195,21 +195,21 @@ function upgradeUniverse(project: Project) {
   project.universes[universeId.toString()] = universe;
 
   const updateLightTrack = (track: LightTrack) => {
-    if (track.output.case === "physicalFixtureGroupId") {
+    if (track.output.case === 'physicalFixtureGroupId') {
       track.outputId = new OutputId({
         output: {
-          case: "group",
+          case: 'group',
           value: groupMapping[track.output.value],
         },
       });
-    } else if (track.output.case === "physicalFixtureId") {
+    } else if (track.output.case === 'physicalFixtureId') {
       const fixtureMap = new OutputId_FixtureMapping();
       fixtureMap.fixtures[universeId.toString()] =
         fixtureMapping[track.output.value];
 
       track.outputId = new OutputId({
         output: {
-          case: "fixtures",
+          case: 'fixtures',
           value: fixtureMap,
         },
       });
@@ -231,24 +231,24 @@ function upgradeUniverse(project: Project) {
     .flatMap((s) => s.rows)
     .flatMap((r) => r.components)
     .forEach((c) => {
-      if (c.description.case === "effectGroup") {
+      if (c.description.case === 'effectGroup') {
         const description = c.description.value;
 
-        if (description.output.case === "physicalFixtureGroupId") {
+        if (description.output.case === 'physicalFixtureGroupId') {
           description.outputId = new OutputId({
             output: {
-              case: "group",
+              case: 'group',
               value: groupMapping[description.output.value],
             },
           });
-        } else if (description.output.case === "physicalFixtureId") {
+        } else if (description.output.case === 'physicalFixtureId') {
           const fixtureMap = new OutputId_FixtureMapping();
           fixtureMap.fixtures[universeId.toString()] =
             fixtureMapping[description.output.value];
 
           description.outputId = new OutputId({
             output: {
-              case: "fixtures",
+              case: 'fixtures',
               value: fixtureMap,
             },
           });
@@ -257,7 +257,7 @@ function upgradeUniverse(project: Project) {
           case: undefined,
           value: undefined,
         };
-      } else if (c.description.case === "sequence") {
+      } else if (c.description.case === 'sequence') {
         c.description.value.lightTracks.forEach(updateLightTrack);
       }
     });
@@ -271,7 +271,7 @@ function upgradeLiveEffects(project: Project) {
     .flatMap((s) => s.rows)
     .flatMap((r) => r.components)
     .forEach((c) => {
-      if (c.description.case === "effectGroup") {
+      if (c.description.case === 'effectGroup') {
         const effect = c.description.value;
         if (effect.outputId != null) {
           effect.channels = [
@@ -331,7 +331,7 @@ function updateFixtureDefinitionMapping(project: Project) {
     .forEach((c) => {
       if (isAngleChannel(c.type)) {
         c.mapping = {
-          case: "angleMapping",
+          case: 'angleMapping',
           value: new FixtureDefinition_Channel_AngleMapping({
             minDegrees: c.deprecatedMinDegrees,
             maxDegrees: c.deprecatedMaxDegrees,
@@ -339,7 +339,7 @@ function updateFixtureDefinitionMapping(project: Project) {
         };
       } else if (isAmountChannel(c.type)) {
         c.mapping = {
-          case: "amountMapping",
+          case: 'amountMapping',
           value: new FixtureDefinition_Channel_AmountMapping({
             minValue: c.deprecatedMinValue,
             maxValue: c.deprecatedMaxValue,
@@ -351,9 +351,9 @@ function updateFixtureDefinitionMapping(project: Project) {
 
 function upgradeColorTypes(project: Project) {
   const upgradeState = (state: FixtureState) => {
-    if (state?.lightColor.case === "rgb" || state?.lightColor.case === "rgbw") {
+    if (state?.lightColor.case === 'rgb' || state?.lightColor.case === 'rgbw') {
       state.lightColor = {
-        case: "color",
+        case: 'color',
         value: state.lightColor.value,
       };
     }
@@ -361,12 +361,12 @@ function upgradeColorTypes(project: Project) {
 
   const upgradeEffect = (effect: Effect) => {
     switch (effect.effect.case) {
-      case "staticEffect":
+      case 'staticEffect':
         if (effect.effect.value.state != null) {
           upgradeState(effect.effect.value.state);
         }
         break;
-      case "rampEffect":
+      case 'rampEffect':
         if (effect.effect.value.stateStart != null) {
           upgradeState(effect.effect.value.stateStart);
         }
@@ -374,7 +374,7 @@ function upgradeColorTypes(project: Project) {
           upgradeState(effect.effect.value.stateEnd);
         }
         break;
-      case "strobeEffect":
+      case 'strobeEffect':
         if (effect.effect.value.stateA != null) {
           upgradeState(effect.effect.value.stateA);
         }
@@ -389,15 +389,15 @@ function upgradeColorTypes(project: Project) {
     .flatMap((s) => s.rows)
     .flatMap((r) => r.components)
     .flatMap((c) => {
-      if (c.description.case === "sequence") {
+      if (c.description.case === 'sequence') {
         return c.description.value.lightTracks
           .flatMap((t) => t.layers)
           .flatMap((l) => l.effects);
-      } else if (c.description.case === "effectGroup") {
+      } else if (c.description.case === 'effectGroup') {
         return c.description.value.channels.map((c) => c.effect);
       }
       throw new Error(
-        "Tried to upgrade effects in unknown component effect description: " +
+        'Tried to upgrade effects in unknown component effect description: ' +
           c.description.case,
       );
     })
@@ -470,7 +470,7 @@ function upgradeFixtureDefinitions(project: Project) {
       manufacturer: oldDefinition.manufacturer,
     });
     project.fixtureDefinitions[newId].modes[mode] = new FixtureDefinition_Mode({
-      name: "Default",
+      name: 'Default',
       numChannels: oldDefinition.numChannels,
       channels: oldDefinition.channels,
     });
@@ -498,7 +498,7 @@ function upgradeFixtureDefinitions(project: Project) {
 
 function upgradeEffectTiming(project: Project) {
   const upgradeEffect = (effect: Effect) => {
-    if (effect.effect.case === "rampEffect") {
+    if (effect.effect.case === 'rampEffect') {
       const ramp = effect.effect.value;
       if (
         ramp.timingMode == 0 &&
@@ -516,15 +516,15 @@ function upgradeEffectTiming(project: Project) {
     .flatMap((s) => s.tileMap)
     .flatMap((t) => t.tile!)
     .flatMap((t) => {
-      if (t.description.case === "sequence") {
+      if (t.description.case === 'sequence') {
         return t.description.value.lightTracks
           .flatMap((t) => t.layers)
           .flatMap((l) => l.effects);
-      } else if (t.description.case === "effectGroup") {
+      } else if (t.description.case === 'effectGroup') {
         return t.description.value.channels.map((c) => c.effect);
       }
       throw new Error(
-        "Tried to upgrade effects in unknown component effect description: " +
+        'Tried to upgrade effects in unknown component effect description: ' +
           t.description.case,
       );
     })

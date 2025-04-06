@@ -1,13 +1,13 @@
-import { JSX, useContext, useState } from "react";
-import styles from "./AssetBrowserPage.module.scss";
-import { AudioFile } from "@dmx-controller/proto/audio_pb";
-import { BeatEditor } from "../components/BeatEditor";
-import { Button } from "../components/Button";
-import { HorizontalSplitPane } from "../components/SplitPane";
-import { ProjectContext } from "../contexts/ProjectContext";
-import { Project_Assets } from "@dmx-controller/proto/project_pb";
-import { formatBytes } from "../util/numberUtils";
-import { idMapToArray, nextId } from "../util/mapUtils";
+import { JSX, useContext, useState } from 'react';
+import styles from './AssetBrowserPage.module.scss';
+import { AudioFile } from '@dmx-controller/proto/audio_pb';
+import { BeatEditor } from '../components/BeatEditor';
+import { Button } from '../components/Button';
+import { HorizontalSplitPane } from '../components/SplitPane';
+import { ProjectContext } from '../contexts/ProjectContext';
+import { Project_Assets } from '@dmx-controller/proto/project_pb';
+import { formatBytes } from '../util/numberUtils';
+import { idMapToArray, nextId } from '../util/mapUtils';
 
 export default function AssetBrowserPage(): JSX.Element {
   const [selectedAudio, setSelectedAudio] = useState<AudioFile | null>(null);
@@ -40,7 +40,7 @@ function AudioFileList({
 
   return (
     <div
-      className={classes.join(" ")}
+      className={classes.join(' ')}
       onDragOver={(e) => {
         setHighlightDrop(true);
         e.preventDefault();
@@ -58,9 +58,9 @@ function AudioFileList({
         (async () => {
           for (let i = 0; i < e.dataTransfer.items.length; ++i) {
             const item = e.dataTransfer.items[i];
-            if (item.kind === "file") {
+            if (item.kind === 'file') {
               const file = item.getAsFile() as File;
-              if (file.type.startsWith("audio/")) {
+              if (file.type.startsWith('audio/')) {
                 const audioFile = new AudioFile({
                   name: file.name,
                   contents: new Uint8Array(await file.arrayBuffer()),

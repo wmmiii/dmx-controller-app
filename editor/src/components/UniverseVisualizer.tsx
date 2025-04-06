@@ -1,12 +1,12 @@
-import { useContext, useEffect, useMemo, useState } from "react";
+import { useContext, useEffect, useMemo, useState } from 'react';
 
-import styles from "./UniverseVisualizer.module.scss";
-import { ProjectContext } from "../contexts/ProjectContext";
-import { SerialContext } from "../contexts/SerialContext";
-import { getActiveUniverse } from "../util/projectUtils";
-import { ChannelTypes } from "../engine/channel";
-import { FixtureDefinition_Channel_ColorWheelMapping } from "@dmx-controller/proto/fixture_pb";
-import { Color } from "@dmx-controller/proto/color_pb";
+import styles from './UniverseVisualizer.module.scss';
+import { ProjectContext } from '../contexts/ProjectContext';
+import { SerialContext } from '../contexts/SerialContext';
+import { getActiveUniverse } from '../util/projectUtils';
+import { ChannelTypes } from '../engine/channel';
+import { FixtureDefinition_Channel_ColorWheelMapping } from '@dmx-controller/proto/fixture_pb';
+import { Color } from '@dmx-controller/proto/color_pb';
 
 export function UniverseVisualizer() {
   const { project } = useContext(ProjectContext);
@@ -51,21 +51,21 @@ export function UniverseVisualizer() {
         };
 
         const colorWheelIndex = Object.entries(mode.channels).find(
-          (c) => c[1].type === "color_wheel",
+          (c) => c[1].type === 'color_wheel',
         );
 
         return {
           id: i,
           name: f.name,
           offset: f.channelOffset,
-          rIndex: getChannel("red"),
-          gIndex: getChannel("green"),
-          bIndex: getChannel("blue"),
-          wIndex: getChannel("white"),
+          rIndex: getChannel('red'),
+          gIndex: getChannel('green'),
+          bIndex: getChannel('blue'),
+          wIndex: getChannel('white'),
           wheelIndex: colorWheelIndex
             ? parseInt(colorWheelIndex[0]) + f.channelOffset - 1
             : undefined,
-          dimmerIndex: getChannel("dimmer"),
+          dimmerIndex: getChannel('dimmer'),
           mode: mode,
         };
       });
@@ -88,10 +88,10 @@ export function UniverseVisualizer() {
             <li
               key={i}
               className={styles.visualizerDot}
-              title={"Unknown"}
+              title={'Unknown'}
               style={{
-                backgroundColor: "#000",
-                boxShadow: "0 0 8px #000",
+                backgroundColor: '#000',
+                boxShadow: '0 0 8px #000',
               }}
             ></li>
           );

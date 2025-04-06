@@ -1,4 +1,4 @@
-@import "../vars";
+@import '../vars';
 
 .state-row {
   align-items: center;
@@ -14,12 +14,12 @@
     gap: spacing(1);
     justify-content: space-between;
 
-    input[type="number"] {
+    input[type='number'] {
       width: 3em;
       flex-shrink: 0;
     }
 
-    input[type="range"] {
+    input[type='range'] {
       flex: 1;
       width: 0;
     }

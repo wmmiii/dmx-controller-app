@@ -1,4 +1,4 @@
-import { JSX } from "react";
+import { JSX } from 'react';
 import {
   PropsWithChildren,
   createContext,
@@ -7,14 +7,14 @@ import {
   useEffect,
   useRef,
   useState,
-} from "react";
-import { Modal } from "../components/Modal";
-import { SerialContext } from "./SerialContext";
+} from 'react';
+import { Modal } from '../components/Modal';
+import { SerialContext } from './SerialContext';
 
 type ShortcutBundle = Array<{
   shortcut: {
     key: string;
-    modifiers?: ("alt" | "ctrl" | "shift")[];
+    modifiers?: ('alt' | 'ctrl' | 'shift')[];
   };
   action: () => void;
   description: string;
@@ -49,8 +49,8 @@ export function ShortcutProvider({ children }: PropsWithChildren): JSX.Element {
       }
     };
 
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
   }, []);
 
   const setShortcuts = useCallback((shortcuts: ShortcutBundle) => {
@@ -66,19 +66,19 @@ export function ShortcutProvider({ children }: PropsWithChildren): JSX.Element {
   useEffect(() => {
     const defaultBundle: ShortcutBundle = [
       {
-        shortcut: { key: "KeyB" },
+        shortcut: { key: 'KeyB' },
         action: () => serialContext.setBlackout(!serialContext.blackout),
-        description: "Toggle output blackout.",
+        description: 'Toggle output blackout.',
       },
       {
-        shortcut: { key: "KeyC" },
+        shortcut: { key: 'KeyC' },
         action: () => serialContext.connect(),
-        description: "Connect to serial output.",
+        description: 'Connect to serial output.',
       },
       {
-        shortcut: { key: "Slash", modifiers: ["ctrl"] },
+        shortcut: { key: 'Slash', modifiers: ['ctrl'] },
         action: () => setShowHelp(!showHelp),
-        description: "Shows the Keyboard Shortcuts dialog.",
+        description: 'Shows the Keyboard Shortcuts dialog.',
       },
     ];
     shortcutBundles.current[0] = defaultBundle;
@@ -102,7 +102,7 @@ export function ShortcutProvider({ children }: PropsWithChildren): JSX.Element {
               ];
               return (
                 <p key={s.description}>
-                  <strong>{shortcut.join(" + ")}</strong>:&nbsp;
+                  <strong>{shortcut.join(' + ')}</strong>:&nbsp;
                   {s.description}
                 </p>
               );
@@ -116,13 +116,13 @@ export function ShortcutProvider({ children }: PropsWithChildren): JSX.Element {
 
 function matchesShortcut(
   event: KeyboardEvent,
-  shortcut: ShortcutBundle[0]["shortcut"],
+  shortcut: ShortcutBundle[0]['shortcut'],
 ): boolean {
   const modifiers = shortcut.modifiers || [];
   return (
     shortcut.key === event.code &&
-    event.altKey === modifiers.includes("alt") &&
-    event.ctrlKey === modifiers.includes("ctrl") &&
-    event.shiftKey === modifiers.includes("shift")
+    event.altKey === modifiers.includes('alt') &&
+    event.ctrlKey === modifiers.includes('ctrl') &&
+    event.shiftKey === modifiers.includes('shift')
   );
 }

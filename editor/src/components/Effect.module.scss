@@ -1,5 +1,5 @@
-@use "sass:color";
-@import "../vars";
+@use 'sass:color';
+@import '../vars';
 
 $handle-size: 30px;
 
@@ -11,7 +11,7 @@ $handle-size: 30px;
   .inner {
     background-color: color.scale($col-bg, $alpha: -20%);
     bottom: 2px;
-    content: "";
+    content: '';
     left: 2px;
     overflow: hidden;
     padding: spacing(1) - 2px;

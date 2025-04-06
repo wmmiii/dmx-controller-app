@@ -1,17 +1,17 @@
-import { JSX, createRef, useContext } from "react";
+import { JSX, createRef, useContext } from 'react';
 
-import IconBxBrushAlt from "../icons/IconBxBrush";
-import IconBxChevronDown from "../icons/IconBxChevronDown";
-import IconBxChevronUp from "../icons/IconBxChevronUp";
-import IconBxPlus from "../icons/IconBxPlus";
-import IconBxX from "../icons/IconBxX";
-import styles from "./LightTrack.module.scss";
-import { Button, IconButton } from "./Button";
-import { LightLayer as LightLayerProto } from "@dmx-controller/proto/light_layer_pb";
-import { LightLayer } from "../components/LightLayer";
-import { LightTrack as LightTrackProto } from "@dmx-controller/proto/light_track_pb";
-import { ProjectContext } from "../contexts/ProjectContext";
-import { getOutputName, OutputSelector } from "../components/OutputSelector";
+import IconBxBrushAlt from '../icons/IconBxBrush';
+import IconBxChevronDown from '../icons/IconBxChevronDown';
+import IconBxChevronUp from '../icons/IconBxChevronUp';
+import IconBxPlus from '../icons/IconBxPlus';
+import IconBxX from '../icons/IconBxX';
+import styles from './LightTrack.module.scss';
+import { Button, IconButton } from './Button';
+import { LightLayer as LightLayerProto } from '@dmx-controller/proto/light_layer_pb';
+import { LightLayer } from '../components/LightLayer';
+import { LightTrack as LightTrackProto } from '@dmx-controller/proto/light_track_pb';
+import { ProjectContext } from '../contexts/ProjectContext';
+import { getOutputName, OutputSelector } from '../components/OutputSelector';
 
 export interface MappingFunctions {
   msWidthToPxWidth: (ms: number) => number;
@@ -53,7 +53,7 @@ export function LightTrack({
             setValue={(o) => {
               track.outputId = o;
               const name = getOutputName(project, o);
-              if (name === "<Unset>") {
+              if (name === '<Unset>') {
                 save(`Unset track output.`);
               } else {
                 save(`Set track output to ${name}.`);
@@ -61,11 +61,11 @@ export function LightTrack({
             }}
           />
           <IconButton
-            title={track.collapsed ? "Expand" : "Collapse"}
+            title={track.collapsed ? 'Expand' : 'Collapse'}
             onClick={() => {
               track.collapsed = !track.collapsed;
               save(
-                `${track.collapsed ? "Collapse" : "Expand"} track ${getOutputName(project, track.outputId)}.`,
+                `${track.collapsed ? 'Collapse' : 'Expand'} track ${getOutputName(project, track.outputId)}.`,
               );
             }}
           >
@@ -132,7 +132,7 @@ export function LightTrack({
               icon={<IconBxPlus />}
               onClick={() => {
                 track.layers.push(new LightLayerProto());
-                save("Create new track.");
+                save('Create new track.');
               }}
             >
               New Layer

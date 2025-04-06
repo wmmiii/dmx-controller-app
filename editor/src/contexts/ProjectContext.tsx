@@ -7,19 +7,19 @@ import {
   useEffect,
   useRef,
   useState,
-} from "react";
-import upgradeProject from "../util/projectUpgrader";
-import { Project, Project_Assets } from "@dmx-controller/proto/project_pb";
-import { ShortcutContext } from "./ShortcutContext";
-import { downloadBlob, escapeForFilesystem } from "../util/fileUtils";
-import { getBlob, storeBlob } from "../util/storageUtil";
-import { Universe } from "@dmx-controller/proto/universe_pb";
-import { randomUint64 } from "../util/numberUtils";
-import { DEFAULT_COLOR_PALETTE } from "../engine/universe";
-import { ColorPalette } from "@dmx-controller/proto/color_pb";
+} from 'react';
+import upgradeProject from '../util/projectUpgrader';
+import { Project, Project_Assets } from '@dmx-controller/proto/project_pb';
+import { ShortcutContext } from './ShortcutContext';
+import { downloadBlob, escapeForFilesystem } from '../util/fileUtils';
+import { getBlob, storeBlob } from '../util/storageUtil';
+import { Universe } from '@dmx-controller/proto/universe_pb';
+import { randomUint64 } from '../util/numberUtils';
+import { DEFAULT_COLOR_PALETTE } from '../engine/universe';
+import { ColorPalette } from '@dmx-controller/proto/color_pb';
 
-const PROJECT_KEY = "tmp-project-1";
-const ASSETS_KEY = "tmp-assets-1";
+const PROJECT_KEY = 'tmp-project-1';
+const ASSETS_KEY = 'tmp-assets-1';
 const MAX_UNDO = 100;
 
 let globalOpened = false;
@@ -27,7 +27,7 @@ let globalOpened = false;
 const DEFAULT_UNIVERSE_MAP: { [id: string]: Universe } = {};
 const DEFAULT_UNIVERSE_ID = randomUint64();
 DEFAULT_UNIVERSE_MAP[DEFAULT_UNIVERSE_ID.toString()] = new Universe({
-  name: "Default Universe",
+  name: 'Default Universe',
   fixtures: {},
 });
 
@@ -36,14 +36,14 @@ const DEFAULT_COLOR_PALETTE_ID = crypto.randomUUID();
 DEFAULT_COLOR_PALETTES[DEFAULT_COLOR_PALETTE_ID] = DEFAULT_COLOR_PALETTE;
 
 const DEFAULT_PROJECT = new Project({
-  name: "Untitled Project",
+  name: 'Untitled Project',
   updateFrequencyMs: 15,
   timingOffsetMs: 0,
   fixtureDefinitions: {},
   physicalFixtures: {},
   scenes: [
     {
-      name: "Default scene",
+      name: 'Default scene',
       tileMap: [],
       colorPalettes: DEFAULT_COLOR_PALETTES,
       activeColorPalette: DEFAULT_COLOR_PALETTE_ID,
@@ -71,7 +71,7 @@ export const ProjectContext = createContext({
   saveAssets: () => {},
   downloadProject: () => {},
   openProject: (_project: Uint8Array) => {},
-  lastOperation: "",
+  lastOperation: '',
 });
 
 export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
@@ -82,14 +82,14 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
     projectRef.current = project;
   }, [project]);
   const [lastLoad, setLastLoad] = useState(new Date());
-  const [lastOperation, setLastOperation] = useState("");
+  const [lastOperation, setLastOperation] = useState('');
   const operationStack = useRef<Operation[]>([]);
   const [operationIndex, setOperationIndex] = useState<number>(-1);
 
   // Expose project globally for debugging purposes.
   useEffect(() => {
     const global = (window || globalThis) as any;
-    global["project"] = project;
+    global['project'] = project;
   }, [project]);
 
   useEffect(() => {
@@ -111,17 +111,17 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
           }
           upgradeProject(p);
           setProject(p);
-          setLastOperation("Open project.");
+          setLastOperation('Open project.');
           operationStack.current = [
             {
               projectState: projectBlob,
-              description: "Open project.",
+              description: 'Open project.',
             },
           ];
           setOperationIndex(0);
         }
       } catch (ex) {
-        console.error("Could not open project!", ex);
+        console.error('Could not open project!', ex);
         setProject(DEFAULT_PROJECT);
       }
     })();
@@ -148,7 +148,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
 
   const update = useCallback(() => {
     if (projectRef.current == null) {
-      throw new Error("Tried to update without project loaded!");
+      throw new Error('Tried to update without project loaded!');
     }
     setProject(new Project(projectRef.current));
   }, [projectRef, setProject]);
@@ -156,7 +156,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
   const save = useCallback(
     async (changeDescription: string, undoable?: boolean) => {
       if (projectRef.current == null) {
-        throw new Error("Tried to save without project loaded!");
+        throw new Error('Tried to save without project loaded!');
       }
       await saveImpl(projectRef.current, changeDescription);
       const minProject = new Project(projectRef.current);
@@ -190,23 +190,23 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
   );
 
   const saveAssetsImpl = useCallback(async (project: Project) => {
-    console.time("save assets");
+    console.time('save assets');
     const assets = new Project_Assets(project.assets);
     await storeBlob(ASSETS_KEY, assets.toBinary({ writeUnknownFields: false }));
-    console.timeEnd("save assets");
+    console.timeEnd('save assets');
   }, []);
 
   const saveAssets = useCallback(async () => {
     if (project == null) {
-      throw new Error("Tried to save assets without project loaded!");
+      throw new Error('Tried to save assets without project loaded!');
     }
     await saveAssetsImpl(project);
-    await saveImpl(project, "Updating assets.");
+    await saveImpl(project, 'Updating assets.');
   }, [project, save]);
 
   const undo = useCallback(async () => {
     if (project == null) {
-      throw new Error("Tried to undo without project loaded!");
+      throw new Error('Tried to undo without project loaded!');
     }
     if (operationIndex > 0) {
       const state = operationStack.current[operationIndex - 1].projectState;
@@ -228,7 +228,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
 
   const redo = useCallback(async () => {
     if (project == null) {
-      throw new Error("Tried to redo without project loaded!");
+      throw new Error('Tried to redo without project loaded!');
     }
     if (operationIndex < operationStack.current.length - 1) {
       const state = operationStack.current[operationIndex + 1].projectState;
@@ -251,13 +251,13 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
 
   const downloadProject = useCallback(() => {
     if (project == null) {
-      throw new Error("Tried to download without project loaded!");
+      throw new Error('Tried to download without project loaded!');
     }
     const blob = new Blob([project.toBinary()], {
-      type: "application/protobuf",
+      type: 'application/protobuf',
     });
 
-    downloadBlob(blob, escapeForFilesystem(project.name) + ".dmxapp");
+    downloadBlob(blob, escapeForFilesystem(project.name) + '.dmxapp');
   }, [project]);
 
   const openProject = useCallback(
@@ -265,17 +265,17 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
       const p = Project.fromBinary(projectBlob);
       upgradeProject(p);
       await saveAssetsImpl(p);
-      await saveImpl(p, "Open project.");
+      await saveImpl(p, 'Open project.');
       setProject(p);
       setLastLoad(new Date());
       setOperationIndex(0);
       operationStack.current = [
         {
           projectState: projectBlob,
-          description: "Open project.",
+          description: 'Open project.',
         },
       ];
-      setLastOperation("Open project.");
+      setLastOperation('Open project.');
     },
     [
       saveAssetsImpl,
@@ -291,14 +291,14 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
     const shortcuts: Parameters<typeof setShortcuts>[0] = [];
     if (operationIndex > 0) {
       shortcuts.push({
-        shortcut: { key: "KeyZ", modifiers: ["ctrl"] },
+        shortcut: { key: 'KeyZ', modifiers: ['ctrl'] },
         action: () => undo(),
         description: `Undo ${operationStack.current[operationIndex].description}`,
       });
     }
     if (operationIndex < operationStack.current.length - 1) {
       shortcuts.push({
-        shortcut: { key: "KeyZ", modifiers: ["ctrl", "shift"] },
+        shortcut: { key: 'KeyZ', modifiers: ['ctrl', 'shift'] },
         action: () => redo(),
         description: `Redo ${operationStack.current[operationIndex + 1].description}`,
       });

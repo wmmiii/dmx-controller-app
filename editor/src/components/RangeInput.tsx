@@ -1,12 +1,12 @@
-import { JSX, useCallback } from "react";
-import { NumberInput } from "./Input";
+import { JSX, useCallback } from 'react';
+import { NumberInput } from './Input';
 
 interface RangeInputProps {
   className?: string;
   title?: string;
   value: number;
   onChange: (value: number) => void;
-  max: "1" | "255";
+  max: '1' | '255';
 }
 
 export default function RangeInput({
@@ -18,7 +18,7 @@ export default function RangeInput({
 }: RangeInputProps): JSX.Element {
   const set = useCallback(
     (value: number) => {
-      if (max === "255") {
+      if (max === '255') {
         onChange(Math.min(value));
       } else {
         onChange(value);
@@ -31,7 +31,7 @@ export default function RangeInput({
     <NumberInput
       className={className}
       title={title}
-      type={max === "1" ? "float" : "integer"}
+      type={max === '1' ? 'float' : 'integer'}
       value={value}
       min={0}
       max={parseInt(max)}

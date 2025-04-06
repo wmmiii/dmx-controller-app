@@ -1,14 +1,14 @@
-import { ColorPalette } from "@dmx-controller/proto/color_pb";
-import IconBxsCog from "../icons/IconBxsCog";
-import styles from "./Palette.module.scss";
-import { Button, IconButton } from "./Button";
-import { Modal } from "./Modal";
-import { ProjectContext } from "../contexts/ProjectContext";
-import { TextInput } from "./Input";
-import { useContext, useMemo, useState } from "react";
-import { ColorSwatch } from "./ColorSwatch";
-import { ControllerConnection } from "./ControllerConnection";
-import { ControllerMapping_ColorPaletteSelection } from "@dmx-controller/proto/controller_pb";
+import { ColorPalette } from '@dmx-controller/proto/color_pb';
+import IconBxsCog from '../icons/IconBxsCog';
+import styles from './Palette.module.scss';
+import { Button, IconButton } from './Button';
+import { Modal } from './Modal';
+import { ProjectContext } from '../contexts/ProjectContext';
+import { TextInput } from './Input';
+import { useContext, useMemo, useState } from 'react';
+import { ColorSwatch } from './ColorSwatch';
+import { ControllerConnection } from './ControllerConnection';
+import { ControllerMapping_ColorPaletteSelection } from '@dmx-controller/proto/controller_pb';
 
 interface PaletteSwatchProps {
   id: string;
@@ -41,11 +41,11 @@ export function PaletteSwatch({
     palette.secondary?.color == null ||
     palette.tertiary?.color == null
   ) {
-    throw new Error("Palette color not set!");
+    throw new Error('Palette color not set!');
   }
 
   return (
-    <div className={classes.join(" ")} onClick={onClick} title={palette.name}>
+    <div className={classes.join(' ')} onClick={onClick} title={palette.name}>
       <ColorSwatch color={palette.primary!.color} />
       <ColorSwatch color={palette.secondary!.color} />
       <ColorSwatch color={palette.tertiary!.color} />
@@ -84,7 +84,7 @@ function EditPaletteDialog({
     palette.secondary?.color == null ||
     palette.tertiary?.color == null
   ) {
-    throw new Error("Palette color not set!");
+    throw new Error('Palette color not set!');
   }
 
   const done = () => {
@@ -114,7 +114,7 @@ function EditPaletteDialog({
       <ControllerConnection
         title="Color Palette"
         action={{
-          case: "colorPaletteSelection",
+          case: 'colorPaletteSelection',
           value: action,
         }}
       />

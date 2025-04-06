@@ -5,9 +5,9 @@ import {
   useEffect,
   useMemo,
   useState,
-} from "react";
+} from 'react';
 
-import styles from "./Input.module.scss";
+import styles from './Input.module.scss';
 
 interface TextInputProps {
   value: string;
@@ -34,13 +34,13 @@ export function TextInput({ value, onChange }: TextInputProps): JSX.Element {
   return (
     <input
       ref={inputRef}
-      className={classes.join(" ")}
+      className={classes.join(' ')}
       onKeyDown={(e) => {
         switch (e.code) {
-          case "Enter":
+          case 'Enter':
             flushValue();
             break;
-          case "Escape":
+          case 'Escape':
             setInput(String(value));
             break;
         }
@@ -56,7 +56,7 @@ interface NumberInputProps {
   className?: string;
   title?: string;
   disabled?: boolean;
-  type?: "float" | "integer";
+  type?: 'float' | 'integer';
   value: number;
   onChange: (value: number) => void;
   min: number;
@@ -83,7 +83,7 @@ export function NumberInput({
   const parseValue = useCallback(
     (input: string) => {
       try {
-        if (type === "float") {
+        if (type === 'float') {
           return parseFloat(input);
         } else {
           return parseInt(input);
@@ -121,24 +121,24 @@ export function NumberInput({
   return (
     <input
       ref={inputRef}
-      className={classes.join(" ")}
+      className={classes.join(' ')}
       title={title}
       disabled={disabled}
       onKeyDown={(e) => {
         switch (e.code) {
-          case "Enter":
+          case 'Enter':
             inputRef.current?.blur();
             break;
-          case "Escape":
+          case 'Escape':
             setInput(String(value));
             inputRef.current?.blur();
             break;
-          case "ArrowUp":
+          case 'ArrowUp':
             if (parsed != null) {
               setInput(String(parsed + step));
             }
             break;
-          case "ArrowDown":
+          case 'ArrowDown':
             if (parsed != null) {
               setInput(String(parsed - step));
             }
@@ -187,7 +187,7 @@ export function ToggleInput({
   }
 
   return (
-    <div className={classes.join(" ")} title={title} onClick={toggle}>
+    <div className={classes.join(' ')} title={title} onClick={toggle}>
       {labels && (
         <label
           onClick={(ev) => {

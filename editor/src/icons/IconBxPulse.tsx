@@ -1,5 +1,5 @@
 // icon:bx-pulse | Boxicons https://boxicons.com/ | Atisa
-import * as React from "react";
+import * as React from 'react';
 
 function IconBxPulse(props: React.SVGProps<SVGSVGElement>) {
   return (

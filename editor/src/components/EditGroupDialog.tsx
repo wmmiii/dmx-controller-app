@@ -1,21 +1,21 @@
 import {
   PhysicalFixtureGroup,
   PhysicalFixtureGroup_FixtureList,
-} from "@dmx-controller/proto/fixture_pb";
-import { JSX, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { ProjectContext } from "../contexts/ProjectContext";
-import { getApplicableMembers } from "../engine/group";
-import { Modal } from "./Modal";
+} from '@dmx-controller/proto/fixture_pb';
+import { JSX, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { ProjectContext } from '../contexts/ProjectContext';
+import { getApplicableMembers } from '../engine/group';
+import { Modal } from './Modal';
 
-import styles from "./EditGroupDialog.module.scss";
-import { Button, IconButton } from "./Button";
-import { TextInput } from "./Input";
-import IconBxX from "../icons/IconBxX";
-import { getActiveUniverse } from "../util/projectUtils";
-import { Project } from "@dmx-controller/proto/project_pb";
-import { universeToUint8Array } from "../engine/utils";
-import { renderGroupDebugToUniverse } from "../engine/universe";
-import { SerialContext } from "../contexts/SerialContext";
+import styles from './EditGroupDialog.module.scss';
+import { Button, IconButton } from './Button';
+import { TextInput } from './Input';
+import IconBxX from '../icons/IconBxX';
+import { getActiveUniverse } from '../util/projectUtils';
+import { Project } from '@dmx-controller/proto/project_pb';
+import { universeToUint8Array } from '../engine/utils';
+import { renderGroupDebugToUniverse } from '../engine/universe';
+import { SerialContext } from '../contexts/SerialContext';
 
 interface EditGroupDialogProps {
   groupId: bigint;
@@ -60,7 +60,7 @@ export function EditGroupDialog({
 
   return (
     <Modal
-      title={"Edit " + group.name}
+      title={'Edit ' + group.name}
       onClose={close}
       bodyClass={styles.editor}
       footer={
@@ -157,7 +157,7 @@ export function EditGroupDialog({
       )}
       <label className={styles.row}>
         <select
-          value={newMemberIndex === null ? " " : newMemberIndex}
+          value={newMemberIndex === null ? ' ' : newMemberIndex}
           onChange={(e) => {
             try {
               setNewMemberIndex(parseInt(e.target.value));
@@ -169,7 +169,7 @@ export function EditGroupDialog({
           <option value="null">&lt;Select Member&gt;</option>
           {applicableMembers.map((m, i) => (
             <option key={i} value={i}>
-              {m.id.output.case === "group" ? "⧉" : "⧇"}
+              {m.id.output.case === 'group' ? '⧉' : '⧇'}
               &nbsp;
               {m.name}
             </option>
@@ -184,7 +184,7 @@ export function EditGroupDialog({
             const newMember = applicableMembers[newMemberIndex];
 
             let name: string;
-            if (newMember.id.output.case === "fixtures") {
+            if (newMember.id.output.case === 'fixtures') {
               const id =
                 newMember.id.output.value.fixtures[
                   project.activeUniverse.toString()
@@ -199,7 +199,7 @@ export function EditGroupDialog({
                 id,
               );
               name = getActiveUniverse(project).fixtures[id.toString()].name;
-            } else if (newMember.id.output.case === "group") {
+            } else if (newMember.id.output.case === 'group') {
               group.groups.push(newMember.id.output.value);
               name = project.groups[newMember.id.output.value.toString()].name;
             } else {

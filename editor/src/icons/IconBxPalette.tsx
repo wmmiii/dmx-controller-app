@@ -1,5 +1,5 @@
 // icon:bx-palette | Boxicons https://boxicons.com/ | Atisa
-import * as React from "react";
+import * as React from 'react';
 
 function IconBxPalette(props: React.SVGProps<SVGSVGElement>) {
   return (

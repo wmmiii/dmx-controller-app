@@ -1,8 +1,8 @@
-import styles from "./Tile.module.scss";
-import { ProjectContext } from "../contexts/ProjectContext";
-import { Scene_TileMap } from "@dmx-controller/proto/scene_pb";
-import { Tile } from "./Tile";
-import { JSX, useContext, useMemo, useState } from "react";
+import styles from './Tile.module.scss';
+import { ProjectContext } from '../contexts/ProjectContext';
+import { Scene_TileMap } from '@dmx-controller/proto/scene_pb';
+import { Tile } from './Tile';
+import { JSX, useContext, useMemo, useState } from 'react';
 
 interface TileGridProps {
   className?: string;
@@ -45,13 +45,13 @@ export function TileGrid({
   }
 
   return (
-    <div className={classes.join(" ")}>
+    <div className={classes.join(' ')}>
       {map.map((r, y) =>
         r.map((mapping, x) => {
           if (mapping != null) {
             return (
               <Tile
-                key={x + " " + y}
+                key={x + ' ' + y}
                 id={mapping.id}
                 tile={mapping.tile!}
                 onDragTile={() => setDraggingTile(mapping)}
@@ -70,7 +70,7 @@ export function TileGrid({
           } else {
             return (
               <div
-                key={x + " " + y}
+                key={x + ' ' + y}
                 className={styles.tilePlaceholder}
                 style={{
                   gridColumnStart: x + 1,

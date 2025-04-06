@@ -1,22 +1,22 @@
-import styles from "./Tile.module.scss";
-import { BeatContext } from "../contexts/BeatContext";
+import styles from './Tile.module.scss';
+import { BeatContext } from '../contexts/BeatContext';
 import {
   Color,
   ColorPalette,
   PaletteColor,
-} from "@dmx-controller/proto/color_pb";
-import { ControllerContext } from "../contexts/ControllerContext";
-import { ControllerMapping_TileStrength } from "@dmx-controller/proto/controller_pb";
-import { FixtureState } from "@dmx-controller/proto/effect_pb";
-import { PaletteContext } from "../contexts/PaletteContext";
-import { ProjectContext } from "../contexts/ProjectContext";
-import { Scene_Tile } from "@dmx-controller/proto/scene_pb";
-import { SiMidi } from "react-icons/si";
-import { TimeContext } from "../contexts/TimeContext";
-import { findAction } from "../external_controller/externalController";
-import { tileActiveAmount, toggleTile } from "../util/tile";
-import { tileTileDetails } from "../util/projectUtils";
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+} from '@dmx-controller/proto/color_pb';
+import { ControllerContext } from '../contexts/ControllerContext';
+import { ControllerMapping_TileStrength } from '@dmx-controller/proto/controller_pb';
+import { FixtureState } from '@dmx-controller/proto/effect_pb';
+import { PaletteContext } from '../contexts/PaletteContext';
+import { ProjectContext } from '../contexts/ProjectContext';
+import { Scene_Tile } from '@dmx-controller/proto/scene_pb';
+import { SiMidi } from 'react-icons/si';
+import { TimeContext } from '../contexts/TimeContext';
+import { findAction } from '../external_controller/externalController';
+import { tileActiveAmount, toggleTile } from '../util/tile';
+import { tileTileDetails } from '../util/projectUtils';
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 interface TileProps {
   id: string;
@@ -58,7 +58,7 @@ export function Tile({
   const controllerMapping = useMemo(() => {
     if (controllerName) {
       return findAction(project, controllerName, {
-        case: "tileStrength",
+        case: 'tileStrength',
         value: new ControllerMapping_TileStrength({
           scene: 0,
           tileId: id,
@@ -75,24 +75,24 @@ export function Tile({
       return complexColorToHex(details.colors[0], palette);
     }
 
-    let gradient = "linear-gradient(135deg, ";
+    let gradient = 'linear-gradient(135deg, ';
     for (let i = 0; i < details.colors.length; i++) {
       const color = complexColorToHex(details.colors[i], palette);
 
-      gradient += i === 0 ? "" : ", ";
+      gradient += i === 0 ? '' : ', ';
       if (color != null) {
         gradient += color;
       } else {
-        gradient += "transparent";
+        gradient += 'transparent';
       }
     }
-    return gradient + ")";
+    return gradient + ')';
   }, [details, palette]);
 
   const toggle = useCallback(() => {
     const [modified, enabled] = toggleTile(tile, beat);
     if (modified) {
-      save(`${enabled ? "Enable" : "Disable"} tile ${tile.name}.`);
+      save(`${enabled ? 'Enable' : 'Disable'} tile ${tile.name}.`);
     }
   }, [tile, beat, save]);
 
@@ -102,7 +102,7 @@ export function Tile({
 
   return (
     <div
-      className={classes.join(" ")}
+      className={classes.join(' ')}
       style={{
         gridColumnStart: x + 1,
         gridColumnEnd: x + 2,
@@ -145,14 +145,14 @@ export function Tile({
 }
 
 function complexColorToHex(
-  complexColor: FixtureState["lightColor"],
+  complexColor: FixtureState['lightColor'],
   palette: ColorPalette,
 ) {
   let color: Color | null = null;
 
-  if (complexColor.case === "color") {
+  if (complexColor.case === 'color') {
     color = complexColor.value;
-  } else if (complexColor.case === "paletteColor") {
+  } else if (complexColor.case === 'paletteColor') {
     if (complexColor.value === PaletteColor.PALETTE_PRIMARY) {
       color = palette.primary?.color || null;
     } else if (complexColor.value === PaletteColor.PALETTE_SECONDARY) {
@@ -177,5 +177,5 @@ function rgbwToHex(r: number, g: number, b: number, w: number) {
   r = Math.min((r + w) * 255, 255);
   g = Math.min((g + w) * 255, 255);
   b = Math.min((b + w) * 255, 255);
-  return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
 }

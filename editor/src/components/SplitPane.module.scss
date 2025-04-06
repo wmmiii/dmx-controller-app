@@ -1,4 +1,4 @@
-@import "../vars";
+@import '../vars';
 
 .horizontalPane {
   display: flex;
@@ -42,7 +42,7 @@
 
   &::after {
     background-color: $col-bg;
-    content: "";
+    content: '';
     flex-direction: column;
     height: 24px;
     width: 2px;

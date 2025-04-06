@@ -1,15 +1,15 @@
-import { Project } from "@dmx-controller/proto/project_pb";
+import { Project } from '@dmx-controller/proto/project_pb';
 import {
   ControlCommandType,
   ControllerChannel,
-} from "../contexts/ControllerContext";
+} from '../contexts/ControllerContext';
 import {
   ControllerMapping,
   ControllerMapping_Action,
   ControllerMapping_TileStrength,
   ControllerMapping_Controller,
-} from "@dmx-controller/proto/controller_pb";
-import { outputTileStrength, performTileStrength } from "./tileStrength";
+} from '@dmx-controller/proto/controller_pb';
+import { outputTileStrength, performTileStrength } from './tileStrength';
 
 export function performAction(
   project: Project,
@@ -25,12 +25,12 @@ export function performAction(
       ?.action;
 
   switch (action?.case) {
-    case "beatMatch":
+    case 'beatMatch':
       if (cct === null && value > 0.5) {
         addBeatSample(new Date().getTime());
       }
       return false;
-    case "colorPaletteSelection":
+    case 'colorPaletteSelection':
       const scene = project.scenes[action.value.scene];
       if (scene.activeColorPalette === action.value.paletteId) {
         return false;
@@ -41,7 +41,7 @@ export function performAction(
         scene.colorPaletteStartTransition = BigInt(new Date().getTime());
         return true;
       }
-    case "tileStrength":
+    case 'tileStrength':
       return performTileStrength(project, action.value, value, cct);
     default:
       output(channel, value);
@@ -62,7 +62,7 @@ export function assignAction(
 export function findAction(
   project: Project,
   controllerName: string,
-  action: ControllerMapping_Action["action"],
+  action: ControllerMapping_Action['action'],
 ) {
   return Object.values(getActionMap(project, controllerName))
     .map((a) => a.action)
@@ -73,7 +73,7 @@ export function findAction(
 export function deleteAction(
   project: Project,
   controllerName: string,
-  action: ControllerMapping_Action["action"],
+  action: ControllerMapping_Action['action'],
 ) {
   const controllerActions = getActionMap(project, controllerName);
   for (const channel in controllerActions) {
@@ -104,17 +104,17 @@ export function outputValues(
     const action = entry[1].action;
     let value = 0;
     switch (action.case) {
-      case "beatMatch":
+      case 'beatMatch':
         const beatMetadata = project.liveBeat!;
         const beatT = Number(
           t + BigInt(project.timingOffsetMs) - beatMetadata.offsetMs,
         );
         value = 1 - Math.round((beatT / beatMetadata.lengthMs) % 1);
         break;
-      case "colorPaletteSelection":
+      case 'colorPaletteSelection':
         value = 1;
         break;
-      case "tileStrength":
+      case 'tileStrength':
         value = outputTileStrength(project, action.value, t);
         break;
     }
@@ -129,9 +129,9 @@ export function getActionDescription(
 ) {
   const actionMapping = getActionMap(project, controllerName)[channel];
   switch (actionMapping?.action.case) {
-    case "beatMatch":
-      return "Samples the beat during beat-matching.";
-    case "tileStrength":
+    case 'beatMatch':
+      return 'Samples the beat during beat-matching.';
+    case 'tileStrength':
       const action: ControllerMapping_TileStrength =
         actionMapping?.action.value!;
       const tile = Array.from(
@@ -160,10 +160,10 @@ export function getActionMap(project: Project, controllerName: string) {
 
 let timeoutHandle: any;
 export function debounceInput(cct: ControlCommandType, action: () => void) {
-  if (cct === "lsb" || cct === null) {
+  if (cct === 'lsb' || cct === null) {
     clearTimeout(timeoutHandle);
     action();
-  } else if (cct === "msb") {
+  } else if (cct === 'msb') {
     // Wait for lsb to see if this channel supports it.
     timeoutHandle = setTimeout(() => action, 100);
   } else {

@@ -1,5 +1,5 @@
 // icon:bx-category | Boxicons https://boxicons.com/ | Atisa
-import * as React from "react";
+import * as React from 'react';
 
 function IconBxCategory(props: React.SVGProps<SVGSVGElement>) {
   return (

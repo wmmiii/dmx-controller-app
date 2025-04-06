@@ -1,7 +1,7 @@
-import { DmxUniverse } from "./fixture";
-import { Project } from "@dmx-controller/proto/project_pb";
-import { getActiveUniverse } from "../util/projectUtils";
-import { ChannelTypes } from "./channel";
+import { DmxUniverse } from './fixture';
+import { Project } from '@dmx-controller/proto/project_pb';
+import { getActiveUniverse } from '../util/projectUtils';
+import { ChannelTypes } from './channel';
 
 export function interpolateUniverses(
   universe: DmxUniverse,
@@ -33,7 +33,7 @@ export function universeToUint8Array(project: Project, universe: DmxUniverse) {
     const m = d.modes[f.fixtureMode];
     for (const channel of Object.entries(m.channels)) {
       const type = channel[1].type;
-      if (type.indexOf("-fine") > -1) {
+      if (type.indexOf('-fine') > -1) {
         const fineIndex = parseInt(channel[0]) + f.channelOffset - 1;
         const coarseType = type.substring(0, type.length - 5) as ChannelTypes;
         const courseEntry = Object.entries(m.channels).find(

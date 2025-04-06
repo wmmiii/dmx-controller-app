@@ -1,5 +1,5 @@
 // icon:bx-grid-vertical | Boxicons https://boxicons.com/ | Atisa
-import * as React from "react";
+import * as React from 'react';
 
 function IconBxGridVertical(props: React.SVGProps<SVGSVGElement>) {
   return (

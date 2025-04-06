@@ -1,16 +1,16 @@
-import { JSX, useContext, useEffect, useMemo, useRef, useState } from "react";
-import IconBxPlus from "../icons/IconBxPlus";
-import IconBxX from "../icons/IconBxX";
-import styles from "./LivePage.module.scss";
-import { BeatContext } from "../contexts/BeatContext";
-import { Button, IconButton } from "../components/Button";
-import { TileGrid } from "../components/TileGrid";
-import { EffectDetails } from "../components/Effect";
-import { HorizontalSplitPane } from "../components/SplitPane";
-import { LiveBeat } from "../components/LiveBeat";
-import { Modal } from "../components/Modal";
-import { NumberInput, TextInput, ToggleInput } from "../components/Input";
-import { ProjectContext } from "../contexts/ProjectContext";
+import { JSX, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import IconBxPlus from '../icons/IconBxPlus';
+import IconBxX from '../icons/IconBxX';
+import styles from './LivePage.module.scss';
+import { BeatContext } from '../contexts/BeatContext';
+import { Button, IconButton } from '../components/Button';
+import { TileGrid } from '../components/TileGrid';
+import { EffectDetails } from '../components/Effect';
+import { HorizontalSplitPane } from '../components/SplitPane';
+import { LiveBeat } from '../components/LiveBeat';
+import { Modal } from '../components/Modal';
+import { NumberInput, TextInput, ToggleInput } from '../components/Input';
+import { ProjectContext } from '../contexts/ProjectContext';
 import {
   Scene,
   Scene_Tile,
@@ -18,25 +18,25 @@ import {
   Scene_Tile_EffectGroupTile_EffectChannel,
   Scene_Tile_SequenceTile,
   Scene_TileMap,
-} from "@dmx-controller/proto/scene_pb";
-import { SerialContext } from "../contexts/SerialContext";
-import { UniverseSequenceEditor } from "../components/UniverseSequenceEditor";
-import { getOutputName, OutputSelector } from "../components/OutputSelector";
+} from '@dmx-controller/proto/scene_pb';
+import { SerialContext } from '../contexts/SerialContext';
+import { UniverseSequenceEditor } from '../components/UniverseSequenceEditor';
+import { getOutputName, OutputSelector } from '../components/OutputSelector';
 import {
   DEFAULT_COLOR_PALETTE,
   renderSceneToUniverse as renderActiveSceneToUniverse,
-} from "../engine/universe";
-import { universeToUint8Array } from "../engine/utils";
-import { Project } from "@dmx-controller/proto/project_pb";
-import { PaletteContext } from "../contexts/PaletteContext";
-import { PaletteSwatch } from "../components/Palette";
-import { getAvailableChannels } from "../engine/fixture";
-import { ControllerContext } from "../contexts/ControllerContext";
+} from '../engine/universe';
+import { universeToUint8Array } from '../engine/utils';
+import { Project } from '@dmx-controller/proto/project_pb';
+import { PaletteContext } from '../contexts/PaletteContext';
+import { PaletteSwatch } from '../components/Palette';
+import { getAvailableChannels } from '../engine/fixture';
+import { ControllerContext } from '../contexts/ControllerContext';
 import {
   ControllerMapping_Action,
   ControllerMapping_TileStrength,
-} from "@dmx-controller/proto/controller_pb";
-import { ControllerConnection } from "../components/ControllerConnection";
+} from '@dmx-controller/proto/controller_pb';
+import { ControllerConnection } from '../components/ControllerConnection';
 
 export function LivePage(): JSX.Element {
   const { project, save } = useContext(ProjectContext);
@@ -145,9 +145,9 @@ export function LivePage(): JSX.Element {
               icon={<IconBxPlus />}
               onClick={() => {
                 const newPalette = DEFAULT_COLOR_PALETTE.clone();
-                newPalette.name = "New color palette";
+                newPalette.name = 'New color palette';
                 scene.colorPalettes[crypto.randomUUID()] = newPalette;
-                save("Add new color palette");
+                save('Add new color palette');
               }}
             >
               Palette
@@ -186,12 +186,12 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
   const action = useMemo(
     () =>
       ({
-        case: "tileStrength",
+        case: 'tileStrength',
         value: new ControllerMapping_TileStrength({
           scene: 0,
           tileId: tileMap.id,
         }),
-      }) as ControllerMapping_Action["action"],
+      }) as ControllerMapping_Action['action'],
     [],
   );
 
@@ -235,12 +235,12 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
               <input
                 onChange={() => {}}
                 onKeyDown={(e) => {
-                  if (e.code.startsWith("Digit")) {
+                  if (e.code.startsWith('Digit')) {
                     tileMap.shortcut = e.code.substring(5);
                     save(
                       `Add shortcut ${tileMap.shortcut} for tile ${tile.name}.`,
                     );
-                  } else if (e.code === "Backspace" || e.code === "Delete") {
+                  } else if (e.code === 'Backspace' || e.code === 'Delete') {
                     save(`Remove shortcut for tile ${tile.name}.`);
                   }
                 }}
@@ -259,36 +259,36 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
                 onChange={(value) => {
                   tile.oneShot = value;
                   save(
-                    `Set  ${tile.name} to ${value ? "one-shot" : "looping"}.`,
+                    `Set  ${tile.name} to ${value ? 'one-shot' : 'looping'}.`,
                   );
                 }}
-                labels={{ left: "Loop", right: "One-shot" }}
+                labels={{ left: 'Loop', right: 'One-shot' }}
               />
             </div>
             <div className={styles.row}>
               <ToggleInput
                 className={styles.switch}
-                value={tile.duration?.case === "durationMs"}
+                value={tile.duration?.case === 'durationMs'}
                 onChange={(value) => {
                   if (value) {
                     tile.duration = {
-                      case: "durationMs",
+                      case: 'durationMs',
                       value: 1000,
                     };
                   } else {
                     tile.duration = {
-                      case: "durationBeat",
+                      case: 'durationBeat',
                       value: 1,
                     };
                   }
                   save(
-                    `Set timing type for tile ${tile.name} to ${value ? "seconds" : "beats"}.`,
+                    `Set timing type for tile ${tile.name} to ${value ? 'seconds' : 'beats'}.`,
                   );
                 }}
-                labels={{ left: "Beat", right: "Seconds" }}
+                labels={{ left: 'Beat', right: 'Seconds' }}
               />
             </div>
-            {tile.duration.case === "durationMs" && (
+            {tile.duration.case === 'durationMs' && (
               <div className={styles.row}>
                 <label>Loop Duration</label>
                 <NumberInput
@@ -300,7 +300,7 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
                     tile.duration.value = Math.floor(value * 1000);
                     save(`Set duration for tile ${tile.name}.`);
                   }}
-                  disabled={tile.duration?.case !== "durationMs"}
+                  disabled={tile.duration?.case !== 'durationMs'}
                 />
               </div>
             )}
@@ -314,7 +314,7 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
                 value={(tile.fadeInDuration.value || 0) / 1000}
                 onChange={(value) => {
                   tile.fadeInDuration = {
-                    case: "fadeInMs",
+                    case: 'fadeInMs',
                     value: Math.floor(value * 1000),
                   };
                   save(`Set fade in duration for ${tile.name}.`);
@@ -331,7 +331,7 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
                 value={(tile.fadeOutDuration.value || 0) / 1000}
                 onChange={(value) => {
                   tile.fadeOutDuration = {
-                    case: "fadeOutMs",
+                    case: 'fadeOutMs',
                     value: Math.floor(value * 1000),
                   };
                   save(`Set fade out duration for ${tile.name}.`);
@@ -357,13 +357,13 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
         }
         right={
           <>
-            {tile.description.case === "effectGroup" && (
+            {tile.description.case === 'effectGroup' && (
               <EffectGroupEditor
                 effect={tile.description.value}
                 name={tile.name}
               />
             )}
-            {tile.description.case === "sequence" && (
+            {tile.description.case === 'sequence' && (
               <SequenceEditor sequence={tile.description.value} />
             )}
           </>
@@ -393,7 +393,7 @@ function EffectGroupEditor({ effect, name }: EffectGroupEditorProps) {
     <div className={`${styles.detailsPane} ${styles.effectGroup}`}>
       {effect.channels.map((c, i) => {
         if (c.effect == null) {
-          throw new Error("Channel effect is not defined!");
+          throw new Error('Channel effect is not defined!');
         }
         return (
           <div key={i} className={styles.effect}>
@@ -420,7 +420,7 @@ function EffectGroupEditor({ effect, name }: EffectGroupEditorProps) {
             <EffectDetails
               effect={c.effect}
               showTiming={false}
-              showPhase={c.outputId?.output.case === "group"}
+              showPhase={c.outputId?.output.case === 'group'}
               availableChannels={getAvailableChannels(c.outputId, project)}
             />
           </div>
@@ -431,7 +431,7 @@ function EffectGroupEditor({ effect, name }: EffectGroupEditorProps) {
           title="Add Effect"
           onClick={() => {
             effect.channels.push(createEffectChannel());
-            save("Add channel to effect.");
+            save('Add channel to effect.');
           }}
         >
           <IconBxPlus />
@@ -453,19 +453,19 @@ function AddNewDialog({ scene, x, y, onSelect, onClose }: AddNewDialogProps) {
   const { save } = useContext(ProjectContext);
 
   const addTile = (
-    description: Scene_Tile["description"],
+    description: Scene_Tile['description'],
     x: number,
     y: number,
   ) => {
     const tile = new Scene_Tile({
-      name: "New Tile",
+      name: 'New Tile',
       description: description,
       duration: {
-        case: "durationMs",
+        case: 'durationMs',
         value: 1000,
       },
       transition: {
-        case: "startFadeOutMs",
+        case: 'startFadeOutMs',
         value: 0n,
       },
     });
@@ -488,7 +488,7 @@ function AddNewDialog({ scene, x, y, onSelect, onClose }: AddNewDialogProps) {
         onClick={() => {
           const tileMap = addTile(
             {
-              case: "effectGroup",
+              case: 'effectGroup',
               value: new Scene_Tile_EffectGroupTile({
                 channels: [createEffectChannel()],
               }),
@@ -512,7 +512,7 @@ function AddNewDialog({ scene, x, y, onSelect, onClose }: AddNewDialogProps) {
         onClick={() => {
           const tile = addTile(
             {
-              case: "sequence",
+              case: 'sequence',
               value: new Scene_Tile_SequenceTile({
                 nativeBeats: 1,
               }),
@@ -550,7 +550,7 @@ function createEffectChannel() {
   return new Scene_Tile_EffectGroupTile_EffectChannel({
     effect: {
       effect: {
-        case: "staticEffect",
+        case: 'staticEffect',
         value: {
           state: {},
         },

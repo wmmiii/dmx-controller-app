@@ -1,5 +1,5 @@
 // icon:bx-link | Boxicons https://boxicons.com/ | Atisa
-import "react";
+import 'react';
 
 function IconBxLink(props: any) {
   return (

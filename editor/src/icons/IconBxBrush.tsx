@@ -1,5 +1,5 @@
 // icon:bx-brush-alt | Boxicons https://boxicons.com/ | Atisa
-import * as React from "react";
+import * as React from 'react';
 
 function IconBxBrushAlt(props: React.SVGProps<SVGSVGElement>) {
   return (

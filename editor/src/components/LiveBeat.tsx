@@ -1,13 +1,13 @@
-import { JSX, useContext, useEffect, useMemo } from "react";
-import { ShortcutContext } from "../contexts/ShortcutContext";
-import { BeatContext } from "../contexts/BeatContext";
-import { NumberInput } from "./Input";
+import { JSX, useContext, useEffect, useMemo } from 'react';
+import { ShortcutContext } from '../contexts/ShortcutContext';
+import { BeatContext } from '../contexts/BeatContext';
+import { NumberInput } from './Input';
 import {
   ControllerMapping_Action,
   ControllerMapping_BeatMatch,
-} from "@dmx-controller/proto/controller_pb";
-import { ControllerConnection } from "./ControllerConnection";
-import styles from "./LiveBeat.module.scss";
+} from '@dmx-controller/proto/controller_pb';
+import { ControllerConnection } from './ControllerConnection';
+import styles from './LiveBeat.module.scss';
 
 interface LiveBeatProps {
   className?: string;
@@ -29,10 +29,10 @@ export function LiveBeat({ className }: LiveBeatProps): JSX.Element {
       setShortcuts([
         {
           shortcut: {
-            key: "Space",
+            key: 'Space',
           },
           action: () => addBeatSample(new Date().getTime()),
-          description: "Sample beat",
+          description: 'Sample beat',
         },
       ]),
     [addBeatSample, setShortcuts],
@@ -40,25 +40,25 @@ export function LiveBeat({ className }: LiveBeatProps): JSX.Element {
 
   const beatEmoji = useMemo(() => {
     switch (sampleQuality) {
-      case "excellent":
-        return "🤩";
-      case "fair":
-        return "🙂";
-      case "idle":
-        return "😎";
-      case "not enough samples":
-        return "😄";
-      case "poor":
-        return "😵‍💫";
+      case 'excellent':
+        return '🤩';
+      case 'fair':
+        return '🙂';
+      case 'idle':
+        return '😎';
+      case 'not enough samples':
+        return '😄';
+      case 'poor':
+        return '😵‍💫';
     }
   }, [sampleQuality]);
 
   const action = useMemo(
     () =>
       ({
-        case: "beatMatch",
+        case: 'beatMatch',
         value: new ControllerMapping_BeatMatch(),
-      }) as ControllerMapping_Action["action"],
+      }) as ControllerMapping_Action['action'],
     [],
   );
 
@@ -68,8 +68,8 @@ export function LiveBeat({ className }: LiveBeatProps): JSX.Element {
   }
 
   return (
-    <div className={classes.join(" ")}>
-      {beatEmoji}&nbsp; &nbsp;BPM:{" "}
+    <div className={classes.join(' ')}>
+      {beatEmoji}&nbsp; &nbsp;BPM:{' '}
       <NumberInput
         type="integer"
         min={0}

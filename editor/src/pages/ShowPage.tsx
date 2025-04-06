@@ -1,23 +1,23 @@
-import { JSX, useContext, useEffect, useMemo, useRef, useState } from "react";
-import LightTimeline from "../components/LightTimeline";
-import styles from "./ShowPage.module.scss";
-import { Button } from "../components/Button";
+import { JSX, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import LightTimeline from '../components/LightTimeline';
+import styles from './ShowPage.module.scss';
+import { Button } from '../components/Button';
 import {
   DEFAULT_COLOR_PALETTE,
   renderShowToUniverse,
-} from "../engine/universe";
-import { LightTrack as LightTrackProto } from "@dmx-controller/proto/light_track_pb";
-import { Modal } from "../components/Modal";
-import { PaletteContext } from "../contexts/PaletteContext";
-import { ProjectContext } from "../contexts/ProjectContext";
-import { SerialContext } from "../contexts/SerialContext";
-import { Show, Show_AudioTrack } from "@dmx-controller/proto/show_pb";
-import { TextInput } from "../components/Input";
-import { UNSET_INDEX, idMapToArray } from "../util/mapUtils";
-import { universeToUint8Array } from "../engine/utils";
+} from '../engine/universe';
+import { LightTrack as LightTrackProto } from '@dmx-controller/proto/light_track_pb';
+import { Modal } from '../components/Modal';
+import { PaletteContext } from '../contexts/PaletteContext';
+import { ProjectContext } from '../contexts/ProjectContext';
+import { SerialContext } from '../contexts/SerialContext';
+import { Show, Show_AudioTrack } from '@dmx-controller/proto/show_pb';
+import { TextInput } from '../components/Input';
+import { UNSET_INDEX, idMapToArray } from '../util/mapUtils';
+import { universeToUint8Array } from '../engine/utils';
 
 const DEFAULT_SHOW = new Show({
-  name: "Untitled Show",
+  name: 'Untitled Show',
   audioTrack: {
     audioFileId: UNSET_INDEX + 1,
   },
@@ -87,7 +87,7 @@ export default function ShowPage(): JSX.Element {
           <Button
             onClick={() => {
               project.shows = [DEFAULT_SHOW];
-              save("Create default show.");
+              save('Create default show.');
             }}
           >
             Create a show!
@@ -120,7 +120,7 @@ export default function ShowPage(): JSX.Element {
             <br />
             <select
               onChange={(e) => {
-                if (e.target.value === "-1") {
+                if (e.target.value === '-1') {
                   project.shows.push(DEFAULT_SHOW);
                   project.selectedShow = project.shows.length - 1;
                 } else {
@@ -180,7 +180,7 @@ export default function ShowPage(): JSX.Element {
       />
       {showDetailsModal && (
         <Modal
-          title={show?.name + " Metadata"}
+          title={show?.name + ' Metadata'}
           onClose={() => setShowDetailsModal(false)}
         >
           <div className={styles.detailsModal}>

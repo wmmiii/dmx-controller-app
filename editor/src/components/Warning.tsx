@@ -1,5 +1,5 @@
-import style from "Warning.module.scss";
-import { BiSolidError } from "react-icons/bi";
+import style from 'Warning.module.scss';
+import { BiSolidError } from 'react-icons/bi';
 
 interface WarningProps {
   title: string;
@@ -13,7 +13,7 @@ export function Warning({ title, className }: WarningProps) {
   }
 
   return (
-    <div className={classes.join(" ")} title={title}>
+    <div className={classes.join(' ')} title={title}>
       <BiSolidError />
     </div>
   );

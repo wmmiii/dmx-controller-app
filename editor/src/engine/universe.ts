@@ -1,36 +1,36 @@
-import { BeatMetadata } from "@dmx-controller/proto/beat_pb";
-import { ColorPalette } from "@dmx-controller/proto/color_pb";
+import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
+import { ColorPalette } from '@dmx-controller/proto/color_pb';
 import {
   DmxUniverse,
   WritableDevice,
   getWritableDevice,
   mapDegrees,
-} from "./fixture";
+} from './fixture';
 import {
   Effect,
   Effect_RampEffect,
   EffectTiming,
-} from "@dmx-controller/proto/effect_pb";
-import { LightLayer } from "@dmx-controller/proto/light_layer_pb";
+} from '@dmx-controller/proto/effect_pb';
+import { LightLayer } from '@dmx-controller/proto/light_layer_pb';
 import {
   OutputId,
   OutputId_FixtureMapping,
-} from "@dmx-controller/proto/output_id_pb";
-import { Project } from "@dmx-controller/proto/project_pb";
-import { SEQUENCE_BEAT_RESOLUTION } from "../components/UniverseSequenceEditor";
-import { Scene_Tile_SequenceTile } from "@dmx-controller/proto/scene_pb";
-import { applyState } from "./effect";
-import { getActiveUniverse } from "../util/projectUtils";
-import { getAllFixtures } from "./group";
-import { getTileDurationMs } from "../util/tile";
-import { hsvToColor, interpolatePalettes } from "../util/colorUtil";
-import { interpolateUniverses } from "./utils";
-import { rampEffect } from "./rampEffect";
-import { randomEffect } from "./randomEffect";
-import { strobeEffect } from "./strobeEffect";
+} from '@dmx-controller/proto/output_id_pb';
+import { Project } from '@dmx-controller/proto/project_pb';
+import { SEQUENCE_BEAT_RESOLUTION } from '../components/UniverseSequenceEditor';
+import { Scene_Tile_SequenceTile } from '@dmx-controller/proto/scene_pb';
+import { applyState } from './effect';
+import { getActiveUniverse } from '../util/projectUtils';
+import { getAllFixtures } from './group';
+import { getTileDurationMs } from '../util/tile';
+import { hsvToColor, interpolatePalettes } from '../util/colorUtil';
+import { interpolateUniverses } from './utils';
+import { rampEffect } from './rampEffect';
+import { randomEffect } from './randomEffect';
+import { strobeEffect } from './strobeEffect';
 
 export const DEFAULT_COLOR_PALETTE = new ColorPalette({
-  name: "Unset palette",
+  name: 'Unset palette',
   primary: {
     color: {
       red: 1,
@@ -88,10 +88,10 @@ export function renderShowToUniverse(
     }
     if (beatMetadata == null) {
       throw new Error(
-        "Tried to render a frame for a show with an audio file without beat metadata!",
+        'Tried to render a frame for a show with an audio file without beat metadata!',
       );
     }
-    const context: Omit<Omit<RenderContext, "output">, "outputId"> = {
+    const context: Omit<Omit<RenderContext, 'output'>, 'outputId'> = {
       globalT: t,
       t: t,
       project: project,
@@ -169,28 +169,28 @@ export function renderSceneToUniverse(
     .map((t) => t.tile!);
 
   for (const tile of sortedTiles) {
-    if (tile.oneShot && tile.transition.case === "startFadeOutMs") {
+    if (tile.oneShot && tile.transition.case === 'startFadeOutMs') {
       continue;
     }
 
     const sinceTransition = Number(
       BigInt(absoluteT) -
-        (tile.transition.case != "absoluteStrength"
+        (tile.transition.case != 'absoluteStrength'
           ? tile.transition.value || 0n
           : 0n),
     );
 
     let amount: number = 0;
-    if (tile.transition.case === "startFadeInMs") {
+    if (tile.transition.case === 'startFadeInMs') {
       const fadeInMs =
-        tile.fadeInDuration.case === "fadeInBeat"
+        tile.fadeInDuration.case === 'fadeInBeat'
           ? (tile.fadeInDuration.value || 0) * beatMetadata.lengthMs
           : tile.fadeInDuration.value || 0;
 
       amount = Math.min(1, sinceTransition / fadeInMs);
-    } else if (tile.transition.case === "startFadeOutMs") {
+    } else if (tile.transition.case === 'startFadeOutMs') {
       const fadeOutMs =
-        tile.fadeOutDuration.case === "fadeOutBeat"
+        tile.fadeOutDuration.case === 'fadeOutBeat'
           ? (tile.fadeOutDuration.value || 0) * beatMetadata.lengthMs
           : tile.fadeOutDuration.value || 0;
 
@@ -199,7 +199,7 @@ export function renderSceneToUniverse(
       }
 
       amount = Math.max(0, 1 - sinceTransition / fadeOutMs);
-    } else if (tile.transition.case === "absoluteStrength") {
+    } else if (tile.transition.case === 'absoluteStrength') {
       amount = tile.transition.value;
     }
 
@@ -207,7 +207,7 @@ export function renderSceneToUniverse(
     const after = [...universe];
 
     switch (tile.description.case) {
-      case "effectGroup":
+      case 'effectGroup':
         for (const channel of tile.description.value.channels) {
           if (channel.outputId == null) {
             continue;
@@ -215,14 +215,14 @@ export function renderSceneToUniverse(
 
           const effect = channel.effect;
           if (effect == null) {
-            throw new Error("Tried to render tile without effect!");
+            throw new Error('Tried to render tile without effect!');
           }
           const effectLength = effect.endMs - effect.startMs;
 
           const durationEffect = getTileDurationMs(tile, beatMetadata);
           let effectT: number;
           if (tile.oneShot) {
-            if (tile.duration.case === "durationBeat") {
+            if (tile.duration.case === 'durationBeat') {
               effectT =
                 (sinceTransition * effectLength) / beatMetadata.lengthMs;
             } else {
@@ -234,12 +234,12 @@ export function renderSceneToUniverse(
               break;
             }
           } else {
-            if (tile.duration.case === "durationBeat") {
+            if (tile.duration.case === 'durationBeat') {
               effectT = (beatT * effectLength) / beatMetadata.lengthMs;
             } else {
               if (tile.duration.value == null) {
                 throw new Error(
-                  "Tried to render effect group tile without a duration!",
+                  'Tried to render effect group tile without a duration!',
                 );
               }
               effectT = (absoluteT * effectLength) / tile.duration.value;
@@ -267,7 +267,7 @@ export function renderSceneToUniverse(
         }
         break;
 
-      case "sequence":
+      case 'sequence':
         const sequence = tile.description.value;
 
         const durationSequence =
@@ -275,12 +275,12 @@ export function renderSceneToUniverse(
         let sequenceT: number;
         if (tile.oneShot) {
           const relativeT = sinceTransition * SEQUENCE_BEAT_RESOLUTION;
-          if (tile.duration.case === "durationBeat") {
+          if (tile.duration.case === 'durationBeat') {
             sequenceT = relativeT / beatMetadata.lengthMs;
           } else {
             if (tile.duration.value == null) {
               throw new Error(
-                "Tried to render sequence tile without a duration!",
+                'Tried to render sequence tile without a duration!',
               );
             }
             sequenceT =
@@ -292,7 +292,7 @@ export function renderSceneToUniverse(
             break;
           }
         } else {
-          if (tile.duration?.case === "durationBeat") {
+          if (tile.duration?.case === 'durationBeat') {
             sequenceT =
               ((beatT % (beatMetadata.lengthMs * sequence.nativeBeats)) *
                 SEQUENCE_BEAT_RESOLUTION) /
@@ -300,7 +300,7 @@ export function renderSceneToUniverse(
           } else {
             if (tile.duration.value == null) {
               throw new Error(
-                "Tried to render effect group tile without a duration!",
+                'Tried to render effect group tile without a duration!',
               );
             }
             sequenceT =
@@ -353,7 +353,7 @@ export function renderGroupDebugToUniverse(project: Project, groupId: bigint) {
       project,
       new OutputId({
         output: {
-          case: "fixtures",
+          case: 'fixtures',
           value: fixtureMapping,
         },
       }),
@@ -361,7 +361,7 @@ export function renderGroupDebugToUniverse(project: Project, groupId: bigint) {
 
     const color = hsvToColor(index / fixtures.length, 1, 1);
 
-    output?.setAmount(universe, "dimmer", 1);
+    output?.setAmount(universe, 'dimmer', 1);
     output?.setColor(universe, color.red, color.green, color.blue);
   }
 
@@ -380,7 +380,7 @@ function renderUniverseSequence(
   if (universeSequence) {
     const nonInterpolatedIndices = applyDefaults(project, [...universe]);
 
-    const context: Omit<Omit<RenderContext, "output">, "outputId"> = {
+    const context: Omit<Omit<RenderContext, 'output'>, 'outputId'> = {
       globalT: globalT,
       t: t,
       project: project,
@@ -449,11 +449,11 @@ function applyDefaults(project: Project, universe: DmxUniverse): number[] {
     for (const channel of Object.entries(fixtureMode.channels)) {
       const index = parseInt(channel[0]) - 1 + fixture.channelOffset;
       let value = channel[1].defaultValue;
-      if (channel[1].mapping.case === "angleMapping") {
+      if (channel[1].mapping.case === 'angleMapping') {
         const mapping = channel[1].mapping.value;
         value += fixture.channelOffsets[channel[1].type] || 0;
         value = mapDegrees(value, mapping.minDegrees, mapping.maxDegrees);
-      } else if (channel[1].mapping.case === "colorWheelMapping") {
+      } else if (channel[1].mapping.case === 'colorWheelMapping') {
         nonInterpolatedIndices.push(index);
       }
       universe[index] = value;
@@ -468,17 +468,17 @@ function applyEffect(
   frame: number,
   effect: Effect,
 ): void {
-  if (effect.effect.case === "staticEffect") {
+  if (effect.effect.case === 'staticEffect') {
     if (effect.effect.value.state == null) {
-      throw new Error("Tried to render static effect without state!");
+      throw new Error('Tried to render static effect without state!');
     }
     applyState(effect.effect.value.state, context);
-  } else if (effect.effect.case === "strobeEffect") {
+  } else if (effect.effect.case === 'strobeEffect') {
     strobeEffect(context, effect.effect.value, frame);
-  } else if (effect.effect.case === "rampEffect") {
+  } else if (effect.effect.case === 'rampEffect') {
     const ramp = effect.effect.value;
 
-    if (ramp.phase != 0 && context.outputId.output.case === "group") {
+    if (ramp.phase != 0 && context.outputId.output.case === 'group') {
       applyToEachFixture(
         context,
         context.outputId.output.value,
@@ -502,10 +502,10 @@ function applyEffect(
       const effectT = calculateEffectT(context, beat, effect, ramp, 0);
       rampEffect(context, ramp, effectT);
     }
-  } else if (effect.effect.case === "randomEffect") {
+  } else if (effect.effect.case === 'randomEffect') {
     if (
       effect.effect.value.treatFixturesIndividually &&
-      context.outputId.output.case === "group"
+      context.outputId.output.case === 'group'
     ) {
       const e = effect.effect.value;
       applyToEachFixture(
@@ -568,7 +568,7 @@ function calculateEffectT(
         return 0;
       }
     default:
-      throw Error("Unknown effect timing!");
+      throw Error('Unknown effect timing!');
   }
 }
 
@@ -588,7 +588,7 @@ function applyToEachFixture(
     fixtureMapping[context.project.activeUniverse.toString()] = fixtures[i];
     const outputId = new OutputId({
       output: {
-        case: "fixtures",
+        case: 'fixtures',
         value: {
           fixtures: fixtureMapping,
         },

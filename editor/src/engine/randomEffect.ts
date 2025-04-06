@@ -1,9 +1,9 @@
-import { Effect_RandomEffect } from "@dmx-controller/proto/effect_pb";
-import { RenderContext } from "./universe";
-import { applyState } from "./effect";
-import { EVEN_SUM, LARGE_PRIME, ODD_SUM, RANDOM_NUMBERS } from "../util/random";
-import { rampEffect } from "./rampEffect";
-import { strobeEffect } from "./strobeEffect";
+import { Effect_RandomEffect } from '@dmx-controller/proto/effect_pb';
+import { RenderContext } from './universe';
+import { applyState } from './effect';
+import { EVEN_SUM, LARGE_PRIME, ODD_SUM, RANDOM_NUMBERS } from '../util/random';
+import { rampEffect } from './rampEffect';
+import { strobeEffect } from './strobeEffect';
 
 export function randomEffect(
   context: RenderContext,
@@ -20,8 +20,8 @@ export function randomEffect(
     (context.globalT + (effect.seed + seed) * LARGE_PRIME) % windowSize;
   let counter = 0;
   let subEffect:
-    | Effect_RandomEffect["effectA"]
-    | Effect_RandomEffect["effectB"]
+    | Effect_RandomEffect['effectA']
+    | Effect_RandomEffect['effectB']
     | undefined;
   let subEffectT = 0;
 
@@ -53,16 +53,16 @@ export function randomEffect(
   }
 
   switch (subEffect.case) {
-    case "aStaticEffect":
-    case "bStaticEffect":
+    case 'aStaticEffect':
+    case 'bStaticEffect':
       applyState(subEffect.value.state!, context);
       break;
-    case "aRampEffect":
-    case "bRampEffect":
+    case 'aRampEffect':
+    case 'bRampEffect':
       rampEffect(context, subEffect.value, subEffectT);
       break;
-    case "aStrobeEffect":
-    case "bStrobeEffect":
+    case 'aStrobeEffect':
+    case 'bStrobeEffect':
       strobeEffect(context, subEffect.value, frame);
       break;
   }

@@ -6,32 +6,32 @@ import {
   useEffect,
   useMemo,
   useState,
-} from "react";
-import IconBxPause from "../icons/IconBxPause";
-import IconBxPlay from "../icons/IconBxPlay";
-import IconBxPulse from "../icons/IconBxPulse";
-import IconBxSkipNext from "../icons/IconBxSkipNext";
-import IconBxSkipPrevious from "../icons/IconBxSkipPrevious";
-import IconBxZoomIn from "../icons/IconBxZoomin";
-import IconBxZoomOut from "../icons/IconBxZoomOut";
-import MinimapPlugin from "wavesurfer.js/dist/plugins/minimap.js";
-import RegionsPlugin from "wavesurfer.js/dist/plugins/regions.js";
-import SpectrogramPlugin from "wavesurfer.js/dist/plugins/spectrogram.js";
-import WaveSurfer from "wavesurfer.js";
-import styles from "./BeatEditor.module.scss";
-import { AudioFile } from "@dmx-controller/proto/audio_pb";
-import { BeatMetadata } from "@dmx-controller/proto/beat_pb";
-import { Button } from "./Button";
-import { Modal } from "./Modal";
-import { NumberInput } from "./Input";
-import { ProjectContext } from "../contexts/ProjectContext";
-import { ShortcutContext } from "../contexts/ShortcutContext";
+} from 'react';
+import IconBxPause from '../icons/IconBxPause';
+import IconBxPlay from '../icons/IconBxPlay';
+import IconBxPulse from '../icons/IconBxPulse';
+import IconBxSkipNext from '../icons/IconBxSkipNext';
+import IconBxSkipPrevious from '../icons/IconBxSkipPrevious';
+import IconBxZoomIn from '../icons/IconBxZoomin';
+import IconBxZoomOut from '../icons/IconBxZoomOut';
+import MinimapPlugin from 'wavesurfer.js/dist/plugins/minimap.js';
+import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions.js';
+import SpectrogramPlugin from 'wavesurfer.js/dist/plugins/spectrogram.js';
+import WaveSurfer from 'wavesurfer.js';
+import styles from './BeatEditor.module.scss';
+import { AudioFile } from '@dmx-controller/proto/audio_pb';
+import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
+import { Button } from './Button';
+import { Modal } from './Modal';
+import { NumberInput } from './Input';
+import { ProjectContext } from '../contexts/ProjectContext';
+import { ShortcutContext } from '../contexts/ShortcutContext';
 import {
   WAVEFORM_COLOR,
   WAVEFORM_CURSOR_COLOR,
   WAVEFORM_PROGRESS_COLOR,
   WAVEFORM_SAMPLE_RATE,
-} from "../util/styleUtils";
+} from '../util/styleUtils';
 
 interface BeatEditorProps {
   file: AudioFile;
@@ -112,10 +112,10 @@ export function BeatEditor({ file, onCancel }: BeatEditorProps): JSX.Element {
         ],
       });
 
-      ws.on("click", (seconds) => ws.seekTo(seconds));
-      ws.on("audioprocess", (seconds: number) => setT(seconds * 1000));
-      ws.on("play", () => setPlaying(true));
-      ws.on("pause", () => setPlaying(false));
+      ws.on('click', (seconds) => ws.seekTo(seconds));
+      ws.on('audioprocess', (seconds: number) => setT(seconds * 1000));
+      ws.on('play', () => setPlaying(true));
+      ws.on('pause', () => setPlaying(false));
 
       ws.registerPlugin(
         SpectrogramPlugin.create({
@@ -158,24 +158,24 @@ export function BeatEditor({ file, onCancel }: BeatEditorProps): JSX.Element {
       waveSurferRegions.clearRegions();
 
       waveSurferRegions.addRegion({
-        id: "first-marker",
+        id: 'first-marker',
         start: firstMarker / 1000,
-        content: "First marker",
-        color: "#FFFFFF",
+        content: 'First marker',
+        color: '#FFFFFF',
       });
 
       waveSurferRegions.addRegion({
-        id: "second-marker",
+        id: 'second-marker',
         start: secondMarker / 1000,
-        content: "Second marker",
-        color: "#FFFFFF",
+        content: 'Second marker',
+        color: '#FFFFFF',
       });
 
       waveSurferRegions.addRegion({
-        id: "last-marker",
+        id: 'last-marker',
         start: lastMarker / 1000,
-        content: "Last marker",
-        color: "rgba(255, 255, 255, 0.5)",
+        content: 'Last marker',
+        color: 'rgba(255, 255, 255, 0.5)',
       });
 
       for (
@@ -185,7 +185,7 @@ export function BeatEditor({ file, onCancel }: BeatEditorProps): JSX.Element {
       ) {
         waveSurferRegions.addRegion({
           start: t,
-          color: "rgba(255, 255, 255, 0.1)",
+          color: 'rgba(255, 255, 255, 0.1)',
           drag: false,
         });
       }
@@ -197,21 +197,21 @@ export function BeatEditor({ file, onCancel }: BeatEditorProps): JSX.Element {
       ) {
         waveSurferRegions.addRegion({
           start: t,
-          color: "rgba(255, 255, 255, 0.1)",
+          color: 'rgba(255, 255, 255, 0.1)',
           drag: false,
         });
       }
 
-      return waveSurferRegions.on("region-updated", (region) => {
+      return waveSurferRegions.on('region-updated', (region) => {
         const markers = [firstMarker, secondMarker, lastMarker];
         switch (region.id) {
-          case "first-marker":
+          case 'first-marker':
             markers[0] = Math.floor(region.start * 1000);
             break;
-          case "second-marker":
+          case 'second-marker':
             markers[1] = Math.floor(region.start * 1000);
             break;
-          case "last-marker":
+          case 'last-marker':
             markers[2] = Math.floor(region.start * 1000);
             break;
         }
@@ -241,9 +241,9 @@ export function BeatEditor({ file, onCancel }: BeatEditorProps): JSX.Element {
     () =>
       setShortcuts([
         {
-          shortcut: { key: "Space" },
+          shortcut: { key: 'Space' },
           action: () => playPause(),
-          description: "Play file audio.",
+          description: 'Play file audio.',
         },
       ]),
     [playPause],
@@ -319,7 +319,7 @@ export function BeatEditor({ file, onCancel }: BeatEditorProps): JSX.Element {
           onClick={playPause}
           icon={playing ? <IconBxPause /> : <IconBxPlay />}
         >
-          {playing ? "Pause" : "Play"}
+          {playing ? 'Pause' : 'Play'}
         </Button>
         <Button onClick={() => waveSurfer?.seekTo(1)} icon={<IconBxSkipNext />}>
           Jump to end

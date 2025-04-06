@@ -1,10 +1,10 @@
-@import "./vars";
+@import './vars';
 
 html {
   --col-text: $col-text;
   background-color: $col-bg-higher;
   color: $col-text;
-  font-family: "Roboto", sans-serif;
+  font-family: 'Roboto', sans-serif;
   font-size: 11pt;
   font-weight: 300;
   overflow-x: hidden;
@@ -16,7 +16,7 @@ h1,
 h2,
 h3,
 h4 {
-  font-family: "Montserrat", sans-serif;
+  font-family: 'Montserrat', sans-serif;
   font-weight: 600;
 }
 
@@ -97,7 +97,7 @@ th {
 
     h1 {
       color: $col-border;
-      font-family: "Tomorrow", sans-serif;
+      font-family: 'Tomorrow', sans-serif;
       font-size: 28px;
       font-weight: 800;
       left: 50%;

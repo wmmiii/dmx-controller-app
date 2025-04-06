@@ -1,5 +1,5 @@
 // icon:bxl-windows | Boxicons https://boxicons.com/ | Atisa
-import * as React from "react";
+import * as React from 'react';
 
 function IconBxlWindows(props: React.SVGProps<SVGSVGElement>) {
   return (

@@ -1,5 +1,5 @@
 // icon:bx-pause | Boxicons https://boxicons.com/ | Atisa
-import * as React from "react";
+import * as React from 'react';
 
 function IconBxPause(props: React.SVGProps<SVGSVGElement>) {
   return (

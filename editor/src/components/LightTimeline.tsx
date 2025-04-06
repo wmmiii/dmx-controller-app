@@ -6,26 +6,26 @@ import {
   useMemo,
   useRef,
   useState,
-} from "react";
+} from 'react';
 
-import IconBxPulse from "../icons/IconBxPulse";
-import IconBxZoomIn from "../icons/IconBxZoomin";
-import IconBxZoomOut from "../icons/IconBxZoomOut";
-import styles from "./LightTimeline.module.scss";
-import { AudioController, AudioTrackVisualizer } from "./AudioTrackVisualizer";
-import { Button } from "./Button";
-import { EffectAddress, EffectDetails, EffectSelectContext } from "./Effect";
-import { HorizontalSplitPane } from "./SplitPane";
-import { LightTrack as LightTrackProto } from "@dmx-controller/proto/light_track_pb";
-import { LightTrack, MappingFunctions } from "./LightTrack";
-import { ProjectContext } from "../contexts/ProjectContext";
-import { ShortcutContext } from "../contexts/ShortcutContext";
-import { NumberInput } from "./Input";
-import { BeatMetadata } from "@dmx-controller/proto/beat_pb";
-import { Effect as EffectProto } from "@dmx-controller/proto/effect_pb";
-import { RenderingContext } from "../contexts/RenderingContext";
-import { getOutputName } from "./OutputSelector";
-import { getAvailableChannels } from "../engine/fixture";
+import IconBxPulse from '../icons/IconBxPulse';
+import IconBxZoomIn from '../icons/IconBxZoomin';
+import IconBxZoomOut from '../icons/IconBxZoomOut';
+import styles from './LightTimeline.module.scss';
+import { AudioController, AudioTrackVisualizer } from './AudioTrackVisualizer';
+import { Button } from './Button';
+import { EffectAddress, EffectDetails, EffectSelectContext } from './Effect';
+import { HorizontalSplitPane } from './SplitPane';
+import { LightTrack as LightTrackProto } from '@dmx-controller/proto/light_track_pb';
+import { LightTrack, MappingFunctions } from './LightTrack';
+import { ProjectContext } from '../contexts/ProjectContext';
+import { ShortcutContext } from '../contexts/ShortcutContext';
+import { NumberInput } from './Input';
+import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
+import { Effect as EffectProto } from '@dmx-controller/proto/effect_pb';
+import { RenderingContext } from '../contexts/RenderingContext';
+import { getOutputName } from './OutputSelector';
+import { getAvailableChannels } from '../engine/fixture';
 
 export const LEFT_WIDTH = 180;
 
@@ -61,7 +61,7 @@ export default function LightTimeline(props: TracksProps): JSX.Element {
     }
     const s = selectedAddress;
     props.lightTracks[s.track].layers[s.layer].effects.splice(s.effect, 1);
-    save("Delete effect.");
+    save('Delete effect.');
     setSelectedAddress(null);
   }, [selectedAddress, props.lightTracks]);
 
@@ -69,19 +69,19 @@ export default function LightTimeline(props: TracksProps): JSX.Element {
     () =>
       setShortcuts([
         {
-          shortcut: { key: "Escape" },
+          shortcut: { key: 'Escape' },
           action: () => setSelectedAddress(null),
-          description: "Deselect the currently selected effect.",
+          description: 'Deselect the currently selected effect.',
         },
         {
-          shortcut: { key: "Delete" },
+          shortcut: { key: 'Delete' },
           action: deleteSelected,
-          description: "Delete the currently selected effect.",
+          description: 'Delete the currently selected effect.',
         },
         {
-          shortcut: { key: "KeyC", modifiers: ["ctrl"] },
+          shortcut: { key: 'KeyC', modifiers: ['ctrl'] },
           action: () => setCopyEffect(selectedEffect),
-          description: "Copy currently selected effect to clipboard.",
+          description: 'Copy currently selected effect to clipboard.',
         },
       ]),
     [
@@ -111,7 +111,7 @@ export default function LightTimeline(props: TracksProps): JSX.Element {
             <EffectDetails
               className={styles.effectDetails}
               effect={selectedEffect}
-              showPhase={outputType === "group"}
+              showPhase={outputType === 'group'}
               availableChannels={availableChannels}
             />
           ) : (
@@ -261,7 +261,7 @@ function Tracks({
     () =>
       setShortcuts([
         {
-          shortcut: { key: "Space" },
+          shortcut: { key: 'Space' },
           action: () => {
             if (audioController.current != null) {
               if (playing) {
@@ -271,7 +271,7 @@ function Tracks({
               }
             }
           },
-          description: "Play/pause show.",
+          description: 'Play/pause show.',
         },
       ]),
     [audioController.current, playing],
@@ -308,7 +308,7 @@ function Tracks({
             Zoom Out
           </Button>
           <Button
-            variant={snapToBeat ? "primary" : "default"}
+            variant={snapToBeat ? 'primary' : 'default'}
             icon={<IconBxPulse />}
             onClick={() => setSnapToBeat(!snapToBeat)}
           >
@@ -382,7 +382,7 @@ function Tracks({
                     ? undefined
                     : () => {
                         swap(i, i - 1);
-                        save("Rearrange track order.");
+                        save('Rearrange track order.');
                       }
                 }
               />

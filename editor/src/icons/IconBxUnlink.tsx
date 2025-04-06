@@ -1,5 +1,5 @@
 // icon:bx-unlink | Boxicons https://boxicons.com/ | Atisa
-import "react";
+import 'react';
 
 function IconBxUnlink(props: any) {
   return (

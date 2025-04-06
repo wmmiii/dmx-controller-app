@@ -1,16 +1,16 @@
 export function escapeForFilesystem(name: string) {
   return name
     .toLocaleLowerCase()
-    .replace(" ", "_")
-    .replace(/[^\w_-]/g, "");
+    .replace(' ', '_')
+    .replace(/[^\w_-]/g, '');
 }
 
 export function downloadBlob(blob: Blob, name: string) {
-  let url = "";
+  let url = '';
   try {
     url = URL.createObjectURL(blob);
 
-    const a = document.createElement("a");
+    const a = document.createElement('a');
     a.href = url;
     a.download = name;
     document.body.appendChild(a);
