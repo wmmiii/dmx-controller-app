@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo } from 'react';
+import { JSX, useContext, useEffect, useMemo } from 'react';
 import { ShortcutContext } from '../contexts/ShortcutContext';
 import { BeatContext } from '../contexts/BeatContext';
 import { NumberInput } from './Input';

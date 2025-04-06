@@ -144,7 +144,7 @@ function Tracks({
   const [visible, setVisible] = useState({ startMs: 0, endMs: 1000 });
   const [playing, setPlaying] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
-  const audioController = useRef<AudioController>();
+  const audioController = useRef<AudioController>(null);
   const [tState, setTState] = useState(0);
 
   const setVisibleCallback = useCallback(

@@ -1,4 +1,4 @@
-import { useContext, useEffect } from 'react';
+import { JSX, useContext, useEffect } from 'react';
 
 import styles from "./Modal.module.scss";
 import { IconButton } from './Button';

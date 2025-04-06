@@ -1,3 +1,4 @@
+import { JSX } from 'react';
 import { PropsWithChildren, createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { Modal } from "../components/Modal";
 import { DialogContext } from "./DialogContext";

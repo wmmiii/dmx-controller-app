@@ -1,4 +1,4 @@
-import { PropsWithChildren, createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { JSX, PropsWithChildren, createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import upgradeProject from '../util/projectUpgrader';
 import { Project, Project_Assets } from '@dmx-controller/proto/project_pb';
 import { ShortcutContext } from './ShortcutContext';

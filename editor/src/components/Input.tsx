@@ -1,4 +1,4 @@
-import { createRef, useCallback, useEffect, useMemo, useState } from "react";
+import { JSX, createRef, useCallback, useEffect, useMemo, useState } from "react";
 
 import styles from './Input.module.scss';
 

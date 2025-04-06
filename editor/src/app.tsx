@@ -1,6 +1,6 @@
 import { StrictMode } from 'react';
 import Index from './Index';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter } from 'react-router';
 import { DialogProvider } from './contexts/DialogContext';
 import { ProjectProvider } from './contexts/ProjectContext';
 import { SerialProvider } from './contexts/SerialContext';

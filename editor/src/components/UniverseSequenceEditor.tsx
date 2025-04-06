@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { JSX, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import LightTimeline from './LightTimeline';
 import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
 import { LightTrack as LightTrackProto } from '@dmx-controller/proto/light_track_pb';

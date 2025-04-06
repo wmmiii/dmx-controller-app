@@ -1,4 +1,4 @@
-import { createRef, useEffect, useState } from 'react';
+import { JSX, createRef, useEffect, useState } from 'react';
 
 import styles from "./SplitPane.module.scss";
 

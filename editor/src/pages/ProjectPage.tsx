@@ -1,4 +1,4 @@
-import { useContext } from 'react';
+import { JSX, useContext } from 'react';
 import styles from './ProjectPage.module.scss';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { TextInput } from '../components/Input';

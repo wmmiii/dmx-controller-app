@@ -1,4 +1,4 @@
-import { createRef, useContext, useEffect, useMemo, useState } from 'react';
+import { JSX, createRef, useContext, useEffect, useMemo, useState } from 'react';
 import IconBxCopyAlt from '../icons/IconBxCopy';
 import IconBxDownload from '../icons/IconBxDownload';
 import IconBxUpload from '../icons/IconBxUpload';

@@ -1,5 +1,5 @@
 import { PhysicalFixtureGroup, PhysicalFixtureGroup_FixtureList } from "@dmx-controller/proto/fixture_pb";
-import { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { JSX, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { ProjectContext } from "../contexts/ProjectContext";
 import { getApplicableMembers } from "../engine/group";
 import { Modal } from "./Modal";

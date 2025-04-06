@@ -1,4 +1,4 @@
-import { PropsWithChildren, createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { JSX, PropsWithChildren, createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
 import { ProjectContext } from './ProjectContext';
 import { createRealTimeBpmProcessor } from 'realtime-bpm-analyzer';

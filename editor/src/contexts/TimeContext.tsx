@@ -1,4 +1,4 @@
-import { PropsWithChildren, createContext, useEffect, useRef } from 'react';
+import { JSX, PropsWithChildren, createContext, useEffect, useRef } from 'react';
 
 type TimeListener = (t: bigint) => void;
 

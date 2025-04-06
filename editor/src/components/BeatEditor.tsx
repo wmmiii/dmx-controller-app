@@ -1,4 +1,4 @@
-import { createRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { JSX, createRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import IconBxPause from "../icons/IconBxPause";
 import IconBxPlay from "../icons/IconBxPlay";
 import IconBxPulse from "../icons/IconBxPulse";

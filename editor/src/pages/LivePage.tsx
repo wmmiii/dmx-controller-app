@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { JSX, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import IconBxPlus from '../icons/IconBxPlus';
 import IconBxX from '../icons/IconBxX';
 import styles from "./LivePage.module.scss";

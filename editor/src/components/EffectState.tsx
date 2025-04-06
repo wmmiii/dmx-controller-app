@@ -7,7 +7,7 @@ import { Color, PaletteColor } from '@dmx-controller/proto/color_pb';
 import { ColorSwatch } from './ColorSwatch';
 import { FixtureState as FixtureStateProto, FixtureState_Channel } from "@dmx-controller/proto/effect_pb";
 import { NumberInput } from './Input';
-import { useCallback } from 'react';
+import { JSX, useCallback } from 'react';
 
 type ColorSelectorType = 'none' | 'color' | PaletteColor;
 

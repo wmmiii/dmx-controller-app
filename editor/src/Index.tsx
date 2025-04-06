@@ -22,11 +22,10 @@ import { JSX, createRef, useContext, useEffect, useState } from 'react';
 import { LivePage } from './pages/LivePage';
 import { Modal } from './components/Modal';
 import { ProjectContext } from './contexts/ProjectContext';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useNavigate } from 'react-router';
 import { SerialContext } from './contexts/SerialContext';
 import { SiMidi } from "react-icons/si";
 import { UniverseVisualizer } from './components/UniverseVisualizer';
-import { useNavigate } from 'react-router-dom';
 
 export default function Index(): JSX.Element {
   const { port, blackout, setBlackout, connect, disconnect } = useContext(SerialContext);

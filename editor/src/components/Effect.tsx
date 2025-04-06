@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { JSX, CSSProperties, createContext, useContext, useEffect, useState } from 'react';
 import IconBxsBinoculars from '../icons/IconBxsBinoculars';
 import IconBxsBolt from '../icons/IconBxsBolt';
 import IconBxsSun from '../icons/IconBxsSun';
@@ -6,7 +6,6 @@ import IconPanTilt from '../icons/IconPanTilt';
 import IconRgb from '../icons/IconRgb';
 import styles from './Effect.module.scss';
 import { Button, IconButton } from './Button';
-import { CSSProperties } from 'react';
 import { DEFAULT_EFFECT_COLOR, DEFAULT_EFFECT_COLOR_ALT } from '../util/styleUtils';
 import { Effect as EffectProto, EffectTiming, Effect_RampEffect, Effect_RampEffect_EasingFunction, Effect_StaticEffect, FixtureState, FixtureState as FixtureStateProto, Effect_StrobeEffect, Effect_RandomEffect } from '@dmx-controller/proto/effect_pb';
 import { EffectState } from './EffectState';

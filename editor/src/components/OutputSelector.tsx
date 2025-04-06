@@ -1,4 +1,4 @@
-import { useContext, useMemo } from 'react';
+import { JSX, useContext, useMemo } from 'react';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { Project } from '@dmx-controller/proto/project_pb';
 import { OutputId, OutputId_FixtureMapping } from '@dmx-controller/proto/output_id_pb';

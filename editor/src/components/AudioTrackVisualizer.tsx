@@ -1,4 +1,4 @@
-import { createRef, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { JSX, createRef, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import MinimapPlugin from "wavesurfer.js/dist/plugins/minimap.js";
 import RegionsPlugin from "wavesurfer.js/dist/plugins/regions.js";
 import WaveSurfer from 'wavesurfer.js';
@@ -42,7 +42,7 @@ export function AudioTrackVisualizer({
   const containerRef = createRef<HTMLDivElement>();
   const [ws, setWs] = useState<WaveSurfer | null>(null);
   const [regions, setRegions] = useState<RegionsPlugin | null>(null);
-  const visibleDuration = useRef<number>();
+  const visibleDuration = useRef<number>(1);
 
   useEffect(() => {
     if (containerRef.current != null && audioBlob != null) {

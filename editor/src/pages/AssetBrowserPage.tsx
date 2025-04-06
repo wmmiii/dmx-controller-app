@@ -1,4 +1,4 @@
-import { useContext, useState } from 'react';
+import { JSX, useContext, useState } from 'react';
 import styles from './AssetBrowserPage.module.scss';
 import { AudioFile } from '@dmx-controller/proto/audio_pb';
 import { BeatEditor } from '../components/BeatEditor';

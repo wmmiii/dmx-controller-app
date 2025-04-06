@@ -1,4 +1,4 @@
-import { createRef, useContext } from "react";
+import { JSX, createRef, useContext } from "react";
 
 import IconBxBrushAlt from '../icons/IconBxBrush';
 import IconBxChevronDown from "../icons/IconBxChevronDown";
