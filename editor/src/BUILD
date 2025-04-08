@@ -51,6 +51,7 @@ ts_project(
         "**/*.ts",
         "**/*.tsx",
     ]),
+    source_map = True,
     tsconfig = "//:tsconfig",
     deps = COMMON_DEPS,
 )
