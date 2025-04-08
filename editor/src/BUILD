@@ -39,7 +39,10 @@ esbuild(
     target = "ES2022",
     tsconfig = "//:tsconfig",
     visibility = ["//editor:__pkg__"],
-    deps = COMMON_DEPS,
+    deps = [
+        ":src",
+        "//:node_modules/esbuild-scss-modules-plugin",
+    ],
 )
 
 ts_project(
