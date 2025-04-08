@@ -1,17 +1,18 @@
+import { LightLayer as LightLayerProto } from '@dmx-controller/proto/light_layer_pb';
+import { LightTrack as LightTrackProto } from '@dmx-controller/proto/light_track_pb';
 import { JSX, createRef, useContext } from 'react';
 
+import { LightLayer } from '../components/LightLayer';
+import { OutputSelector, getOutputName } from '../components/OutputSelector';
+import { ProjectContext } from '../contexts/ProjectContext';
 import IconBxBrushAlt from '../icons/IconBxBrush';
 import IconBxChevronDown from '../icons/IconBxChevronDown';
 import IconBxChevronUp from '../icons/IconBxChevronUp';
 import IconBxPlus from '../icons/IconBxPlus';
 import IconBxX from '../icons/IconBxX';
-import styles from './LightTrack.module.scss';
+
 import { Button, IconButton } from './Button';
-import { LightLayer as LightLayerProto } from '@dmx-controller/proto/light_layer_pb';
-import { LightLayer } from '../components/LightLayer';
-import { LightTrack as LightTrackProto } from '@dmx-controller/proto/light_track_pb';
-import { ProjectContext } from '../contexts/ProjectContext';
-import { getOutputName, OutputSelector } from '../components/OutputSelector';
+import styles from './LightTrack.module.scss';
 
 export interface MappingFunctions {
   msWidthToPxWidth: (ms: number) => number;

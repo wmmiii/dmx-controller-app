@@ -1,42 +1,44 @@
-import { JSX, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import IconBxPlus from '../icons/IconBxPlus';
-import IconBxX from '../icons/IconBxX';
-import styles from './LivePage.module.scss';
-import { BeatContext } from '../contexts/BeatContext';
-import { Button, IconButton } from '../components/Button';
-import { TileGrid } from '../components/TileGrid';
-import { EffectDetails } from '../components/Effect';
-import { HorizontalSplitPane } from '../components/SplitPane';
-import { LiveBeat } from '../components/LiveBeat';
-import { Modal } from '../components/Modal';
-import { NumberInput, TextInput, ToggleInput } from '../components/Input';
-import { ProjectContext } from '../contexts/ProjectContext';
+import {
+  ControllerMapping_Action,
+  ControllerMapping_TileStrength,
+} from '@dmx-controller/proto/controller_pb';
+import { Project } from '@dmx-controller/proto/project_pb';
 import {
   Scene,
   Scene_Tile,
+  Scene_TileMap,
   Scene_Tile_EffectGroupTile,
   Scene_Tile_EffectGroupTile_EffectChannel,
   Scene_Tile_SequenceTile,
-  Scene_TileMap,
 } from '@dmx-controller/proto/scene_pb';
-import { SerialContext } from '../contexts/SerialContext';
+import { JSX, useContext, useEffect, useMemo, useRef, useState } from 'react';
+
+import { Button, IconButton } from '../components/Button';
+import { ControllerConnection } from '../components/ControllerConnection';
+import { EffectDetails } from '../components/Effect';
+import { NumberInput, TextInput, ToggleInput } from '../components/Input';
+import { LiveBeat } from '../components/LiveBeat';
+import { Modal } from '../components/Modal';
+import { OutputSelector, getOutputName } from '../components/OutputSelector';
+import { PaletteSwatch } from '../components/Palette';
+import { HorizontalSplitPane } from '../components/SplitPane';
+import { TileGrid } from '../components/TileGrid';
 import { UniverseSequenceEditor } from '../components/UniverseSequenceEditor';
-import { getOutputName, OutputSelector } from '../components/OutputSelector';
+import { BeatContext } from '../contexts/BeatContext';
+import { ControllerContext } from '../contexts/ControllerContext';
+import { PaletteContext } from '../contexts/PaletteContext';
+import { ProjectContext } from '../contexts/ProjectContext';
+import { SerialContext } from '../contexts/SerialContext';
+import { getAvailableChannels } from '../engine/fixture';
 import {
   DEFAULT_COLOR_PALETTE,
   renderSceneToUniverse as renderActiveSceneToUniverse,
 } from '../engine/universe';
 import { universeToUint8Array } from '../engine/utils';
-import { Project } from '@dmx-controller/proto/project_pb';
-import { PaletteContext } from '../contexts/PaletteContext';
-import { PaletteSwatch } from '../components/Palette';
-import { getAvailableChannels } from '../engine/fixture';
-import { ControllerContext } from '../contexts/ControllerContext';
-import {
-  ControllerMapping_Action,
-  ControllerMapping_TileStrength,
-} from '@dmx-controller/proto/controller_pb';
-import { ControllerConnection } from '../components/ControllerConnection';
+import IconBxPlus from '../icons/IconBxPlus';
+import IconBxX from '../icons/IconBxX';
+
+import styles from './LivePage.module.scss';
 
 export function LivePage(): JSX.Element {
   const { project, save } = useContext(ProjectContext);

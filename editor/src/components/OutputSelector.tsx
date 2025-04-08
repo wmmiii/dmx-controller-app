@@ -1,13 +1,15 @@
-import { JSX, useContext, useMemo } from 'react';
-import { ProjectContext } from '../contexts/ProjectContext';
-import { Project } from '@dmx-controller/proto/project_pb';
 import {
   OutputId,
   OutputId_FixtureMapping,
 } from '@dmx-controller/proto/output_id_pb';
-import { getActiveUniverse } from '../util/projectUtils';
-import styles from './OutputSelector.module.scss';
+import { Project } from '@dmx-controller/proto/project_pb';
+import { JSX, useContext, useMemo } from 'react';
+
+import { ProjectContext } from '../contexts/ProjectContext';
 import { GROUP_ALL_ID } from '../engine/fixture';
+import { getActiveUniverse } from '../util/projectUtils';
+
+import styles from './OutputSelector.module.scss';
 
 interface OutputSelectorProps {
   value: OutputId | undefined;

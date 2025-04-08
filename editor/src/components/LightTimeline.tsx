@@ -1,3 +1,6 @@
+import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
+import { Effect as EffectProto } from '@dmx-controller/proto/effect_pb';
+import { LightTrack as LightTrackProto } from '@dmx-controller/proto/light_track_pb';
 import {
   JSX,
   useCallback,
@@ -8,24 +11,22 @@ import {
   useState,
 } from 'react';
 
+import { ProjectContext } from '../contexts/ProjectContext';
+import { RenderingContext } from '../contexts/RenderingContext';
+import { ShortcutContext } from '../contexts/ShortcutContext';
+import { getAvailableChannels } from '../engine/fixture';
 import IconBxPulse from '../icons/IconBxPulse';
-import IconBxZoomIn from '../icons/IconBxZoomin';
 import IconBxZoomOut from '../icons/IconBxZoomOut';
-import styles from './LightTimeline.module.scss';
+import IconBxZoomIn from '../icons/IconBxZoomin';
+
 import { AudioController, AudioTrackVisualizer } from './AudioTrackVisualizer';
 import { Button } from './Button';
 import { EffectAddress, EffectDetails, EffectSelectContext } from './Effect';
-import { HorizontalSplitPane } from './SplitPane';
-import { LightTrack as LightTrackProto } from '@dmx-controller/proto/light_track_pb';
-import { LightTrack, MappingFunctions } from './LightTrack';
-import { ProjectContext } from '../contexts/ProjectContext';
-import { ShortcutContext } from '../contexts/ShortcutContext';
 import { NumberInput } from './Input';
-import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
-import { Effect as EffectProto } from '@dmx-controller/proto/effect_pb';
-import { RenderingContext } from '../contexts/RenderingContext';
+import styles from './LightTimeline.module.scss';
+import { LightTrack, MappingFunctions } from './LightTrack';
 import { getOutputName } from './OutputSelector';
-import { getAvailableChannels } from '../engine/fixture';
+import { HorizontalSplitPane } from './SplitPane';
 
 export const LEFT_WIDTH = 180;
 

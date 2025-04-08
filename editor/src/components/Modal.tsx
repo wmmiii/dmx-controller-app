@@ -1,9 +1,10 @@
 import { JSX, useContext, useEffect } from 'react';
 
-import styles from './Modal.module.scss';
-import { IconButton } from './Button';
-import IconBxX from '../icons/IconBxX';
 import { ShortcutContext } from '../contexts/ShortcutContext';
+import IconBxX from '../icons/IconBxX';
+
+import { IconButton } from './Button';
+import styles from './Modal.module.scss';
 
 interface ModalProps {
   title: string;

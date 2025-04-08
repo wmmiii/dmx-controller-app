@@ -1,14 +1,16 @@
+import {
+  ControllerMapping,
+  ControllerMapping_Action,
+  ControllerMapping_Controller,
+  ControllerMapping_TileStrength,
+} from '@dmx-controller/proto/controller_pb';
 import { Project } from '@dmx-controller/proto/project_pb';
+
 import {
   ControlCommandType,
   ControllerChannel,
 } from '../contexts/ControllerContext';
-import {
-  ControllerMapping,
-  ControllerMapping_Action,
-  ControllerMapping_TileStrength,
-  ControllerMapping_Controller,
-} from '@dmx-controller/proto/controller_pb';
+
 import { outputTileStrength, performTileStrength } from './tileStrength';
 
 export function performAction(

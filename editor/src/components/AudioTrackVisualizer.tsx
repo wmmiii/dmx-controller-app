@@ -1,3 +1,4 @@
+import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
 import {
   JSX,
   createRef,
@@ -7,9 +8,11 @@ import {
   useRef,
   useState,
 } from 'react';
+import WaveSurfer from 'wavesurfer.js';
 import MinimapPlugin from 'wavesurfer.js/dist/plugins/minimap.js';
 import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions.js';
-import WaveSurfer from 'wavesurfer.js';
+
+import { ShortcutContext } from '../contexts/ShortcutContext';
 import {
   BEAT_MARKER,
   WAVEFORM_COLOR,
@@ -17,8 +20,6 @@ import {
   WAVEFORM_PROGRESS_COLOR,
   WAVEFORM_SAMPLE_RATE,
 } from '../util/styleUtils';
-import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
-import { ShortcutContext } from '../contexts/ShortcutContext';
 
 export interface AudioController {
   play: () => void;

@@ -1,3 +1,4 @@
+import { Color } from '@dmx-controller/proto/color_pb';
 import {
   FixtureDefinition,
   FixtureDefinition_Channel,
@@ -9,12 +10,13 @@ import {
 } from '@dmx-controller/proto/fixture_pb';
 import { BlobReader, TextWriter, ZipReader } from '@zip.js/zip.js';
 import getUuidByString from 'uuid-by-string';
+
 import {
   AMOUNT_CHANNELS,
   ANGLE_CHANNELS,
   COLOR_CHANNELS,
 } from '../engine/channel';
-import { Color } from '@dmx-controller/proto/color_pb';
+
 import { cieToColor } from './colorUtil';
 
 export async function extractGdtf(arrayBuffer: Blob) {

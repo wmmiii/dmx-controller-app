@@ -1,14 +1,16 @@
 import { ColorPalette } from '@dmx-controller/proto/color_pb';
-import IconBxsCog from '../icons/IconBxsCog';
-import styles from './Palette.module.scss';
-import { Button, IconButton } from './Button';
-import { Modal } from './Modal';
-import { ProjectContext } from '../contexts/ProjectContext';
-import { TextInput } from './Input';
+import { ControllerMapping_ColorPaletteSelection } from '@dmx-controller/proto/controller_pb';
 import { useContext, useMemo, useState } from 'react';
+
+import { ProjectContext } from '../contexts/ProjectContext';
+import IconBxsCog from '../icons/IconBxsCog';
+
+import { Button, IconButton } from './Button';
 import { ColorSwatch } from './ColorSwatch';
 import { ControllerConnection } from './ControllerConnection';
-import { ControllerMapping_ColorPaletteSelection } from '@dmx-controller/proto/controller_pb';
+import { TextInput } from './Input';
+import { Modal } from './Modal';
+import styles from './Palette.module.scss';
 
 interface PaletteSwatchProps {
   id: string;

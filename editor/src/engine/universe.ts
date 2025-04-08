@@ -1,15 +1,9 @@
 import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
 import { ColorPalette } from '@dmx-controller/proto/color_pb';
 import {
-  DmxUniverse,
-  WritableDevice,
-  getWritableDevice,
-  mapDegrees,
-} from './fixture';
-import {
   Effect,
-  Effect_RampEffect,
   EffectTiming,
+  Effect_RampEffect,
 } from '@dmx-controller/proto/effect_pb';
 import { LightLayer } from '@dmx-controller/proto/light_layer_pb';
 import {
@@ -17,17 +11,25 @@ import {
   OutputId_FixtureMapping,
 } from '@dmx-controller/proto/output_id_pb';
 import { Project } from '@dmx-controller/proto/project_pb';
-import { SEQUENCE_BEAT_RESOLUTION } from '../components/UniverseSequenceEditor';
 import { Scene_Tile_SequenceTile } from '@dmx-controller/proto/scene_pb';
-import { applyState } from './effect';
-import { getActiveUniverse } from '../util/projectUtils';
-import { getAllFixtures } from './group';
-import { getTileDurationMs } from '../util/tile';
+
+import { SEQUENCE_BEAT_RESOLUTION } from '../components/UniverseSequenceEditor';
 import { hsvToColor, interpolatePalettes } from '../util/colorUtil';
-import { interpolateUniverses } from './utils';
+import { getActiveUniverse } from '../util/projectUtils';
+import { getTileDurationMs } from '../util/tile';
+
+import { applyState } from './effect';
+import {
+  DmxUniverse,
+  WritableDevice,
+  getWritableDevice,
+  mapDegrees,
+} from './fixture';
+import { getAllFixtures } from './group';
 import { rampEffect } from './rampEffect';
 import { randomEffect } from './randomEffect';
 import { strobeEffect } from './strobeEffect';
+import { interpolateUniverses } from './utils';
 
 export const DEFAULT_COLOR_PALETTE = new ColorPalette({
   name: 'Unset palette',

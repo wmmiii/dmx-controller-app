@@ -1,21 +1,23 @@
 import { ControllerMapping_Action } from '@dmx-controller/proto/controller_pb';
+import { Project } from '@dmx-controller/proto/project_pb';
+import { useContext, useEffect, useMemo, useState } from 'react';
+import { SiMidi } from 'react-icons/si';
+
+import {
+  ControlCommandType,
+  ControllerChannel,
+  ControllerContext,
+} from '../contexts/ControllerContext';
+import { ProjectContext } from '../contexts/ProjectContext';
 import {
   assignAction,
   deleteAction,
   findAction,
   getActionDescription,
 } from '../external_controller/externalController';
-import { useContext, useEffect, useMemo, useState } from 'react';
-import { ProjectContext } from '../contexts/ProjectContext';
-import {
-  ControlCommandType,
-  ControllerChannel,
-  ControllerContext,
-} from '../contexts/ControllerContext';
-import { SiMidi } from 'react-icons/si';
-import { Project } from '@dmx-controller/proto/project_pb';
-import { Modal } from './Modal';
+
 import { Button, IconButton } from './Button';
+import { Modal } from './Modal';
 
 interface ControllerConnectionProps {
   action: ControllerMapping_Action['action'];

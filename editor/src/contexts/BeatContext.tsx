@@ -1,3 +1,4 @@
+import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
 import {
   JSX,
   PropsWithChildren,
@@ -8,9 +9,9 @@ import {
   useMemo,
   useState,
 } from 'react';
-import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
-import { ProjectContext } from './ProjectContext';
 import { createRealTimeBpmProcessor } from 'realtime-bpm-analyzer';
+
+import { ProjectContext } from './ProjectContext';
 
 const MAX_SAMPLES = 16;
 const DEVIATION_THRESHOLD = 75;

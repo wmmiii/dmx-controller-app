@@ -1,12 +1,13 @@
+import { Color } from '@dmx-controller/proto/color_pb';
+import { FixtureDefinition_Channel_ColorWheelMapping } from '@dmx-controller/proto/fixture_pb';
 import { useContext, useEffect, useMemo, useState } from 'react';
 
-import styles from './UniverseVisualizer.module.scss';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { SerialContext } from '../contexts/SerialContext';
-import { getActiveUniverse } from '../util/projectUtils';
 import { ChannelTypes } from '../engine/channel';
-import { FixtureDefinition_Channel_ColorWheelMapping } from '@dmx-controller/proto/fixture_pb';
-import { Color } from '@dmx-controller/proto/color_pb';
+import { getActiveUniverse } from '../util/projectUtils';
+
+import styles from './UniverseVisualizer.module.scss';
 
 export function UniverseVisualizer() {
   const { project } = useContext(ProjectContext);

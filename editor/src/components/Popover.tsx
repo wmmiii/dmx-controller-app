@@ -1,6 +1,5 @@
-import { Popover as RadixPopover } from 'radix-ui';
-
 import styles from 'Popover.module.scss';
+import { Popover as RadixPopover } from 'radix-ui';
 
 interface PopoverProps {
   onClose: () => void;

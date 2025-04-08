@@ -1,20 +1,22 @@
-import { JSX, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import LightTimeline from '../components/LightTimeline';
-import styles from './ShowPage.module.scss';
-import { Button } from '../components/Button';
-import {
-  DEFAULT_COLOR_PALETTE,
-  renderShowToUniverse,
-} from '../engine/universe';
 import { LightTrack as LightTrackProto } from '@dmx-controller/proto/light_track_pb';
+import { Show, Show_AudioTrack } from '@dmx-controller/proto/show_pb';
+import { JSX, useContext, useEffect, useMemo, useRef, useState } from 'react';
+
+import { Button } from '../components/Button';
+import { TextInput } from '../components/Input';
+import LightTimeline from '../components/LightTimeline';
 import { Modal } from '../components/Modal';
 import { PaletteContext } from '../contexts/PaletteContext';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { SerialContext } from '../contexts/SerialContext';
-import { Show, Show_AudioTrack } from '@dmx-controller/proto/show_pb';
-import { TextInput } from '../components/Input';
-import { UNSET_INDEX, idMapToArray } from '../util/mapUtils';
+import {
+  DEFAULT_COLOR_PALETTE,
+  renderShowToUniverse,
+} from '../engine/universe';
 import { universeToUint8Array } from '../engine/utils';
+import { UNSET_INDEX, idMapToArray } from '../util/mapUtils';
+
+import styles from './ShowPage.module.scss';
 
 const DEFAULT_SHOW = new Show({
   name: 'Untitled Show',

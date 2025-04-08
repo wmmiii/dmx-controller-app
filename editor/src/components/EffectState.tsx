@@ -1,21 +1,23 @@
-import IconBxPlus from '../icons/IconBxPlus';
-import IconBxX from '../icons/IconBxX';
-import styles from './EffectState.module.scss';
-import {
-  AMOUNT_CHANNELS,
-  ANGLE_CHANNELS,
-  ChannelTypes,
-  COLOR_CHANNELS,
-} from '../engine/channel';
-import { Button, IconButton } from './Button';
 import { Color, PaletteColor } from '@dmx-controller/proto/color_pb';
-import { ColorSwatch } from './ColorSwatch';
 import {
   FixtureState as FixtureStateProto,
   FixtureState_Channel,
 } from '@dmx-controller/proto/effect_pb';
-import { NumberInput } from './Input';
 import { JSX, useCallback } from 'react';
+
+import {
+  AMOUNT_CHANNELS,
+  ANGLE_CHANNELS,
+  COLOR_CHANNELS,
+  ChannelTypes,
+} from '../engine/channel';
+import IconBxPlus from '../icons/IconBxPlus';
+import IconBxX from '../icons/IconBxX';
+
+import { Button, IconButton } from './Button';
+import { ColorSwatch } from './ColorSwatch';
+import styles from './EffectState.module.scss';
+import { NumberInput } from './Input';
 
 type ColorSelectorType = 'none' | 'color' | PaletteColor;
 

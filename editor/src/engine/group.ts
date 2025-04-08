@@ -3,8 +3,10 @@ import {
   OutputId_FixtureMapping,
 } from '@dmx-controller/proto/output_id_pb';
 import { Project } from '@dmx-controller/proto/project_pb';
-import { GROUP_ALL_ID } from './fixture';
+
 import { getActiveUniverse } from '../util/projectUtils';
+
+import { GROUP_ALL_ID } from './fixture';
 
 interface GroupMember {
   id: OutputId;

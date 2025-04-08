@@ -1,3 +1,6 @@
+import { ColorPalette } from '@dmx-controller/proto/color_pb';
+import { Project, Project_Assets } from '@dmx-controller/proto/project_pb';
+import { Universe } from '@dmx-controller/proto/universe_pb';
 import {
   JSX,
   PropsWithChildren,
@@ -8,15 +11,14 @@ import {
   useRef,
   useState,
 } from 'react';
-import upgradeProject from '../util/projectUpgrader';
-import { Project, Project_Assets } from '@dmx-controller/proto/project_pb';
-import { ShortcutContext } from './ShortcutContext';
-import { downloadBlob, escapeForFilesystem } from '../util/fileUtils';
-import { getBlob, storeBlob } from '../util/storageUtil';
-import { Universe } from '@dmx-controller/proto/universe_pb';
-import { randomUint64 } from '../util/numberUtils';
+
 import { DEFAULT_COLOR_PALETTE } from '../engine/universe';
-import { ColorPalette } from '@dmx-controller/proto/color_pb';
+import { downloadBlob, escapeForFilesystem } from '../util/fileUtils';
+import { randomUint64 } from '../util/numberUtils';
+import upgradeProject from '../util/projectUpgrader';
+import { getBlob, storeBlob } from '../util/storageUtil';
+
+import { ShortcutContext } from './ShortcutContext';
 
 const PROJECT_KEY = 'tmp-project-1';
 const ASSETS_KEY = 'tmp-assets-1';

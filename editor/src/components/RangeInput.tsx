@@ -1,4 +1,5 @@
 import { JSX, useCallback } from 'react';
+
 import { NumberInput } from './Input';
 
 interface RangeInputProps {

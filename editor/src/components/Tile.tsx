@@ -1,22 +1,24 @@
-import styles from './Tile.module.scss';
-import { BeatContext } from '../contexts/BeatContext';
 import {
   Color,
   ColorPalette,
   PaletteColor,
 } from '@dmx-controller/proto/color_pb';
-import { ControllerContext } from '../contexts/ControllerContext';
 import { ControllerMapping_TileStrength } from '@dmx-controller/proto/controller_pb';
 import { FixtureState } from '@dmx-controller/proto/effect_pb';
+import { Scene_Tile } from '@dmx-controller/proto/scene_pb';
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { SiMidi } from 'react-icons/si';
+
+import { BeatContext } from '../contexts/BeatContext';
+import { ControllerContext } from '../contexts/ControllerContext';
 import { PaletteContext } from '../contexts/PaletteContext';
 import { ProjectContext } from '../contexts/ProjectContext';
-import { Scene_Tile } from '@dmx-controller/proto/scene_pb';
-import { SiMidi } from 'react-icons/si';
 import { TimeContext } from '../contexts/TimeContext';
 import { findAction } from '../external_controller/externalController';
-import { tileActiveAmount, toggleTile } from '../util/tile';
 import { tileTileDetails } from '../util/projectUtils';
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { tileActiveAmount, toggleTile } from '../util/tile';
+
+import styles from './Tile.module.scss';
 
 interface TileProps {
   id: string;

@@ -1,12 +1,14 @@
-import { JSX, useContext, useEffect, useMemo } from 'react';
-import { ShortcutContext } from '../contexts/ShortcutContext';
-import { BeatContext } from '../contexts/BeatContext';
-import { NumberInput } from './Input';
 import {
   ControllerMapping_Action,
   ControllerMapping_BeatMatch,
 } from '@dmx-controller/proto/controller_pb';
+import { JSX, useContext, useEffect, useMemo } from 'react';
+
+import { BeatContext } from '../contexts/BeatContext';
+import { ShortcutContext } from '../contexts/ShortcutContext';
+
 import { ControllerConnection } from './ControllerConnection';
+import { NumberInput } from './Input';
 import styles from './LiveBeat.module.scss';
 
 interface LiveBeatProps {

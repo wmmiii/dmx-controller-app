@@ -8,7 +8,9 @@ import {
   useRef,
   useState,
 } from 'react';
+
 import { Modal } from '../components/Modal';
+
 import { SerialContext } from './SerialContext';
 
 type ShortcutBundle = Array<{

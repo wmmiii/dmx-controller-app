@@ -1,6 +1,7 @@
-import { FixtureState } from '@dmx-controller/proto/effect_pb';
-import { RenderContext } from './universe';
 import { Color, PaletteColor } from '@dmx-controller/proto/color_pb';
+import { FixtureState } from '@dmx-controller/proto/effect_pb';
+
+import { RenderContext } from './universe';
 
 const COLOR_BLACK = new Color({ red: 0, green: 0, blue: 0, white: 0 });
 const COLOR_WHITE = new Color({ red: 0, green: 0, blue: 0, white: 1 });

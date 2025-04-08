@@ -1,13 +1,5 @@
-import { Project } from '@dmx-controller/proto/project_pb';
-import { idMapToArray } from './mapUtils';
+import { ControllerMapping } from '@dmx-controller/proto/controller_pb';
 import { Effect, FixtureState } from '@dmx-controller/proto/effect_pb';
-import { randomUint64 } from './numberUtils';
-import { Universe } from '@dmx-controller/proto/universe_pb';
-import {
-  OutputId,
-  OutputId_FixtureMapping,
-} from '@dmx-controller/proto/output_id_pb';
-import { LightTrack } from '@dmx-controller/proto/light_track_pb';
 import {
   FixtureDefinition,
   FixtureDefinition_Channel_AmountMapping,
@@ -16,12 +8,22 @@ import {
   PhysicalFixtureGroup,
   PhysicalFixtureGroup_FixtureList,
 } from '@dmx-controller/proto/fixture_pb';
+import { LightTrack } from '@dmx-controller/proto/light_track_pb';
 import {
-  Scene_Tile_EffectGroupTile_EffectChannel,
+  OutputId,
+  OutputId_FixtureMapping,
+} from '@dmx-controller/proto/output_id_pb';
+import { Project } from '@dmx-controller/proto/project_pb';
+import {
   Scene_TileMap,
+  Scene_Tile_EffectGroupTile_EffectChannel,
 } from '@dmx-controller/proto/scene_pb';
+import { Universe } from '@dmx-controller/proto/universe_pb';
+
 import { isAmountChannel, isAngleChannel } from '../engine/channel';
-import { ControllerMapping } from '@dmx-controller/proto/controller_pb';
+
+import { idMapToArray } from './mapUtils';
+import { randomUint64 } from './numberUtils';
 
 export default function upgradeProject(project: Project): void {
   upgradeIndices(project);

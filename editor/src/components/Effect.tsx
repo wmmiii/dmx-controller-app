@@ -1,50 +1,52 @@
 import {
-  JSX,
-  CSSProperties,
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-} from 'react';
-import IconBxsBinoculars from '../icons/IconBxsBinoculars';
-import IconBxsBolt from '../icons/IconBxsBolt';
-import IconBxsSun from '../icons/IconBxsSun';
-import IconPanTilt from '../icons/IconPanTilt';
-import IconRgb from '../icons/IconRgb';
-import styles from './Effect.module.scss';
-import { Button, IconButton } from './Button';
-import {
-  DEFAULT_EFFECT_COLOR,
-  DEFAULT_EFFECT_COLOR_ALT,
-} from '../util/styleUtils';
+  Color,
+  ColorPalette,
+  PaletteColor,
+} from '@dmx-controller/proto/color_pb';
 import {
   Effect as EffectProto,
   EffectTiming,
   Effect_RampEffect,
   Effect_RampEffect_EasingFunction,
+  Effect_RandomEffect,
   Effect_StaticEffect,
+  Effect_StrobeEffect,
   FixtureState,
   FixtureState as FixtureStateProto,
-  Effect_StrobeEffect,
-  Effect_RandomEffect,
 } from '@dmx-controller/proto/effect_pb';
-import { EffectState } from './EffectState';
-import { NumberInput, ToggleInput } from './Input';
+import {
+  CSSProperties,
+  JSX,
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
+import { BiDice6, BiPause } from 'react-icons/bi';
+
+import { PaletteContext } from '../contexts/PaletteContext';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { RenderingContext } from '../contexts/RenderingContext';
 import { ShortcutContext } from '../contexts/ShortcutContext';
+import { ChannelTypes } from '../engine/channel';
 import IconBxLineChart from '../icons/IconBxLineChart';
 import IconBxMove from '../icons/IconBxMove';
 import IconBxPalette from '../icons/IconBxPalette';
-import {
-  Color,
-  ColorPalette,
-  PaletteColor,
-} from '@dmx-controller/proto/color_pb';
-import { PaletteContext } from '../contexts/PaletteContext';
-import { BiDice6, BiPause } from 'react-icons/bi';
+import IconBxsBinoculars from '../icons/IconBxsBinoculars';
+import IconBxsBolt from '../icons/IconBxsBolt';
+import IconBxsSun from '../icons/IconBxsSun';
+import IconPanTilt from '../icons/IconPanTilt';
+import IconRgb from '../icons/IconRgb';
 import { getStates } from '../util/effectUtils';
-import { ChannelTypes } from '../engine/channel';
+import {
+  DEFAULT_EFFECT_COLOR,
+  DEFAULT_EFFECT_COLOR_ALT,
+} from '../util/styleUtils';
+
+import { Button, IconButton } from './Button';
+import styles from './Effect.module.scss';
+import { EffectState } from './EffectState';
+import { NumberInput, ToggleInput } from './Input';
 
 export interface EffectAddress {
   track: number;

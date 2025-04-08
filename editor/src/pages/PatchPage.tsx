@@ -1,19 +1,4 @@
 import {
-  JSX,
-  createRef,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
-import IconBxCopyAlt from '../icons/IconBxCopy';
-import IconBxDownload from '../icons/IconBxDownload';
-import IconBxUpload from '../icons/IconBxUpload';
-import IconBxX from '../icons/IconBxX';
-import RangeInput from '../components/RangeInput';
-import styles from './PatchPage.module.scss';
-import { Button, IconButton } from '../components/Button';
-import {
   FixtureDefinition,
   FixtureDefinition_Channel,
   FixtureDefinition_Channel_AmountMapping,
@@ -24,32 +9,49 @@ import {
   PhysicalFixture,
   PhysicalFixtureGroup,
 } from '@dmx-controller/proto/fixture_pb';
-import { HorizontalSplitPane } from '../components/SplitPane';
-import { Modal } from '../components/Modal';
-import { NumberInput, TextInput } from '../components/Input';
-import { ProjectContext } from '../contexts/ProjectContext';
-import { SerialContext } from '../contexts/SerialContext';
 import {
   SerializedUniverse,
   Universe,
 } from '@dmx-controller/proto/universe_pb';
-import { downloadBlob, escapeForFilesystem } from '../util/fileUtils';
-import { getActiveUniverse } from '../util/projectUtils';
-import { randomUint64 } from '../util/numberUtils';
+import {
+  JSX,
+  createRef,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+import { BiGridVertical, BiPlus, BiX } from 'react-icons/bi';
+
+import { Button, IconButton } from '../components/Button';
+import { ColorSwatch } from '../components/ColorSwatch';
 import { EditGroupDialog } from '../components/EditGroupDialog';
-import { extractGdtf } from '../util/gdtf';
+import { NumberInput, TextInput } from '../components/Input';
+import { Modal } from '../components/Modal';
+import RangeInput from '../components/RangeInput';
+import { HorizontalSplitPane } from '../components/SplitPane';
 import { Warning } from '../components/Warning';
-import { deleteFixture, deleteFixtureGroup } from '../engine/fixture';
+import { ProjectContext } from '../contexts/ProjectContext';
+import { SerialContext } from '../contexts/SerialContext';
 import {
   AMOUNT_CHANNELS,
   ANGLE_CHANNELS,
-  ChannelTypes,
   COLOR_CHANNELS,
+  ChannelTypes,
   isAmountChannel,
   isAngleChannel,
 } from '../engine/channel';
-import { BiGridVertical, BiPlus, BiX } from 'react-icons/bi';
-import { ColorSwatch } from '../components/ColorSwatch';
+import { deleteFixture, deleteFixtureGroup } from '../engine/fixture';
+import IconBxCopyAlt from '../icons/IconBxCopy';
+import IconBxDownload from '../icons/IconBxDownload';
+import IconBxUpload from '../icons/IconBxUpload';
+import IconBxX from '../icons/IconBxX';
+import { downloadBlob, escapeForFilesystem } from '../util/fileUtils';
+import { extractGdtf } from '../util/gdtf';
+import { randomUint64 } from '../util/numberUtils';
+import { getActiveUniverse } from '../util/projectUtils';
+
+import styles from './PatchPage.module.scss';
 
 export default function PatchPage(): JSX.Element {
   const [draggingFixture, setDraggingFixture] = useState<bigint | null>(null);

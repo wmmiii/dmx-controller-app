@@ -1,13 +1,15 @@
-import { JSX, useContext, useState } from 'react';
-import styles from './AssetBrowserPage.module.scss';
 import { AudioFile } from '@dmx-controller/proto/audio_pb';
+import { Project_Assets } from '@dmx-controller/proto/project_pb';
+import { JSX, useContext, useState } from 'react';
+
 import { BeatEditor } from '../components/BeatEditor';
 import { Button } from '../components/Button';
 import { HorizontalSplitPane } from '../components/SplitPane';
 import { ProjectContext } from '../contexts/ProjectContext';
-import { Project_Assets } from '@dmx-controller/proto/project_pb';
-import { formatBytes } from '../util/numberUtils';
 import { idMapToArray, nextId } from '../util/mapUtils';
+import { formatBytes } from '../util/numberUtils';
+
+import styles from './AssetBrowserPage.module.scss';
 
 export default function AssetBrowserPage(): JSX.Element {
   const [selectedAudio, setSelectedAudio] = useState<AudioFile | null>(null);
