@@ -1,15 +1,21 @@
+import { clone, create } from '@bufbuild/protobuf';
+import { ColorPaletteSchema } from '@dmx-controller/proto/color_pb';
 import {
-  ControllerMapping_Action,
-  ControllerMapping_TileStrength,
+  ControllerMapping_TileStrengthSchema,
+  type ControllerMapping_Action,
 } from '@dmx-controller/proto/controller_pb';
-import { Project } from '@dmx-controller/proto/project_pb';
+import { type Project } from '@dmx-controller/proto/project_pb';
 import {
-  Scene,
-  Scene_Tile,
-  Scene_TileMap,
-  Scene_Tile_EffectGroupTile,
-  Scene_Tile_EffectGroupTile_EffectChannel,
-  Scene_Tile_SequenceTile,
+  Scene_TileMapSchema,
+  Scene_TileSchema,
+  Scene_Tile_EffectGroupTileSchema,
+  Scene_Tile_EffectGroupTile_EffectChannelSchema,
+  Scene_Tile_SequenceTileSchema,
+  type Scene,
+  type Scene_Tile,
+  type Scene_TileMap,
+  type Scene_Tile_EffectGroupTile,
+  type Scene_Tile_SequenceTile,
 } from '@dmx-controller/proto/scene_pb';
 import { JSX, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -146,7 +152,10 @@ export function LivePage(): JSX.Element {
             <Button
               icon={<IconBxPlus />}
               onClick={() => {
-                const newPalette = DEFAULT_COLOR_PALETTE.clone();
+                const newPalette = clone(
+                  ColorPaletteSchema,
+                  DEFAULT_COLOR_PALETTE,
+                );
                 newPalette.name = 'New color palette';
                 scene.colorPalettes[crypto.randomUUID()] = newPalette;
                 save('Add new color palette');
@@ -189,7 +198,7 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
     () =>
       ({
         case: 'tileStrength',
-        value: new ControllerMapping_TileStrength({
+        value: create(ControllerMapping_TileStrengthSchema, {
           scene: 0,
           tileId: tileMap.id,
         }),
@@ -459,7 +468,7 @@ function AddNewDialog({ scene, x, y, onSelect, onClose }: AddNewDialogProps) {
     x: number,
     y: number,
   ) => {
-    const tile = new Scene_Tile({
+    const tile = create(Scene_TileSchema, {
       name: 'New Tile',
       description: description,
       duration: {
@@ -471,7 +480,7 @@ function AddNewDialog({ scene, x, y, onSelect, onClose }: AddNewDialogProps) {
         value: 0n,
       },
     });
-    const tileMap = new Scene_TileMap({
+    const tileMap = create(Scene_TileMapSchema, {
       tile: tile,
       x: x,
       y: y,
@@ -491,7 +500,7 @@ function AddNewDialog({ scene, x, y, onSelect, onClose }: AddNewDialogProps) {
           const tileMap = addTile(
             {
               case: 'effectGroup',
-              value: new Scene_Tile_EffectGroupTile({
+              value: create(Scene_Tile_EffectGroupTileSchema, {
                 channels: [createEffectChannel()],
               }),
             },
@@ -515,7 +524,7 @@ function AddNewDialog({ scene, x, y, onSelect, onClose }: AddNewDialogProps) {
           const tile = addTile(
             {
               case: 'sequence',
-              value: new Scene_Tile_SequenceTile({
+              value: create(Scene_Tile_SequenceTileSchema, {
                 nativeBeats: 1,
               }),
             },
@@ -549,7 +558,7 @@ function SequenceEditor({ sequence }: SequenceEditorProps) {
 }
 
 function createEffectChannel() {
-  return new Scene_Tile_EffectGroupTile_EffectChannel({
+  return create(Scene_Tile_EffectGroupTile_EffectChannelSchema, {
     effect: {
       effect: {
         case: 'staticEffect',

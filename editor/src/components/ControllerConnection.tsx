@@ -1,5 +1,9 @@
-import { ControllerMapping_Action } from '@dmx-controller/proto/controller_pb';
-import { Project } from '@dmx-controller/proto/project_pb';
+import { create } from '@bufbuild/protobuf';
+import {
+  ControllerMapping_ActionSchema,
+  type ControllerMapping_Action,
+} from '@dmx-controller/proto/controller_pb';
+import { type Project } from '@dmx-controller/proto/project_pb';
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { SiMidi } from 'react-icons/si';
 
@@ -69,7 +73,7 @@ export function ControllerConnection({
             project,
             controllerName,
             channel,
-            new ControllerMapping_Action({
+            create(ControllerMapping_ActionSchema, {
               action: action,
             }),
           );

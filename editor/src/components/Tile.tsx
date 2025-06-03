@@ -1,11 +1,16 @@
+import { create, toJson } from '@bufbuild/protobuf';
 import {
-  Color,
-  ColorPalette,
+  ColorSchema,
   PaletteColor,
+  type Color,
+  type ColorPalette,
 } from '@dmx-controller/proto/color_pb';
-import { ControllerMapping_TileStrength } from '@dmx-controller/proto/controller_pb';
-import { FixtureState } from '@dmx-controller/proto/effect_pb';
-import { Scene_Tile } from '@dmx-controller/proto/scene_pb';
+import { ControllerMapping_TileStrengthSchema } from '@dmx-controller/proto/controller_pb';
+import { type FixtureState } from '@dmx-controller/proto/effect_pb';
+import {
+  Scene_TileSchema,
+  type Scene_Tile,
+} from '@dmx-controller/proto/scene_pb';
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { SiMidi } from 'react-icons/si';
 
@@ -55,13 +60,16 @@ export function Tile({
     return () => removeListener(listener);
   }, [setT, addListener, removeListener]);
 
-  const details = useMemo(() => tileTileDetails(tile), [tile.toJson()]);
+  const details = useMemo(
+    () => tileTileDetails(tile),
+    [toJson(Scene_TileSchema, tile)],
+  );
 
   const controllerMapping = useMemo(() => {
     if (controllerName) {
       return findAction(project, controllerName, {
         case: 'tileStrength',
-        value: new ControllerMapping_TileStrength({
+        value: create(ControllerMapping_TileStrengthSchema, {
           scene: 0,
           tileId: id,
         }),
@@ -162,9 +170,9 @@ function complexColorToHex(
     } else if (complexColor.value === PaletteColor.PALETTE_TERTIARY) {
       color = palette.tertiary?.color || null;
     } else if (complexColor.value === PaletteColor.PALETTE_WHITE) {
-      color = new Color({ red: 0, green: 0, blue: 0, white: 1 });
+      color = create(ColorSchema, { red: 0, green: 0, blue: 0, white: 1 });
     } else if (complexColor.value === PaletteColor.PALETTE_BLACK) {
-      color = new Color({ red: 0, green: 0, blue: 0, white: 0 });
+      color = create(ColorSchema, { red: 0, green: 0, blue: 0, white: 0 });
     }
   }
 

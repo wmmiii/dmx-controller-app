@@ -1,5 +1,6 @@
-import { AudioFile } from '@dmx-controller/proto/audio_pb';
-import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
+import { create } from '@bufbuild/protobuf';
+import { type AudioFile } from '@dmx-controller/proto/audio_pb';
+import { BeatMetadataSchema } from '@dmx-controller/proto/beat_pb';
 import {
   JSX,
   createRef,
@@ -264,7 +265,7 @@ export function BeatEditor({ file, onCancel }: BeatEditorProps): JSX.Element {
   const bpm = Math.floor(60_000 / beatDuration);
 
   const onSave = useCallback(() => {
-    file.beatMetadata = new BeatMetadata({
+    file.beatMetadata = create(BeatMetadataSchema, {
       lengthMs: beatDuration,
       offsetMs: BigInt(Math.floor(firstBeat)),
     });

@@ -46,7 +46,7 @@ use_repo(npm, "npm")
 # R U L E S   T S
 ###############################################################################
 
-bazel_dep(name = "aspect_rules_ts", version = "2.1.0")
+bazel_dep(name = "aspect_rules_ts", version = "2.4.2")
 
 rules_ts_ext = use_extension(
     "@aspect_rules_ts//ts:extensions.bzl",

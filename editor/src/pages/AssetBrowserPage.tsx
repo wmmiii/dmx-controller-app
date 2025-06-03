@@ -1,5 +1,9 @@
-import { AudioFile } from '@dmx-controller/proto/audio_pb';
-import { Project_Assets } from '@dmx-controller/proto/project_pb';
+import { create } from '@bufbuild/protobuf';
+import {
+  AudioFileSchema,
+  type AudioFile,
+} from '@dmx-controller/proto/audio_pb';
+import { Project_AssetsSchema } from '@dmx-controller/proto/project_pb';
 import { JSX, useContext, useState } from 'react';
 
 import { BeatEditor } from '../components/BeatEditor';
@@ -63,14 +67,14 @@ function AudioFileList({
             if (item.kind === 'file') {
               const file = item.getAsFile() as File;
               if (file.type.startsWith('audio/')) {
-                const audioFile = new AudioFile({
+                const audioFile = create(AudioFileSchema, {
                   name: file.name,
                   contents: new Uint8Array(await file.arrayBuffer()),
                   mime: file.type,
                 });
 
                 if (!project.assets) {
-                  project.assets = new Project_Assets();
+                  project.assets = create(Project_AssetsSchema, {});
                 }
 
                 const newId = nextId(project.assets.audioFiles);

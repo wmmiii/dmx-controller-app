@@ -1,7 +1,9 @@
-import { Color, PaletteColor } from '@dmx-controller/proto/color_pb';
+import { create } from '@bufbuild/protobuf';
+import { ColorSchema, PaletteColor } from '@dmx-controller/proto/color_pb';
 import {
-  FixtureState as FixtureStateProto,
-  FixtureState_Channel,
+  FixtureState_ChannelSchema,
+  type FixtureState as FixtureStateProto,
+  type FixtureState_Channel,
 } from '@dmx-controller/proto/effect_pb';
 import { JSX, useCallback } from 'react';
 
@@ -42,7 +44,7 @@ export function EffectState({
       } else if (type === 'color') {
         state.lightColor = {
           case: 'color',
-          value: new Color({
+          value: create(ColorSchema, {
             red: 1,
             green: 1,
             blue: 1,
@@ -134,7 +136,7 @@ export function EffectState({
                 min={-720}
                 value={state[channel] as number}
                 onChange={(v) => {
-                  state[channel] = v as any;
+                  (state as any)[channel] = v;
                   onChange(state);
                 }}
               />
@@ -142,7 +144,7 @@ export function EffectState({
               <IconButton
                 title={`Remove ${channel}`}
                 onClick={() => {
-                  state[channel] = undefined as any;
+                  (state as any)[channel] = undefined;
                   onChange(state);
                 }}
               >
@@ -153,7 +155,7 @@ export function EffectState({
             <IconButton
               title={`Add ${channel}`}
               onClick={() => {
-                state[channel] = 0 as any;
+                (state as any)[channel] = 0;
                 onChange(state);
               }}
             >
@@ -172,7 +174,7 @@ export function EffectState({
           name={channel}
           value={state[channel] as number}
           onChange={(v) => {
-            state[channel] = v as any;
+            (state as any)[channel] = v;
             onChange(state);
           }}
         />
@@ -216,7 +218,7 @@ export function EffectState({
       <Button
         onClick={() => {
           state.channels.push(
-            new FixtureState_Channel({
+            create(FixtureState_ChannelSchema, {
               index: 0,
               value: 0,
             }),

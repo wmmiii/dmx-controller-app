@@ -1,5 +1,10 @@
-import { LightTrack as LightTrackProto } from '@dmx-controller/proto/light_track_pb';
-import { Show, Show_AudioTrack } from '@dmx-controller/proto/show_pb';
+import { create } from '@bufbuild/protobuf';
+import { LightTrackSchema } from '@dmx-controller/proto/light_track_pb';
+import {
+  ShowSchema,
+  Show_AudioTrackSchema,
+  type Show,
+} from '@dmx-controller/proto/show_pb';
 import { JSX, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Button } from '../components/Button';
@@ -18,7 +23,7 @@ import { UNSET_INDEX, idMapToArray } from '../util/mapUtils';
 
 import styles from './ShowPage.module.scss';
 
-const DEFAULT_SHOW = new Show({
+const DEFAULT_SHOW = create(ShowSchema, {
   name: 'Untitled Show',
   audioTrack: {
     audioFileId: UNSET_INDEX + 1,
@@ -152,7 +157,7 @@ export default function ShowPage(): JSX.Element {
             <br />
             <select
               onChange={(e) => {
-                show.audioTrack = new Show_AudioTrack({
+                show.audioTrack = create(Show_AudioTrackSchema, {
                   audioFileId: parseInt(e.target.value),
                 });
                 save(`Set audio track for show ${show.name}.`);
@@ -175,7 +180,7 @@ export default function ShowPage(): JSX.Element {
           show.lightTracks[b] = temp;
         }}
         addLayer={() => {
-          show?.lightTracks.push(new LightTrackProto());
+          show?.lightTracks.push(create(LightTrackSchema, {}));
           save(`Add layer to show ${show.name}.`);
         }}
         t={t}

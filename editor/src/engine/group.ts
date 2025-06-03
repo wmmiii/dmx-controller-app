@@ -1,6 +1,8 @@
+import { create } from '@bufbuild/protobuf';
 import {
-  OutputId,
-  OutputId_FixtureMapping,
+  OutputIdSchema,
+  OutputId_FixtureMappingSchema,
+  type OutputId,
 } from '@dmx-controller/proto/output_id_pb';
 import { Project } from '@dmx-controller/proto/project_pb';
 
@@ -32,7 +34,7 @@ export function getApplicableMembers(
     const deps = recursivelyGetDepMap(id, project, depMap);
     if (!deps.has(groupId)) {
       members.push({
-        id: new OutputId({
+        id: create(OutputIdSchema, {
           output: {
             case: 'group',
             value: id,
@@ -51,10 +53,13 @@ export function getApplicableMembers(
       .map((id) => BigInt(id))
       .filter((id) => !existingFixtures.includes(id))
       .map((id) => {
-        const mapping = new OutputId_FixtureMapping();
-        mapping.fixtures[project.activeUniverse.toString()] = id;
+        const mapping = create(OutputId_FixtureMappingSchema, {
+          fixtures: {
+            [project.activeUniverse.toString()]: id,
+          },
+        });
         return {
-          id: new OutputId({
+          id: create(OutputIdSchema, {
             output: {
               case: 'fixtures',
               value: mapping,

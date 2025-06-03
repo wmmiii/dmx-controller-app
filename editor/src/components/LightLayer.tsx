@@ -1,4 +1,5 @@
-import { Effect } from '@dmx-controller/proto/effect_pb';
+import { create } from '@bufbuild/protobuf';
+import { EffectSchema } from '@dmx-controller/proto/effect_pb';
 import { LightLayer as LightLayerProto } from '@dmx-controller/proto/light_layer_pb';
 import { JSX, useContext, useState } from 'react';
 
@@ -92,7 +93,7 @@ export function LightLayer({
                 return;
               }
 
-              const e = new Effect({
+              const e = create(EffectSchema, {
                 startMs: Math.min(newEffect.firstMs, newEffect.secondMs),
                 endMs: Math.max(newEffect.firstMs, newEffect.secondMs),
                 effect: {

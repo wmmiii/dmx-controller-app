@@ -1,6 +1,7 @@
+import { create } from '@bufbuild/protobuf';
 import {
-  PhysicalFixtureGroup,
-  PhysicalFixtureGroup_FixtureList,
+  PhysicalFixtureGroup_FixtureListSchema,
+  type PhysicalFixtureGroup,
 } from '@dmx-controller/proto/fixture_pb';
 import { Project } from '@dmx-controller/proto/project_pb';
 import { JSX, useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -191,10 +192,12 @@ export function EditGroupDialog({
                   project.activeUniverse.toString()
                 ];
               if (group.fixtures[project.activeUniverse.toString()] == null) {
-                group.fixtures[project.activeUniverse.toString()] =
-                  new PhysicalFixtureGroup_FixtureList({
+                group.fixtures[project.activeUniverse.toString()] = create(
+                  PhysicalFixtureGroup_FixtureListSchema,
+                  {
                     fixtures: [],
-                  });
+                  },
+                );
               }
               group.fixtures[project.activeUniverse.toString()].fixtures.push(
                 id,

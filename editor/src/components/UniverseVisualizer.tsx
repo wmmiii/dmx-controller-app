@@ -1,4 +1,5 @@
-import { Color } from '@dmx-controller/proto/color_pb';
+import { create } from '@bufbuild/protobuf';
+import { ColorSchema } from '@dmx-controller/proto/color_pb';
 import { FixtureDefinition_Channel_ColorWheelMapping } from '@dmx-controller/proto/fixture_pb';
 import { useContext, useEffect, useMemo, useState } from 'react';
 
@@ -115,7 +116,7 @@ export function UniverseVisualizer() {
             .value as FixtureDefinition_Channel_ColorWheelMapping;
           const color =
             mapping.colors.find((c) => c.value === wheelSlot)?.color ||
-            new Color();
+            create(ColorSchema, {});
           red = color.red * 255;
           green = color.green * 255;
           blue = color.blue * 255;

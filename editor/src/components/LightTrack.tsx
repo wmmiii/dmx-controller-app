@@ -1,5 +1,6 @@
-import { LightLayer as LightLayerProto } from '@dmx-controller/proto/light_layer_pb';
-import { LightTrack as LightTrackProto } from '@dmx-controller/proto/light_track_pb';
+import { create } from '@bufbuild/protobuf';
+import { LightLayerSchema } from '@dmx-controller/proto/light_layer_pb';
+import { type LightTrack as LightTrackProto } from '@dmx-controller/proto/light_track_pb';
 import { JSX, createRef, useContext } from 'react';
 
 import { LightLayer } from '../components/LightLayer';
@@ -132,7 +133,7 @@ export function LightTrack({
             <Button
               icon={<IconBxPlus />}
               onClick={() => {
-                track.layers.push(new LightLayerProto());
+                track.layers.push(create(LightLayerSchema, {}));
                 save('Create new track.');
               }}
             >

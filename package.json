@@ -13,13 +13,12 @@
     "react-router": "7.5.0",
     "realtime-bpm-analyzer": "4.0.2",
     "uuid-by-string": "4.0.0",
-    "wavesurfer.js": "7.7.11",
-    "zip.js": "link:@types/@zip.js/zip.js"
+    "wavesurfer.js": "7.7.11"
   },
   "devDependencies": {
-    "@bufbuild/protobuf": "1.7.2",
-    "@bufbuild/protoc-gen-connect-es": "0.13.0",
-    "@bufbuild/protoc-gen-es": "1.7.2",
+    "@bufbuild/protobuf": "2.5.1",
+    "@bufbuild/protoc-gen-es": "2.5.1",
+    "@bufbuild/protoc-gen-connect-es": "npm:@connectrpc/protoc-gen-connect-es@1.6.1",
     "@trivago/prettier-plugin-sort-imports": "5.2.2",
     "@types/cie-rgb-color-converter": "1.0.0",
     "@types/dom-serial": "1.0.6",
@@ -29,6 +28,7 @@
     "esbuild-css-modules-plugin": "3.1.0",
     "esbuild-scss-modules-plugin": "1.1.1",
     "prettier": "3.5.3",
+    "prettier-plugin-organize-imports": "^4.1.0",
     "typescript": "5.3.3"
   }
 }

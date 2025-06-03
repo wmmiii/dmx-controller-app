@@ -1,18 +1,25 @@
+import { clone, create } from '@bufbuild/protobuf';
 import {
-  Color,
-  ColorPalette,
   PaletteColor,
+  type Color,
+  type ColorPalette,
 } from '@dmx-controller/proto/color_pb';
 import {
-  Effect as EffectProto,
+  EffectSchema,
   EffectTiming,
-  Effect_RampEffect,
+  Effect_RampEffectSchema,
   Effect_RampEffect_EasingFunction,
-  Effect_RandomEffect,
-  Effect_StaticEffect,
-  Effect_StrobeEffect,
-  FixtureState,
-  FixtureState as FixtureStateProto,
+  Effect_RandomEffectSchema,
+  Effect_StaticEffectSchema,
+  Effect_StrobeEffectSchema,
+  FixtureStateSchema,
+  type Effect as EffectProto,
+  type Effect_RampEffect,
+  type Effect_RandomEffect,
+  type Effect_StaticEffect,
+  type Effect_StrobeEffect,
+  type FixtureState,
+  type FixtureState as FixtureStateProto,
 } from '@dmx-controller/proto/effect_pb';
 import {
   CSSProperties,
@@ -102,7 +109,7 @@ export function Effect({
         {
           shortcut: { key: 'KeyV', modifiers: ['ctrl'] },
           action: () => {
-            Object.assign(effect, copyEffect.clone(), {
+            Object.assign(effect, clone(EffectSchema, copyEffect), {
               endMs: effect.endMs,
               startMs: effect.startMs,
             });
@@ -839,8 +846,8 @@ function EffectSelector({
           setEffect(
             {
               case: 'staticEffect',
-              value: new Effect_StaticEffect({
-                state: getStates(effect.value).a.clone(),
+              value: create(Effect_StaticEffectSchema, {
+                state: clone(FixtureStateSchema, getStates(effect.value).a),
               }),
             },
             'Change effect type to static.',
@@ -860,9 +867,12 @@ function EffectSelector({
           setEffect(
             {
               case: 'rampEffect',
-              value: new Effect_RampEffect({
-                stateStart: getStates(effect.value).a.clone(),
-                stateEnd: getStates(effect.value).b.clone(),
+              value: create(Effect_RampEffectSchema, {
+                stateStart: clone(
+                  FixtureStateSchema,
+                  getStates(effect.value).a,
+                ),
+                stateEnd: clone(FixtureStateSchema, getStates(effect.value).b),
               }),
             },
             'Change effect type to ramp.',
@@ -882,9 +892,9 @@ function EffectSelector({
           setEffect(
             {
               case: 'strobeEffect',
-              value: new Effect_StrobeEffect({
-                stateA: getStates(effect.value).a.clone(),
-                stateB: getStates(effect.value).b.clone(),
+              value: create(Effect_StrobeEffectSchema, {
+                stateA: clone(FixtureStateSchema, getStates(effect.value).a),
+                stateB: clone(FixtureStateSchema, getStates(effect.value).b),
                 stateAFames: 3,
                 stateBFames: 3,
               }),
@@ -907,7 +917,7 @@ function EffectSelector({
             setEffect(
               {
                 case: 'randomEffect',
-                value: new Effect_RandomEffect({
+                value: create(Effect_RandomEffectSchema, {
                   seed: 0,
                   effectAMin: 0,
                   effectAVariation: 1000,
@@ -916,14 +926,20 @@ function EffectSelector({
 
                   effectA: {
                     case: 'aStaticEffect',
-                    value: new Effect_StaticEffect({
-                      state: getStates(effect.value).a.clone(),
+                    value: create(Effect_StaticEffectSchema, {
+                      state: clone(
+                        FixtureStateSchema,
+                        getStates(effect.value).a,
+                      ),
                     }),
                   },
                   effectB: {
                     case: 'bStaticEffect',
-                    value: new Effect_StaticEffect({
-                      state: getStates(effect.value).b.clone(),
+                    value: create(Effect_StaticEffectSchema, {
+                      state: clone(
+                        FixtureStateSchema,
+                        getStates(effect.value).b,
+                      ),
                     }),
                   },
                 }),

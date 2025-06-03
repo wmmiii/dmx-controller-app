@@ -12,4 +12,5 @@ ts_proto_library(
     proto = ":proto_lib",
     visibility = ["//editor/src:__pkg__"],
     copy_files = False,
+    gen_connect_es = False,
 )

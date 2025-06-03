@@ -1,5 +1,6 @@
-import { ColorPalette } from '@dmx-controller/proto/color_pb';
-import { ControllerMapping_ColorPaletteSelection } from '@dmx-controller/proto/controller_pb';
+import { create } from '@bufbuild/protobuf';
+import { type ColorPalette } from '@dmx-controller/proto/color_pb';
+import { ControllerMapping_ColorPaletteSelectionSchema } from '@dmx-controller/proto/controller_pb';
 import { useContext, useMemo, useState } from 'react';
 
 import { ProjectContext } from '../contexts/ProjectContext';
@@ -96,7 +97,10 @@ function EditPaletteDialog({
 
   const action = useMemo(
     () =>
-      new ControllerMapping_ColorPaletteSelection({ scene: 0, paletteId: id }),
+      create(ControllerMapping_ColorPaletteSelectionSchema, {
+        scene: 0,
+        paletteId: id,
+      }),
     [id],
   );
 

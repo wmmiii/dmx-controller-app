@@ -1,10 +1,11 @@
+import { create } from '@bufbuild/protobuf';
 import {
-  ControllerMapping,
-  ControllerMapping_Action,
-  ControllerMapping_Controller,
-  ControllerMapping_TileStrength,
+  ControllerMappingSchema,
+  ControllerMapping_ControllerSchema,
+  type ControllerMapping_Action,
+  type ControllerMapping_TileStrength,
 } from '@dmx-controller/proto/controller_pb';
-import { Project } from '@dmx-controller/proto/project_pb';
+import { type Project } from '@dmx-controller/proto/project_pb';
 
 import {
   ControlCommandType,
@@ -151,11 +152,13 @@ export function getActionDescription(
 
 export function getActionMap(project: Project, controllerName: string) {
   if (project.controllerMapping == null) {
-    project.controllerMapping = new ControllerMapping();
+    project.controllerMapping = create(ControllerMappingSchema, {});
   }
   if (project.controllerMapping.controllers[controllerName] == null) {
-    project.controllerMapping.controllers[controllerName] =
-      new ControllerMapping_Controller({ actions: {} });
+    project.controllerMapping.controllers[controllerName] = create(
+      ControllerMapping_ControllerSchema,
+      { actions: {} },
+    );
   }
   return project.controllerMapping.controllers[controllerName].actions;
 }
