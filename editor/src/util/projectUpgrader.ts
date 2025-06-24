@@ -1,24 +1,30 @@
-import { ControllerMapping } from '@dmx-controller/proto/controller_pb';
-import { Effect, FixtureState } from '@dmx-controller/proto/effect_pb';
+import { create } from '@bufbuild/protobuf';
+import { ControllerMappingSchema } from '@dmx-controller/proto/controller_pb';
 import {
-  FixtureDefinition,
-  FixtureDefinition_Channel_AmountMapping,
-  FixtureDefinition_Channel_AngleMapping,
-  FixtureDefinition_Mode,
-  PhysicalFixtureGroup,
-  PhysicalFixtureGroup_FixtureList,
+  EffectSchema,
+  type Effect,
+  type FixtureState,
+} from '@dmx-controller/proto/effect_pb';
+import {
+  FixtureDefinitionSchema,
+  FixtureDefinition_Channel_AmountMappingSchema,
+  FixtureDefinition_Channel_AngleMappingSchema,
+  FixtureDefinition_ModeSchema,
+  PhysicalFixtureGroupSchema,
+  PhysicalFixtureGroup_FixtureListSchema,
+  type PhysicalFixtureGroup_FixtureList,
 } from '@dmx-controller/proto/fixture_pb';
-import { LightTrack } from '@dmx-controller/proto/light_track_pb';
+import { type LightTrack } from '@dmx-controller/proto/light_track_pb';
 import {
-  OutputId,
-  OutputId_FixtureMapping,
+  OutputIdSchema,
+  OutputId_FixtureMappingSchema,
 } from '@dmx-controller/proto/output_id_pb';
-import { Project } from '@dmx-controller/proto/project_pb';
+import { type Project } from '@dmx-controller/proto/project_pb';
 import {
-  Scene_TileMap,
-  Scene_Tile_EffectGroupTile_EffectChannel,
+  Scene_TileMapSchema,
+  Scene_Tile_EffectGroupTile_EffectChannelSchema,
 } from '@dmx-controller/proto/scene_pb';
-import { Universe } from '@dmx-controller/proto/universe_pb';
+import { UniverseSchema } from '@dmx-controller/proto/universe_pb';
 
 import { isAmountChannel, isAngleChannel } from '../engine/channel';
 
@@ -157,7 +163,7 @@ function upgradeUniverse(project: Project) {
   const universeId = randomUint64();
 
   // Create new universe.
-  const universe = new Universe({
+  const universe = create(UniverseSchema, {
     name: 'Default',
   });
 
@@ -181,10 +187,13 @@ function upgradeUniverse(project: Project) {
 
     const fixtures: { [universe: string]: PhysicalFixtureGroup_FixtureList } =
       {};
-    fixtures[universeId.toString()] = new PhysicalFixtureGroup_FixtureList({
-      fixtures: oldGroup.physicalFixtureIds.map((id) => fixtureMapping[id]),
-    });
-    const newGroup = new PhysicalFixtureGroup({
+    fixtures[universeId.toString()] = create(
+      PhysicalFixtureGroup_FixtureListSchema,
+      {
+        fixtures: oldGroup.physicalFixtureIds.map((id) => fixtureMapping[id]),
+      },
+    );
+    const newGroup = create(PhysicalFixtureGroupSchema, {
       name: oldGroup.name,
       fixtures: fixtures,
       groups: oldGroup.physicalFixtureGroupIds.map((id) => groupMapping[id]),
@@ -198,25 +207,25 @@ function upgradeUniverse(project: Project) {
 
   const updateLightTrack = (track: LightTrack) => {
     if (track.output.case === 'physicalFixtureGroupId') {
-      track.outputId = new OutputId({
+      track.outputId = create(OutputIdSchema, {
         output: {
           case: 'group',
           value: groupMapping[track.output.value],
         },
       });
     } else if (track.output.case === 'physicalFixtureId') {
-      const fixtureMap = new OutputId_FixtureMapping();
+      const fixtureMap = create(OutputId_FixtureMappingSchema, {});
       fixtureMap.fixtures[universeId.toString()] =
         fixtureMapping[track.output.value];
 
-      track.outputId = new OutputId({
+      track.outputId = create(OutputIdSchema, {
         output: {
           case: 'fixtures',
           value: fixtureMap,
         },
       });
     } else {
-      track.outputId = new OutputId();
+      track.outputId = create(OutputIdSchema, {});
     }
 
     track.output = {
@@ -237,18 +246,18 @@ function upgradeUniverse(project: Project) {
         const description = c.description.value;
 
         if (description.output.case === 'physicalFixtureGroupId') {
-          description.outputId = new OutputId({
+          description.outputId = create(OutputIdSchema, {
             output: {
               case: 'group',
               value: groupMapping[description.output.value],
             },
           });
         } else if (description.output.case === 'physicalFixtureId') {
-          const fixtureMap = new OutputId_FixtureMapping();
+          const fixtureMap = create(OutputId_FixtureMappingSchema, {});
           fixtureMap.fixtures[universeId.toString()] =
             fixtureMapping[description.output.value];
 
-          description.outputId = new OutputId({
+          description.outputId = create(OutputIdSchema, {
             output: {
               case: 'fixtures',
               value: fixtureMap,
@@ -277,7 +286,7 @@ function upgradeLiveEffects(project: Project) {
         const effect = c.description.value;
         if (effect.outputId != null) {
           effect.channels = [
-            new Scene_Tile_EffectGroupTile_EffectChannel({
+            create(Scene_Tile_EffectGroupTile_EffectChannelSchema, {
               outputId: effect.outputId,
               effect: effect.effect,
             }),
@@ -285,7 +294,7 @@ function upgradeLiveEffects(project: Project) {
         }
         effect.channels.forEach((c) => {
           if (!c.outputId?.output) {
-            c.outputId = new OutputId({
+            c.outputId = create(OutputIdSchema, {
               output: {
                 case: undefined,
                 value: undefined,
@@ -293,7 +302,7 @@ function upgradeLiveEffects(project: Project) {
             });
           }
           if (!c.effect) {
-            c.effect = new Effect();
+            c.effect = create(EffectSchema, {});
           }
         });
       }
@@ -334,7 +343,7 @@ function updateFixtureDefinitionMapping(project: Project) {
       if (isAngleChannel(c.type)) {
         c.mapping = {
           case: 'angleMapping',
-          value: new FixtureDefinition_Channel_AngleMapping({
+          value: create(FixtureDefinition_Channel_AngleMappingSchema, {
             minDegrees: c.deprecatedMinDegrees,
             maxDegrees: c.deprecatedMaxDegrees,
           }),
@@ -342,7 +351,7 @@ function updateFixtureDefinitionMapping(project: Project) {
       } else if (isAmountChannel(c.type)) {
         c.mapping = {
           case: 'amountMapping',
-          value: new FixtureDefinition_Channel_AmountMapping({
+          value: create(FixtureDefinition_Channel_AmountMappingSchema, {
             minValue: c.deprecatedMinValue,
             maxValue: c.deprecatedMaxValue,
           }),
@@ -354,7 +363,7 @@ function updateFixtureDefinitionMapping(project: Project) {
 function upgradeColorTypes(project: Project) {
   const upgradeState = (state: FixtureState) => {
     if (state?.lightColor.case === 'rgb' || state?.lightColor.case === 'rgbw') {
-      state.lightColor = {
+      (state as any).lightColor = {
         case: 'color',
         value: state.lightColor.value,
       };
@@ -434,7 +443,7 @@ function upgradeTileMapping(project: Project) {
           const component = row.components[x];
 
           scene.tileMap.push(
-            new Scene_TileMap({
+            create(Scene_TileMapSchema, {
               tile: component,
               x: x,
               y: y,
@@ -448,7 +457,7 @@ function upgradeTileMapping(project: Project) {
   }
 
   if (project.controllerMapping == null) {
-    project.controllerMapping = new ControllerMapping();
+    project.controllerMapping = create(ControllerMappingSchema, {});
   }
 }
 
@@ -466,16 +475,19 @@ function upgradeFixtureDefinitions(project: Project) {
     const newId = crypto.randomUUID();
     const mode = crypto.randomUUID();
 
-    project.fixtureDefinitions[newId] = new FixtureDefinition({
+    project.fixtureDefinitions[newId] = create(FixtureDefinitionSchema, {
       globalId: newId,
       name: oldDefinition.name,
       manufacturer: oldDefinition.manufacturer,
     });
-    project.fixtureDefinitions[newId].modes[mode] = new FixtureDefinition_Mode({
-      name: 'Default',
-      numChannels: oldDefinition.numChannels,
-      channels: oldDefinition.channels,
-    });
+    project.fixtureDefinitions[newId].modes[mode] = create(
+      FixtureDefinition_ModeSchema,
+      {
+        name: 'Default',
+        numChannels: oldDefinition.numChannels,
+        channels: oldDefinition.channels,
+      },
+    );
     idMapping.set(BigInt(oldId), { id: newId, mode: mode });
   }
 

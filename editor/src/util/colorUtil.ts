@@ -1,4 +1,10 @@
-import { Color, ColorPalette } from '@dmx-controller/proto/color_pb';
+import { create } from '@bufbuild/protobuf';
+import {
+  ColorPaletteSchema,
+  ColorSchema,
+  type Color,
+  type ColorPalette,
+} from '@dmx-controller/proto/color_pb';
 import ColorConverter from 'cie-rgb-color-converter';
 
 export function stringifyColor(color: Color) {
@@ -28,7 +34,7 @@ export function interpolatePalettes(
       'Tried to interpolate palette but palette "b" does not have color set!',
     );
   }
-  return new ColorPalette({
+  return create(ColorPaletteSchema, {
     primary: {
       color: {
         red: (1 - t) * a.primary.color.red + t * b.primary.color.red,
@@ -82,7 +88,7 @@ export function hsvToColor(h: number, s: number, v: number) {
       (r = v), (g = p), (b = q);
       break;
   }
-  return new Color({
+  return create(ColorSchema, {
     red: r,
     green: g,
     blue: b,
@@ -91,7 +97,7 @@ export function hsvToColor(h: number, s: number, v: number) {
 
 export function cieToColor(x: number, y: number, bri: number) {
   const color = ColorConverter.xyBriToRgb(x, y, bri);
-  return new Color({
+  return create(ColorSchema, {
     red: color.r / 255,
     green: color.g / 255,
     blue: color.b / 255,

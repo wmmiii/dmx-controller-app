@@ -1,5 +1,5 @@
-import { JSX } from 'react';
 import {
+  JSX,
   PropsWithChildren,
   createContext,
   useCallback,

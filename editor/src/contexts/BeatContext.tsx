@@ -1,4 +1,5 @@
-import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
+import { create, toJsonString } from '@bufbuild/protobuf';
+import { BeatMetadataSchema } from '@dmx-controller/proto/beat_pb';
 import {
   JSX,
   PropsWithChildren,
@@ -25,7 +26,7 @@ type SampleQuality =
   | 'excellent';
 
 export const BeatContext = createContext({
-  beat: new BeatMetadata({
+  beat: create(BeatMetadataSchema, {
     lengthMs: Number.MAX_SAFE_INTEGER,
     offsetMs: BigInt(0),
   }),
@@ -90,7 +91,7 @@ export function BeatProvider({ children }: PropsWithChildren): JSX.Element {
   const beat = useMemo(
     () =>
       project?.liveBeat ||
-      new BeatMetadata({
+      create(BeatMetadataSchema, {
         lengthMs: Number.MAX_SAFE_INTEGER,
         offsetMs: BigInt(0),
       }),
@@ -162,7 +163,7 @@ export function BeatProvider({ children }: PropsWithChildren): JSX.Element {
       beatSamples[beatSamples.length - 1] - beatSamples.length * length;
     const offset = BigInt(Math.round(firstBeat));
     if (sampleQuality === 'fair' || sampleQuality === 'excellent') {
-      project.liveBeat = new BeatMetadata({
+      project.liveBeat = create(BeatMetadataSchema, {
         lengthMs: length,
         offsetMs: offset,
       });
@@ -174,14 +175,19 @@ export function BeatProvider({ children }: PropsWithChildren): JSX.Element {
       project.liveBeat.offsetMs = offset;
       update();
     }
-  }, [beatSamples, project?.liveBeat?.toJsonString()]);
+  }, [
+    beatSamples,
+    project?.liveBeat
+      ? toJsonString(BeatMetadataSchema, project.liveBeat)
+      : null,
+  ]);
 
   return (
     <BeatContext.Provider
       value={{
         beat,
         setBeat: (length, start) => {
-          project.liveBeat = new BeatMetadata({
+          project.liveBeat = create(BeatMetadataSchema, {
             lengthMs: length,
             offsetMs: start || project.liveBeat?.offsetMs || 0n,
           });

@@ -16,6 +16,7 @@
     "https://bcr.bazel.build/modules/aspect_bazel_lib/1.31.2/MODULE.bazel": "7bee702b4862612f29333590f4b658a5832d433d6f8e4395f090e8f4e85d442f",
     "https://bcr.bazel.build/modules/aspect_bazel_lib/1.38.1/MODULE.bazel": "17ae5bb970187e51c39a5ac21190279a58d7eeba83bc43e4165547cc0cf8de4a",
     "https://bcr.bazel.build/modules/aspect_bazel_lib/1.39.0/MODULE.bazel": "4b9135560d1b9f9520b85739da72de105fc919346c83c874ebf0789794075340",
+    "https://bcr.bazel.build/modules/aspect_bazel_lib/1.40.2/MODULE.bazel": "94faac347405327a3bb58382da0f8be7e0f266a4ab2ee094aa34aada2720a672",
     "https://bcr.bazel.build/modules/aspect_bazel_lib/2.14.0/MODULE.bazel": "2b31ffcc9bdc8295b2167e07a757dbbc9ac8906e7028e5170a3708cecaac119f",
     "https://bcr.bazel.build/modules/aspect_bazel_lib/2.14.0/source.json": "0cf1826853b0bef8b5cd19c0610d717500f5521aa2b38b72b2ec302ac5e7526c",
     "https://bcr.bazel.build/modules/aspect_rules_esbuild/0.16.0/MODULE.bazel": "9f82b76cbb2ac85ea29b1e1cc2d7e2a7ad9f1225bbeeb31c8dadd0fd10b94b99",
@@ -24,8 +25,8 @@
     "https://bcr.bazel.build/modules/aspect_rules_js/1.34.0/MODULE.bazel": "cbe059f9c11db239121a858c5586cbfbed56777eb089860553675b25085ab11a",
     "https://bcr.bazel.build/modules/aspect_rules_js/1.34.1/MODULE.bazel": "d86fd8dcc3e09d17df383e994b3adf87ed645b065c604eb4560404603c46fa8d",
     "https://bcr.bazel.build/modules/aspect_rules_js/1.34.1/source.json": "ecb32e41d9a1e1dc84525141bbfdc7155b8b71048b0a4e3f2740ed31febda874",
-    "https://bcr.bazel.build/modules/aspect_rules_ts/2.1.0/MODULE.bazel": "e67b0d9099e9e46946f41a5bee26112121d9de834e46134ea65d0b990faa132d",
-    "https://bcr.bazel.build/modules/aspect_rules_ts/2.1.0/source.json": "de06fed20c4e49cac1d7d9ab456f0be6d879f97eb206c0be39e51830500711ab",
+    "https://bcr.bazel.build/modules/aspect_rules_ts/2.4.2/MODULE.bazel": "0ac8af28f091d5213aefb3f8d088991148f375721c29118a50fcbf2eb177f228",
+    "https://bcr.bazel.build/modules/aspect_rules_ts/2.4.2/source.json": "2c9cb1d14b4bb20f76a41f36196aeea537b0e74e9a0cd667c52290329e09172c",
     "https://bcr.bazel.build/modules/bazel_features/0.1.0/MODULE.bazel": "47011d645b0f949f42ee67f2e8775188a9cf4a0a1528aa2fa4952f2fd00906fd",
     "https://bcr.bazel.build/modules/bazel_features/1.1.0/MODULE.bazel": "cfd42ff3b815a5f39554d97182657f8c4b9719568eb7fded2b9135f084bf760b",
     "https://bcr.bazel.build/modules/bazel_features/1.1.1/MODULE.bazel": "27b8c79ef57efe08efccbd9dd6ef70d61b4798320b8d3c134fd571f78963dbcd",
@@ -368,7 +369,7 @@
         "bzlTransitiveDigest": "jKmjnWlkDM/icrY5ZuDnmiAOdfQUdcqq1cSCjvlR9yw=",
         "usagesDigest": "bJqg+9by4wZOpx8S9JJC1D7T478qXrWRgToobYGVq0k=",
         "recordedFileInputs": {
-          "@@//pnpm-lock.yaml": "7c64dc197b59d008217118c80d539f6f61de78a773018b23c8ba08f8c474a74c"
+          "@@//pnpm-lock.yaml": "542ae58f10a8661faf35e285cee3c3953051a3417f8d29354c9f35377b8ec200"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -965,21 +966,17 @@
               ]
             }
           },
-          "npm__at_bufbuild_protobuf__1.7.2": {
+          "npm__at_bufbuild_protobuf__1.10.1": {
             "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
             "ruleClassName": "npm_import_rule",
             "attributes": {
               "package": "@bufbuild/protobuf",
-              "version": "1.7.2",
+              "version": "1.10.1",
               "root_package": "",
               "link_workspace": "",
-              "link_packages": {
-                "": [
-                  "@bufbuild/protobuf"
-                ]
-              },
-              "integrity": "sha512-i5GE2Dk5ekdlK1TR7SugY4LWRrKSfb5T1Qn4unpIMbfxoeGKERKQ59HG3iYewacGD10SR7UzevfPnh6my4tNmQ==",
-              "url": "https://registry.npmjs.org/@bufbuild/protobuf/-/protobuf-1.7.2.tgz",
+              "link_packages": {},
+              "integrity": "sha512-wJ8ReQbHxsAfXhrf9ixl0aYbZorRuOWpBNzm8pL8ftmSxQx/wnJD5Eg861NwJU/czy2VXFIebCeZnZrI9rktIQ==",
+              "url": "https://registry.npmjs.org/@bufbuild/protobuf/-/protobuf-1.10.1.tgz",
               "commit": "",
               "patch_args": [],
               "patches": [],
@@ -993,12 +990,65 @@
               "generate_bzl_library_targets": false
             }
           },
-          "npm__at_bufbuild_protobuf__1.7.2__links": {
+          "npm__at_bufbuild_protobuf__1.10.1__links": {
             "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
             "ruleClassName": "npm_import_links",
             "attributes": {
               "package": "@bufbuild/protobuf",
-              "version": "1.7.2",
+              "version": "1.10.1",
+              "dev": true,
+              "root_package": "",
+              "link_packages": {},
+              "deps": {},
+              "transitive_closure": {
+                "@bufbuild/protobuf": [
+                  "1.10.1"
+                ]
+              },
+              "lifecycle_build_target": false,
+              "lifecycle_hooks_env": [],
+              "lifecycle_hooks_execution_requirements": [],
+              "bins": {},
+              "npm_translate_lock_repo": "npm",
+              "package_visibility": [
+                "//visibility:public"
+              ]
+            }
+          },
+          "npm__at_bufbuild_protobuf__2.5.1": {
+            "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
+            "ruleClassName": "npm_import_rule",
+            "attributes": {
+              "package": "@bufbuild/protobuf",
+              "version": "2.5.1",
+              "root_package": "",
+              "link_workspace": "",
+              "link_packages": {
+                "": [
+                  "@bufbuild/protobuf"
+                ]
+              },
+              "integrity": "sha512-lut4UTvKL8tqtend0UDu7R79/n9jA7Jtxf77RNPbxtmWqfWI4qQ9bTjf7KCS4vfqLmpQbuHr1ciqJumAgJODdw==",
+              "url": "https://registry.npmjs.org/@bufbuild/protobuf/-/protobuf-2.5.1.tgz",
+              "commit": "",
+              "patch_args": [],
+              "patches": [],
+              "custom_postinstall": "",
+              "npm_auth": "",
+              "npm_auth_basic": "",
+              "npm_auth_username": "",
+              "npm_auth_password": "",
+              "lifecycle_hooks": [],
+              "extra_build_content": "",
+              "generate_bzl_library_targets": false
+            }
+          },
+          "npm__at_bufbuild_protobuf__2.5.1__links": {
+            "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
+            "ruleClassName": "npm_import_links",
+            "attributes": {
+              "package": "@bufbuild/protobuf",
+              "version": "2.5.1",
               "dev": true,
               "root_package": "",
               "link_packages": {
@@ -1009,7 +1059,7 @@
               "deps": {},
               "transitive_closure": {
                 "@bufbuild/protobuf": [
-                  "1.7.2"
+                  "2.5.1"
                 ]
               },
               "lifecycle_build_target": false,
@@ -1022,21 +1072,21 @@
               ]
             }
           },
-          "npm__at_bufbuild_protoc-gen-connect-es__0.13.0__oiyrjpl52uyd66bh6gknkwxihu": {
+          "npm__at_bufbuild_protoc-gen-es__2.5.1__at_bufbuild_protobuf_2.5.1": {
             "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
             "ruleClassName": "npm_import_rule",
             "attributes": {
-              "package": "@bufbuild/protoc-gen-connect-es",
-              "version": "0.13.0_oiyrjpl52uyd66bh6gknkwxihu",
+              "package": "@bufbuild/protoc-gen-es",
+              "version": "2.5.1_@bufbuild+protobuf@2.5.1",
               "root_package": "",
               "link_workspace": "",
               "link_packages": {
                 "": [
-                  "@bufbuild/protoc-gen-connect-es"
+                  "@bufbuild/protoc-gen-es"
                 ]
               },
-              "integrity": "sha512-4HbxWQ799ZLszJJIJsuVMFwkBx8DJ4VEhNDNtKpPJFsTdVUOp1LyFGY66Yjfj9vcuOeH44bS0ALE5pRP3rCxXA==",
-              "url": "https://registry.npmjs.org/@bufbuild/protoc-gen-connect-es/-/protoc-gen-connect-es-0.13.0.tgz",
+              "integrity": "sha512-qsRqmwWWd3W+/xb76gKv1fsLfNohrXm54rfqPzFX0RkAhh+YEEPeUyG3Ecgeomi22pH/gD+TaptkQl8dpbj13w==",
+              "url": "https://registry.npmjs.org/@bufbuild/protoc-gen-es/-/protoc-gen-es-2.5.1.tgz",
               "commit": "",
               "patch_args": [],
               "patches": [],
@@ -1050,42 +1100,38 @@
               "generate_bzl_library_targets": false
             }
           },
-          "npm__at_bufbuild_protoc-gen-connect-es__0.13.0__oiyrjpl52uyd66bh6gknkwxihu__links": {
+          "npm__at_bufbuild_protoc-gen-es__2.5.1__at_bufbuild_protobuf_2.5.1__links": {
             "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
             "ruleClassName": "npm_import_links",
             "attributes": {
-              "package": "@bufbuild/protoc-gen-connect-es",
-              "version": "0.13.0_oiyrjpl52uyd66bh6gknkwxihu",
+              "package": "@bufbuild/protoc-gen-es",
+              "version": "2.5.1_@bufbuild+protobuf@2.5.1",
               "dev": true,
               "root_package": "",
               "link_packages": {
                 "": [
-                  "@bufbuild/protoc-gen-connect-es"
+                  "@bufbuild/protoc-gen-es"
                 ]
               },
               "deps": {
-                "@bufbuild/protobuf": "1.7.2",
-                "@bufbuild/protoc-gen-es": "1.7.2_@bufbuild+protobuf@1.7.2",
-                "@bufbuild/protoplugin": "1.7.2"
+                "@bufbuild/protobuf": "2.5.1",
+                "@bufbuild/protoplugin": "2.5.1"
               },
               "transitive_closure": {
-                "@bufbuild/protoc-gen-connect-es": [
-                  "0.13.0_oiyrjpl52uyd66bh6gknkwxihu"
+                "@bufbuild/protoc-gen-es": [
+                  "2.5.1_@bufbuild+protobuf@2.5.1"
                 ],
                 "@bufbuild/protobuf": [
-                  "1.7.2"
-                ],
-                "@bufbuild/protoc-gen-es": [
-                  "1.7.2_@bufbuild+protobuf@1.7.2"
+                  "2.5.1"
                 ],
                 "@bufbuild/protoplugin": [
-                  "1.7.2"
+                  "2.5.1"
                 ],
                 "@typescript/vfs": [
-                  "1.5.0"
+                  "1.6.1_typescript@5.4.5"
                 ],
                 "typescript": [
-                  "4.5.2"
+                  "5.4.5"
                 ],
                 "debug": [
                   "4.3.4"
@@ -1104,21 +1150,17 @@
               ]
             }
           },
-          "npm__at_bufbuild_protoc-gen-es__1.7.2__at_bufbuild_protobuf_1.7.2": {
+          "npm__at_bufbuild_protoplugin__1.10.1": {
             "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
             "ruleClassName": "npm_import_rule",
             "attributes": {
-              "package": "@bufbuild/protoc-gen-es",
-              "version": "1.7.2_@bufbuild+protobuf@1.7.2",
+              "package": "@bufbuild/protoplugin",
+              "version": "1.10.1",
               "root_package": "",
               "link_workspace": "",
-              "link_packages": {
-                "": [
-                  "@bufbuild/protoc-gen-es"
-                ]
-              },
-              "integrity": "sha512-yiRk/T+YGmpSVvIkybCjPt+QyM/pLWMO+MAiz6auvCsiAgfXfc5nFFosD4yBYXID55M6eIkgBcity1AoJ6I30A==",
-              "url": "https://registry.npmjs.org/@bufbuild/protoc-gen-es/-/protoc-gen-es-1.7.2.tgz",
+              "link_packages": {},
+              "integrity": "sha512-LaSbfwabAFIvbVnbn8jWwElRoffCIxhVraO8arliVwWupWezHLXgqPHEYLXZY/SsAR+/YsFBQJa8tAGtNPJyaQ==",
+              "url": "https://registry.npmjs.org/@bufbuild/protoplugin/-/protoplugin-1.10.1.tgz",
               "commit": "",
               "patch_args": [],
               "patches": [],
@@ -1132,105 +1174,185 @@
               "generate_bzl_library_targets": false
             }
           },
-          "npm__at_bufbuild_protoc-gen-es__1.7.2__at_bufbuild_protobuf_1.7.2__links": {
-            "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
-            "ruleClassName": "npm_import_links",
-            "attributes": {
-              "package": "@bufbuild/protoc-gen-es",
-              "version": "1.7.2_@bufbuild+protobuf@1.7.2",
-              "dev": true,
-              "root_package": "",
-              "link_packages": {
-                "": [
-                  "@bufbuild/protoc-gen-es"
-                ]
-              },
-              "deps": {
-                "@bufbuild/protobuf": "1.7.2",
-                "@bufbuild/protoplugin": "1.7.2"
-              },
-              "transitive_closure": {
-                "@bufbuild/protoc-gen-es": [
-                  "1.7.2_@bufbuild+protobuf@1.7.2"
-                ],
-                "@bufbuild/protobuf": [
-                  "1.7.2"
-                ],
-                "@bufbuild/protoplugin": [
-                  "1.7.2"
-                ],
-                "@typescript/vfs": [
-                  "1.5.0"
-                ],
-                "typescript": [
-                  "4.5.2"
-                ],
-                "debug": [
-                  "4.3.4"
-                ],
-                "ms": [
-                  "2.1.2"
-                ]
-              },
-              "lifecycle_build_target": false,
-              "lifecycle_hooks_env": [],
-              "lifecycle_hooks_execution_requirements": [],
-              "bins": {},
-              "npm_translate_lock_repo": "npm",
-              "package_visibility": [
-                "//visibility:public"
-              ]
-            }
-          },
-          "npm__at_bufbuild_protoplugin__1.7.2": {
-            "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
-            "ruleClassName": "npm_import_rule",
-            "attributes": {
-              "package": "@bufbuild/protoplugin",
-              "version": "1.7.2",
-              "root_package": "",
-              "link_workspace": "",
-              "link_packages": {},
-              "integrity": "sha512-N3QtO8XWD4F4alMtASWtxBw6BWXp4aLz7rPBXH4KTULdjpUHnq46g15TsrG0/8szZw6pIklTO3lFe14dl6ZYdA==",
-              "url": "https://registry.npmjs.org/@bufbuild/protoplugin/-/protoplugin-1.7.2.tgz",
-              "commit": "",
-              "patch_args": [],
-              "patches": [],
-              "custom_postinstall": "",
-              "npm_auth": "",
-              "npm_auth_basic": "",
-              "npm_auth_username": "",
-              "npm_auth_password": "",
-              "lifecycle_hooks": [],
-              "extra_build_content": "",
-              "generate_bzl_library_targets": false
-            }
-          },
-          "npm__at_bufbuild_protoplugin__1.7.2__links": {
+          "npm__at_bufbuild_protoplugin__1.10.1__links": {
             "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
             "ruleClassName": "npm_import_links",
             "attributes": {
               "package": "@bufbuild/protoplugin",
-              "version": "1.7.2",
+              "version": "1.10.1",
               "dev": true,
               "root_package": "",
               "link_packages": {},
               "deps": {
-                "@bufbuild/protobuf": "1.7.2",
-                "@typescript/vfs": "1.5.0",
+                "@bufbuild/protobuf": "1.10.1",
+                "@typescript/vfs": "1.6.1_typescript@4.5.2",
                 "typescript": "4.5.2"
               },
               "transitive_closure": {
                 "@bufbuild/protoplugin": [
-                  "1.7.2"
+                  "1.10.1"
                 ],
                 "@bufbuild/protobuf": [
-                  "1.7.2"
+                  "1.10.1"
                 ],
                 "@typescript/vfs": [
-                  "1.5.0"
+                  "1.6.1_typescript@4.5.2"
                 ],
                 "typescript": [
+                  "4.5.2"
+                ],
+                "debug": [
+                  "4.3.4"
+                ],
+                "ms": [
+                  "2.1.2"
+                ]
+              },
+              "lifecycle_build_target": false,
+              "lifecycle_hooks_env": [],
+              "lifecycle_hooks_execution_requirements": [],
+              "bins": {},
+              "npm_translate_lock_repo": "npm",
+              "package_visibility": [
+                "//visibility:public"
+              ]
+            }
+          },
+          "npm__at_bufbuild_protoplugin__2.5.1": {
+            "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
+            "ruleClassName": "npm_import_rule",
+            "attributes": {
+              "package": "@bufbuild/protoplugin",
+              "version": "2.5.1",
+              "root_package": "",
+              "link_workspace": "",
+              "link_packages": {},
+              "integrity": "sha512-viJAgCqPUw1JZQxYTdhbRmMy5+C0afS52ak7CgeKL8R7bwVHWb8HjOFMMvJwPXb8fkDQqxIEBdWP7Yn00Dnikw==",
+              "url": "https://registry.npmjs.org/@bufbuild/protoplugin/-/protoplugin-2.5.1.tgz",
+              "commit": "",
+              "patch_args": [],
+              "patches": [],
+              "custom_postinstall": "",
+              "npm_auth": "",
+              "npm_auth_basic": "",
+              "npm_auth_username": "",
+              "npm_auth_password": "",
+              "lifecycle_hooks": [],
+              "extra_build_content": "",
+              "generate_bzl_library_targets": false
+            }
+          },
+          "npm__at_bufbuild_protoplugin__2.5.1__links": {
+            "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
+            "ruleClassName": "npm_import_links",
+            "attributes": {
+              "package": "@bufbuild/protoplugin",
+              "version": "2.5.1",
+              "dev": true,
+              "root_package": "",
+              "link_packages": {},
+              "deps": {
+                "@bufbuild/protobuf": "2.5.1",
+                "@typescript/vfs": "1.6.1_typescript@5.4.5",
+                "typescript": "5.4.5"
+              },
+              "transitive_closure": {
+                "@bufbuild/protoplugin": [
+                  "2.5.1"
+                ],
+                "@bufbuild/protobuf": [
+                  "2.5.1"
+                ],
+                "@typescript/vfs": [
+                  "1.6.1_typescript@5.4.5"
+                ],
+                "typescript": [
+                  "5.4.5"
+                ],
+                "debug": [
+                  "4.3.4"
+                ],
+                "ms": [
+                  "2.1.2"
+                ]
+              },
+              "lifecycle_build_target": false,
+              "lifecycle_hooks_env": [],
+              "lifecycle_hooks_execution_requirements": [],
+              "bins": {},
+              "npm_translate_lock_repo": "npm",
+              "package_visibility": [
+                "//visibility:public"
+              ]
+            }
+          },
+          "npm__at_connectrpc_protoc-gen-connect-es__1.6.1__53chff2iyhxhr3hghk4qpbf4ku": {
+            "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
+            "ruleClassName": "npm_import_rule",
+            "attributes": {
+              "package": "@connectrpc/protoc-gen-connect-es",
+              "version": "1.6.1_53chff2iyhxhr3hghk4qpbf4ku",
+              "root_package": "",
+              "link_workspace": "",
+              "link_packages": {
+                "": [
+                  "@bufbuild/protoc-gen-connect-es"
+                ]
+              },
+              "integrity": "sha512-0fHcaADd+GKM0I/koIQpmKg7b+QL18bXlggTUYEAlMFzsd4zN/ApG3235hdUcRyhrAOAItTXxh8ZAV/nNd43Gg==",
+              "url": "https://registry.npmjs.org/@connectrpc/protoc-gen-connect-es/-/protoc-gen-connect-es-1.6.1.tgz",
+              "commit": "",
+              "patch_args": [],
+              "patches": [],
+              "custom_postinstall": "",
+              "npm_auth": "",
+              "npm_auth_basic": "",
+              "npm_auth_username": "",
+              "npm_auth_password": "",
+              "lifecycle_hooks": [],
+              "extra_build_content": "",
+              "generate_bzl_library_targets": false
+            }
+          },
+          "npm__at_connectrpc_protoc-gen-connect-es__1.6.1__53chff2iyhxhr3hghk4qpbf4ku__links": {
+            "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
+            "ruleClassName": "npm_import_links",
+            "attributes": {
+              "package": "@connectrpc/protoc-gen-connect-es",
+              "version": "1.6.1_53chff2iyhxhr3hghk4qpbf4ku",
+              "dev": true,
+              "root_package": "",
+              "link_packages": {
+                "": [
+                  "@bufbuild/protoc-gen-connect-es"
+                ]
+              },
+              "deps": {
+                "@bufbuild/protobuf": "1.10.1",
+                "@bufbuild/protoc-gen-es": "2.5.1_@bufbuild+protobuf@2.5.1",
+                "@bufbuild/protoplugin": "1.10.1"
+              },
+              "transitive_closure": {
+                "@connectrpc/protoc-gen-connect-es": [
+                  "1.6.1_53chff2iyhxhr3hghk4qpbf4ku"
+                ],
+                "@bufbuild/protobuf": [
+                  "2.5.1",
+                  "1.10.1"
+                ],
+                "@bufbuild/protoc-gen-es": [
+                  "2.5.1_@bufbuild+protobuf@2.5.1"
+                ],
+                "@bufbuild/protoplugin": [
+                  "2.5.1",
+                  "1.10.1"
+                ],
+                "@typescript/vfs": [
+                  "1.6.1_typescript@5.4.5",
+                  "1.6.1_typescript@4.5.2"
+                ],
+                "typescript": [
+                  "5.4.5",
                   "4.5.2"
                 ],
                 "debug": [
@@ -9399,17 +9521,17 @@
               ]
             }
           },
-          "npm__at_typescript_vfs__1.5.0": {
+          "npm__at_typescript_vfs__1.6.1__typescript_4.5.2": {
             "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
             "ruleClassName": "npm_import_rule",
             "attributes": {
               "package": "@typescript/vfs",
-              "version": "1.5.0",
+              "version": "1.6.1_typescript@4.5.2",
               "root_package": "",
               "link_workspace": "",
               "link_packages": {},
-              "integrity": "sha512-AJS307bPgbsZZ9ggCT3wwpg3VbTKMFNHfaY/uF0ahSkYYrPF2dSSKDNIDIQAHm9qJqbLvCsSJH7yN4Vs/CsMMg==",
-              "url": "https://registry.npmjs.org/@typescript/vfs/-/vfs-1.5.0.tgz",
+              "integrity": "sha512-JwoxboBh7Oz1v38tPbkrZ62ZXNHAk9bJ7c9x0eI5zBfBnBYGhURdbnh7Z4smN/MV48Y5OCcZb58n972UtbazsA==",
+              "url": "https://registry.npmjs.org/@typescript/vfs/-/vfs-1.6.1.tgz",
               "commit": "",
               "patch_args": [],
               "patches": [],
@@ -9423,24 +9545,89 @@
               "generate_bzl_library_targets": false
             }
           },
-          "npm__at_typescript_vfs__1.5.0__links": {
+          "npm__at_typescript_vfs__1.6.1__typescript_4.5.2__links": {
             "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
             "ruleClassName": "npm_import_links",
             "attributes": {
               "package": "@typescript/vfs",
-              "version": "1.5.0",
+              "version": "1.6.1_typescript@4.5.2",
               "dev": true,
               "root_package": "",
               "link_packages": {},
               "deps": {
-                "debug": "4.3.4"
+                "debug": "4.3.4",
+                "typescript": "4.5.2"
               },
               "transitive_closure": {
                 "@typescript/vfs": [
-                  "1.5.0"
+                  "1.6.1_typescript@4.5.2"
                 ],
                 "debug": [
                   "4.3.4"
+                ],
+                "typescript": [
+                  "4.5.2"
+                ],
+                "ms": [
+                  "2.1.2"
+                ]
+              },
+              "lifecycle_build_target": false,
+              "lifecycle_hooks_env": [],
+              "lifecycle_hooks_execution_requirements": [],
+              "bins": {},
+              "npm_translate_lock_repo": "npm",
+              "package_visibility": [
+                "//visibility:public"
+              ]
+            }
+          },
+          "npm__at_typescript_vfs__1.6.1__typescript_5.4.5": {
+            "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
+            "ruleClassName": "npm_import_rule",
+            "attributes": {
+              "package": "@typescript/vfs",
+              "version": "1.6.1_typescript@5.4.5",
+              "root_package": "",
+              "link_workspace": "",
+              "link_packages": {},
+              "integrity": "sha512-JwoxboBh7Oz1v38tPbkrZ62ZXNHAk9bJ7c9x0eI5zBfBnBYGhURdbnh7Z4smN/MV48Y5OCcZb58n972UtbazsA==",
+              "url": "https://registry.npmjs.org/@typescript/vfs/-/vfs-1.6.1.tgz",
+              "commit": "",
+              "patch_args": [],
+              "patches": [],
+              "custom_postinstall": "",
+              "npm_auth": "",
+              "npm_auth_basic": "",
+              "npm_auth_username": "",
+              "npm_auth_password": "",
+              "lifecycle_hooks": [],
+              "extra_build_content": "",
+              "generate_bzl_library_targets": false
+            }
+          },
+          "npm__at_typescript_vfs__1.6.1__typescript_5.4.5__links": {
+            "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
+            "ruleClassName": "npm_import_links",
+            "attributes": {
+              "package": "@typescript/vfs",
+              "version": "1.6.1_typescript@5.4.5",
+              "dev": true,
+              "root_package": "",
+              "link_packages": {},
+              "deps": {
+                "debug": "4.3.4",
+                "typescript": "5.4.5"
+              },
+              "transitive_closure": {
+                "@typescript/vfs": [
+                  "1.6.1_typescript@5.4.5"
+                ],
+                "debug": [
+                  "4.3.4"
+                ],
+                "typescript": [
+                  "5.4.5"
                 ],
                 "ms": [
                   "2.1.2"
@@ -13273,6 +13460,72 @@
               ]
             }
           },
+          "npm__prettier-plugin-organize-imports__4.1.0__vhrpc442jebm4l3byrytuelni4": {
+            "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
+            "ruleClassName": "npm_import_rule",
+            "attributes": {
+              "package": "prettier-plugin-organize-imports",
+              "version": "4.1.0_vhrpc442jebm4l3byrytuelni4",
+              "root_package": "",
+              "link_workspace": "",
+              "link_packages": {
+                "": [
+                  "prettier-plugin-organize-imports"
+                ]
+              },
+              "integrity": "sha512-5aWRdCgv645xaa58X8lOxzZoiHAldAPChljr/MT0crXVOWTZ+Svl4hIWlz+niYSlO6ikE5UXkN1JrRvIP2ut0A==",
+              "url": "https://registry.npmjs.org/prettier-plugin-organize-imports/-/prettier-plugin-organize-imports-4.1.0.tgz",
+              "commit": "",
+              "patch_args": [],
+              "patches": [],
+              "custom_postinstall": "",
+              "npm_auth": "",
+              "npm_auth_basic": "",
+              "npm_auth_username": "",
+              "npm_auth_password": "",
+              "lifecycle_hooks": [],
+              "extra_build_content": "",
+              "generate_bzl_library_targets": false
+            }
+          },
+          "npm__prettier-plugin-organize-imports__4.1.0__vhrpc442jebm4l3byrytuelni4__links": {
+            "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
+            "ruleClassName": "npm_import_links",
+            "attributes": {
+              "package": "prettier-plugin-organize-imports",
+              "version": "4.1.0_vhrpc442jebm4l3byrytuelni4",
+              "dev": true,
+              "root_package": "",
+              "link_packages": {
+                "": [
+                  "prettier-plugin-organize-imports"
+                ]
+              },
+              "deps": {
+                "prettier": "3.5.3",
+                "typescript": "5.3.3"
+              },
+              "transitive_closure": {
+                "prettier-plugin-organize-imports": [
+                  "4.1.0_vhrpc442jebm4l3byrytuelni4"
+                ],
+                "prettier": [
+                  "3.5.3"
+                ],
+                "typescript": [
+                  "5.3.3"
+                ]
+              },
+              "lifecycle_build_target": false,
+              "lifecycle_hooks_env": [],
+              "lifecycle_hooks_execution_requirements": [],
+              "bins": {},
+              "npm_translate_lock_repo": "npm",
+              "package_visibility": [
+                "//visibility:public"
+              ]
+            }
+          },
           "npm__prettier__3.5.3": {
             "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
             "ruleClassName": "npm_import_rule",
@@ -14956,6 +15209,55 @@
               ]
             }
           },
+          "npm__typescript__5.4.5": {
+            "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
+            "ruleClassName": "npm_import_rule",
+            "attributes": {
+              "package": "typescript",
+              "version": "5.4.5",
+              "root_package": "",
+              "link_workspace": "",
+              "link_packages": {},
+              "integrity": "sha512-vcI4UpRgg81oIRUFwR0WSIHKt11nJ7SAVlYNIu+QpqeyXP+gpQJy/Z4+F0aGxSE4MqwjyXvW/TzgkLAx2AGHwQ==",
+              "url": "https://registry.npmjs.org/typescript/-/typescript-5.4.5.tgz",
+              "commit": "",
+              "patch_args": [],
+              "patches": [],
+              "custom_postinstall": "",
+              "npm_auth": "",
+              "npm_auth_basic": "",
+              "npm_auth_username": "",
+              "npm_auth_password": "",
+              "lifecycle_hooks": [],
+              "extra_build_content": "",
+              "generate_bzl_library_targets": false
+            }
+          },
+          "npm__typescript__5.4.5__links": {
+            "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
+            "ruleClassName": "npm_import_links",
+            "attributes": {
+              "package": "typescript",
+              "version": "5.4.5",
+              "dev": true,
+              "root_package": "",
+              "link_packages": {},
+              "deps": {},
+              "transitive_closure": {
+                "typescript": [
+                  "5.4.5"
+                ]
+              },
+              "lifecycle_build_target": false,
+              "lifecycle_hooks_env": [],
+              "lifecycle_hooks_execution_requirements": [],
+              "bins": {},
+              "npm_translate_lock_repo": "npm",
+              "package_visibility": [
+                "//visibility:public"
+              ]
+            }
+          },
           "npm__use-callback-ref__1.3.3__ys7c5ke7xl3xzsojot4lic4rti": {
             "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
             "ruleClassName": "npm_import_rule",
@@ -15304,7 +15606,7 @@
     },
     "@@aspect_rules_ts~//ts:extensions.bzl%ext": {
       "general": {
-        "bzlTransitiveDigest": "Vp1hpR2I2iY/X+CO7Jj2woaNoXuJ3kgv3RdXbtfo12c=",
+        "bzlTransitiveDigest": "edzkhCMv6VxG72PpQsU7hF5HhKoLkSqY5sQ6+2lMtIg=",
         "usagesDigest": "1jWdSJRtaz2+KPudOcYHPsYWtPcKkWbWHg2eNDeeu9M=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -15315,8 +15617,7 @@
             "ruleClassName": "http_archive_version",
             "attributes": {
               "bzlmod": true,
-              "check_for_updates": true,
-              "version": "5.2.2",
+              "version": "5.4.5",
               "integrity": "",
               "build_file": "@@aspect_rules_ts~//ts:BUILD.typescript",
               "build_file_substitutions": {

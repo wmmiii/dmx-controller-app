@@ -1,6 +1,7 @@
+import { create } from '@bufbuild/protobuf';
 import {
-  ControllerMapping_Action,
-  ControllerMapping_BeatMatch,
+  ControllerMapping_BeatMatchSchema,
+  type ControllerMapping_Action,
 } from '@dmx-controller/proto/controller_pb';
 import { JSX, useContext, useEffect, useMemo } from 'react';
 
@@ -59,7 +60,7 @@ export function LiveBeat({ className }: LiveBeatProps): JSX.Element {
     () =>
       ({
         case: 'beatMatch',
-        value: new ControllerMapping_BeatMatch(),
+        value: create(ControllerMapping_BeatMatchSchema, {}),
       }) as ControllerMapping_Action['action'],
     [],
   );
