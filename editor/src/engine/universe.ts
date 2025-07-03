@@ -245,7 +245,9 @@ export function renderSceneToUniverse(
             }
           } else {
             if (tile.duration.case === 'durationBeat') {
-              effectT = (beatT * effectLength) / beatMetadata.lengthMs;
+              effectT =
+                (beatT * effectLength) /
+                (beatMetadata.lengthMs * (tile.duration.value || 1));
             } else {
               if (tile.duration.value == null) {
                 throw new Error(

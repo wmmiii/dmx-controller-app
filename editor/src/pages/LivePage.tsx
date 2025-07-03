@@ -299,9 +299,9 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
                 labels={{ left: 'Beat', right: 'Seconds' }}
               />
             </div>
-            {tile.duration.case === 'durationMs' && (
-              <div className={styles.row}>
-                <label>Loop Duration</label>
+            <div className={styles.row}>
+              <label>Loop Duration</label>
+              {tile.duration.case === 'durationMs' && (
                 <NumberInput
                   type="float"
                   min={0.001}
@@ -311,10 +311,21 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
                     tile.duration.value = Math.floor(value * 1000);
                     save(`Set duration for tile ${tile.name}.`);
                   }}
-                  disabled={tile.duration?.case !== 'durationMs'}
                 />
-              </div>
-            )}
+              )}
+              {tile.duration.case === 'durationBeat' && (
+                <NumberInput
+                  type="float"
+                  min={1 / 256}
+                  max={256}
+                  value={tile.duration?.value}
+                  onChange={(value) => {
+                    tile.duration.value = value;
+                    save(`Set duration for tile ${tile.name}.`);
+                  }}
+                />
+              )}
+            </div>
             <div className={styles.row}>
               <label>Fade in</label>
               <NumberInput
