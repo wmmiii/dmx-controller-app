@@ -1,11 +1,16 @@
 import { create } from '@bufbuild/protobuf';
 import { type Color } from '@dmx-controller/proto/color_pb';
 import {
+  FixtureDefinition,
   FixtureDefinitionSchema,
   FixtureDefinition_ChannelSchema,
+  FixtureDefinition_Channel_AmountMapping,
   FixtureDefinition_Channel_AmountMappingSchema,
+  FixtureDefinition_Channel_AngleMapping,
   FixtureDefinition_Channel_AngleMappingSchema,
+  FixtureDefinition_Channel_ColorWheelMapping,
   FixtureDefinition_Channel_ColorWheelMappingSchema,
+  FixtureDefinition_Channel_ColorWheelMapping_ColorWheelColor,
   FixtureDefinition_Channel_ColorWheelMapping_ColorWheelColorSchema,
   FixtureDefinition_ModeSchema,
   type FixtureDefinition_Channel,
@@ -46,14 +51,14 @@ export async function extractGdtf(arrayBuffer: Blob) {
     globalId: getAttributeNotEmpty(type, 'FixtureTypeID'),
     name: getAttributeNotEmpty(type, 'LongName'),
     manufacturer: getAttributeNotEmpty(type, 'Manufacturer'),
-  });
+  }) as FixtureDefinition;
 
   const modes = description.querySelectorAll('DMXMode');
 
   for (const modeElement of Array.from(modes)) {
     const mode = create(FixtureDefinition_ModeSchema, {
       name: getAttributeNotEmpty(modeElement, 'Name'),
-    });
+    }) as FixtureDefinition_Mode;
 
     let maxChannel = 0;
 
@@ -97,7 +102,7 @@ export async function extractGdtf(arrayBuffer: Blob) {
             value: create(FixtureDefinition_Channel_AngleMappingSchema, {
               minDegrees: Math.round(Math.min(fromDegrees, toDegrees)),
               maxDegrees: Math.round(Math.max(fromDegrees, toDegrees)),
-            }),
+            }) as FixtureDefinition_Channel_AngleMapping,
           });
           continue channel;
         }
@@ -113,7 +118,7 @@ export async function extractGdtf(arrayBuffer: Blob) {
               value: create(FixtureDefinition_Channel_AmountMappingSchema, {
                 minValue: 0,
                 maxValue: 255,
-              }),
+              }) as FixtureDefinition_Channel_AmountMapping,
             },
             channelName === 'dimmer' ? 255 : 0,
           );
@@ -128,7 +133,7 @@ export async function extractGdtf(arrayBuffer: Blob) {
             case: undefined,
             value: undefined,
           },
-        });
+        }) as FixtureDefinition_Channel;
       }
 
       if (initialFunction.indexOf('color selection') >= 0) {
@@ -160,7 +165,7 @@ export async function extractGdtf(arrayBuffer: Blob) {
             const mapping = create(
               FixtureDefinition_Channel_ColorWheelMappingSchema,
               {},
-            );
+            ) as FixtureDefinition_Channel_ColorWheelMapping;
             for (const set of Array.from(
               colorElement!.querySelectorAll('ChannelSet'),
             )) {
@@ -178,7 +183,7 @@ export async function extractGdtf(arrayBuffer: Blob) {
                     value: value,
                     color: color,
                   },
-                ),
+                ) as FixtureDefinition_Channel_ColorWheelMapping_ColorWheelColor,
               );
             }
 
@@ -189,7 +194,7 @@ export async function extractGdtf(arrayBuffer: Blob) {
                 case: 'colorWheelMapping',
                 value: mapping,
               },
-            });
+            }) as FixtureDefinition_Channel;
           }
         }
       }
@@ -227,12 +232,12 @@ function addChannels(
     type: name,
     defaultValue: defaultValue,
     mapping: mapping,
-  });
+  }) as FixtureDefinition_Channel;
   if (offset.length > 1) {
     mode.channels[offset[1]] = create(FixtureDefinition_ChannelSchema, {
       type: name + '-fine',
       defaultValue: defaultValue,
       mapping: mapping,
-    });
+    }) as FixtureDefinition_Channel;
   }
 }

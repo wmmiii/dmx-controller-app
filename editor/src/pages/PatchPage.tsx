@@ -2,11 +2,16 @@ import { create, fromBinary, toBinary } from '@bufbuild/protobuf';
 import {
   FixtureDefinitionSchema,
   FixtureDefinition_ChannelSchema,
+  FixtureDefinition_Channel_AmountMapping,
   FixtureDefinition_Channel_AmountMappingSchema,
+  FixtureDefinition_Channel_AngleMapping,
   FixtureDefinition_Channel_AngleMappingSchema,
   FixtureDefinition_Channel_ColorWheelMappingSchema,
+  FixtureDefinition_Channel_ColorWheelMapping_ColorWheelColor,
   FixtureDefinition_Channel_ColorWheelMapping_ColorWheelColorSchema,
+  FixtureDefinition_Mode,
   FixtureDefinition_ModeSchema,
+  PhysicalFixtureGroup,
   PhysicalFixtureGroupSchema,
   PhysicalFixtureSchema,
   type FixtureDefinition,
@@ -15,7 +20,9 @@ import {
   type PhysicalFixture,
 } from '@dmx-controller/proto/fixture_pb';
 import {
+  SerializedUniverse,
   SerializedUniverseSchema,
+  Universe,
   UniverseSchema,
 } from '@dmx-controller/proto/universe_pb';
 import {
@@ -117,7 +124,10 @@ function FixtureList({
         }
         const file = button.files![0];
         const body = new Uint8Array(await file.arrayBuffer());
-        const serialized = fromBinary(SerializedUniverseSchema, body);
+        const serialized = fromBinary(
+          SerializedUniverseSchema,
+          body,
+        ) as SerializedUniverse;
         project.fixtureDefinitions = Object.assign(
           {},
           serialized.fixtureDefinitions,
@@ -252,7 +262,7 @@ function FixtureList({
           const id = randomUint64();
           project.universes[id.toString()] = create(UniverseSchema, {
             name: 'New Patch',
-          });
+          }) as Universe;
           project.activeUniverse = id;
           save('Create a new patch.');
         }}
@@ -376,7 +386,7 @@ function FixtureList({
             {
               name: 'New Group',
             },
-          );
+          ) as PhysicalFixtureGroup;
           setSelectedGroupId(newId);
           save('Create new group.');
         }}
@@ -645,7 +655,7 @@ function FixtureDefinitionList({
                         channelOffset: -1,
                         fixtureDefinitionId: id,
                         fixtureMode: e[0],
-                      });
+                      }) as PhysicalFixture;
                       setDraggingFixture(newFixtureId);
                       update();
                     }}
@@ -678,13 +688,13 @@ function FixtureDefinitionList({
           const newId = crypto.randomUUID();
           const newDefinition = create(FixtureDefinitionSchema, {
             name: 'New Fixture Profile',
-          });
+          }) as FixtureDefinition;
           newDefinition.modes[crypto.randomUUID()] = create(
             FixtureDefinition_ModeSchema,
             {
               name: 'Default',
             },
-          );
+          ) as FixtureDefinition_Mode;
           project.fixtureDefinitions[newId.toString()] = newDefinition;
           setSelectedDefinitionId(newId);
           save('Create new fixture profile.');
@@ -712,7 +722,7 @@ function FixtureDefinitionList({
             const definition = create(
               FixtureDefinitionSchema,
               selectedDefinition,
-            );
+            ) as FixtureDefinition;
             definition.name = 'Copy of ' + selectedDefinition.name;
             project.fixtureDefinitions[newId.toString()] = definition;
             setSelectedDefinitionId(newId);
@@ -909,7 +919,7 @@ function EditDefinitionDialog({
                               value: undefined,
                             },
                           },
-                        );
+                        ) as FixtureDefinition_Channel;
                       }
 
                       const channel = mode.channels[index];
@@ -926,7 +936,7 @@ function EditDefinitionDialog({
                               minDegrees: 0,
                               maxDegrees: 360,
                             },
-                          ),
+                          ) as FixtureDefinition_Channel_AngleMapping,
                         };
                       } else if (
                         isAmountChannel(newType) &&
@@ -940,7 +950,7 @@ function EditDefinitionDialog({
                               minValue: 0,
                               maxValue: 255,
                             },
-                          ),
+                          ) as FixtureDefinition_Channel_AmountMapping,
                         };
                       } else if (
                         newType === 'color_wheel' &&
@@ -951,7 +961,7 @@ function EditDefinitionDialog({
                           value: create(
                             FixtureDefinition_Channel_ColorWheelMappingSchema,
                             {},
-                          ),
+                          ) as FixtureDefinition_Channel_ColorWheelMapping,
                         };
                       } else if (channel.mapping.case != undefined) {
                         channel.mapping = {
@@ -1201,7 +1211,7 @@ function ColorWheelEditor({ wheel, onClose }: ColorWheelEditorProps) {
                           blue: 1,
                         },
                       },
-                    ),
+                    ) as FixtureDefinition_Channel_ColorWheelMapping_ColorWheelColor,
                   );
                   save('Added color to color wheel.');
                 }}

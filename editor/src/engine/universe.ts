@@ -62,7 +62,7 @@ export const DEFAULT_COLOR_PALETTE = create(ColorPaletteSchema, {
       blue: 0,
     },
   },
-});
+}) as ColorPalette;
 
 export interface RenderContext {
   readonly globalT: number;

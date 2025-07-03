@@ -101,5 +101,5 @@ export function cieToColor(x: number, y: number, bri: number) {
     red: color.r / 255,
     green: color.g / 255,
     blue: color.b / 255,
-  });
+  }) as Color;
 }
