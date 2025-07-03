@@ -3,6 +3,7 @@ import { Project } from '@dmx-controller/proto/project_pb';
 
 import { ControlCommandType } from '../contexts/ControllerContext';
 import { tileActiveAmount, toggleTile } from '../util/tile';
+import { triggerWledTile } from '../util/wledUtil';
 
 export function performTileStrength(
   project: Project,
@@ -14,6 +15,10 @@ export function performTileStrength(
     (t) => t.id === action.tileId,
   );
   if (tileMapping && tileMapping.tile) {
+    if (tileMapping.tile.description.case === 'wled') {
+      triggerWledTile(project, tileMapping.tile.description.value);
+      return true;
+    }
     if (cct != null) {
       // Fader input.
       tileMapping.tile.transition = {

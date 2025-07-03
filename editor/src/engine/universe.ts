@@ -179,7 +179,9 @@ export function renderSceneToUniverse(
     .map((t) => t.tile!);
 
   for (const tile of sortedTiles) {
-    if (tile.oneShot && tile.transition.case === 'startFadeOutMs') {
+    if (tile.description.case === 'wled') {
+      continue;
+    } else if (tile.oneShot && tile.transition.case === 'startFadeOutMs') {
       continue;
     }
 

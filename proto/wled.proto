@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package dmx_controller;
+
+import "proto/color.proto";
+
+message WLEDConfig {
+
+  message Segment {
+    optional string name = 2;
+  }
+
+  message Group {
+    string name = 1;
+    repeated uint32 segment_id = 2;
+  }
+
+  message Fixture {
+    string name = 1;
+    string address = 2;
+
+    map<uint32, Segment> segments = 3;
+    map<uint64, Group> groups = 4;
+  }
+
+  map<uint64, Fixture> fixtures = 1;
+}
+
+message WLEDFixtureState {
+  message Property {
+    string key = 1;
+    oneof value {
+      string string_value = 2;
+      uint32 int_value = 3;
+    } 
+  }
+
+  message Segment {
+    repeated Property properties = 1;
+    optional double dimmer = 2;
+    optional uint32 effect = 3;
+    optional ColorPalette palette = 4;
+  }
+}
+
+
+message WLEDOutputId {
+  uint64 fixture_id = 1;
+  
+  oneof output {
+    uint32 segment_id = 2;
+    uint64 group_id = 3;
+  }
+}

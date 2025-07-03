@@ -15,7 +15,7 @@ import IconBxX from '../icons/IconBxX';
 import { getActiveUniverse } from '../util/projectUtils';
 
 import { Button, IconButton } from './Button';
-import styles from './EditGroupDialog.module.scss';
+import styles from './EditDialog.module.scss';
 import { TextInput } from './Input';
 import { Modal } from './Modal';
 

@@ -22,6 +22,7 @@ import { TimeContext } from '../contexts/TimeContext';
 import { findAction } from '../external_controller/externalController';
 import { tileTileDetails } from '../util/projectUtils';
 import { tileActiveAmount, toggleTile } from '../util/tile';
+import { triggerWledTile } from '../util/wledUtil';
 
 import styles from './Tile.module.scss';
 
@@ -100,11 +101,15 @@ export function Tile({
   }, [details, palette]);
 
   const toggle = useCallback(() => {
+    if (tile.description.case === 'wled') {
+      triggerWledTile(project, tile.description.value);
+      return;
+    }
     const [modified, enabled] = toggleTile(tile, beat);
     if (modified) {
       save(`${enabled ? 'Enable' : 'Disable'} tile ${tile.name}.`);
     }
-  }, [tile, beat, save]);
+  }, [project, tile, beat, save]);
 
   const activeAmount = tileActiveAmount(tile, beat, t);
 

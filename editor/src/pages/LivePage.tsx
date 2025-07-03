@@ -1,4 +1,4 @@
-import { clone, create } from '@bufbuild/protobuf';
+import { clone, create, toJsonString } from '@bufbuild/protobuf';
 import { ColorPaletteSchema } from '@dmx-controller/proto/color_pb';
 import {
   ControllerMapping_TileStrengthSchema,
@@ -11,11 +11,13 @@ import {
   Scene_Tile_EffectGroupTileSchema,
   Scene_Tile_EffectGroupTile_EffectChannelSchema,
   Scene_Tile_SequenceTileSchema,
+  Scene_Tile_WledTileSchema,
   type Scene,
   type Scene_Tile,
   type Scene_TileMap,
   type Scene_Tile_EffectGroupTile,
   type Scene_Tile_SequenceTile,
+  type Scene_Tile_WledTile,
 } from '@dmx-controller/proto/scene_pb';
 import { JSX, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -44,6 +46,11 @@ import { universeToUint8Array } from '../engine/utils';
 import IconBxPlus from '../icons/IconBxPlus';
 import IconBxX from '../icons/IconBxX';
 
+import {
+  WLEDOutputId,
+  WLEDOutputIdSchema,
+} from '@dmx-controller/proto/wled_pb';
+import { outputIdToHumanReadable } from '../util/wledUtil';
 import styles from './LivePage.module.scss';
 
 export function LivePage(): JSX.Element {
@@ -388,6 +395,9 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
             {tile.description.case === 'sequence' && (
               <SequenceEditor sequence={tile.description.value} />
             )}
+            {tile.description.case === 'wled' && (
+              <WledEditor wled={tile.description.value} />
+            )}
           </>
         }
       />
@@ -472,7 +482,7 @@ interface AddNewDialogProps {
 }
 
 function AddNewDialog({ scene, x, y, onSelect, onClose }: AddNewDialogProps) {
-  const { save } = useContext(ProjectContext);
+  const { project, save } = useContext(ProjectContext);
 
   const addTile = (
     description: Scene_Tile['description'],
@@ -549,6 +559,43 @@ function AddNewDialog({ scene, x, y, onSelect, onClose }: AddNewDialogProps) {
       >
         Add Sequence
       </Button>
+
+      {project.wled && Object.keys(project.wled.fixtures).length > 0 && (
+        <>
+          <div className={styles.addTileDescription}>
+            WLED commands send a command to a WLED fixture and fire once when
+            you press them.
+          </div>
+          <Button
+            icon={<IconBxPlus />}
+            onClick={() => {
+              const fixtureId = Object.keys(project.wled!.fixtures)[0];
+              const tileMap = addTile(
+                {
+                  case: 'wled',
+                  value: create(Scene_Tile_WledTileSchema, {
+                    json: '{}',
+                    outputId: {
+                      fixtureId: BigInt(fixtureId),
+                      output: {
+                        case: 'segmentId',
+                        value: 0,
+                      },
+                    },
+                  }),
+                },
+                x,
+                y,
+              );
+              save(`Add new WLED tile.`);
+              onClose();
+              onSelect(tileMap);
+            }}
+          >
+            Add WLED Command
+          </Button>
+        </>
+      )}
     </Modal>
   );
 }
@@ -587,4 +634,89 @@ function createEffectChannel() {
       },
     },
   });
+}
+
+interface WledEditorProps {
+  wled: Scene_Tile_WledTile;
+}
+
+function WledEditor({ wled }: WledEditorProps) {
+  const { project, save } = useContext(ProjectContext);
+
+  const outputs = useMemo(() => {
+    const outputs: WLEDOutputId[] = [];
+    if (!project.wled) {
+      return [];
+    }
+
+    Object.entries(project.wled.fixtures).forEach(([fixtureId, fixture]) => {
+      Object.keys(fixture.groups).forEach((groupId) => {
+        outputs.push(
+          create(WLEDOutputIdSchema, {
+            fixtureId: BigInt(fixtureId),
+            output: {
+              case: 'groupId',
+              value: BigInt(groupId),
+            },
+          }),
+        );
+      });
+      Object.keys(fixture.segments).forEach((segmentId) => {
+        outputs.push(
+          create(WLEDOutputIdSchema, {
+            fixtureId: BigInt(fixtureId),
+            output: {
+              case: 'segmentId',
+              value: Number(segmentId),
+            },
+          }),
+        );
+      });
+    });
+    return outputs;
+  }, [project]);
+
+  const selectedIndex = useMemo(() => {
+    if (!wled.outputId) {
+      throw Error('WLED tile without output value!');
+    }
+
+    const selectedJson = toJsonString(WLEDOutputIdSchema, wled.outputId);
+    return outputs.findIndex(
+      (o) => toJsonString(WLEDOutputIdSchema, o) === selectedJson,
+    );
+  }, [project, outputs, wled.outputId]);
+
+  return (
+    <div className={styles.detailsPane}>
+      <select
+        value={selectedIndex}
+        onChange={(event) => {
+          const output = outputs[Number(event.target.value)];
+          wled.outputId = output;
+          save(
+            `Set WLED tile command output to ${outputIdToHumanReadable(project, output)}: ${name}.`,
+          );
+        }}
+      >
+        {outputs.map((o, i) => (
+          <option key={i} value={i}>
+            {outputIdToHumanReadable(project, o)}
+          </option>
+        ))}
+      </select>
+      <br />
+      <textarea
+        onKeyDownCapture={(e) => {
+          e.stopPropagation();
+        }}
+        onBlur={(event) => {
+          wled.json = event.target.value;
+          save('Update WLED tile command JSON.');
+        }}
+      >
+        {wled.json}
+      </textarea>
+    </div>
+  );
 }

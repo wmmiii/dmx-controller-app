@@ -28,6 +28,10 @@ import { UniverseSchema } from '@dmx-controller/proto/universe_pb';
 
 import { isAmountChannel, isAngleChannel } from '../engine/channel';
 
+import {
+  WLEDConfigSchema,
+  WLEDOutputIdSchema,
+} from '@dmx-controller/proto/wled_pb';
 import { idMapToArray } from './mapUtils';
 import { randomUint64 } from './numberUtils';
 
@@ -44,6 +48,7 @@ export default function upgradeProject(project: Project): void {
   upgradeEffectTiming(project);
   upgradeTileIds(project);
   upgradePaletteMapping(project);
+  addWled(project);
 }
 
 function upgradeIndices(project: Project): void {
@@ -406,6 +411,8 @@ function upgradeColorTypes(project: Project) {
           .flatMap((l) => l.effects);
       } else if (c.description.case === 'effectGroup') {
         return c.description.value.channels.map((c) => c.effect);
+      } else if (c.description.case === 'wled') {
+        return null;
       }
       throw new Error(
         'Tried to upgrade effects in unknown component effect description: ' +
@@ -536,6 +543,8 @@ function upgradeEffectTiming(project: Project) {
           .flatMap((l) => l.effects);
       } else if (t.description.case === 'effectGroup') {
         return t.description.value.channels.map((c) => c.effect);
+      } else if (t.description.case === 'wled') {
+        return null;
       }
       throw new Error(
         'Tried to upgrade effects in unknown component effect description: ' +
@@ -583,4 +592,30 @@ function upgradePaletteMapping(project: Project) {
     }
     scene.deprecatedColorPalettes = [];
   }
+}
+
+function addWled(project: Project) {
+  if (project.wled == null) {
+    project.wled = create(WLEDConfigSchema, {
+      fixtures: {},
+    });
+  }
+
+  project.scenes
+    .flatMap((s) => s.tileMap)
+    .map((t) => t.tile)
+    .forEach((t) => {
+      if (t?.description.case === 'wled') {
+        const wled = t.description.value;
+        if (!wled.outputId) {
+          wled.outputId = create(WLEDOutputIdSchema, {
+            fixtureId: BigInt(Object.keys(project.wled!.fixtures)[0]),
+            output: {
+              case: 'segmentId',
+              value: 0,
+            },
+          });
+        }
+      }
+    });
 }

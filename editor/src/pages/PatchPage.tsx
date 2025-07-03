@@ -25,6 +25,7 @@ import {
   Universe,
   UniverseSchema,
 } from '@dmx-controller/proto/universe_pb';
+import { WLEDConfig_FixtureSchema } from '@dmx-controller/proto/wled_pb';
 import {
   JSX,
   createRef,
@@ -38,6 +39,7 @@ import { BiGridVertical, BiPlus, BiX } from 'react-icons/bi';
 import { Button, IconButton } from '../components/Button';
 import { ColorSwatch } from '../components/ColorSwatch';
 import { EditGroupDialog } from '../components/EditGroupDialog';
+import { EditWledFixtureDialog } from '../components/EditWledFixtureDialog';
 import { NumberInput, TextInput } from '../components/Input';
 import { Modal } from '../components/Modal';
 import RangeInput from '../components/RangeInput';
@@ -103,6 +105,9 @@ function FixtureList({
   const [selectedFixtureId, setSelectedFixtureId] = useState<bigint | null>(
     null,
   );
+  const [selectedWledFixtureId, setSelectedWledFixtureId] = useState<
+    bigint | null
+  >(null);
   const [selectedGroupId, setSelectedGroupId] = useState<bigint | null>(null);
   const uploadButtonRef = createRef<HTMLInputElement>();
 
@@ -393,6 +398,34 @@ function FixtureList({
       >
         + Add New Group
       </Button>
+      <h2>WLED</h2>
+      <ul>
+        {Object.entries(project.wled!.fixtures).map(([id, fixture]) => (
+          <li
+            key={id}
+            onClick={() => {
+              setSelectedWledFixtureId(BigInt(id));
+            }}
+          >
+            {fixture.name}
+          </li>
+        ))}
+        <li>
+          <Button
+            onClick={() => {
+              const id = randomUint64();
+              project.wled!.fixtures[String(id)] = create(
+                WLEDConfig_FixtureSchema,
+                { name: 'New Fixture' },
+              );
+              save('Create new WLED fixture.');
+              setSelectedWledFixtureId(id);
+            }}
+          >
+            + Add New WLED Fixture
+          </Button>
+        </li>
+      </ul>
       {selectedFixture && (
         <EditFixtureDialog
           fixture={selectedFixture}
@@ -407,6 +440,13 @@ function FixtureList({
             deleteFixture(project, selectedFixtureId);
             save(`Delete fixture ${name}.`);
           }}
+        />
+      )}
+      {selectedWledFixtureId && (
+        <EditWledFixtureDialog
+          wledFixtureId={selectedWledFixtureId}
+          onClose={() => setSelectedWledFixtureId(null)}
+          onDelete={() => alert('Not implemented!')}
         />
       )}
       {selectedGroup != null && selectedGroupId != null ? (

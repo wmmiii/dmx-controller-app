@@ -6,6 +6,7 @@ import "proto/color.proto";
 import "proto/effect.proto";
 import "proto/light_track.proto";
 import "proto/output_id.proto";
+import "proto/wled.proto";
 
 // A scene is a part of a live show that composes tiles together to form
 // the final output of the universe.
@@ -42,11 +43,20 @@ message Scene {
       repeated LightTrack light_tracks = 11;
     }
 
+    message WledTile {
+      WLEDOutputId output_id = 9999;
+      string json = 9998;
+      uint32 effect_id = 9997;
+      uint32 palette_id = 9996;
+      float brightness = 9995;
+    }
+
     string name = 1;
     reserved 2; // universe_sequence_id
     oneof description {
       SequenceTile sequence = 13;
       EffectGroupTile effect_group = 14;
+      WledTile wled = 18;
     }
     reserved 3; // active
     string shortcut = 4 [deprecated = true];

@@ -11,6 +11,7 @@ import "proto/output_id.proto";
 import "proto/scene.proto";
 import "proto/show.proto";
 import "proto/universe.proto";
+import "proto/wled.proto";
 
 message Project {
   message Assets {
@@ -55,6 +56,8 @@ message Project {
   BeatMetadata live_beat = 53;
   reserved 54; // last_controller_name
   ControllerMapping controller_mapping = 55;
+
+  WLEDConfig wled = 70;
 
   map<uint32, PhysicalFixture> physical_fixtures = 14 [ deprecated = true ];
   map<uint32, FixtureSequence> fixture_sequences = 41 [ deprecated = true ];
