@@ -65,6 +65,14 @@
   }
 }
 
+.add-tile {
+  max-width: 30em;
+}
+
+.add-tile-description {
+  margin: spacing(2) 0 spacing(1) 0;
+}
+
 .split-pane {
   @include fill;
 }

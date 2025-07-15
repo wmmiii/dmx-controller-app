@@ -164,7 +164,8 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
     if (projectRef.current == null) {
       throw new Error('Tried to update without project loaded!');
     }
-    setProject(create(ProjectSchema, projectRef.current) as Project);
+    console.log('UPDATE');
+    setProject(create(ProjectSchema, Object.assign({}, projectRef.current)));
   }, [projectRef, setProject]);
 
   const save = useCallback(
@@ -199,7 +200,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
         setOperationIndex(operationStack.current.length - 1);
       }
 
-      setProject(create(ProjectSchema, projectRef.current) as Project);
+      setProject(create(ProjectSchema, Object.assign({}, projectRef.current)));
       setLastOperation(changeDescription);
     },
     [projectRef, operationStack, operationIndex, setProject, setOperationIndex],
