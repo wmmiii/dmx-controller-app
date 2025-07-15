@@ -164,7 +164,6 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
     if (projectRef.current == null) {
       throw new Error('Tried to update without project loaded!');
     }
-    console.log('UPDATE');
     setProject(create(ProjectSchema, Object.assign({}, projectRef.current)));
   }, [projectRef, setProject]);
 

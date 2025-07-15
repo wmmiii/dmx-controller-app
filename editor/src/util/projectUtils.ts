@@ -73,5 +73,6 @@ export function tileTileDetails(tile: Scene_Tile) {
 
   return {
     colors: colors,
+    wled: tile.description.case === 'wled',
   };
 }

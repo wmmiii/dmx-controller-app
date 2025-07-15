@@ -79,11 +79,20 @@ export function Tile({
     return undefined;
   }, [project, controllerName]);
 
-  const background = useMemo(() => {
+  const style: React.CSSProperties = useMemo(() => {
+    if (details.wled) {
+      return {
+        backgroundImage: 'url("/static/wled.svg")',
+        backgroundSize: 'cover',
+      };
+    }
+
     if (details.colors.length === 0) {
-      return null;
+      return {};
     } else if (details.colors.length === 1) {
-      return complexColorToHex(details.colors[0], palette);
+      return {
+        background: complexColorToHex(details.colors[0], palette) || undefined,
+      };
     }
 
     let gradient = 'linear-gradient(135deg, ';
@@ -97,7 +106,9 @@ export function Tile({
         gradient += 'transparent';
       }
     }
-    return gradient + ')';
+    return {
+      background: gradient + ')',
+    };
   }, [details, palette]);
 
   const toggle = useCallback(() => {
@@ -144,7 +155,7 @@ export function Tile({
             e.stopPropagation();
           }}
         ></div>
-        <div className={styles.title} style={{ background: background as any }}>
+        <div className={styles.title} style={style}>
           {tile.name}
         </div>
         {priority != 0 && <div className={styles.priority}>{priority}</div>}

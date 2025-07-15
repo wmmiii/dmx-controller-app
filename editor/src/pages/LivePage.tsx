@@ -636,6 +636,14 @@ function createEffectChannel() {
   });
 }
 
+const WLED_CHEATSHEET = `{
+  "fx": 0,      // Effect ID
+  "sx": 127,    // Effect Speed
+  "ix": 127,    // Effect Intensity
+  "pal": 0,     // Color palette ID
+  "rev": false  // Reverse the segment
+}`;
+
 interface WledEditorProps {
   wled: Scene_Tile_WledTile;
 }
@@ -717,6 +725,11 @@ function WledEditor({ wled }: WledEditorProps) {
       >
         {wled.json}
       </textarea>
+      <br />
+      <div className={styles.cheatSheet}>
+        Cheat-sheet:
+        <pre>{WLED_CHEATSHEET}</pre>
+      </div>
     </div>
   );
 }
