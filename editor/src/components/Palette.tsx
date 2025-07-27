@@ -15,6 +15,7 @@ import styles from './Palette.module.scss';
 
 interface PaletteSwatchProps {
   id: string;
+  scene: number;
   palette: ColorPalette;
   active: boolean;
   onClick: () => void;
@@ -24,6 +25,7 @@ interface PaletteSwatchProps {
 
 export function PaletteSwatch({
   id,
+  scene,
   palette,
   active,
   onClick,
@@ -58,6 +60,7 @@ export function PaletteSwatch({
       {editPalette && (
         <EditPaletteDialog
           id={id}
+          scene={scene}
           palette={palette}
           onDelete={onDelete}
           onClose={() => setEditPalette(false)}
@@ -69,6 +72,7 @@ export function PaletteSwatch({
 
 interface EditPaletteDialogProps {
   id: string;
+  scene: number;
   palette: ColorPalette;
   onDelete: () => void;
   onClose: () => void;
@@ -76,6 +80,7 @@ interface EditPaletteDialogProps {
 
 function EditPaletteDialog({
   id,
+  scene,
   palette,
   onDelete,
   onClose,
@@ -98,7 +103,7 @@ function EditPaletteDialog({
   const action = useMemo(
     () =>
       create(ControllerMapping_ColorPaletteSelectionSchema, {
-        scene: 0,
+        scene: scene,
         paletteId: id,
       }),
     [id],

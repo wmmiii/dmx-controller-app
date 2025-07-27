@@ -52,6 +52,7 @@ export function IconButton({
   className,
   onClick,
   variant,
+  disabled,
   title,
   children,
 }: IconButtonProps): JSX.Element {
@@ -65,7 +66,12 @@ export function IconButton({
   }
 
   return (
-    <button title={title} className={classes.join(' ')} onMouseDown={onClick}>
+    <button
+      title={title}
+      className={classes.join(' ')}
+      onMouseDown={onClick}
+      disabled={disabled}
+    >
       {children}
     </button>
   );

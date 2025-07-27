@@ -55,6 +55,7 @@ export function TileGrid({
               <Tile
                 key={x + ' ' + y}
                 id={mapping.id}
+                scene={project.activeScene}
                 tile={mapping.tile!}
                 onDragTile={() => setDraggingTile(mapping)}
                 onDropTile={() => {

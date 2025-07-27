@@ -6,6 +6,7 @@ import {
 } from '@dmx-controller/proto/controller_pb';
 import { type Project } from '@dmx-controller/proto/project_pb';
 import {
+  SceneSchema,
   Scene_TileMapSchema,
   Scene_TileSchema,
   Scene_Tile_EffectGroupTileSchema,
@@ -44,6 +45,7 @@ import { universeToUint8Array } from '../engine/utils';
 import IconBxPlus from '../icons/IconBxPlus';
 import IconBxX from '../icons/IconBxX';
 
+import IconBxsCog from '../icons/IconBxsCog';
 import styles from './LivePage.module.scss';
 
 export function LivePage(): JSX.Element {
@@ -57,8 +59,10 @@ export function LivePage(): JSX.Element {
   const { setRenderUniverse, clearRenderUniverse } = useContext(SerialContext);
 
   const [selected, setSelected] = useState<Scene_TileMap | null>(null);
+  const [editScene, setEditScene] = useState<Scene | null>(null);
 
-  const scene = project?.scenes[0];
+  console.log('active scene', project.activeScene);
+  const scene = project?.scenes[project.activeScene];
 
   useEffect(() => {
     projectRef.current = project;
@@ -96,13 +100,60 @@ export function LivePage(): JSX.Element {
     >
       <div className={styles.wrapper}>
         <div className={styles.header}>
+          <IconButton title="Edit scene" onClick={() => setEditScene(scene)}>
+            <IconBxsCog />
+          </IconButton>
+          <select
+            value={project.activeScene}
+            onChange={(e) => {
+              const v = parseInt(e.target.value);
+              if (v < 0) {
+                project.scenes.push(
+                  create(SceneSchema, {
+                    name: 'New Scene',
+                    tileMap: [],
+                    colorPalettes: scene.colorPalettes,
+                    activeColorPalette: scene.activeColorPalette,
+                    lastActiveColorPalette: scene.activeColorPalette,
+                  }),
+                );
+                project.activeScene = project.scenes.length - 1;
+                save('Add new scene');
+              } else {
+                project.activeScene = v;
+                const scene = project.scenes[v];
+                save(`Switch to scene ${scene.name}`);
+              }
+            }}
+          >
+            {project.scenes.map((s, i) => (
+              <option value={i}>{s.name}</option>
+            ))}
+            <option value={-1}>+ Add new scene</option>
+          </select>
+          {editScene && (
+            <SceneEditor
+              scene={editScene}
+              onDelete={
+                project.scenes.length > 1
+                  ? () => {
+                      project.scenes.splice(project.activeScene, 1);
+                      project.activeScene = 0;
+                      save(`Delete scene ${scene.name}`);
+                      setEditScene(null);
+                    }
+                  : undefined
+              }
+              onClose={() => setEditScene(null)}
+            />
+          )}
           <LiveBeat className={styles.beat} />
         </div>
         <div className={styles.body}>
           <div className={styles.gridWrapper}>
             <TileGrid
               className={styles.sceneEditor}
-              sceneId={0}
+              sceneId={project.activeScene}
               onSelect={setSelected}
               setAddTileIndex={setAddTileIndex}
               maxX={
@@ -122,6 +173,7 @@ export function LivePage(): JSX.Element {
               <PaletteSwatch
                 key={i}
                 id={e[0]}
+                scene={project.activeScene}
                 palette={e[1]}
                 active={scene.activeColorPalette === e[0]}
                 onClick={() => {
@@ -168,7 +220,7 @@ export function LivePage(): JSX.Element {
       </div>
       {addTileIndex != null && (
         <AddNewDialog
-          scene={project.scenes[0]}
+          scene={project.scenes[project.activeScene]}
           x={addTileIndex.x}
           y={addTileIndex.y}
           onSelect={setSelected}
@@ -179,6 +231,36 @@ export function LivePage(): JSX.Element {
         <TileEditor tileMap={selected} onClose={() => setSelected(null)} />
       )}
     </PaletteContext.Provider>
+  );
+}
+
+interface SceneEditorProps {
+  scene: Scene;
+  onDelete?: () => void;
+  onClose: () => void;
+}
+
+function SceneEditor({ scene, onDelete, onClose }: SceneEditorProps) {
+  const { save } = useContext(ProjectContext);
+
+  return (
+    <Modal title={`Edit scene ${scene.name}`} onClose={onClose}>
+      <IconButton
+        title={`Delete scene ${scene.name}`}
+        variant="warning"
+        onClick={onDelete ?? (() => {})}
+        disabled={onDelete == null}
+      >
+        <IconBxX />
+      </IconButton>
+      <TextInput
+        value={scene.name}
+        onChange={(n) => {
+          scene.name = n;
+          save(`Rename scene to ${n}`);
+        }}
+      />
+    </Modal>
   );
 }
 
@@ -199,7 +281,7 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
       ({
         case: 'tileStrength',
         value: create(ControllerMapping_TileStrengthSchema, {
-          scene: 0,
+          scene: project.activeScene,
           tileId: tileMap.id,
         }),
       }) as ControllerMapping_Action['action'],
@@ -363,7 +445,7 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
             <Button
               variant="warning"
               onClick={() => {
-                const tileMap = project.scenes[0].tileMap;
+                const tileMap = project.scenes[project.activeScene].tileMap;
                 const index = tileMap.findIndex((c) => c.tile === tile);
                 if (index > -1) {
                   tileMap.splice(index, 1);
