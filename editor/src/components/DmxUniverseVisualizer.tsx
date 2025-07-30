@@ -1,16 +1,22 @@
 import { create } from '@bufbuild/protobuf';
 import { ColorSchema } from '@dmx-controller/proto/color_pb';
-import { FixtureDefinition_Channel_ColorWheelMapping } from '@dmx-controller/proto/fixture_pb';
 import { useContext, useEffect, useMemo, useState } from 'react';
 
 import { ProjectContext } from '../contexts/ProjectContext';
 import { SerialContext } from '../contexts/SerialContext';
 import { ChannelTypes } from '../engine/channel';
-import { getActiveUniverse } from '../util/projectUtils';
 
+import { DmxFixtureDefinition_Channel_ColorWheelMapping } from '@dmx-controller/proto/dmx_pb';
+import { SerialDmxOutput } from '@dmx-controller/proto/output_pb';
 import styles from './UniverseVisualizer.module.scss';
 
-export function UniverseVisualizer() {
+interface DmxUniverseVisualizerProps {
+  dmxOutput: SerialDmxOutput;
+}
+
+export function DmxUniverseVisualizer({
+  dmxOutput,
+}: DmxUniverseVisualizerProps) {
   const { project } = useContext(ProjectContext);
   const [universe, setUniverse] = useState<Uint8Array>(new Uint8Array(512));
   const { subscribeToUniverseUpdates } = useContext(SerialContext);
@@ -20,14 +26,21 @@ export function UniverseVisualizer() {
   }, [subscribeToUniverseUpdates, setUniverse]);
 
   const fixtureMapping = useMemo(() => {
-    if (getActiveUniverse(project)?.fixtures == null) {
+    if (dmxOutput.fixtures == null) {
       return [];
     }
 
-    return Object.values(getActiveUniverse(project).fixtures)
+    return Object.values(dmxOutput.fixtures)
       .sort((a, b) => a.channelOffset - b.channelOffset)
       .map((f, i) => {
-        const definition = project.fixtureDefinitions[f.fixtureDefinitionId];
+        if (f.channelOffset === -1) {
+          return undefined;
+        }
+
+        const definition =
+          project.fixtureDefinitions?.dmxFixtureDefinitions[
+            f.fixtureDefinitionId
+          ];
         // Can happen if the definition is unset.
         if (definition == null) {
           return undefined;
@@ -74,7 +87,7 @@ export function UniverseVisualizer() {
   }, [project]);
 
   const getValue = (index: number | undefined) => {
-    if (index === undefined) {
+    if (index === undefined || index === -1) {
       return 0;
     } else {
       return universe[index];
@@ -113,7 +126,7 @@ export function UniverseVisualizer() {
         } else if (f.wheelIndex != null) {
           const wheelSlot = getValue(f.wheelIndex);
           const mapping = f.mode.channels[f.wheelIndex - f.offset + 1].mapping
-            .value as FixtureDefinition_Channel_ColorWheelMapping;
+            .value as DmxFixtureDefinition_Channel_ColorWheelMapping;
           const color =
             mapping.colors.find((c) => c.value === wheelSlot)?.color ||
             create(ColorSchema, {});

@@ -5,7 +5,7 @@ package dmx_controller;
 import "proto/color.proto";
 import "proto/effect.proto";
 import "proto/light_track.proto";
-import "proto/output_id.proto";
+import "proto/output.proto";
 
 // A scene is a part of a live show that composes tiles together to form
 // the final output of the universe.
@@ -18,19 +18,16 @@ message Scene {
       message EffectChannel {
         Effect effect = 1;
 
-        OutputId output_id = 2;
+        OutputTarget output_target = 2;
       }
 
       repeated EffectChannel channels = 5;
       
-      Effect effect = 1 [deprecated = true];
+      reserved 1; // Effect effect = 1 [deprecated = true];
 
-      oneof output {
-        uint32 physical_fixture_id = 2 [deprecated = true];
-        uint32 physical_fixture_group_id = 3 [deprecated = true];
-      }
-
-      OutputId output_id = 4 [deprecated = true];
+      reserved 2; // uint32 physical_fixture_id = 2 [deprecated = true];
+      reserved 3; // uint32 physical_fixture_group_id = 3 [deprecated = true];
+      reserved 4; // OutputId output_id = 4 [deprecated = true];
     }
 
     message SequenceTile {
@@ -48,10 +45,6 @@ message Scene {
       SequenceTile sequence = 13;
       EffectGroupTile effect_group = 14;
     }
-    reserved 3; // active
-    string shortcut = 4 [deprecated = true];
-    // Maps from controller ID to channel.
-    map<string, string> controller_channel = 16 [deprecated = true];
     bool one_shot = 15;
 
     oneof duration {
@@ -74,6 +67,10 @@ message Scene {
       int64 start_fade_out_ms = 12;
       float absolute_strength = 17;
     }
+
+    reserved 3; // active
+    reserved 4; // string shortcut = 4 [deprecated = true];
+    reserved 16; // map<string, string> controller_channel = 16 [deprecated = true];
   }
 
   message ComponentRow {
@@ -93,10 +90,11 @@ message Scene {
 
     int32 priority = 4;
 
-    string shortcut = 5 [deprecated = true];
+    reserved 5; // string shortcut = 5 [deprecated = true];
   }
 
   string name = 1;
+  repeated TileMap tileMap = 13;
   map<string, ColorPalette> color_palettes = 7;
   string active_color_palette = 8;
   string last_active_color_palette = 9;
@@ -104,10 +102,9 @@ message Scene {
   uint64 color_palette_start_transition = 6;
   reserved 10;
 
-  repeated Tile components = 11 [deprecated = true];
-  repeated ComponentRow rows = 12 [deprecated = true];
-  repeated TileMap tileMap = 13;
-  repeated ColorPalette deprecated_color_palettes = 2 [deprecated = true];
-  uint32 deprecated_active_color_palette = 3 [deprecated = true];
-  uint32 deprecated_last_active_color_palette = 4 [deprecated = true];
+  reserved 11; // repeated Tile components = 11 [deprecated = true];
+  reserved 12; // repeated ComponentRow rows = 12 [deprecated = true];
+  reserved 2; // repeated ColorPalette deprecated_color_palettes = 2 [deprecated = true];
+  reserved 3; // uint32 deprecated_active_color_palette = 3 [deprecated = true];
+  reserved 4; // uint32 deprecated_last_active_color_palette = 4 [deprecated = true];
 }

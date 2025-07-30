@@ -13,31 +13,24 @@ import {
   type Effect_RampEffect,
 } from '@dmx-controller/proto/effect_pb';
 import { type LightLayer } from '@dmx-controller/proto/light_layer_pb';
-import {
-  OutputIdSchema,
-  OutputId_FixtureMappingSchema,
-  type OutputId,
-} from '@dmx-controller/proto/output_id_pb';
 import { type Project } from '@dmx-controller/proto/project_pb';
 import { type Scene_Tile_SequenceTile } from '@dmx-controller/proto/scene_pb';
 
 import { SEQUENCE_BEAT_RESOLUTION } from '../components/UniverseSequenceEditor';
 import { hsvToColor, interpolatePalettes } from '../util/colorUtil';
-import { getActiveUniverse } from '../util/projectUtils';
 import { getTileDurationMs } from '../util/tile';
 
-import { applyState } from './effect';
 import {
-  DmxUniverse,
-  WritableDevice,
-  getWritableDevice,
-  mapDegrees,
-} from './fixture';
+  OutputTarget,
+  OutputTargetSchema,
+} from '@dmx-controller/proto/output_pb';
+import { RenderContext, WritableOutput } from './context';
+import { applyState } from './effect';
+import { WritableDeviceCache } from './fixtures/writableDevice';
 import { getAllFixtures } from './group';
 import { rampEffect } from './rampEffect';
 import { randomEffect } from './randomEffect';
 import { strobeEffect } from './strobeEffect';
-import { interpolateUniverses } from './utils';
 
 export const DEFAULT_COLOR_PALETTE = create(ColorPaletteSchema, {
   name: 'Unset palette',
@@ -64,27 +57,15 @@ export const DEFAULT_COLOR_PALETTE = create(ColorPaletteSchema, {
   },
 }) as ColorPalette;
 
-export interface RenderContext {
-  readonly globalT: number;
-  readonly t: number;
-  readonly outputId: OutputId;
-  readonly output: WritableDevice;
-  readonly project: Project;
-  readonly colorPalette: ColorPalette;
-  readonly universe: DmxUniverse;
-  readonly nonInterpolatedIndices: number[];
-}
-
 export function renderShowToUniverse(
   t: number,
   frame: number,
   project: Project,
-): DmxUniverse {
+  output: WritableOutput,
+) {
   t += project.timingOffsetMs;
 
-  const universe = new Array(512).fill(0);
-
-  const nonInterpolatedIndices = applyDefaults(project, universe);
+  const writableDeviceCache = new WritableDeviceCache(project, output.outputId);
 
   const show = project.shows[project.selectedShow || 0];
 
@@ -101,24 +82,24 @@ export function renderShowToUniverse(
         'Tried to render a frame for a show with an audio file without beat metadata!',
       );
     }
-    const context: Omit<Omit<RenderContext, 'output'>, 'outputId'> = {
+    const context: Omit<Omit<RenderContext, 'target'>, 'writableDevice'> = {
       globalT: t,
       t: t,
       project: project,
+      output: output,
       colorPalette: show.colorPalette || DEFAULT_COLOR_PALETTE,
-      universe: universe,
-      nonInterpolatedIndices: nonInterpolatedIndices,
+      writableDeviceCache: writableDeviceCache,
     };
 
     for (const track of show.lightTracks) {
-      if (track.outputId == null) {
+      if (track.outputTarget == null) {
         continue;
       }
-      const output = getWritableDevice(project, track.outputId);
+      const writableDevice = writableDeviceCache.get(track.outputTarget);
       if (output) {
         const trackContext = Object.assign({}, context, {
-          outputId: track.outputId,
-          output,
+          target: track.outputTarget,
+          writableDevice,
         });
         renderLayersToUniverse(
           t,
@@ -130,8 +111,6 @@ export function renderShowToUniverse(
       }
     }
   }
-
-  return universe;
 }
 
 export function renderSceneToUniverse(
@@ -139,17 +118,16 @@ export function renderSceneToUniverse(
   beatMetadata: BeatMetadata,
   frame: number,
   project: Project,
-): DmxUniverse {
+  output: WritableOutput,
+) {
   const absoluteT = t + project.timingOffsetMs;
   const beatT = t + project.timingOffsetMs - Number(beatMetadata.offsetMs);
 
-  const universe = new Array(512).fill(0);
-
-  const nonInterpolatedIndices = applyDefaults(project, universe);
+  const writableDeviceCache = new WritableDeviceCache(project, output.outputId);
 
   const scene = project.scenes[project.activeScene];
   if (!scene) {
-    return universe;
+    return;
   }
 
   const colorPaletteT = Math.min(
@@ -213,13 +191,13 @@ export function renderSceneToUniverse(
       amount = tile.transition.value;
     }
 
-    const before = [...universe];
-    const after = [...universe];
+    const before = output.clone();
+    const after = output.clone();
 
     switch (tile.description.case) {
       case 'effectGroup':
         for (const channel of tile.description.value.channels) {
-          if (channel.outputId == null) {
+          if (channel.outputTarget == null) {
             continue;
           }
 
@@ -258,18 +236,17 @@ export function renderSceneToUniverse(
             }
           }
 
-          const output = getWritableDevice(project, channel.outputId);
-          if (output != null) {
+          const writableDevice = writableDeviceCache.get(channel.outputTarget);
+          if (writableDevice != null) {
             applyEffect(
               {
                 globalT: t,
                 t: effectT,
-                outputId: channel.outputId,
-                output: output,
                 project: project,
+                output: after,
+                target: channel.outputTarget,
                 colorPalette: colorPalette,
-                universe: after,
-                nonInterpolatedIndices: nonInterpolatedIndices,
+                writableDeviceCache: writableDeviceCache,
               },
               beatMetadata,
               frame,
@@ -323,7 +300,6 @@ export function renderSceneToUniverse(
         }
 
         renderUniverseSequence(
-          t,
           sequenceT,
           frame,
           sequence,
@@ -334,84 +310,69 @@ export function renderSceneToUniverse(
         break;
 
       default:
-        console.error(`Unrecognized description type ${tile.description}.`);
-        return universe;
+        throw Error(`Unrecognized description type ${tile.description}.`);
     }
 
-    interpolateUniverses(
-      universe,
-      amount,
-      before,
-      after,
-      nonInterpolatedIndices,
-    );
+    output.interpolate(before, after, amount);
   }
-
-  return universe;
 }
 
-export function renderGroupDebugToUniverse(project: Project, groupId: bigint) {
-  const universe = new Array(512).fill(0);
-
-  const fixtures =
-    project.groups[groupId.toString()].fixtures[
-      project.activeUniverse.toString()
-    ].fixtures;
+export function renderGroupDebugToUniverse(
+  project: Project,
+  groupId: bigint,
+  output: WritableOutput,
+) {
+  const deviceCache = new WritableDeviceCache(project, output.outputId);
+  const fixtures = getAllFixtures(project, groupId);
   for (let index = 0; index < fixtures.length; index++) {
-    const fixtureMapping = create(OutputId_FixtureMappingSchema, {
-      fixtures: {
-        [project.activeUniverse.toString()]: fixtures[index],
-      },
-    });
-    const output = getWritableDevice(
-      project,
-      create(OutputIdSchema, {
+    const writableDevice = deviceCache.get(
+      create(OutputTargetSchema, {
         output: {
           case: 'fixtures',
-          value: fixtureMapping,
+          value: {
+            fixtureIds: [fixtures[index]],
+          },
         },
       }),
     );
 
     const color = hsvToColor(index / fixtures.length, 1, 1);
 
-    output?.setAmount(universe, 'dimmer', 1);
-    output?.setColor(universe, color.red, color.green, color.blue);
+    writableDevice?.setAmount(output, 'dimmer', 1);
+    writableDevice?.setColor(output, color.red, color.green, color.blue);
   }
-
-  return universe;
 }
 
 function renderUniverseSequence(
-  globalT: number,
   t: number,
   frame: number,
   universeSequence: Scene_Tile_SequenceTile,
   project: Project,
   colorPalette: ColorPalette,
-  universe: DmxUniverse,
+  output: WritableOutput,
 ) {
   if (universeSequence) {
-    const nonInterpolatedIndices = applyDefaults(project, [...universe]);
-
-    const context: Omit<Omit<RenderContext, 'output'>, 'outputId'> = {
-      globalT: globalT,
+    const writableDeviceCache = new WritableDeviceCache(
+      project,
+      output.outputId,
+    );
+    const context: Omit<Omit<RenderContext, 'target'>, 'writableDevice'> = {
+      globalT: t,
       t: t,
       project: project,
+      output: output,
       colorPalette: colorPalette,
-      universe: universe,
-      nonInterpolatedIndices: nonInterpolatedIndices,
+      writableDeviceCache: writableDeviceCache,
     };
 
     for (const track of universeSequence.lightTracks) {
-      if (track.outputId == null) {
+      if (track.outputTarget == null) {
         continue;
       }
-      const output = getWritableDevice(project, track.outputId);
-      if (output != null) {
+      const writableDevice = writableDeviceCache.get(track.outputTarget);
+      if (writableDevice != null) {
         const trackContext = Object.assign({}, context, {
-          outputId: track.outputId,
-          output,
+          target: track.outputTarget,
         });
         renderLayersToUniverse(
           t,
@@ -443,39 +404,6 @@ function renderLayersToUniverse(
   }
 }
 
-/** Applies default values to all indices and returns an array of non-interpolated channels; */
-function applyDefaults(project: Project, universe: DmxUniverse): number[] {
-  const nonInterpolatedIndices: number[] = [];
-  for (const fixture of Object.values(getActiveUniverse(project).fixtures)) {
-    const fixtureDefinition =
-      project.fixtureDefinitions[fixture.fixtureDefinitionId];
-    // Can happen if fixture has not yet set a definition.
-    if (!fixtureDefinition) {
-      continue;
-    }
-
-    const fixtureMode = fixtureDefinition.modes[fixture.fixtureMode];
-
-    if (!fixtureMode) {
-      continue;
-    }
-
-    for (const channel of Object.entries(fixtureMode.channels)) {
-      const index = parseInt(channel[0]) - 1 + fixture.channelOffset;
-      let value = channel[1].defaultValue;
-      if (channel[1].mapping.case === 'angleMapping') {
-        const mapping = channel[1].mapping.value;
-        value += fixture.channelOffsets[channel[1].type] || 0;
-        value = mapDegrees(value, mapping.minDegrees, mapping.maxDegrees);
-      } else if (channel[1].mapping.case === 'colorWheelMapping') {
-        nonInterpolatedIndices.push(index);
-      }
-      universe[index] = value;
-    }
-  }
-  return nonInterpolatedIndices;
-}
-
 function applyEffect(
   context: RenderContext,
   beat: BeatMetadata,
@@ -492,11 +420,11 @@ function applyEffect(
   } else if (effect.effect.case === 'rampEffect') {
     const ramp = effect.effect.value;
 
-    if (ramp.phase != 0 && context.outputId.output.case === 'group') {
+    if (ramp.phase != 0 && context.target.output.case === 'group') {
       applyToEachFixture(
         context,
-        context.outputId.output.value,
-        (i, total, outputId, output) => {
+        context.target.output.value,
+        (i, total, target) => {
           const amount = ramp.phase / total;
           const effectT = calculateEffectT(
             context,
@@ -505,11 +433,7 @@ function applyEffect(
             ramp,
             amount * i,
           );
-          rampEffect(
-            Object.assign({}, context, { output, outputId }),
-            ramp,
-            effectT,
-          );
+          rampEffect(Object.assign({}, context, { target }), ramp, effectT);
         },
       );
     } else {
@@ -519,19 +443,14 @@ function applyEffect(
   } else if (effect.effect.case === 'randomEffect') {
     if (
       effect.effect.value.treatFixturesIndividually &&
-      context.outputId.output.case === 'group'
+      context.target.output.case === 'group'
     ) {
       const e = effect.effect.value;
       applyToEachFixture(
         context,
-        context.outputId.output.value,
-        (i, _, outputId, output) => {
-          randomEffect(
-            Object.assign({}, context, { output, outputId }),
-            e,
-            frame,
-            i,
-          );
+        context.target.output.value,
+        (i, _, target) => {
+          randomEffect(Object.assign({}, context, { target }), e, frame, i);
         },
       );
     } else {
@@ -589,29 +508,19 @@ function calculateEffectT(
 function applyToEachFixture(
   context: RenderContext,
   groupId: bigint,
-  action: (
-    i: number,
-    total: number,
-    outputId: OutputId,
-    device: WritableDevice,
-  ) => void,
+  action: (i: number, total: number, target: OutputTarget) => void,
 ) {
   const fixtures = getAllFixtures(context.project, groupId);
   for (let i = 0; i < fixtures.length; ++i) {
-    const fixtureMapping: { [key: string]: bigint } = {};
-    fixtureMapping[context.project.activeUniverse.toString()] = fixtures[i];
-    const outputId = create(OutputIdSchema, {
+    const target = create(OutputTargetSchema, {
       output: {
         case: 'fixtures',
         value: {
-          fixtures: fixtureMapping,
+          fixtureIds: [fixtures[i]],
         },
       },
     });
 
-    const device = getWritableDevice(context.project, outputId);
-    if (device) {
-      action(i, fixtures.length, outputId, device);
-    }
+    action(i, fixtures.length, target);
   }
 }

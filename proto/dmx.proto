@@ -4,7 +4,7 @@ package dmx_controller;
 
 import "proto/color.proto";
 
-message FixtureDefinition {
+message DmxFixtureDefinition {
   message StrobeMapping {
     int32 no_strobe = 1;
     int32 slow_strobe = 2;
@@ -61,11 +61,11 @@ message FixtureDefinition {
       ColorWheelMapping color_wheel_mapping = 10;
     }
 
-    uint32 deprecated_min_value = 6 [ deprecated = true ];
-    uint32 deprecated_max_value = 7 [ deprecated = true ];
-    int32 deprecated_min_degrees = 2 [ deprecated = true ];
-    int32 deprecated_max_degrees = 3 [ deprecated = true ];
-    StrobeMapping deprecated_strobe = 5 [ deprecated = true ];
+    reserved 6; // uint32 deprecated_min_value = 6 [ deprecated = true ];
+    reserved 7; // uint32 deprecated_max_value = 7 [ deprecated = true ];
+    reserved 2; // int32 deprecated_min_degrees = 2 [ deprecated = true ];
+    reserved 3; // int32 deprecated_max_degrees = 3 [ deprecated = true ];
+    reserved 5; // StrobeMapping deprecated_strobe = 5 [ deprecated = true ];
   }
 
   string global_id = 5;
@@ -77,7 +77,7 @@ message FixtureDefinition {
   map<uint32, Channel> channels = 3 [deprecated = true];
 }
 
-message PhysicalFixture {
+message PhysicalDmxFixture {
   string name = 1;
   string fixture_definition_id = 5;
   string fixture_mode = 6;
@@ -85,18 +85,6 @@ message PhysicalFixture {
 
   map<string, double> channel_offsets = 7;
 
-  uint32 deprecated_uint32_fixture_definition_id = 2 [ deprecated = true ];
-  uint64 deprecated_uint64_fixture_definition_id = 4 [deprecated = true];
-}
-
-message PhysicalFixtureGroup {
-  message FixtureList { repeated uint64 fixtures = 1; }
-
-  string name = 1;
-
-  map<uint64, FixtureList> fixtures = 4;
-  repeated uint64 groups = 5;
-
-  repeated uint32 physical_fixture_ids = 2 [ deprecated = true ];
-  repeated uint32 physical_fixture_group_ids = 3 [ deprecated = true ];
+  reserved 2; // uint32 deprecated_uint32_fixture_definition_id = 2 [ deprecated = true ];
+  reserved 4; // uint64 deprecated_uint64_fixture_definition_id = 4 [deprecated = true];
 }

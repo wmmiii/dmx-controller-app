@@ -2,10 +2,10 @@ import { Effect_RandomEffect } from '@dmx-controller/proto/effect_pb';
 
 import { EVEN_SUM, LARGE_PRIME, ODD_SUM, RANDOM_NUMBERS } from '../util/random';
 
+import { RenderContext } from './context';
 import { applyState } from './effect';
 import { rampEffect } from './rampEffect';
 import { strobeEffect } from './strobeEffect';
-import { RenderContext } from './universe';
 
 export function randomEffect(
   context: RenderContext,

@@ -3,15 +3,12 @@ import {
   PropsWithChildren,
   createContext,
   useCallback,
-  useContext,
   useEffect,
   useRef,
   useState,
 } from 'react';
 
 import { Modal } from '../components/Modal';
-
-import { SerialContext } from './SerialContext';
 
 type ShortcutBundle = Array<{
   shortcut: {
@@ -27,7 +24,6 @@ export const ShortcutContext = createContext({
 });
 
 export function ShortcutProvider({ children }: PropsWithChildren): JSX.Element {
-  const serialContext = useContext(SerialContext);
   const shortcutBundles = useRef<Array<ShortcutBundle>>([[]]);
   const [showHelp, setShowHelp] = useState(false);
 
@@ -68,23 +64,13 @@ export function ShortcutProvider({ children }: PropsWithChildren): JSX.Element {
   useEffect(() => {
     const defaultBundle: ShortcutBundle = [
       {
-        shortcut: { key: 'KeyB' },
-        action: () => serialContext.setBlackout(!serialContext.blackout),
-        description: 'Toggle output blackout.',
-      },
-      {
-        shortcut: { key: 'KeyC' },
-        action: () => serialContext.connect(),
-        description: 'Connect to serial output.',
-      },
-      {
         shortcut: { key: 'Slash', modifiers: ['ctrl'] },
         action: () => setShowHelp(!showHelp),
         description: 'Shows the Keyboard Shortcuts dialog.',
       },
     ];
     shortcutBundles.current[0] = defaultBundle;
-  }, [shortcutBundles.current, serialContext.blackout, showHelp]);
+  }, [shortcutBundles.current, showHelp]);
 
   return (
     <ShortcutContext.Provider

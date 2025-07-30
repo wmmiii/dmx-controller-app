@@ -1,7 +1,7 @@
 import { Effect_StrobeEffect } from '@dmx-controller/proto/effect_pb';
 
+import { RenderContext } from './context';
 import { applyState } from './effect';
-import { RenderContext } from './universe';
 
 export function strobeEffect(
   context: RenderContext,

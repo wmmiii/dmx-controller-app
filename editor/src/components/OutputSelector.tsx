@@ -1,21 +1,22 @@
-import { create } from '@bufbuild/protobuf';
-import {
-  OutputIdSchema,
-  OutputId_FixtureMappingSchema,
-  type OutputId,
-} from '@dmx-controller/proto/output_id_pb';
+import { clone, create } from '@bufbuild/protobuf';
 import { type Project } from '@dmx-controller/proto/project_pb';
 import { JSX, useContext, useMemo } from 'react';
 
 import { ProjectContext } from '../contexts/ProjectContext';
-import { GROUP_ALL_ID } from '../engine/fixture';
-import { getActiveUniverse } from '../util/projectUtils';
+import { getActivePatch } from '../util/projectUtils';
 
+import {
+  OutputTarget,
+  OutputTarget_FixtureMapping,
+  OutputTargetSchema,
+  QualifiedFixtureIdSchema,
+} from '@dmx-controller/proto/output_pb';
+import { GROUP_ALL_ID } from '../engine/fixtures/writableDevice';
 import styles from './OutputSelector.module.scss';
 
 interface OutputSelectorProps {
-  value: OutputId | undefined;
-  setValue: (value: OutputId | undefined) => void;
+  value: OutputTarget | undefined;
+  setValue: (value: OutputTarget | undefined) => void;
 }
 
 export function OutputSelector({
@@ -25,94 +26,119 @@ export function OutputSelector({
   const { project } = useContext(ProjectContext);
 
   interface InternalOutput {
-    type: 'fixture' | 'group';
-    id: bigint;
+    target: OutputTarget;
     name: string;
   }
 
-  const outputs: InternalOutput[] = useMemo(() => {
-    if (getActiveUniverse(project) == null) {
+  const allTargets: InternalOutput[] = useMemo(() => {
+    if (getActivePatch(project) == null) {
       return [];
     }
 
-    const outputs: InternalOutput[] = [];
-    outputs.push({
-      type: 'group',
-      id: GROUP_ALL_ID,
+    const targets: InternalOutput[] = [];
+    targets.push({
+      target: create(OutputTargetSchema, {
+        output: {
+          case: 'group',
+          value: GROUP_ALL_ID,
+        },
+      }),
       name: '⧉ All Fixtures',
     });
-    for (const [id, group] of Object.entries(project.groups)) {
-      outputs.push({
-        type: 'group',
-        id: BigInt(id),
+    for (const [groupId, group] of Object.entries(project.groups)) {
+      targets.push({
+        target: create(OutputTargetSchema, {
+          output: {
+            case: 'group',
+            value: BigInt(groupId),
+          },
+        }),
         name: '⧉ ' + group.name,
       });
     }
-    for (const [id, fixture] of Object.entries(
-      getActiveUniverse(project).fixtures,
+
+    for (const [outputId, output] of Object.entries(
+      getActivePatch(project).outputs,
     )) {
-      outputs.push({
-        type: 'fixture',
-        id: BigInt(id),
-        name: '⧇ ' + fixture.name,
-      });
+      switch (output.output.case) {
+        case 'SerialDmxOutput':
+          for (const [dmxFixtureId, dmxFixture] of Object.entries(
+            output.output.value.fixtures,
+          )) {
+            targets.push({
+              target: create(OutputTargetSchema, {
+                output: {
+                  case: 'fixtures',
+                  value: {
+                    fixtureIds: [
+                      {
+                        patch: project.activePatch,
+                        output: BigInt(outputId),
+                        fixture: BigInt(dmxFixtureId),
+                      },
+                    ],
+                  },
+                },
+              }),
+              name: '⧇ ' + dmxFixture.name,
+            });
+          }
+      }
     }
-    return outputs;
+    return targets;
   }, [project]);
 
-  const internalValue: InternalOutput | undefined = useMemo(() => {
+  const internalIndex: number = useMemo(() => {
     if (value == null) {
-      return undefined;
+      return -1;
     }
-    switch (value.output.case) {
-      case 'fixtures':
-        const fixtureId =
-          value.output.value.fixtures[project.activeUniverse.toString()];
-        if (fixtureId == null) {
-          return undefined;
-        }
-        return {
-          type: 'fixture',
-          id: fixtureId,
-          name: project.universes[project.activeUniverse.toString()].fixtures[
-            fixtureId.toString()
-          ].name,
-        };
-      case 'group':
-        let name: string;
-        if (value.output.value === GROUP_ALL_ID) {
-          name = 'All Fixtures';
-        } else {
-          name = project.groups[value.output.value.toString()].name;
-        }
-        return {
-          type: 'group',
-          id: value.output.value,
-          name: name,
-        };
-      default:
-        return undefined;
-    }
-  }, [value]);
+    return allTargets.findIndex((t) => {
+      if (t.target.output.case !== value.output.case) {
+        return false;
+      }
+
+      switch (t.target.output.case) {
+        case 'fixtures':
+          const fixtures = value.output.value as OutputTarget_FixtureMapping;
+          const fixtureId = t.target.output.value.fixtureIds[0];
+          return (
+            fixtures.fixtureIds.find((i) => {
+              return (
+                fixtureId.patch === i.patch &&
+                fixtureId.output === i.output &&
+                fixtureId.fixture === i.fixture
+              );
+            }) != null
+          );
+        case 'group':
+          return t.target.output.value === (value.output.value as bigint);
+        default:
+          throw Error(
+            'Unknown target output type in OutputSelector while calculating all targets!',
+          );
+      }
+    });
+  }, [value, allTargets]);
 
   const classes = [];
-  if (internalValue === undefined) {
+  if (internalIndex === -1) {
     classes.push(styles.warning);
   }
 
   return (
     <select
       className={classes.join(' ')}
-      value={String(internalValue?.id) + ' ' + internalValue?.type}
+      value={internalIndex}
       onChange={(e) => {
-        const newInput = e.target.value;
+        const newIndex = parseInt(e.target.value);
 
         // Handle case where output is unset.
-        if (newInput === ' ') {
+        if (newIndex === -1) {
           if (value?.output.case === 'fixtures') {
-            delete value.output.value.fixtures[
-              project.activeUniverse.toString()
-            ];
+            value.output.value.fixtureIds =
+              value.output.value.fixtureIds.filter(
+                (id) => id.patch !== project.activePatch,
+              );
             setValue(value);
           } else {
             setValue(undefined);
@@ -120,33 +146,47 @@ export function OutputSelector({
         }
 
         // Set new output value.
-        const [idString, typeString] = newInput.split(' ');
-        const id = BigInt(idString);
-        const newValue = create(OutputIdSchema, value);
-        if (typeString === 'fixture') {
-          if (newValue.output.case === 'fixtures') {
-            newValue.output.value.fixtures[project.activeUniverse.toString()] =
-              id;
-          } else {
-            const fixtures = create(OutputId_FixtureMappingSchema, {});
-            fixtures.fixtures[project.activeUniverse.toString()] = id;
-            newValue.output = {
-              case: 'fixtures',
-              value: fixtures,
-            };
-          }
-        } else if (typeString === 'group') {
-          newValue.output = {
-            case: 'group',
-            value: id,
-          };
+        const newTarget = allTargets[newIndex];
+        let newValue: OutputTarget;
+        switch (newTarget.target.output.case) {
+          case 'fixtures':
+            const newFixtureId = clone(
+              QualifiedFixtureIdSchema,
+              newTarget.target.output.value.fixtureIds[0],
+            );
+            if (value != null && value.output.case === 'fixtures') {
+              value.output.value.fixtureIds.push(newFixtureId);
+              newValue = value;
+            } else {
+              newValue = create(OutputTargetSchema, {
+                output: {
+                  case: 'fixtures',
+                  value: {
+                    fixtureIds: [newFixtureId],
+                  },
+                },
+              });
+            }
+            break;
+          case 'group':
+            newValue = create(OutputTargetSchema, {
+              output: {
+                case: 'group',
+                value: newTarget.target.output.value,
+              },
+            });
+            break;
+          default:
+            throw Error(
+              'Unknown target output type in OutputSelector while setting new target!',
+            );
         }
         setValue(newValue);
       }}
     >
-      <option value={' '}>&lt;Unset&gt;</option>
-      {outputs.map((d, i) => (
-        <option key={i} value={d.id + ' ' + d.type}>
+      <option value={-1}>&lt;Unset&gt;</option>
+      {allTargets.map((d, i) => (
+        <option key={i} value={i}>
           {d.name}
         </option>
       ))}
@@ -154,29 +194,41 @@ export function OutputSelector({
   );
 }
 
-export function getOutputName(
+export function getOutputTargetName(
   project: Project,
-  outputId: OutputId | undefined,
+  target: OutputTarget | undefined,
 ) {
-  if (outputId == null) {
+  if (target == null) {
     return '<Unset>';
   }
-  const universeId = project.activeUniverse.toString();
-  switch (outputId.output.case) {
+
+  switch (target.output.case) {
     case 'fixtures':
-      const fixtureId = outputId.output.value.fixtures[universeId];
+      const fixtureId = target.output.value.fixtureIds.find(
+        (id) => id.patch === project.activePatch,
+      );
       if (fixtureId == null) {
         return '<Unset>';
       } else {
-        return (
-          '⧇ ' + getActiveUniverse(project).fixtures[fixtureId.toString()].name
-        );
+        const output =
+          getActivePatch(project).outputs[fixtureId.output.toString()].output;
+        let name: string;
+        switch (output.case) {
+          case 'SerialDmxOutput':
+            name = output.value.fixtures[fixtureId.fixture.toString()].name;
+            break;
+          default:
+            throw Error(
+              'Unknown output type in getOutputTargetName! ' + output.case,
+            );
+        }
+        return `⧇ ${name}`;
       }
     case 'group':
-      if (outputId.output.value === GROUP_ALL_ID) {
+      if (target.output.value === GROUP_ALL_ID) {
         return '⧉ All Fixtures';
       }
-      return '⧇ ' + project.groups[outputId.output.value.toString()].name;
+      return '⧇ ' + project.groups[target.output.value.toString()].name;
     default:
       return '<Unset>';
   }

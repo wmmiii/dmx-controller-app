@@ -1,0 +1,39 @@
+@import '../vars';
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.tabs {
+  display: flex;
+  flex-direction: row;
+  flex-shrink: 0;
+  min-height: 0;
+  padding: spacing(1) spacing(1) 0 spacing(1);
+  border-bottom: 1px solid $col-border;
+}
+
+.tab {
+  border-top-left-radius: $dim-border-radius;
+  border-top-right-radius: $dim-border-radius;
+  border: 1px solid $col-border-lower;
+  border-bottom-color: transparent;
+  cursor: pointer;
+  padding: spacing(1);
+  margin-bottom: -1px;
+
+  &:hover {
+    border-color: $col-interactive-hover;
+  }
+}
+
+.selected {
+  border-color: $col-border;
+  border-bottom-color: $col-bg !important;
+}
+
+.contents {
+  flex: 1;
+  position: relative;
+}

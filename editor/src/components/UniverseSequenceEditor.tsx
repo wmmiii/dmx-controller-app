@@ -92,16 +92,7 @@ export function UniverseSequenceEditor({
         leftOptions={<></>}
         lightTracks={sequence.lightTracks}
         addLayer={() => {
-          sequence?.lightTracks.push(
-            create(LightTrackSchema, {
-              outputId: {
-                output: {
-                  case: undefined,
-                  value: undefined,
-                },
-              },
-            }),
-          );
+          sequence?.lightTracks.push(create(LightTrackSchema, {}));
           save(`Add new light track to sequence ${sequence.name}.`);
         }}
         audioToTrack={wsMsToSceneMs}

@@ -5,41 +5,29 @@ package dmx_controller;
 import "proto/audio.proto";
 import "proto/beat.proto";
 import "proto/controller.proto";
-import "proto/fixture.proto";
-import "proto/fixture_sequence.proto";
-import "proto/output_id.proto";
+import "proto/fixture_definitions.proto";
+import "proto/output.proto";
 import "proto/scene.proto";
 import "proto/show.proto";
-import "proto/universe.proto";
 
 message Project {
   message Assets {
     map<uint32, AudioFile> audio_files = 2;
 
-    repeated AudioFile deprecated_audio_files = 1 [ deprecated = true ];
-  }
-
-  message DefaultChannelValues {
-    string name = 1;
-    oneof output {
-      uint32 physical_fixture_id = 2;
-      uint32 physical_fixture_group_id = 3;
-    }
-    OutputId output_id = 5;
-    map<uint32, uint32> channels = 4;
+    reserved 1; // repeated AudioFile deprecated_audio_files = 1 [ deprecated = true ];
   }
 
   string name = 1;
   uint32 version = 2;
   reserved 3 to 10;
 
-  // Universe descriptions
+  // Path descriptions
   uint32 update_frequency_ms = 11;
   int32 timing_offset_ms = 12;
-  map<string, FixtureDefinition> fixture_definitions = 22;
-  map<uint64, Universe> universes = 17;
-  uint64 active_universe = 18;
-  map<uint64, PhysicalFixtureGroup> groups = 19;
+  uint64 active_patch = 18;
+  map<uint64, Patch> patches = 40;
+  FixtureDefinitions fixture_definitions = 43;
+  map<uint64, TargetGroup> groups = 19;
 
   Assets assets = 21;
 
@@ -56,13 +44,22 @@ message Project {
   reserved 54; // last_controller_name
   ControllerMapping controller_mapping = 55;
 
-  map<uint32, PhysicalFixture> physical_fixtures = 14 [ deprecated = true ];
-  map<uint32, FixtureSequence> fixture_sequences = 41 [ deprecated = true ];
-  repeated DefaultChannelValues default_channel_values = 16
-      [ deprecated = true ];
-  map<uint32, FixtureDefinition> deprecated_uint32_fixture_definitions = 13
-      [ deprecated = true ];
-  map<uint32, PhysicalFixtureGroup> physical_fixture_groups = 15
-      [ deprecated = true ];
-  map<uint64, FixtureDefinition> deprecated_uint64_fixture_definitions = 20;
+  reserved 14; // map<uint32, PhysicalDmxFixture> physical_fixtures = 14 [ deprecated = true ];
+  reserved 41; // map<uint32, FixtureSequence> fixture_sequences = 41 [ deprecated = true ];
+  reserved 16; // repeated DefaultChannelValues default_channel_values = 16 [ deprecated = true ];
+  reserved 13; // map<uint32, DmxFixtureDefinition> deprecated_uint32_fixture_definitions = 13 [ deprecated = true ];
+  reserved 15; // map<uint32, PhysicalFixtureGroup> physical_fixture_groups = 15 [ deprecated = true ];
+  reserved 20; // map<uint64, DmxFixtureDefinition> deprecated_uint64_fixture_definitions = 20;
+  reserved 17; // map<uint64, Universe> universes = 17 [deprecated = true];
+  reserved 22; //map<string, DmxFixtureDefinition> fixture_definitions = 22;
+
+  // message DefaultChannelValues {
+  //   string name = 1;
+  //   oneof output {
+  //     uint32 physical_fixture_id = 2;
+  //     uint32 physical_fixture_group_id = 3;
+  //   }
+  //   OutputTarget output_target = 5;
+  //   map<uint32, uint32> channels = 4;
+  // }
 }

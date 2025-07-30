@@ -36,7 +36,7 @@ interface AudioFileListProps {
 function AudioFileList({
   selectAudioFile,
 }: AudioFileListProps): JSX.Element | null {
-  const { project, saveAssets } = useContext(ProjectContext);
+  const { project, update, saveAssets } = useContext(ProjectContext);
   const [highlightDrop, setHighlightDrop] = useState(false);
 
   const classes = [styles.audioFileList];
@@ -71,6 +71,10 @@ function AudioFileList({
                   name: file.name,
                   contents: new Uint8Array(await file.arrayBuffer()),
                   mime: file.type,
+                  beatMetadata: {
+                    lengthMs: 1000,
+                    offsetMs: BigInt(0),
+                  },
                 });
 
                 if (!project.assets) {
@@ -84,6 +88,7 @@ function AudioFileList({
           }
 
           saveAssets();
+          update();
         })();
 
         setHighlightDrop(false);

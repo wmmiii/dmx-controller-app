@@ -14,13 +14,10 @@ import { Modal } from '../components/Modal';
 import { PaletteContext } from '../contexts/PaletteContext';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { SerialContext } from '../contexts/SerialContext';
-import {
-  DEFAULT_COLOR_PALETTE,
-  renderShowToUniverse,
-} from '../engine/universe';
-import { universeToUint8Array } from '../engine/utils';
+import { DEFAULT_COLOR_PALETTE, renderShowToUniverse } from '../engine/render';
 import { UNSET_INDEX, idMapToArray } from '../util/mapUtils';
 
+import { DmxOutput } from '../engine/context';
 import styles from './ShowPage.module.scss';
 
 const DEFAULT_SHOW = create(ShowSchema, {
@@ -52,11 +49,8 @@ export default function ShowPage(): JSX.Element {
   );
 
   useEffect(() => {
-    const render = (frame: number) =>
-      universeToUint8Array(
-        project,
-        renderShowToUniverse(t.current, frame, project),
-      );
+    const render = (frame: number, output: DmxOutput) =>
+      renderShowToUniverse(t.current, frame, project, output);
     setRenderUniverse(render);
 
     return () => clearRenderUniverse(render);

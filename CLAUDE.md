@@ -36,7 +36,7 @@ This project uses **Bazel** as its primary build system. Key commands:
 
 - All data structures defined as Protocol Buffers in `proto/`
 - Generated TypeScript bindings used throughout frontend
-- Key types: Project, Universe, Effect, Scene, Show, FixtureDefinition
+- Key types: Project, Universe, Effect, Scene, Show, DmxFixtureDefinition
 
 ### Data Flow & Engine
 

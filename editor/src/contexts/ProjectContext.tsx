@@ -1,15 +1,10 @@
 import { create, fromBinary, toBinary } from '@bufbuild/protobuf';
-import { type ColorPalette } from '@dmx-controller/proto/color_pb';
 import {
   ProjectSchema,
   Project_Assets,
   Project_AssetsSchema,
   type Project,
 } from '@dmx-controller/proto/project_pb';
-import {
-  UniverseSchema,
-  type Universe,
-} from '@dmx-controller/proto/universe_pb';
 import {
   JSX,
   PropsWithChildren,
@@ -21,12 +16,11 @@ import {
   useState,
 } from 'react';
 
-import { DEFAULT_COLOR_PALETTE } from '../engine/universe';
 import { downloadBlob, escapeForFilesystem } from '../util/fileUtils';
-import { randomUint64 } from '../util/numberUtils';
 import upgradeProject from '../util/projectUpgrader';
 import { getBlob, storeBlob } from '../util/storageUtil';
 
+import { createNewProject } from '../util/projectUtils';
 import { ShortcutContext } from './ShortcutContext';
 
 const PROJECT_KEY = 'tmp-project-1';
@@ -34,40 +28,6 @@ const ASSETS_KEY = 'tmp-assets-1';
 const MAX_UNDO = 100;
 
 let globalOpened = false;
-
-const DEFAULT_UNIVERSE_MAP: { [id: string]: Universe } = {};
-const DEFAULT_UNIVERSE_ID = randomUint64();
-DEFAULT_UNIVERSE_MAP[DEFAULT_UNIVERSE_ID.toString()] = create(UniverseSchema, {
-  name: 'Default Universe',
-  fixtures: {},
-}) as Universe;
-
-const DEFAULT_COLOR_PALETTES: { [id: string]: ColorPalette } = {};
-const DEFAULT_COLOR_PALETTE_ID = crypto.randomUUID();
-DEFAULT_COLOR_PALETTES[DEFAULT_COLOR_PALETTE_ID] = DEFAULT_COLOR_PALETTE;
-
-const DEFAULT_PROJECT = create(ProjectSchema, {
-  name: 'Untitled Project',
-  updateFrequencyMs: 15,
-  timingOffsetMs: 0,
-  fixtureDefinitions: {},
-  physicalFixtures: {},
-  scenes: [
-    {
-      name: 'Default scene',
-      tileMap: [],
-      colorPalettes: DEFAULT_COLOR_PALETTES,
-      activeColorPalette: DEFAULT_COLOR_PALETTE_ID,
-      lastActiveColorPalette: DEFAULT_COLOR_PALETTE_ID,
-    },
-  ],
-  liveBeat: {
-    lengthMs: Math.floor(60_000 / 120),
-    offsetMs: 0n,
-  },
-  activeUniverse: DEFAULT_UNIVERSE_ID,
-  universes: DEFAULT_UNIVERSE_MAP,
-}) as Project;
 
 interface Operation {
   projectState: Uint8Array;
@@ -113,7 +73,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
         const projectBlob = await getBlob(PROJECT_KEY);
         const assetsBlob = await getBlob(ASSETS_KEY);
         if (projectBlob == null) {
-          setProject(DEFAULT_PROJECT);
+          setProject(createNewProject());
           return;
         } else {
           const p = fromBinary(ProjectSchema, projectBlob) as Project;
@@ -136,7 +96,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
         }
       } catch (ex) {
         console.error('Could not open project!', ex);
-        setProject(DEFAULT_PROJECT);
+        setProject(createNewProject());
       }
     })();
   }, []);
@@ -164,7 +124,6 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
     if (projectRef.current == null) {
       throw new Error('Tried to update without project loaded!');
     }
-    console.log('UPDATE');
     setProject(create(ProjectSchema, Object.assign({}, projectRef.current)));
   }, [projectRef, setProject]);
 

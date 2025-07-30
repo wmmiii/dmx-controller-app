@@ -1,9 +1,102 @@
+import { create } from '@bufbuild/protobuf';
 import { Effect, FixtureState } from '@dmx-controller/proto/effect_pb';
-import { Project } from '@dmx-controller/proto/project_pb';
+import { PatchSchema } from '@dmx-controller/proto/output_pb';
+import { Project, ProjectSchema } from '@dmx-controller/proto/project_pb';
 import { Scene_Tile } from '@dmx-controller/proto/scene_pb';
+import { randomUint64 } from './numberUtils';
 
-export function getActiveUniverse(project: Project) {
-  return project?.universes[project.activeUniverse.toString()];
+export function getActivePatch(project: Project) {
+  return project?.patches[project.activePatch.toString()];
+}
+
+export function getOutput(project: Project, outputId: bigint) {
+  const output = getActivePatch(project).outputs[outputId.toString()];
+  if (!output) {
+    throw Error(`Could not find output ${outputId}!`);
+  }
+  return output;
+}
+
+export function getSerialOutputId(project: Project) {
+  return Object.entries(getActivePatch(project).outputs)
+    .filter(([_, output]) => output.output.case === 'SerialDmxOutput')
+    .map(([id, _]) => BigInt(id))[0];
+}
+
+export function createNewProject() {
+  const defaultColorPaletteId = crypto.randomUUID();
+  const defaultPatchId = randomUint64();
+
+  return create(ProjectSchema, {
+    name: 'Untitled Project',
+    updateFrequencyMs: 15,
+    timingOffsetMs: 0,
+    scenes: [
+      {
+        name: 'Default scene',
+        tileMap: [],
+        colorPalettes: {
+          [defaultColorPaletteId.toString()]: {
+            name: 'Default',
+            primary: {
+              color: {
+                red: 1,
+                green: 0,
+                blue: 1,
+              },
+            },
+            secondary: {
+              color: {
+                red: 0,
+                green: 1,
+                blue: 1,
+              },
+            },
+            tertiary: {
+              color: {
+                red: 1,
+                green: 1,
+                blue: 0,
+              },
+            },
+          },
+        },
+        activeColorPalette: defaultColorPaletteId,
+        lastActiveColorPalette: defaultColorPaletteId,
+        colorPaletteTransitionDurationMs: 3000,
+      },
+    ],
+    liveBeat: {
+      lengthMs: Math.floor(60_000 / 120),
+      offsetMs: 0n,
+    },
+    activePatch: defaultPatchId,
+    patches: {
+      [defaultPatchId.toString()]: createNewPatch('Default Patch'),
+    },
+    fixtureDefinitions: {},
+    controllerMapping: {},
+  });
+}
+
+export function createNewPatch(name: string) {
+  const defaultSerialDmxOutputId = randomUint64();
+
+  return create(PatchSchema, {
+    name: name,
+    outputs: {
+      [defaultSerialDmxOutputId.toString()]: {
+        name: 'DMX Serial Output',
+        latencyMs: 0,
+        output: {
+          case: 'SerialDmxOutput',
+          value: {
+            fixtures: {},
+          },
+        },
+      },
+    },
+  });
 }
 
 type Color = FixtureState['lightColor'];

@@ -1,9 +1,22 @@
-@import '../vars';
+@import '../../vars';
 
 $channel-size: 100px;
 
 .wrapper {
   @include fill;
+  display: flex;
+  flex-direction: column;
+}
+
+.patch {
+  display: flex;
+  flex-direction: row;
+  flex-shrink: 0;
+  min-height: 0;
+}
+
+.tabWrapper {
+  flex: 1;
 }
 
 .splitPane {

@@ -63,8 +63,6 @@ export function ControllerProvider({
   const [candidateList, setCandidateList] = useState<any[] | null>(null);
   const inputListeners = useRef<Array<Listener>>([]);
 
-  const controllerMapping = project.controllerMapping!;
-
   const connect = useCallback(async () => {
     const access = await navigator.requestMIDIAccess();
     const inputs: MIDIInput[] = Array.from((access.inputs as any).values());
@@ -91,8 +89,9 @@ export function ControllerProvider({
 
   useEffect(() => {
     (async () => {
+      const controllerMapping = project.controllerMapping;
       // Try to reconnect if last controller is known.
-      if (controllerMapping.lastControllerName != null) {
+      if (controllerMapping?.lastControllerName) {
         const access = await navigator.requestMIDIAccess();
         const input = Array.from(
           (access.inputs as any).values() as Iterable<MIDIInput>,

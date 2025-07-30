@@ -26,7 +26,10 @@ import { EffectDetails } from '../components/Effect';
 import { NumberInput, TextInput, ToggleInput } from '../components/Input';
 import { LiveBeat } from '../components/LiveBeat';
 import { Modal } from '../components/Modal';
-import { OutputSelector, getOutputName } from '../components/OutputSelector';
+import {
+  OutputSelector,
+  getOutputTargetName,
+} from '../components/OutputSelector';
 import { PaletteSwatch } from '../components/Palette';
 import { HorizontalSplitPane } from '../components/SplitPane';
 import { TileGrid } from '../components/TileGrid';
@@ -36,15 +39,15 @@ import { ControllerContext } from '../contexts/ControllerContext';
 import { PaletteContext } from '../contexts/PaletteContext';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { SerialContext } from '../contexts/SerialContext';
-import { getAvailableChannels } from '../engine/fixture';
+import { getAvailableChannels } from '../engine/fixtures/fixture';
 import {
   DEFAULT_COLOR_PALETTE,
   renderSceneToUniverse as renderActiveSceneToUniverse,
-} from '../engine/universe';
-import { universeToUint8Array } from '../engine/utils';
+} from '../engine/render';
 import IconBxPlus from '../icons/IconBxPlus';
 import IconBxX from '../icons/IconBxX';
 
+import { DmxOutput } from '../engine/context';
 import IconBxsCog from '../icons/IconBxsCog';
 import styles from './LivePage.module.scss';
 
@@ -61,7 +64,6 @@ export function LivePage(): JSX.Element {
   const [selected, setSelected] = useState<Scene_TileMap | null>(null);
   const [editScene, setEditScene] = useState<Scene | null>(null);
 
-  console.log('active scene', project.activeScene);
   const scene = project?.scenes[project.activeScene];
 
   useEffect(() => {
@@ -69,20 +71,18 @@ export function LivePage(): JSX.Element {
   }, [project]);
 
   useEffect(() => {
-    const render = (frame: number) => {
+    const render = (frame: number, output: DmxOutput) => {
       const project = projectRef.current;
       if (project != null) {
-        return universeToUint8Array(
-          projectRef.current,
-          renderActiveSceneToUniverse(
-            new Date().getTime(),
-            beatMetadata,
-            frame,
-            project,
-          ),
+        renderActiveSceneToUniverse(
+          new Date().getTime(),
+          beatMetadata,
+          frame,
+          project,
+          output,
         );
       } else {
-        return new Uint8Array(512);
+        output.universe.fill(0);
       }
     };
     setRenderUniverse(render);
@@ -127,7 +127,9 @@ export function LivePage(): JSX.Element {
             }}
           >
             {project.scenes.map((s, i) => (
-              <option value={i}>{s.name}</option>
+              <option key={i} value={i}>
+                {s.name}
+              </option>
             ))}
             <option value={-1}>+ Add new scene</option>
           </select>
@@ -323,23 +325,6 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
                 }}
               />
             </div>
-            <div className={styles.row}>
-              <label>Shortcut</label>
-              <input
-                onChange={() => {}}
-                onKeyDown={(e) => {
-                  if (e.code.startsWith('Digit')) {
-                    tileMap.shortcut = e.code.substring(5);
-                    save(
-                      `Add shortcut ${tileMap.shortcut} for tile ${tile.name}.`,
-                    );
-                  } else if (e.code === 'Backspace' || e.code === 'Delete') {
-                    save(`Remove shortcut for tile ${tile.name}.`);
-                  }
-                }}
-                value={tileMap.shortcut}
-              />
-            </div>
             {controllerName != null && (
               <div className={styles.row}>
                 <ControllerConnection action={action} title="Strength" />
@@ -514,18 +499,20 @@ function EffectGroupEditor({ effect, name }: EffectGroupEditorProps) {
             <label className={styles.stateHeader}>
               <span>Output</span>
               <OutputSelector
-                value={c.outputId}
+                value={c.outputTarget}
                 setValue={(o) => {
-                  c.outputId = o;
-                  save(`Set effect output to ${getOutputName(project, o)}.`);
+                  c.outputTarget = o;
+                  save(
+                    `Set effect output to ${getOutputTargetName(project, o)}.`,
+                  );
                 }}
               />
             </label>
             <EffectDetails
               effect={c.effect}
               showTiming={false}
-              showPhase={c.outputId?.output.case === 'group'}
-              availableChannels={getAvailableChannels(c.outputId, project)}
+              showPhase={c.outputTarget?.output.case === 'group'}
+              availableChannels={getAvailableChannels(c.outputTarget, project)}
             />
           </div>
         );
@@ -569,7 +556,7 @@ function AddNewDialog({ scene, x, y, onSelect, onClose }: AddNewDialogProps) {
         value: 1000,
       },
       transition: {
-        case: 'startFadeOutMs',
+        case: 'startFadeInMs',
         value: 0n,
       },
     });
@@ -662,7 +649,7 @@ function createEffectChannel() {
       startMs: 0,
       endMs: 4_294_967_295,
     },
-    outputId: {
+    outputTarget: {
       output: {
         case: undefined,
         value: undefined,

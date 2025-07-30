@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package dmx_controller;
+
+import "proto/dmx.proto";
+
+message QualifiedFixtureId {
+  uint64 patch = 1;
+  uint64 output = 2;
+  uint64 fixture = 3;
+}
+
+message OutputTarget {
+  message FixtureMapping {
+    repeated QualifiedFixtureId fixture_ids = 1;
+  }
+
+  oneof output {
+    FixtureMapping fixtures = 1;
+    uint64 group = 2;
+  }
+}
+
+message TargetGroup {
+  string name = 1;
+
+  repeated OutputTarget targets = 2;
+}
+
+message SerialDmxOutput {
+  map<uint64, PhysicalDmxFixture> fixtures = 1;
+}
+
+message Output {
+  string name = 1;
+  uint32 latency_ms = 2;
+
+  oneof output {
+    SerialDmxOutput SerialDmxOutput = 3;
+  }
+}
+
+message Patch {
+  string name = 1;
+
+  // Map from the output ID to the output itself.
+  map<uint64, Output> outputs = 2;
+}

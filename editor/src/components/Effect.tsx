@@ -31,9 +31,9 @@ import {
 } from 'react';
 import { BiDice6, BiPause } from 'react-icons/bi';
 
+import { EffectRenderingContext } from '../contexts/EffectRenderingContext';
 import { PaletteContext } from '../contexts/PaletteContext';
 import { ProjectContext } from '../contexts/ProjectContext';
-import { RenderingContext } from '../contexts/RenderingContext';
 import { ShortcutContext } from '../contexts/ShortcutContext';
 import { ChannelTypes } from '../engine/channel';
 import IconBxLineChart from '../icons/IconBxLineChart';
@@ -93,7 +93,7 @@ export function Effect({
     useContext(EffectSelectContext);
   const { palette } = useContext(PaletteContext);
   const { save, update } = useContext(ProjectContext);
-  const { beatWidthPx, msWidthToPxWidth } = useContext(RenderingContext);
+  const { beatWidthPx, msWidthToPxWidth } = useContext(EffectRenderingContext);
   const { setShortcuts } = useContext(ShortcutContext);
   const [dragStart, setDragStart] = useState(false);
   const [dragEnd, setDragEnd] = useState(false);
@@ -131,28 +131,26 @@ export function Effect({
       effectIcons(effect.effect.value.state).forEach((i) => icons.add(i));
     }
   } else if (effect.effect.case === 'rampEffect') {
-    if (
-      effect.effect.value.stateStart != null &&
-      effect.effect.value.stateEnd
-    ) {
-      const start = effectColor(effect.effect.value.stateStart, palette);
-      const end = effectColor(effect.effect.value.stateEnd, palette, true);
+    const rampEffect = effect.effect.value;
+    if (rampEffect.stateStart != null && rampEffect.stateEnd) {
+      const start = effectColor(rampEffect.stateStart, palette);
+      const end = effectColor(rampEffect.stateEnd, palette, true);
       let width: number;
-      if (effect.timingMode === EffectTiming.BEAT) {
-        width = beatWidthPx / (effect.timingMultiplier || 1);
+      if (rampEffect.timingMode === EffectTiming.BEAT) {
+        width = beatWidthPx / (rampEffect.timingMultiplier || 1);
       } else {
         width =
           msWidthToPxWidth(effect.endMs - effect.startMs) /
-          (effect.timingMultiplier || 1);
+          (rampEffect.timingMultiplier || 1);
       }
-      if (effect.mirrored) {
+      if (rampEffect.mirrored) {
         style.background = `repeating-linear-gradient(90deg, ${end} 0, ${start} ${width}px, ${end} ${width * 2}px)`;
       } else {
         style.background = `repeating-linear-gradient(90deg, ${start} 0, ${end} ${width}px)`;
       }
 
-      effectIcons(effect.effect.value.stateStart).forEach((i) => icons.add(i));
-      effectIcons(effect.effect.value.stateEnd).forEach((i) => icons.add(i));
+      effectIcons(rampEffect.stateStart).forEach((i) => icons.add(i));
+      effectIcons(rampEffect.stateEnd).forEach((i) => icons.add(i));
     }
   } else if (effect.effect.case === 'strobeEffect') {
     if (

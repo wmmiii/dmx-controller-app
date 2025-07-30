@@ -4,7 +4,10 @@ import { type LightTrack as LightTrackProto } from '@dmx-controller/proto/light_
 import { JSX, createRef, useContext } from 'react';
 
 import { LightLayer } from '../components/LightLayer';
-import { OutputSelector, getOutputName } from '../components/OutputSelector';
+import {
+  OutputSelector,
+  getOutputTargetName,
+} from '../components/OutputSelector';
 import { ProjectContext } from '../contexts/ProjectContext';
 import IconBxBrushAlt from '../icons/IconBxBrush';
 import IconBxChevronDown from '../icons/IconBxChevronDown';
@@ -51,10 +54,10 @@ export function LightTrack({
       <div className={styles.left} style={{ width: leftWidth }}>
         <div className={styles.header}>
           <OutputSelector
-            value={track.outputId}
+            value={track.outputTarget}
             setValue={(o) => {
-              track.outputId = o;
-              const name = getOutputName(project, o);
+              track.outputTarget = o;
+              const name = getOutputTargetName(project, o);
               if (name === '<Unset>') {
                 save(`Unset track output.`);
               } else {
@@ -67,7 +70,7 @@ export function LightTrack({
             onClick={() => {
               track.collapsed = !track.collapsed;
               save(
-                `${track.collapsed ? 'Collapse' : 'Expand'} track ${getOutputName(project, track.outputId)}.`,
+                `${track.collapsed ? 'Collapse' : 'Expand'} track ${getOutputTargetName(project, track.outputTarget)}.`,
               );
             }}
           >
@@ -84,7 +87,7 @@ export function LightTrack({
                     (l) => l.effects.length > 0,
                   );
                   save(
-                    `Cleanup empty layers for track ${getOutputName(project, track.outputId)}`,
+                    `Cleanup empty layers for track ${getOutputTargetName(project, track.outputTarget)}`,
                   );
                 }}
               >
@@ -112,7 +115,9 @@ export function LightTrack({
         className={styles.right}
         onClick={() => {
           track.collapsed = false;
-          save(`Expand track ${getOutputName(project, track.outputId)}`);
+          save(
+            `Expand track ${getOutputTargetName(project, track.outputTarget)}`,
+          );
         }}
       >
         {track.layers.map((l, i) => (

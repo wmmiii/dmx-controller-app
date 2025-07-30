@@ -4,10 +4,10 @@ import { Route, Routes, useNavigate } from 'react-router';
 
 import styles from './Index.module.scss';
 import { Button, IconButton } from './components/Button';
+import { DmxUniverseVisualizer } from './components/DmxUniverseVisualizer';
 import { Dropdown } from './components/Dropdown';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Modal } from './components/Modal';
-import { UniverseVisualizer } from './components/UniverseVisualizer';
 import { ControllerContext } from './contexts/ControllerContext';
 import { DialogContext } from './contexts/DialogContext';
 import { ProjectContext } from './contexts/ProjectContext';
@@ -24,16 +24,17 @@ import IconBxlWindows from './icons/IconBxlWindows';
 import IconBxsBulb from './icons/IconBxsBulb';
 import AssetBrowserPage from './pages/AssetBrowserPage';
 import { LivePage } from './pages/LivePage';
-import PatchPage from './pages/PatchPage';
 import ProjectPage from './pages/ProjectPage';
 import ShowPage from './pages/ShowPage';
+import PatchPage from './pages/patch/PatchPage';
+import { getActivePatch } from './util/projectUtils';
 
 export default function Index(): JSX.Element {
   const { port, blackout, setBlackout, connect, disconnect } =
     useContext(SerialContext);
   const { controllerName, connect: connectMidi } =
     useContext(ControllerContext);
-  const { downloadProject, openProject, lastOperation } =
+  const { project, downloadProject, openProject, lastOperation } =
     useContext(ProjectContext);
   const navigate = useNavigate();
 
@@ -130,7 +131,13 @@ export default function Index(): JSX.Element {
             </Dropdown>
           )}
         </div>
-        <UniverseVisualizer />
+        {Object.values(getActivePatch(project).outputs).map((o, i) => {
+          if (o.output.case === 'SerialDmxOutput') {
+            return <DmxUniverseVisualizer key={i} dmxOutput={o.output.value} />;
+          } else {
+            return null;
+          }
+        })}
         <div className={styles.spacer}></div>
         <div className={styles.message}>{lastOperation}</div>
         <FpsIndicator />

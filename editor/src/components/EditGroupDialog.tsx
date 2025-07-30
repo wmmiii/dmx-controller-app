@@ -1,27 +1,23 @@
-import { create } from '@bufbuild/protobuf';
-import {
-  PhysicalFixtureGroup_FixtureListSchema,
-  type PhysicalFixtureGroup,
-} from '@dmx-controller/proto/fixture_pb';
 import { Project } from '@dmx-controller/proto/project_pb';
 import { JSX, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { ProjectContext } from '../contexts/ProjectContext';
 import { SerialContext } from '../contexts/SerialContext';
 import { getApplicableMembers } from '../engine/group';
-import { renderGroupDebugToUniverse } from '../engine/universe';
-import { universeToUint8Array } from '../engine/utils';
+import { renderGroupDebugToUniverse } from '../engine/render';
 import IconBxX from '../icons/IconBxX';
-import { getActiveUniverse } from '../util/projectUtils';
 
+import { TargetGroup } from '@dmx-controller/proto/output_pb';
+import { DmxOutput } from '../engine/context';
 import { Button, IconButton } from './Button';
 import styles from './EditGroupDialog.module.scss';
 import { TextInput } from './Input';
 import { Modal } from './Modal';
+import { getOutputTargetName } from './OutputSelector';
 
 interface EditGroupDialogProps {
   groupId: bigint;
-  group: PhysicalFixtureGroup;
+  group: TargetGroup;
   close: () => void;
   onDelete: () => void;
 }
@@ -35,19 +31,13 @@ export function EditGroupDialog({
   const { project, save, update } = useContext(ProjectContext);
   const projectRef = useRef<Project>(project);
   const { setRenderUniverse, clearRenderUniverse } = useContext(SerialContext);
-  const [newMemberIndex, setNewMemberIndex] = useState<number | null>(null);
   const [draggingIndex, setDraggingIndex] = useState<number>(-1);
 
   useEffect(() => {
-    const render = () => {
+    const render = (_frame: number, output: DmxOutput) => {
       const project = projectRef.current;
       if (project != null) {
-        return universeToUint8Array(
-          projectRef.current,
-          renderGroupDebugToUniverse(project, groupId),
-        );
-      } else {
-        return new Uint8Array(512);
+        renderGroupDebugToUniverse(project, groupId, output);
       }
     };
     setRenderUniverse(render);
@@ -88,137 +78,61 @@ export function EditGroupDialog({
           }}
         />
       </label>
-      {Object.keys(group.fixtures).length + group.groups.length === 0 && (
-        <div className="row">No Members</div>
-      )}
-      {group.groups.length > 0 && (
-        <>
-          <hr />
-          <h3>Groups</h3>
-        </>
-      )}
-      {group.groups.map((id, i) => (
-        <div key={id} className={styles.row}>
-          ⧉ {project.groups[id.toString()]?.name}
-          <IconButton
-            title="Remove Group"
-            onClick={() => {
-              const name = project.groups[group.groups[i].toString()].name;
-              group.groups.splice(i, 1);
-              save(`Remove group ${name} from group ${group.name}.`);
-            }}
-          >
-            <IconBxX />
-          </IconButton>
-        </div>
-      ))}
-      {group.fixtures?.[project.activeUniverse.toString()]?.fixtures.length >
-        0 && (
-        <>
-          <hr />
-          <h3>Fixtures</h3>
-        </>
-      )}
-      {group.fixtures?.[project.activeUniverse.toString()]?.fixtures.map(
-        (id, index) => (
+      {group.targets.length === 0 && <div className="row">No Members</div>}
+      {group.targets.map((id, index) => {
+        const name = getOutputTargetName(project, id);
+        return (
           <div
-            key={id}
+            key={index}
             className={`${styles.row} ${styles.draggable}`}
             draggable={true}
             onDrag={() => setDraggingIndex(index)}
             onDragOver={() => {
               if (draggingIndex >= 0 && draggingIndex != index) {
-                const fixtures =
-                  group.fixtures?.[project.activeUniverse.toString()]?.fixtures;
-                const fixtureId = fixtures.splice(draggingIndex, 1)[0];
-                fixtures.splice(index, 0, fixtureId);
+                const fixtureId = group.targets.splice(draggingIndex, 1)[0];
+                group.targets.splice(index, 0, fixtureId);
                 update();
               }
             }}
             onDrop={() => {
               setDraggingIndex(-1);
-              save(`Reorder fixtures in ${group.name}.`);
+              save(`Reorder members in ${group.name}.`);
             }}
           >
-            ⧇ {getActiveUniverse(project).fixtures[id.toString()].name}
+            {name}
             <IconButton
-              title="Remove Fixture"
+              title={`Remove ${name}`}
               onClick={() => {
-                const name =
-                  getActiveUniverse(project).fixtures[id.toString()].name;
-                group.fixtures[
-                  project.activeUniverse.toString()
-                ].fixtures.splice(index, 1);
+                group.targets.splice(index, 1);
                 save(`Remove fixture ${name} from group ${group.name}.`);
               }}
             >
               <IconBxX />
             </IconButton>
           </div>
-        ),
-      )}
+        );
+      })}
       <label className={styles.row}>
         <select
-          value={newMemberIndex === null ? ' ' : newMemberIndex}
+          value="-1"
           onChange={(e) => {
-            try {
-              setNewMemberIndex(parseInt(e.target.value));
-            } catch {
-              setNewMemberIndex(null);
+            const index = parseInt(e.target.value);
+            if (index === -1) {
+              return;
             }
+            const newMember = applicableMembers[index];
+            group.targets.push(newMember.id);
+            const name = getOutputTargetName(project, newMember.id);
+            save(`Add ${name} to group ${group.name}`);
           }}
         >
-          <option value="null">&lt;Select Member&gt;</option>
+          <option value="-1">Add Member</option>
           {applicableMembers.map((m, i) => (
             <option key={i} value={i}>
-              {m.id.output.case === 'group' ? '⧉' : '⧇'}
-              &nbsp;
               {m.name}
             </option>
           ))}
         </select>
-        <Button
-          onClick={() => {
-            if (newMemberIndex === null) {
-              return;
-            }
-
-            const newMember = applicableMembers[newMemberIndex];
-
-            let name: string;
-            if (newMember.id.output.case === 'fixtures') {
-              const id =
-                newMember.id.output.value.fixtures[
-                  project.activeUniverse.toString()
-                ];
-              if (group.fixtures[project.activeUniverse.toString()] == null) {
-                group.fixtures[project.activeUniverse.toString()] = create(
-                  PhysicalFixtureGroup_FixtureListSchema,
-                  {
-                    fixtures: [],
-                  },
-                );
-              }
-              group.fixtures[project.activeUniverse.toString()].fixtures.push(
-                id,
-              );
-              name = getActiveUniverse(project).fixtures[id.toString()].name;
-            } else if (newMember.id.output.case === 'group') {
-              group.groups.push(newMember.id.output.value);
-              name = project.groups[newMember.id.output.value.toString()].name;
-            } else {
-              throw new Error(
-                `Unrecognized member type: ${newMember.id.output}`,
-              );
-            }
-
-            setNewMemberIndex(null);
-
-            save(`Add ${name} to group ${group.name}.`);
-          }}
-        >
-          + Add New Member
-        </Button>
       </label>
     </Modal>
   );

@@ -23,17 +23,17 @@ root.render(
     <BrowserRouter basename="/">
       <TimeProvider>
         <DialogProvider>
-          <SerialProvider>
-            <ShortcutProvider>
-              <ProjectProvider>
+          <ShortcutProvider>
+            <ProjectProvider>
+              <SerialProvider>
                 <BeatProvider>
                   <ControllerProvider>
                     <Index />
                   </ControllerProvider>
                 </BeatProvider>
-              </ProjectProvider>
-            </ShortcutProvider>
-          </SerialProvider>
+              </SerialProvider>
+            </ProjectProvider>
+          </ShortcutProvider>
         </DialogProvider>
       </TimeProvider>
     </BrowserRouter>

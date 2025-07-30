@@ -1,21 +1,5 @@
 import { create } from '@bufbuild/protobuf';
 import { type Color } from '@dmx-controller/proto/color_pb';
-import {
-  FixtureDefinition,
-  FixtureDefinitionSchema,
-  FixtureDefinition_ChannelSchema,
-  FixtureDefinition_Channel_AmountMapping,
-  FixtureDefinition_Channel_AmountMappingSchema,
-  FixtureDefinition_Channel_AngleMapping,
-  FixtureDefinition_Channel_AngleMappingSchema,
-  FixtureDefinition_Channel_ColorWheelMapping,
-  FixtureDefinition_Channel_ColorWheelMappingSchema,
-  FixtureDefinition_Channel_ColorWheelMapping_ColorWheelColor,
-  FixtureDefinition_Channel_ColorWheelMapping_ColorWheelColorSchema,
-  FixtureDefinition_ModeSchema,
-  type FixtureDefinition_Channel,
-  type FixtureDefinition_Mode,
-} from '@dmx-controller/proto/fixture_pb';
 import { BlobReader, TextWriter, ZipReader } from '@zip.js/zip.js';
 import getUuidByString from 'uuid-by-string';
 
@@ -25,6 +9,22 @@ import {
   COLOR_CHANNELS,
 } from '../engine/channel';
 
+import {
+  DmxFixtureDefinition,
+  DmxFixtureDefinition_Channel,
+  DmxFixtureDefinition_Channel_AmountMapping,
+  DmxFixtureDefinition_Channel_AmountMappingSchema,
+  DmxFixtureDefinition_Channel_AngleMapping,
+  DmxFixtureDefinition_Channel_AngleMappingSchema,
+  DmxFixtureDefinition_Channel_ColorWheelMapping,
+  DmxFixtureDefinition_Channel_ColorWheelMapping_ColorWheelColor,
+  DmxFixtureDefinition_Channel_ColorWheelMapping_ColorWheelColorSchema,
+  DmxFixtureDefinition_Channel_ColorWheelMappingSchema,
+  DmxFixtureDefinition_ChannelSchema,
+  DmxFixtureDefinition_Mode,
+  DmxFixtureDefinition_ModeSchema,
+  DmxFixtureDefinitionSchema,
+} from '@dmx-controller/proto/dmx_pb';
 import { cieToColor } from './colorUtil';
 
 export async function extractGdtf(arrayBuffer: Blob) {
@@ -47,18 +47,18 @@ export async function extractGdtf(arrayBuffer: Blob) {
 
   const type = description.querySelector('FixtureType');
 
-  const definition = create(FixtureDefinitionSchema, {
+  const definition = create(DmxFixtureDefinitionSchema, {
     globalId: getAttributeNotEmpty(type, 'FixtureTypeID'),
     name: getAttributeNotEmpty(type, 'LongName'),
     manufacturer: getAttributeNotEmpty(type, 'Manufacturer'),
-  }) as FixtureDefinition;
+  }) as DmxFixtureDefinition;
 
   const modes = description.querySelectorAll('DMXMode');
 
   for (const modeElement of Array.from(modes)) {
-    const mode = create(FixtureDefinition_ModeSchema, {
+    const mode = create(DmxFixtureDefinition_ModeSchema, {
       name: getAttributeNotEmpty(modeElement, 'Name'),
-    }) as FixtureDefinition_Mode;
+    }) as DmxFixtureDefinition_Mode;
 
     let maxChannel = 0;
 
@@ -99,10 +99,10 @@ export async function extractGdtf(arrayBuffer: Blob) {
           );
           addChannels(mode, channelName, offset, {
             case: 'angleMapping',
-            value: create(FixtureDefinition_Channel_AngleMappingSchema, {
+            value: create(DmxFixtureDefinition_Channel_AngleMappingSchema, {
               minDegrees: Math.round(Math.min(fromDegrees, toDegrees)),
               maxDegrees: Math.round(Math.max(fromDegrees, toDegrees)),
-            }) as FixtureDefinition_Channel_AngleMapping,
+            }) as DmxFixtureDefinition_Channel_AngleMapping,
           });
           continue channel;
         }
@@ -115,10 +115,10 @@ export async function extractGdtf(arrayBuffer: Blob) {
             offset,
             {
               case: 'amountMapping',
-              value: create(FixtureDefinition_Channel_AmountMappingSchema, {
+              value: create(DmxFixtureDefinition_Channel_AmountMappingSchema, {
                 minValue: 0,
                 maxValue: 255,
-              }) as FixtureDefinition_Channel_AmountMapping,
+              }) as DmxFixtureDefinition_Channel_AmountMapping,
             },
             channelName === 'dimmer' ? 255 : 0,
           );
@@ -126,14 +126,14 @@ export async function extractGdtf(arrayBuffer: Blob) {
         }
       }
       if (initialFunction.indexOf('shutter') >= 0) {
-        mode.channels[offset[0]] = create(FixtureDefinition_ChannelSchema, {
+        mode.channels[offset[0]] = create(DmxFixtureDefinition_ChannelSchema, {
           type: 'other',
           defaultValue: 255,
           mapping: {
             case: undefined,
             value: undefined,
           },
-        }) as FixtureDefinition_Channel;
+        }) as DmxFixtureDefinition_Channel;
       }
 
       if (initialFunction.indexOf('color selection') >= 0) {
@@ -163,9 +163,9 @@ export async function extractGdtf(arrayBuffer: Blob) {
             }
 
             const mapping = create(
-              FixtureDefinition_Channel_ColorWheelMappingSchema,
+              DmxFixtureDefinition_Channel_ColorWheelMappingSchema,
               {},
-            ) as FixtureDefinition_Channel_ColorWheelMapping;
+            ) as DmxFixtureDefinition_Channel_ColorWheelMapping;
             for (const set of Array.from(
               colorElement!.querySelectorAll('ChannelSet'),
             )) {
@@ -177,24 +177,27 @@ export async function extractGdtf(arrayBuffer: Blob) {
 
               mapping.colors.push(
                 create(
-                  FixtureDefinition_Channel_ColorWheelMapping_ColorWheelColorSchema,
+                  DmxFixtureDefinition_Channel_ColorWheelMapping_ColorWheelColorSchema,
                   {
                     name: name,
                     value: value,
                     color: color,
                   },
-                ) as FixtureDefinition_Channel_ColorWheelMapping_ColorWheelColor,
+                ) as DmxFixtureDefinition_Channel_ColorWheelMapping_ColorWheelColor,
               );
             }
 
-            mode.channels[offset[0]] = create(FixtureDefinition_ChannelSchema, {
-              type: 'color_wheel',
-              defaultValue: 0,
-              mapping: {
-                case: 'colorWheelMapping',
-                value: mapping,
+            mode.channels[offset[0]] = create(
+              DmxFixtureDefinition_ChannelSchema,
+              {
+                type: 'color_wheel',
+                defaultValue: 0,
+                mapping: {
+                  case: 'colorWheelMapping',
+                  value: mapping,
+                },
               },
-            }) as FixtureDefinition_Channel;
+            ) as DmxFixtureDefinition_Channel;
           }
         }
       }
@@ -217,10 +220,10 @@ function getAttributeNotEmpty(element: Element | null, attribute: string) {
 }
 
 function addChannels(
-  mode: FixtureDefinition_Mode,
+  mode: DmxFixtureDefinition_Mode,
   name: string,
   offset: number[],
-  mapping: FixtureDefinition_Channel['mapping'],
+  mapping: DmxFixtureDefinition_Channel['mapping'],
   defaultValue = 0,
 ) {
   if (offset.length > 2) {
@@ -228,16 +231,16 @@ function addChannels(
       `Channel ${name} has an unexpected offset length of ${offset.length}!`,
     );
   }
-  mode.channels[offset[0]] = create(FixtureDefinition_ChannelSchema, {
+  mode.channels[offset[0]] = create(DmxFixtureDefinition_ChannelSchema, {
     type: name,
     defaultValue: defaultValue,
     mapping: mapping,
-  }) as FixtureDefinition_Channel;
+  }) as DmxFixtureDefinition_Channel;
   if (offset.length > 1) {
-    mode.channels[offset[1]] = create(FixtureDefinition_ChannelSchema, {
+    mode.channels[offset[1]] = create(DmxFixtureDefinition_ChannelSchema, {
       type: name + '-fine',
       defaultValue: defaultValue,
       mapping: mapping,
-    }) as FixtureDefinition_Channel;
+    }) as DmxFixtureDefinition_Channel;
   }
 }

@@ -33,9 +33,6 @@ message FixtureState {
   oneof light_color {
     Color color = 12;
     PaletteColor palette_color = 13;
-
-    RGB rgb = 2 [deprecated = true];
-    RGBW rgbw = 3 [deprecated = true];
   }
 
   optional double dimmer = 4;
@@ -46,7 +43,9 @@ message FixtureState {
   optional double zoom = 7;
   optional double strobe = 9;
 
-  optional StrobeSpeed deprecated_strobe = 8 [deprecated = true];
+  reserved 8; // optional StrobeSpeed deprecated_strobe = 8 [deprecated = true];
+  reserved 2; // RGB rgb = 2 [deprecated = true];
+  reserved 3; // RGBW rgbw = 3 [deprecated = true];
 }
 
 enum EffectTiming {
@@ -130,10 +129,10 @@ message Effect {
     RandomEffect random_effect = 104;
   }
   // Deprecated
-  EffectTiming timing_mode = 11 [deprecated = true];
+  reserved 11; // EffectTiming timing_mode = 11 [deprecated = true];
   reserved 12; // Deprecated offset_ms
-  double timing_multiplier = 13 [deprecated = true];
-  bool mirrored = 14 [deprecated = true];
+  reserved 13; // double timing_multiplier = 13 [deprecated = true];
+  reserved 14; // bool mirrored = 14 [deprecated = true];
   reserved 15 to 17;
-  double offset_amount = 18 [deprecated = true];
+  reserved 18; // double offset_amount = 18 [deprecated = true];
 }

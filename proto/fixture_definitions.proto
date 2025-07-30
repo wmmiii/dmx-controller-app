@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package dmx_controller;
+
+import "proto/dmx.proto";
+
+message FixtureDefinitions {
+  map<uint64, DmxFixtureDefinition> dmx_fixture_definitions = 1;
+}

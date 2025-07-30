@@ -79,4 +79,10 @@ export function isAmountChannel(type: string): type is AmountChannel {
   return AMOUNT_CHANNELS.includes(type as AmountChannel);
 }
 
+export const ALL_CHANNELS = [
+  ...COLOR_CHANNELS,
+  ...ANGLE_CHANNELS,
+  ...AMOUNT_CHANNELS,
+];
+
 export type ChannelTypes = ColorChannel | AngleChannel | AmountChannel;

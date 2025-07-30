@@ -11,10 +11,10 @@ import {
   useState,
 } from 'react';
 
+import { EffectRenderingContext } from '../contexts/EffectRenderingContext';
 import { ProjectContext } from '../contexts/ProjectContext';
-import { RenderingContext } from '../contexts/RenderingContext';
 import { ShortcutContext } from '../contexts/ShortcutContext';
-import { getAvailableChannels } from '../engine/fixture';
+import { getAvailableChannels } from '../engine/fixtures/fixture';
 import IconBxPulse from '../icons/IconBxPulse';
 import IconBxZoomOut from '../icons/IconBxZoomOut';
 import IconBxZoomIn from '../icons/IconBxZoomin';
@@ -25,7 +25,7 @@ import { EffectAddress, EffectDetails, EffectSelectContext } from './Effect';
 import { NumberInput } from './Input';
 import styles from './LightTimeline.module.scss';
 import { LightTrack, MappingFunctions } from './LightTrack';
-import { getOutputName } from './OutputSelector';
+import { getOutputTargetName } from './OutputSelector';
 import { HorizontalSplitPane } from './SplitPane';
 
 export const LEFT_WIDTH = 180;
@@ -45,7 +45,7 @@ export default function LightTimeline(props: TracksProps): JSX.Element {
     const s = selectedAddress;
     return [
       props.lightTracks[s.track]?.layers[s.layer]?.effects[s.effect] || null,
-      getAvailableChannels(props.lightTracks[s.track]?.outputId, project),
+      getAvailableChannels(props.lightTracks[s.track]?.outputTarget, project),
     ];
   }, [props.lightTracks, selectedAddress]);
 
@@ -53,7 +53,7 @@ export default function LightTimeline(props: TracksProps): JSX.Element {
     if (selectedAddress == null) {
       return null;
     }
-    return props.lightTracks[selectedAddress.track].outputId?.output.case;
+    return props.lightTracks[selectedAddress.track].outputTarget?.output.case;
   }, [props.lightTracks, selectedAddress]);
 
   const deleteSelected = useCallback(() => {
@@ -354,7 +354,7 @@ function Tracks({
           className={styles.cursor}
           style={{ left: mappingFunctions.msToPx(tState) + LEFT_WIDTH }}
         ></div>
-        <RenderingContext.Provider
+        <EffectRenderingContext.Provider
           value={{
             beatWidthPx: beatMetadata
               ? mappingFunctions.msWidthToPxWidth(beatMetadata.lengthMs)
@@ -374,7 +374,7 @@ function Tracks({
                 leftWidth={LEFT_WIDTH}
                 mappingFunctions={mappingFunctions}
                 deleteTrack={() => {
-                  const name = getOutputName(project, t.outputId);
+                  const name = getOutputTargetName(project, t.outputTarget);
                   lightTracks.splice(i, 1);
                   save(`Delete track for ${name}.`);
                 }}
@@ -392,7 +392,7 @@ function Tracks({
               {addLayer && <Button onClick={addLayer}>+ New Output</Button>}
             </div>
           </div>
-        </RenderingContext.Provider>
+        </EffectRenderingContext.Provider>
       </div>
     </div>
   );

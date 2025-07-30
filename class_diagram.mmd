@@ -6,7 +6,7 @@ classDiagram
   note "This is the propsoed\nstructure"
   Project --> Show
   Project --> Scene
-  Project --> FixtureDefinition
+  Project --> DmxFixtureDefinition
   Project --> Universe
   Project --> AudioFile
   Show ..> AudioFile
@@ -14,5 +14,5 @@ classDiagram
   Show --> Layer
   Scene --> Layer
   Layer --> Effect
-  Universe --> PhysicalFixture
-  PhysicalFixture ..> FixtureDefinition
+  Universe --> PhysicalDmxFixture
+  PhysicalDmxFixture ..> DmxFixtureDefinition

@@ -5,8 +5,7 @@ import {
   type Color,
 } from '@dmx-controller/proto/color_pb';
 import { type FixtureState } from '@dmx-controller/proto/effect_pb';
-
-import { RenderContext } from './universe';
+import { RenderContext } from './context';
 
 const COLOR_BLACK = create(ColorSchema, {
   red: 0,
@@ -22,18 +21,17 @@ const COLOR_WHITE = create(ColorSchema, {
 });
 
 export function applyState(state: FixtureState, context: RenderContext): void {
-  const device = context.output;
+  const device = context.writableDeviceCache.get(context.target);
   if (state == null || device == null) {
     return;
   }
 
-  const universe = context.universe;
   switch (state.lightColor.case) {
     case 'color':
       {
         const color = state.lightColor.value;
         device.setColor(
-          universe,
+          context.output,
           color.red,
           color.green,
           color.blue,
@@ -80,7 +78,7 @@ export function applyState(state: FixtureState, context: RenderContext): void {
           );
       }
       device.setColor(
-        universe,
+        context.output,
         color.red,
         color.green,
         color.blue,
@@ -90,34 +88,34 @@ export function applyState(state: FixtureState, context: RenderContext): void {
   }
 
   if (state.pan != null) {
-    device.setAngle(universe, 'pan', state.pan);
+    device.setAngle(context.output, 'pan', state.pan);
   }
 
   if (state.tilt != null) {
-    device.setAngle(universe, 'tilt', state.tilt);
+    device.setAngle(context.output, 'tilt', state.tilt);
   }
 
   if (state.dimmer != null) {
-    device.setAmount(universe, 'dimmer', state.dimmer);
+    device.setAmount(context.output, 'dimmer', state.dimmer);
   }
 
   if (state.strobe != null) {
-    device.setAmount(universe, 'strobe', state.strobe);
+    device.setAmount(context.output, 'strobe', state.strobe);
   }
 
   if (state.width != null) {
-    device.setAmount(universe, 'width', state.width);
+    device.setAmount(context.output, 'width', state.width);
   }
 
   if (state.height != null) {
-    device.setAmount(universe, 'height', state.height);
+    device.setAmount(context.output, 'height', state.height);
   }
 
   if (state.zoom != null) {
-    device.setAmount(universe, 'zoom', state.zoom);
+    device.setAmount(context.output, 'zoom', state.zoom);
   }
 
   for (const channel of state.channels) {
-    device.setChannel(universe, channel.index, channel.value);
+    device.setChannel(context.output, channel.index, channel.value);
   }
 }

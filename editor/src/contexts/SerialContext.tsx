@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -12,14 +13,31 @@ import {
 import { Modal } from '../components/Modal';
 import IconBxErrorAlt from '../icons/IconBxErrorAlt';
 
+import { DmxOutput } from '../engine/context';
+import { getDmxWritableOutput } from '../engine/outputs/dmxOutput';
+import { getSerialOutputId } from '../util/projectUtils';
 import { DialogContext } from './DialogContext';
+import { ProjectContext } from './ProjectContext';
+import { ShortcutContext } from './ShortcutContext';
 
 type SerialPort = any;
 
-const BLACKOUT_UNIVERSE = new Uint8Array(512);
+export const BLACKOUT_UNIVERSE: DmxOutput = {
+  type: 'dmx',
+  universe: new Array(512).fill(0),
+  nonInterpolatedIndices: [],
+  outputId: BigInt(0),
+  uint8Array: new Uint8Array(512),
+  clone: () => {
+    throw Error('Cannot clone blackout universe!');
+  },
+  interpolate: () => {
+    throw Error('Cannot interpolate blackout universe!');
+  },
+};
 const FPS_BUFFER_SIZE = 100;
 
-type RenderUniverse = (frame: number) => Uint8Array;
+type RenderUniverse = (frame: number, output: DmxOutput) => void;
 
 const EMPTY_CONTEXT = {
   port: null as SerialPort | null,
@@ -38,6 +56,7 @@ const SERIAL_MISSING_KEY = 'serial-missing';
 
 export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
   const dialogContext = useContext(DialogContext);
+  const { project } = useContext(ProjectContext);
   const [open, setOpen] = useState(
     !dialogContext.isDismissed(SERIAL_MISSING_KEY),
   );
@@ -73,11 +92,24 @@ export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
       </SerialContext.Provider>
     );
   } else {
-    return <SerialProviderImpl>{children}</SerialProviderImpl>;
+    const outputId = getSerialOutputId(project);
+    if (outputId) {
+      return <SerialProviderImpl>{children}</SerialProviderImpl>;
+    } else {
+      return <SerialContext.Provider value={EMPTY_CONTEXT} />;
+    }
   }
 }
 
-function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
+interface SerialProviderImplProps {
+  children: React.ReactNode;
+}
+
+function SerialProviderImpl({
+  children,
+}: SerialProviderImplProps): JSX.Element {
+  const { project } = useContext(ProjectContext);
+  const shortcutContext = useContext(ShortcutContext);
   const [port, setPort] = useState<SerialPort | null>(null);
   const renderUniverse = useRef<RenderUniverse>(() => BLACKOUT_UNIVERSE);
   const updateSubscribers = useRef<Array<(universe: Uint8Array) => void>>([]);
@@ -87,11 +119,17 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
   const fpsBuffer = useRef([0]);
   const fpsSubscribers = useRef<Array<(fps: number) => void>>([]);
 
+  const outputId = useMemo(() => {
+    return getSerialOutputId(project);
+  }, [project]);
+
   // Expose render function for debugging purposes.
   useEffect(() => {
+    const output = getDmxWritableOutput(project, outputId);
     const global = (window || globalThis) as any;
-    global['debugRender'] = () => renderUniverse.current(frameRef.current);
-  }, [renderUniverse]);
+    global['debugRender'] = () =>
+      renderUniverse.current(frameRef.current, output);
+  }, [outputId, renderUniverse]);
 
   const connect = useCallback(async () => {
     try {
@@ -127,6 +165,21 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
     (navigator as any).serial.ondisconnect = disconnect;
   }, [connect, disconnect]);
 
+  useEffect(() => {
+    shortcutContext.setShortcuts([
+      {
+        shortcut: { key: 'KeyB' },
+        action: () => setBlackoutState(!blackoutState),
+        description: 'Toggle output blackout.',
+      },
+      {
+        shortcut: { key: 'KeyC' },
+        action: () => connect(),
+        description: 'Connect to serial output.',
+      },
+    ]);
+  });
+
   const resetFps = useCallback(() => {
     fpsSubscribers.current.forEach((s) => s(NaN));
     fpsBuffer.current = [0];
@@ -136,8 +189,9 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
     if (!port) {
       const handle = setInterval(() => {
         frameRef.current += 1;
-        const universe = renderUniverse.current(frameRef.current);
-        updateSubscribers.current.forEach((c) => c(universe));
+        const output = getDmxWritableOutput(project, outputId);
+        renderUniverse.current(frameRef.current, output);
+        updateSubscribers.current.forEach((c) => c(output.uint8Array));
       }, 30);
       return () => clearInterval(handle);
     }
@@ -148,18 +202,20 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
     let lastFrame = new Date().getTime();
     (async () => {
       while (!closed) {
-        let universe: Uint8Array;
+        let serialOutput: DmxOutput;
         if (blackout.current) {
-          universe = BLACKOUT_UNIVERSE;
+          serialOutput = BLACKOUT_UNIVERSE;
         } else {
+          const output = getDmxWritableOutput(project, outputId);
           frameRef.current += 1;
-          universe = renderUniverse.current(frameRef.current);
+          renderUniverse.current(frameRef.current, output);
+          serialOutput = output;
         }
 
         try {
           await writer.ready;
-          await writer.write(universe);
-          updateSubscribers.current.forEach((c) => c(universe));
+          await writer.write(serialOutput.uint8Array);
+          updateSubscribers.current.forEach((c) => c(serialOutput.uint8Array));
         } catch (e) {
           console.error('Could not write to serial port!', e);
           closed = true;
@@ -188,7 +244,7 @@ function SerialProviderImpl({ children }: PropsWithChildren): JSX.Element {
       resetFps();
       writer.releaseLock();
     };
-  }, [blackout, disconnect, port, renderUniverse, resetFps]);
+  }, [blackout, disconnect, port, renderUniverse, outputId, resetFps]);
 
   return (
     <SerialContext.Provider
