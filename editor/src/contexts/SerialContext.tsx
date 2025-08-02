@@ -5,7 +5,6 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -18,6 +17,7 @@ import { getDmxWritableOutput } from '../engine/outputs/dmxOutput';
 import { getSerialOutputId } from '../util/projectUtils';
 import { DialogContext } from './DialogContext';
 import { ProjectContext } from './ProjectContext';
+import { RenderingContext } from './RenderingContext';
 import { ShortcutContext } from './ShortcutContext';
 
 type SerialPort = any;
@@ -37,17 +37,12 @@ export const BLACKOUT_UNIVERSE: DmxOutput = {
 };
 const FPS_BUFFER_SIZE = 100;
 
-type RenderUniverse = (frame: number, output: DmxOutput) => void;
-
 const EMPTY_CONTEXT = {
   port: null as SerialPort | null,
   connect: () => {},
   disconnect: () => {},
   blackout: true,
   setBlackout: (_blackout: boolean) => {},
-  setRenderUniverse: (_render: RenderUniverse) => {},
-  clearRenderUniverse: (_render: RenderUniverse) => {},
-  subscribeToUniverseUpdates: (_callback: (universe: Uint8Array) => void) => {},
   subscribeToFspUpdates: (_callback: (fps: number) => void) => {},
 };
 
@@ -108,28 +103,17 @@ interface SerialProviderImplProps {
 function SerialProviderImpl({
   children,
 }: SerialProviderImplProps): JSX.Element {
+  const { renderFunction } = useContext(RenderingContext);
   const { project } = useContext(ProjectContext);
   const shortcutContext = useContext(ShortcutContext);
   const [port, setPort] = useState<SerialPort | null>(null);
-  const renderUniverse = useRef<RenderUniverse>(() => BLACKOUT_UNIVERSE);
-  const updateSubscribers = useRef<Array<(universe: Uint8Array) => void>>([]);
   const frameRef = useRef(0);
   const blackout = useRef(false);
   const [blackoutState, setBlackoutState] = useState(false);
   const fpsBuffer = useRef([0]);
   const fpsSubscribers = useRef<Array<(fps: number) => void>>([]);
 
-  const outputId = useMemo(() => {
-    return getSerialOutputId(project);
-  }, [project]);
-
-  // Expose render function for debugging purposes.
-  useEffect(() => {
-    const output = getDmxWritableOutput(project, outputId);
-    const global = (window || globalThis) as any;
-    global['debugRender'] = () =>
-      renderUniverse.current(frameRef.current, output);
-  }, [outputId, renderUniverse]);
+  const outputId = getSerialOutputId(project);
 
   const connect = useCallback(async () => {
     try {
@@ -190,8 +174,7 @@ function SerialProviderImpl({
       const handle = setInterval(() => {
         frameRef.current += 1;
         const output = getDmxWritableOutput(project, outputId);
-        renderUniverse.current(frameRef.current, output);
-        updateSubscribers.current.forEach((c) => c(output.uint8Array));
+        renderFunction.current(frameRef.current, output);
       }, 30);
       return () => clearInterval(handle);
     }
@@ -208,14 +191,13 @@ function SerialProviderImpl({
         } else {
           const output = getDmxWritableOutput(project, outputId);
           frameRef.current += 1;
-          renderUniverse.current(frameRef.current, output);
+          renderFunction.current(frameRef.current, output);
           serialOutput = output;
         }
 
         try {
           await writer.ready;
           await writer.write(serialOutput.uint8Array);
-          updateSubscribers.current.forEach((c) => c(serialOutput.uint8Array));
         } catch (e) {
           console.error('Could not write to serial port!', e);
           closed = true;
@@ -244,7 +226,7 @@ function SerialProviderImpl({
       resetFps();
       writer.releaseLock();
     };
-  }, [blackout, disconnect, port, renderUniverse, outputId, resetFps]);
+  }, [blackout, disconnect, port, outputId, resetFps]);
 
   return (
     <SerialContext.Provider
@@ -257,16 +239,6 @@ function SerialProviderImpl({
           blackout.current = b;
           setBlackoutState(b);
         },
-        setRenderUniverse: (r: RenderUniverse) => (renderUniverse.current = r),
-        clearRenderUniverse: (r: RenderUniverse) => {
-          if (renderUniverse.current === r) {
-            renderUniverse.current = () => BLACKOUT_UNIVERSE;
-          }
-        },
-        subscribeToUniverseUpdates: useCallback(
-          (callback) => updateSubscribers.current.push(callback),
-          [updateSubscribers],
-        ),
         subscribeToFspUpdates: useCallback(
           (callback) => fpsSubscribers.current.push(callback),
           [fpsSubscribers],

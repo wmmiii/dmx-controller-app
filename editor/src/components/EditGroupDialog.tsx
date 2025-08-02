@@ -2,13 +2,13 @@ import { Project } from '@dmx-controller/proto/project_pb';
 import { JSX, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { ProjectContext } from '../contexts/ProjectContext';
-import { SerialContext } from '../contexts/SerialContext';
 import { getApplicableMembers } from '../engine/group';
 import { renderGroupDebugToUniverse } from '../engine/render';
 import IconBxX from '../icons/IconBxX';
 
 import { TargetGroup } from '@dmx-controller/proto/output_pb';
-import { DmxOutput } from '../engine/context';
+import { RenderingContext } from '../contexts/RenderingContext';
+import { WritableOutput } from '../engine/context';
 import { Button, IconButton } from './Button';
 import styles from './EditGroupDialog.module.scss';
 import { TextInput } from './Input';
@@ -30,19 +30,20 @@ export function EditGroupDialog({
 }: EditGroupDialogProps): JSX.Element {
   const { project, save, update } = useContext(ProjectContext);
   const projectRef = useRef<Project>(project);
-  const { setRenderUniverse, clearRenderUniverse } = useContext(SerialContext);
+  const { setRenderFunction, clearRenderFunction } =
+    useContext(RenderingContext);
   const [draggingIndex, setDraggingIndex] = useState<number>(-1);
 
   useEffect(() => {
-    const render = (_frame: number, output: DmxOutput) => {
+    const render = (_frame: number, output: WritableOutput) => {
       const project = projectRef.current;
       if (project != null) {
         renderGroupDebugToUniverse(project, groupId, output);
       }
     };
-    setRenderUniverse(render);
 
-    return () => clearRenderUniverse(render);
+    setRenderFunction(render);
+    return () => clearRenderFunction(render);
   }, [projectRef]);
 
   const applicableMembers = useMemo(

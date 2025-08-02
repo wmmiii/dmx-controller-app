@@ -131,13 +131,17 @@ export default function Index(): JSX.Element {
             </Dropdown>
           )}
         </div>
-        {Object.values(getActivePatch(project).outputs).map((o, i) => {
-          if (o.output.case === 'SerialDmxOutput') {
-            return <DmxUniverseVisualizer key={i} dmxOutput={o.output.value} />;
-          } else {
-            return null;
-          }
-        })}
+        {Object.entries(getActivePatch(project).outputs).map(
+          ([outputId, output], i) => {
+            if (output.output.case === 'SerialDmxOutput') {
+              return (
+                <DmxUniverseVisualizer key={i} dmxOutputId={BigInt(outputId)} />
+              );
+            } else {
+              return null;
+            }
+          },
+        )}
         <div className={styles.spacer}></div>
         <div className={styles.message}>{lastOperation}</div>
         <FpsIndicator />

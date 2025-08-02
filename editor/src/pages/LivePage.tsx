@@ -38,7 +38,6 @@ import { BeatContext } from '../contexts/BeatContext';
 import { ControllerContext } from '../contexts/ControllerContext';
 import { PaletteContext } from '../contexts/PaletteContext';
 import { ProjectContext } from '../contexts/ProjectContext';
-import { SerialContext } from '../contexts/SerialContext';
 import { getAvailableChannels } from '../engine/fixtures/fixture';
 import {
   DEFAULT_COLOR_PALETTE,
@@ -47,7 +46,8 @@ import {
 import IconBxPlus from '../icons/IconBxPlus';
 import IconBxX from '../icons/IconBxX';
 
-import { DmxOutput } from '../engine/context';
+import { RenderingContext } from '../contexts/RenderingContext';
+import { WritableOutput } from '../engine/context';
 import IconBxsCog from '../icons/IconBxsCog';
 import styles from './LivePage.module.scss';
 
@@ -59,7 +59,8 @@ export function LivePage(): JSX.Element {
     x: number;
     y: number;
   } | null>(null);
-  const { setRenderUniverse, clearRenderUniverse } = useContext(SerialContext);
+  const { setRenderFunction, clearRenderFunction } =
+    useContext(RenderingContext);
 
   const [selected, setSelected] = useState<Scene_TileMap | null>(null);
   const [editScene, setEditScene] = useState<Scene | null>(null);
@@ -71,7 +72,7 @@ export function LivePage(): JSX.Element {
   }, [project]);
 
   useEffect(() => {
-    const render = (frame: number, output: DmxOutput) => {
+    const render = (frame: number, output: WritableOutput) => {
       const project = projectRef.current;
       if (project != null) {
         renderActiveSceneToUniverse(
@@ -85,9 +86,9 @@ export function LivePage(): JSX.Element {
         output.universe.fill(0);
       }
     };
-    setRenderUniverse(render);
+    setRenderFunction(render);
 
-    return () => clearRenderUniverse(render);
+    return () => clearRenderFunction(render);
   }, [beatMetadata, projectRef]);
 
   return (

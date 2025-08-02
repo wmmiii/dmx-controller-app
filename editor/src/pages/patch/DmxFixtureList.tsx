@@ -22,7 +22,7 @@ import { ColorSwatch } from '../../components/ColorSwatch';
 import { NumberInput, TextInput } from '../../components/Input';
 import { Modal } from '../../components/Modal';
 import RangeInput from '../../components/RangeInput';
-import { SerialContext } from '../../contexts/SerialContext';
+import { RenderingContext } from '../../contexts/RenderingContext';
 import {
   AMOUNT_CHANNELS,
   ANGLE_CHANNELS,
@@ -254,7 +254,8 @@ function EditDefinitionDialog({
   deleteDefinition,
 }: EditDefinitionDialogProps): JSX.Element {
   const { save } = useContext(ProjectContext);
-  const { setRenderUniverse, clearRenderUniverse } = useContext(SerialContext);
+  const { setRenderFunction, clearRenderFunction } =
+    useContext(RenderingContext);
   const [modeId, setModeId] = useState<string>(
     Object.keys(definition.modes)[0],
   );
@@ -278,14 +279,14 @@ function EditDefinitionDialog({
       }
     };
 
-    setRenderUniverse(render);
-    return () => clearRenderUniverse(render);
+    setRenderFunction(render);
+    return () => clearRenderFunction(render);
   }, [
     definition,
     testIndex,
     testValues,
-    setRenderUniverse,
-    clearRenderUniverse,
+    setRenderFunction,
+    clearRenderFunction,
   ]);
 
   const mode = definition.modes[modeId];

@@ -3,27 +3,35 @@ import { ColorSchema } from '@dmx-controller/proto/color_pb';
 import { useContext, useEffect, useMemo, useState } from 'react';
 
 import { ProjectContext } from '../contexts/ProjectContext';
-import { SerialContext } from '../contexts/SerialContext';
 import { ChannelTypes } from '../engine/channel';
 
 import { DmxFixtureDefinition_Channel_ColorWheelMapping } from '@dmx-controller/proto/dmx_pb';
 import { SerialDmxOutput } from '@dmx-controller/proto/output_pb';
+import { RenderingContext } from '../contexts/RenderingContext';
+import { DmxOutput } from '../engine/context';
+import { getOutput } from '../util/projectUtils';
 import styles from './UniverseVisualizer.module.scss';
 
 interface DmxUniverseVisualizerProps {
-  dmxOutput: SerialDmxOutput;
+  dmxOutputId: bigint;
 }
 
 export function DmxUniverseVisualizer({
-  dmxOutput,
+  dmxOutputId,
 }: DmxUniverseVisualizerProps) {
   const { project } = useContext(ProjectContext);
   const [universe, setUniverse] = useState<Uint8Array>(new Uint8Array(512));
-  const { subscribeToUniverseUpdates } = useContext(SerialContext);
+  const { subscribeToRender } = useContext(RenderingContext);
+
+  const dmxOutput = getOutput(project, dmxOutputId).output
+    .value as SerialDmxOutput;
 
   useEffect(() => {
-    subscribeToUniverseUpdates(setUniverse);
-  }, [subscribeToUniverseUpdates, setUniverse]);
+    subscribeToRender(dmxOutputId, (output) => {
+      const dmxOutput = output as DmxOutput;
+      setUniverse(dmxOutput.uint8Array);
+    });
+  }, [subscribeToRender, setUniverse]);
 
   const fixtureMapping = useMemo(() => {
     if (dmxOutput.fixtures == null) {

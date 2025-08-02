@@ -7,6 +7,7 @@ import { BeatProvider } from './contexts/BeatContext';
 import { ControllerProvider } from './contexts/ControllerContext';
 import { DialogProvider } from './contexts/DialogContext';
 import { ProjectProvider } from './contexts/ProjectContext';
+import { RenderingProvider } from './contexts/RenderingContext';
 import { SerialProvider } from './contexts/SerialContext';
 import { ShortcutProvider } from './contexts/ShortcutContext';
 import { TimeProvider } from './contexts/TimeContext';
@@ -22,19 +23,21 @@ root.render(
   <StrictMode>
     <BrowserRouter basename="/">
       <TimeProvider>
-        <DialogProvider>
-          <ShortcutProvider>
-            <ProjectProvider>
-              <SerialProvider>
-                <BeatProvider>
-                  <ControllerProvider>
-                    <Index />
-                  </ControllerProvider>
-                </BeatProvider>
-              </SerialProvider>
-            </ProjectProvider>
-          </ShortcutProvider>
-        </DialogProvider>
+        <RenderingProvider>
+          <DialogProvider>
+            <ShortcutProvider>
+              <ProjectProvider>
+                <SerialProvider>
+                  <BeatProvider>
+                    <ControllerProvider>
+                      <Index />
+                    </ControllerProvider>
+                  </BeatProvider>
+                </SerialProvider>
+              </ProjectProvider>
+            </ShortcutProvider>
+          </DialogProvider>
+        </RenderingProvider>
       </TimeProvider>
     </BrowserRouter>
   </StrictMode>,
