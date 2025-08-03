@@ -42,6 +42,8 @@ message FixtureState {
   optional double height = 11;
   optional double zoom = 7;
   optional double strobe = 9;
+  optional uint32 wled_effect = 14;
+  optional uint32 wled_palette = 15;
 
   reserved 8; // optional StrobeSpeed deprecated_strobe = 8 [deprecated = true];
   reserved 2; // RGB rgb = 2 [deprecated = true];

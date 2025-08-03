@@ -116,6 +116,14 @@ export function applyState(state: FixtureState, context: RenderContext): void {
   }
 
   for (const channel of state.channels) {
-    device.setChannel(context.output, channel.index, channel.value);
+    device.setDmxChannel(context.output, channel.index, channel.value);
+  }
+
+  if (state.wledEffect != null) {
+    device.setWledEffect(context.output, state.wledEffect);
+  }
+
+  if (state.wledPalette != null) {
+    device?.setWledPalette(context.output, state.wledPalette);
   }
 }

@@ -224,7 +224,7 @@ function functionCollectionToDevice(
   collection: FunctionCollection,
 ): WritableDevice {
   return {
-    setChannel: (output, index, value) =>
+    setDmxChannel: (output, index, value) =>
       collection.manualFunctions.forEach((f) => {
         if (output.type === 'dmx') {
           f(output, index, value);
@@ -248,6 +248,8 @@ function functionCollectionToDevice(
           f(output, amount);
         }
       }),
+    setWledEffect: () => {},
+    setWledPalette: () => {},
   };
 }
 

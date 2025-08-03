@@ -9,8 +9,4 @@ message WledOutput {
 
 message PhysicalWledSegment {
   string name = 1;
-  uint32 default_effect = 2;
-  float default_speed = 3;
-  uint32 default_palette = 4;
-  float default_brightness = 5;
 }

@@ -43,14 +43,28 @@ export interface WritableDevice {
   /**
    * Manually overrides a DMX channel. Valid numbers are [0, 255].
    */
-  setChannel(output: WritableOutput, index: number, value: number): void;
+  setDmxChannel(output: WritableOutput, index: number, value: number): void;
+
+  // WLED SPECIFIC
+
+  /**
+   * Sets the effect ID of an WLED device.
+   */
+  setWledEffect(output: WritableOutput, effectId: number): void;
+
+  /**
+   * Sets the palette ID of an WLED device.
+   */
+  setWledPalette(output: WritableOutput, paletteId: number): void;
 }
 
 export const NULL_WRITABLE_DEVICE: WritableDevice = {
   setColor: () => {},
   setAngle: () => {},
   setAmount: () => {},
-  setChannel: () => {},
+  setDmxChannel: () => {},
+  setWledEffect: () => {},
+  setWledPalette: () => {},
 };
 
 export class WritableDeviceCache {
@@ -178,7 +192,11 @@ function getPhysicalWritableDeviceFromGroup(
       fixtures.forEach((f) => f.setAngle(output, type, angle)),
     setAmount: (output, type, amount) =>
       fixtures.forEach((f) => f.setAmount(output, type, amount)),
-    setChannel: (output, index, value) =>
-      fixtures.forEach((f) => f.setChannel(output, index, value)),
+    setDmxChannel: (output, index, value) =>
+      fixtures.forEach((f) => f.setDmxChannel(output, index, value)),
+    setWledEffect: (output, effectId) =>
+      fixtures.forEach((f) => f.setWledEffect(output, effectId)),
+    setWledPalette: (output, paletteId) =>
+      fixtures.forEach((f) => f.setWledPalette(output, paletteId)),
   };
 }

@@ -29,10 +29,6 @@ export function WledEditor({ outputId }: WledEditorProps) {
         const jsonSegment = json['state']['seg'][i];
         newSegments[jsonSegment['id']] = create(PhysicalWledSegmentSchema, {
           name: jsonSegment['n'] || `Segment ${i}`,
-          defaultEffect: jsonSegment['fx'],
-          defaultSpeed: jsonSegment['sx'] / 255,
-          defaultPalette: jsonSegment['pal'],
-          defaultBrightness: jsonSegment['bri'] / 255,
         });
       }
 

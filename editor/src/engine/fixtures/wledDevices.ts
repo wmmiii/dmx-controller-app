@@ -24,6 +24,16 @@ export function getWledWritableDevice(segmentId: number): WritableDevice {
         }
       }
     },
-    setChannel: () => {},
+    setDmxChannel: () => {},
+    setWledEffect: (output, effectId) => {
+      if (output.type === 'wled') {
+        output.segments[segmentId].effect = effectId;
+      }
+    },
+    setWledPalette: (output, paletteId) => {
+      if (output.type === 'wled') {
+        output.segments[segmentId].palette = paletteId;
+      }
+    },
   };
 }

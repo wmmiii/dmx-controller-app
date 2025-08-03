@@ -26,16 +26,16 @@ export function getWledWritableOutput(
   const wledOutput = output.output.value as WledOutput;
   const latencyMs = getOutput(project, outputId).latencyMs;
 
-  const segments = Object.values(wledOutput.segments).map((segment) => ({
-    effect: segment.defaultEffect,
-    palette: segment.defaultPalette,
+  const segments = Object.values(wledOutput.segments).map(() => ({
+    effect: 0,
+    palette: 0,
     primaryColor: {
       red: 0,
       green: 0,
       blue: 0,
     },
-    speed: segment.defaultSpeed,
-    brightness: segment.defaultBrightness,
+    speed: 0.5,
+    brightness: 1,
   }));
 
   return {
@@ -93,7 +93,7 @@ function interpolate(
 
     // First, copy all values of whichever segment is more powerful.
     let dominantSegment: WritableWledOutput['segments'][number];
-    if (t > 0.5) {
+    if (t < 0.5) {
       dominantSegment = aSegment;
     } else {
       dominantSegment = bSegment;

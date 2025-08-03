@@ -37,6 +37,8 @@ export function WledRendererProvider({ children }: PropsWithChildren) {
         const startMs = new Date().getTime();
         renderFunction.current(++frame, wledWritableOutput);
 
+        console.log(wledWritableOutput.segments);
+
         const wledUpdate = {
           transition: 0,
           seg: wledWritableOutput.segments.map((s, i) => ({

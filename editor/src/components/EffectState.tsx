@@ -15,6 +15,7 @@ import {
   ANGLE_CHANNELS,
   COLOR_CHANNELS,
   ChannelTypes,
+  WLED_CHANNELS,
 } from '../engine/channel';
 import IconBxPlus from '../icons/IconBxPlus';
 
@@ -100,6 +101,29 @@ export function EffectState({
           min={0}
           max={1}
           type="float"
+        />
+      ))}
+      {(
+        availableChannels.filter(
+          (channel) => WLED_CHANNELS.indexOf(channel as any) > -1,
+        ) as Array<keyof FixtureStateProto>
+      ).map((channel) => (
+        <Channel
+          name={channel}
+          values={states.map((s) => ({
+            value: (s.state as any)[channel],
+            onChange: (value) => {
+              (s.state as any)[channel] = value;
+              if (value === undefined) {
+                save(`Removed ${channel} on ${s.name}.`);
+              } else {
+                save(`Set ${channel} on ${s.name}.`);
+              }
+            },
+          }))}
+          min={0}
+          max={512}
+          type="integer"
         />
       ))}
       <CustomChannels states={states.map((s) => s.state)} />
@@ -368,7 +392,6 @@ function CustomChannels({ states }: CustomChannelsProps) {
         <Button
           onClick={() => {
             const newIndex = Math.max(...setChannels, 0) + 1;
-            console.log('new index', newIndex);
             states[0].channels.push(
               create(FixtureState_ChannelSchema, {
                 index: newIndex,
