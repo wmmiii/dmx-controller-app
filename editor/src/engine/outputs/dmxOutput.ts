@@ -27,6 +27,7 @@ export function getDmxWritableOutput(
 ): WritableDmxOutput {
   const universe = new Array(512).fill(0);
   const nonInterpolatedIndices = applyDefaults(project, outputId, universe);
+  const latencyMs = getOutput(project, outputId).latencyMs;
 
   return {
     type: 'dmx',
@@ -36,7 +37,9 @@ export function getDmxWritableOutput(
       return universeToUint8Array(project, outputId, universe);
     },
     outputId: outputId,
-    clone: () => clone(project, outputId, universe, nonInterpolatedIndices),
+    latencyMs: latencyMs,
+    clone: () =>
+      clone(project, outputId, latencyMs, universe, nonInterpolatedIndices),
     interpolate: (a, b, t) =>
       interpolateUniverses(
         universe,
@@ -95,6 +98,7 @@ function applyDefaults(
 function clone(
   project: Project,
   outputId: bigint,
+  latencyMs: number,
   universe: DmxUniverse,
   nonInterpolatedIndices: number[],
 ): WritableDmxOutput {
@@ -107,7 +111,9 @@ function clone(
       return universeToUint8Array(project, outputId, universe);
     },
     outputId: outputId,
-    clone: () => clone(project, outputId, newUniverse, nonInterpolatedIndices),
+    latencyMs: latencyMs,
+    clone: () =>
+      clone(project, outputId, latencyMs, newUniverse, nonInterpolatedIndices),
     interpolate: (a, b, t) =>
       interpolateUniverses(
         newUniverse,

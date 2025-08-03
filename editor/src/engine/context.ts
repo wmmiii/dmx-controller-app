@@ -5,6 +5,7 @@ import { WritableDeviceCache } from './fixtures/writableDevice';
 
 interface BaseOutput<T> {
   outputId: bigint;
+  latencyMs: number;
   clone: () => T;
   interpolate: (a: WritableOutput, b: WritableOutput, t: number) => void;
 }

@@ -22,8 +22,6 @@ message Project {
   reserved 3 to 10;
 
   // Path descriptions
-  uint32 update_frequency_ms = 11;
-  int32 timing_offset_ms = 12;
   uint64 active_patch = 18;
   map<uint64, Patch> patches = 40;
   FixtureDefinitions fixture_definitions = 43;
@@ -44,6 +42,8 @@ message Project {
   reserved 54; // last_controller_name
   ControllerMapping controller_mapping = 55;
 
+  reserved 11; // uint32 update_frequency_ms = 11;
+  reserved 12; // int32 timing_offset_ms = 12;
   reserved 14; // map<uint32, PhysicalDmxFixture> physical_fixtures = 14 [ deprecated = true ];
   reserved 41; // map<uint32, FixtureSequence> fixture_sequences = 41 [ deprecated = true ];
   reserved 16; // repeated DefaultChannelValues default_channel_values = 16 [ deprecated = true ];

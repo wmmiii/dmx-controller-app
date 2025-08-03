@@ -14,7 +14,7 @@ import IconBxErrorAlt from '../icons/IconBxErrorAlt';
 
 import { WritableDmxOutput } from '../engine/context';
 import { getDmxWritableOutput } from '../engine/outputs/dmxOutput';
-import { getSerialOutputId } from '../util/projectUtils';
+import { getOutput, getSerialOutputId } from '../util/projectUtils';
 import { DialogContext } from './DialogContext';
 import { ProjectContext } from './ProjectContext';
 import { RenderingContext } from './RenderingContext';
@@ -24,6 +24,7 @@ type SerialPort = any;
 
 export const BLACKOUT_UNIVERSE: WritableDmxOutput = {
   type: 'dmx',
+  latencyMs: 0,
   universe: new Array(512).fill(0),
   nonInterpolatedIndices: [],
   outputId: BigInt(0),
@@ -104,7 +105,7 @@ function SerialProviderImpl({
   children,
 }: SerialProviderImplProps): JSX.Element {
   const { renderFunction } = useContext(RenderingContext);
-  const { project } = useContext(ProjectContext);
+  const { project, update } = useContext(ProjectContext);
   const shortcutContext = useContext(ShortcutContext);
   const [port, setPort] = useState<SerialPort | null>(null);
   const frameRef = useRef(0);
@@ -183,8 +184,10 @@ function SerialProviderImpl({
 
     let closed = false;
     let lastFrame = new Date().getTime();
+    const latencySamples: number[] = [];
     (async () => {
       while (!closed) {
+        const startMs = new Date().getTime();
         let serialOutput: WritableDmxOutput;
         if (blackout.current) {
           serialOutput = BLACKOUT_UNIVERSE;
@@ -197,6 +200,7 @@ function SerialProviderImpl({
         try {
           await writer.ready;
           await writer.write(serialOutput.uint8Array);
+          latencySamples.push(new Date().getTime() - startMs);
         } catch (e) {
           console.error('Could not write to serial port!', e);
           closed = true;
@@ -217,6 +221,14 @@ function SerialProviderImpl({
         average /= fpsBuffer.current.length;
         fpsSubscribers.current.forEach((s) => s(Math.floor(1000 / average)));
         lastFrame = now;
+
+        if (latencySamples.length >= 40) {
+          const total = latencySamples.reduce((a, b) => a + b);
+          const latency = Math.floor(total / latencySamples.length);
+          getOutput(project, outputId).latencyMs = latency;
+          latencySamples.length = 0;
+          update();
+        }
       }
     })();
 
@@ -225,7 +237,7 @@ function SerialProviderImpl({
       resetFps();
       writer.releaseLock();
     };
-  }, [blackout, disconnect, port, outputId, resetFps]);
+  }, [blackout, disconnect, port, outputId, resetFps, update]);
 
   return (
     <SerialContext.Provider

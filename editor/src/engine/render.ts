@@ -63,7 +63,7 @@ export function renderShow(
   project: Project,
   output: WritableOutput,
 ) {
-  t += project.timingOffsetMs;
+  t += output.latencyMs;
 
   const writableDeviceCache = new WritableDeviceCache(project, output.outputId);
 
@@ -114,8 +114,8 @@ export function renderScene(
   project: Project,
   output: WritableOutput,
 ) {
-  const absoluteT = t + project.timingOffsetMs;
-  const beatT = t + project.timingOffsetMs - Number(beatMetadata.offsetMs);
+  const absoluteT = t + output.latencyMs;
+  const beatT = t + output.latencyMs - Number(beatMetadata.offsetMs);
 
   const writableDeviceCache = new WritableDeviceCache(project, output.outputId);
 

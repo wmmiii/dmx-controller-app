@@ -2,7 +2,7 @@ import { create } from '@bufbuild/protobuf';
 import { OutputSchema } from '@dmx-controller/proto/output_pb';
 import { Project } from '@dmx-controller/proto/project_pb';
 import { WledOutput } from '@dmx-controller/proto/wled_pb';
-import { getActivePatch } from '../../util/projectUtils';
+import { getActivePatch, getOutput } from '../../util/projectUtils';
 import { WritableWledOutput } from '../context';
 
 export function createNewWledOutput() {
@@ -24,6 +24,7 @@ export function getWledWritableOutput(
 ): WritableWledOutput {
   const output = getActivePatch(project).outputs[outputId.toString()];
   const wledOutput = output.output.value as WledOutput;
+  const latencyMs = getOutput(project, outputId).latencyMs;
 
   const segments = Object.values(wledOutput.segments).map((segment) => ({
     effect: segment.defaultEffect,
@@ -41,7 +42,8 @@ export function getWledWritableOutput(
     type: 'wled',
     outputId: outputId,
     segments: segments,
-    clone: () => clone(outputId, segments),
+    latencyMs: latencyMs,
+    clone: () => clone(outputId, latencyMs, segments),
     interpolate: (a, b, t) =>
       interpolate(
         segments,
@@ -54,6 +56,7 @@ export function getWledWritableOutput(
 
 function clone(
   outputId: bigint,
+  latencyMs: number,
   segments: WritableWledOutput['segments'],
 ): WritableWledOutput {
   const clonedSegments = segments.map((s) => {
@@ -65,7 +68,8 @@ function clone(
     type: 'wled',
     outputId: outputId,
     segments: clonedSegments,
-    clone: () => clone(outputId, clonedSegments),
+    latencyMs: latencyMs,
+    clone: () => clone(outputId, latencyMs, clonedSegments),
     interpolate: (a, b, t) =>
       interpolate(
         clonedSegments,

@@ -109,9 +109,7 @@ export function outputValues(
     switch (action.case) {
       case 'beatMatch':
         const beatMetadata = project.liveBeat!;
-        const beatT = Number(
-          t + BigInt(project.timingOffsetMs) - beatMetadata.offsetMs,
-        );
+        const beatT = Number(t - beatMetadata.offsetMs);
         value = 1 - Math.round((beatT / beatMetadata.lengthMs) % 1);
         break;
       case 'colorPaletteSelection':

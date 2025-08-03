@@ -29,8 +29,6 @@ export function createNewProject() {
 
   return create(ProjectSchema, {
     name: 'Untitled Project',
-    updateFrequencyMs: 15,
-    timingOffsetMs: 0,
     scenes: [
       {
         name: 'Default scene',

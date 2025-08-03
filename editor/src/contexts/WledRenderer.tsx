@@ -2,13 +2,13 @@ import { useContext, useEffect } from 'react';
 
 import { WledOutput } from '@dmx-controller/proto/wled_pb';
 import { getWledWritableOutput } from '../engine/outputs/wledOutput';
-import { getActivePatch } from '../util/projectUtils';
+import { getActivePatch, getOutput } from '../util/projectUtils';
 import { ProjectContext } from './ProjectContext';
 import { RenderingContext } from './RenderingContext';
 
 export function WledRenderer() {
   const { renderFunction } = useContext(RenderingContext);
-  const { project } = useContext(ProjectContext);
+  const { project, update } = useContext(ProjectContext);
 
   const startRenderLoop = (outputId: bigint) => {
     let cont = true;
@@ -19,8 +19,11 @@ export function WledRenderer() {
 
       let lastUpdate;
 
+      const latencySamples: number[] = [];
+
       while (cont) {
         const wledWritableOutput = getWledWritableOutput(project, outputId);
+        const startMs = new Date().getTime();
         renderFunction.current(++frame, wledWritableOutput);
 
         const wledUpdate = {
@@ -56,11 +59,20 @@ export function WledRenderer() {
               body: JSON.stringify(wledUpdate),
             },
           );
+          latencySamples.push(new Date().getTime() - startMs);
           if (!response.ok) {
             console.error(await response.text());
           }
         } catch (e) {
           console.error(e);
+        }
+
+        if (latencySamples.length >= 40) {
+          const total = latencySamples.reduce((a, b) => a + b);
+          const latency = Math.floor(total / latencySamples.length / 2);
+          getOutput(project, outputId).latencyMs = latency;
+          latencySamples.length = 0;
+          update();
         }
       }
     })();
