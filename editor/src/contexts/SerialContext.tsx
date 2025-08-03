@@ -189,10 +189,9 @@ function SerialProviderImpl({
         if (blackout.current) {
           serialOutput = BLACKOUT_UNIVERSE;
         } else {
-          const output = getDmxWritableOutput(project, outputId);
+          serialOutput = getDmxWritableOutput(project, outputId);
           frameRef.current += 1;
-          renderFunction.current(frameRef.current, output);
-          serialOutput = output;
+          renderFunction.current(frameRef.current, serialOutput);
         }
 
         try {

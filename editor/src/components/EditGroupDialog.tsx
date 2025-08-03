@@ -3,7 +3,7 @@ import { JSX, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { ProjectContext } from '../contexts/ProjectContext';
 import { getApplicableMembers } from '../engine/group';
-import { renderGroupDebugToUniverse } from '../engine/render';
+import { renderGroupDebug } from '../engine/render';
 import IconBxX from '../icons/IconBxX';
 
 import { TargetGroup } from '@dmx-controller/proto/output_pb';
@@ -38,7 +38,7 @@ export function EditGroupDialog({
     const render = (_frame: number, output: WritableOutput) => {
       const project = projectRef.current;
       if (project != null) {
-        renderGroupDebugToUniverse(project, groupId, output);
+        renderGroupDebug(project, groupId, output);
       }
     };
 

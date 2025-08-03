@@ -5,12 +5,16 @@ import { useContext, useEffect, useMemo, useState } from 'react';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { ChannelTypes } from '../engine/channel';
 
-import { DmxFixtureDefinition_Channel_ColorWheelMapping } from '@dmx-controller/proto/dmx_pb';
+import {
+  DmxFixtureDefinition_Channel_AmountMapping,
+  DmxFixtureDefinition_Channel_ColorWheelMapping,
+} from '@dmx-controller/proto/dmx_pb';
 import { SerialDmxOutput } from '@dmx-controller/proto/output_pb';
 import { RenderingContext } from '../contexts/RenderingContext';
 import { WritableDmxOutput } from '../engine/context';
 import { getOutput } from '../util/projectUtils';
-import styles from './UniverseVisualizer.module.scss';
+
+import styles from './Visualizer.module.scss';
 
 interface DmxUniverseVisualizerProps {
   dmxOutputId: bigint;
@@ -145,9 +149,15 @@ export function DmxUniverseVisualizer({
 
         if (f.dimmerIndex != null) {
           const dimmerValue = getValue(f.dimmerIndex);
-          red *= dimmerValue / 255;
-          green *= dimmerValue / 255;
-          blue *= dimmerValue / 255;
+          const dimmerChannel = Object.values(f.mode.channels).find(
+            (c) => c.type === 'dimmer',
+          )?.mapping.value as DmxFixtureDefinition_Channel_AmountMapping;
+          const mappedDimmerValue =
+            (dimmerValue - dimmerChannel.minValue) /
+            (dimmerChannel.maxValue - dimmerChannel.minValue);
+          red *= mappedDimmerValue;
+          green *= mappedDimmerValue;
+          blue *= mappedDimmerValue;
         }
 
         const background = `rgb(${Math.min(red, 255)}, ${Math.min(green, 255)}, ${Math.min(blue, 255)})`;

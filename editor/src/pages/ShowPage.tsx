@@ -13,7 +13,7 @@ import LightTimeline from '../components/LightTimeline';
 import { Modal } from '../components/Modal';
 import { PaletteContext } from '../contexts/PaletteContext';
 import { ProjectContext } from '../contexts/ProjectContext';
-import { DEFAULT_COLOR_PALETTE, renderShowToUniverse } from '../engine/render';
+import { DEFAULT_COLOR_PALETTE, renderShow } from '../engine/render';
 import { UNSET_INDEX, idMapToArray } from '../util/mapUtils';
 
 import { RenderingContext } from '../contexts/RenderingContext';
@@ -51,7 +51,7 @@ export default function ShowPage(): JSX.Element {
 
   useEffect(() => {
     const render = (frame: number, output: WritableOutput) =>
-      renderShowToUniverse(t.current, frame, project, output);
+      renderShow(t.current, frame, project, output);
 
     setRenderFunction(render);
     return () => clearRenderFunction(render);

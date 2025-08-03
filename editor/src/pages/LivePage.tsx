@@ -41,7 +41,7 @@ import { ProjectContext } from '../contexts/ProjectContext';
 import { getAvailableChannels } from '../engine/fixtures/fixture';
 import {
   DEFAULT_COLOR_PALETTE,
-  renderSceneToUniverse as renderActiveScene,
+  renderScene as renderActiveScene,
 } from '../engine/render';
 import IconBxPlus from '../icons/IconBxPlus';
 import IconBxX from '../icons/IconBxX';

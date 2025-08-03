@@ -1,0 +1,35 @@
+@import '../vars';
+
+$dot-size: 20px;
+
+.visualizer {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.visualizerDot {
+  border-radius: calc($dot-size / 4);
+  height: $dot-size;
+  width: $dot-size;
+  margin: spacing(0.5);
+}
+
+.visualizerSegment {
+  height: $dot-size;
+  margin: 0 1px;
+  width: $dot-size;
+
+  &:first-child {
+    border-bottom-left-radius: $dim-border-radius;
+    border-top-left-radius: $dim-border-radius;
+  }
+
+  &:last-child {
+    border-bottom-right-radius: $dim-border-radius;
+    border-top-right-radius: $dim-border-radius;
+  }
+}

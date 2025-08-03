@@ -13,7 +13,7 @@ export const RenderingContext = createContext({
     _outputId: bigint,
     _f: (output: WritableOutput) => void,
   ) => {},
-  unsubscribeToRender: (
+  unsubscribeFromRender: (
     _outputId: bigint,
     _f: (output: WritableOutput) => void,
   ) => {},
@@ -52,13 +52,11 @@ export function RenderingProvider({ children }: PropsWithChildren) {
           }
           subscribers.push(f);
         },
-        unsubscribeToRender: (outputId, f) => {
+        unsubscribeFromRender: (outputId, f) => {
           let subscribers = renderSubscribers.current.get(outputId);
-          if (!subscribers) {
-            subscribers = [];
-            renderSubscribers.current.set(outputId, subscribers);
+          if (subscribers) {
+            subscribers = subscribers.filter((s) => s !== f);
           }
-          subscribers.push(f);
         },
       }}
     >

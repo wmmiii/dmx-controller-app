@@ -8,6 +8,7 @@ import { DmxUniverseVisualizer } from './components/DmxUniverseVisualizer';
 import { Dropdown } from './components/Dropdown';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Modal } from './components/Modal';
+import { WledVisualizer } from './components/WledVisualizer';
 import { ControllerContext } from './contexts/ControllerContext';
 import { DialogContext } from './contexts/DialogContext';
 import { ProjectContext } from './contexts/ProjectContext';
@@ -133,12 +134,20 @@ export default function Index(): JSX.Element {
         </div>
         {Object.entries(getActivePatch(project).outputs).map(
           ([outputId, output], i) => {
-            if (output.output.case === 'serialDmxOutput') {
-              return (
-                <DmxUniverseVisualizer key={i} dmxOutputId={BigInt(outputId)} />
-              );
-            } else {
-              return null;
+            switch (output.output.case) {
+              case 'serialDmxOutput':
+                return (
+                  <DmxUniverseVisualizer
+                    key={i}
+                    dmxOutputId={BigInt(outputId)}
+                  />
+                );
+              case 'wledOutput':
+                return (
+                  <WledVisualizer key={i} wledOutputId={BigInt(outputId)} />
+                );
+              default:
+                return null;
             }
           },
         )}

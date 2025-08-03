@@ -57,7 +57,7 @@ export const DEFAULT_COLOR_PALETTE = create(ColorPaletteSchema, {
   },
 }) as ColorPalette;
 
-export function renderShowToUniverse(
+export function renderShow(
   t: number,
   frame: number,
   project: Project,
@@ -101,19 +101,13 @@ export function renderShowToUniverse(
           target: track.outputTarget,
           writableDevice,
         });
-        renderLayersToUniverse(
-          t,
-          track.layers,
-          trackContext,
-          beatMetadata,
-          frame,
-        );
+        renderLayers(t, track.layers, trackContext, beatMetadata, frame);
       }
     }
   }
 }
 
-export function renderSceneToUniverse(
+export function renderScene(
   t: number,
   beatMetadata: BeatMetadata,
   frame: number,
@@ -317,7 +311,7 @@ export function renderSceneToUniverse(
   }
 }
 
-export function renderGroupDebugToUniverse(
+export function renderGroupDebug(
   project: Project,
   groupId: bigint,
   output: WritableOutput,
@@ -374,7 +368,7 @@ function renderUniverseSequence(
         const trackContext = Object.assign({}, context, {
           target: track.outputTarget,
         });
-        renderLayersToUniverse(
+        renderLayers(
           t,
           track.layers,
           trackContext,
@@ -389,7 +383,7 @@ function renderUniverseSequence(
   }
 }
 
-function renderLayersToUniverse(
+function renderLayers(
   t: number,
   layers: LightLayer[],
   context: RenderContext,
