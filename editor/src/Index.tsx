@@ -133,7 +133,7 @@ export default function Index(): JSX.Element {
         </div>
         {Object.entries(getActivePatch(project).outputs).map(
           ([outputId, output], i) => {
-            if (output.output.case === 'SerialDmxOutput') {
+            if (output.output.case === 'serialDmxOutput') {
               return (
                 <DmxUniverseVisualizer key={i} dmxOutputId={BigInt(outputId)} />
               );

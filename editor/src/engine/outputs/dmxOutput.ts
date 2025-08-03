@@ -2,18 +2,18 @@ import { create } from '@bufbuild/protobuf';
 import { OutputSchema } from '@dmx-controller/proto/output_pb';
 import { Project } from '@dmx-controller/proto/project_pb';
 import { getOutput } from '../../util/projectUtils';
-import { DmxOutput } from '../context';
+import { WritableDmxOutput } from '../context';
 import { universeToUint8Array } from '../fixtures/dmxDevices';
 import { mapDegrees } from '../fixtures/fixture';
 
 export type DmxUniverse = number[];
 
-export function createNewDmxPatch() {
+export function createNewDmxOutput() {
   return create(OutputSchema, {
     name: 'DMX Serial Output',
     latencyMs: 0,
     output: {
-      case: 'SerialDmxOutput',
+      case: 'serialDmxOutput',
       value: {
         fixtures: {},
       },
@@ -24,7 +24,7 @@ export function createNewDmxPatch() {
 export function getDmxWritableOutput(
   project: Project,
   outputId: bigint,
-): DmxOutput {
+): WritableDmxOutput {
   const universe = new Array(512).fill(0);
   const nonInterpolatedIndices = applyDefaults(project, outputId, universe);
 
@@ -41,8 +41,8 @@ export function getDmxWritableOutput(
       interpolateUniverses(
         universe,
         t,
-        a.universe,
-        b.universe,
+        (a as WritableDmxOutput).universe,
+        (b as WritableDmxOutput).universe,
         nonInterpolatedIndices,
       ),
   };
@@ -56,7 +56,7 @@ function applyDefaults(
 ): number[] {
   const nonInterpolatedIndices: number[] = [];
   const output = getOutput(project, outputId);
-  if (output.output.case !== 'SerialDmxOutput') {
+  if (output.output.case !== 'serialDmxOutput') {
     throw Error('Tried to apply DMX defaults to non-DMX output!');
   }
   const fixtures = output.output.value.fixtures;
@@ -97,7 +97,7 @@ function clone(
   outputId: bigint,
   universe: DmxUniverse,
   nonInterpolatedIndices: number[],
-): DmxOutput {
+): WritableDmxOutput {
   const newUniverse = [...universe];
   return {
     type: 'dmx',
@@ -112,8 +112,8 @@ function clone(
       interpolateUniverses(
         newUniverse,
         t,
-        a.universe,
-        b.universe,
+        (a as WritableDmxOutput).universe,
+        (b as WritableDmxOutput).universe,
         nonInterpolatedIndices,
       ),
   };

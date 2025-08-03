@@ -8,7 +8,7 @@ import { ChannelTypes } from '../engine/channel';
 import { DmxFixtureDefinition_Channel_ColorWheelMapping } from '@dmx-controller/proto/dmx_pb';
 import { SerialDmxOutput } from '@dmx-controller/proto/output_pb';
 import { RenderingContext } from '../contexts/RenderingContext';
-import { DmxOutput } from '../engine/context';
+import { WritableDmxOutput } from '../engine/context';
 import { getOutput } from '../util/projectUtils';
 import styles from './UniverseVisualizer.module.scss';
 
@@ -28,7 +28,7 @@ export function DmxUniverseVisualizer({
 
   useEffect(() => {
     subscribeToRender(dmxOutputId, (output) => {
-      const dmxOutput = output as DmxOutput;
+      const dmxOutput = output as WritableDmxOutput;
       setUniverse(dmxOutput.uint8Array);
     });
   }, [subscribeToRender, setUniverse]);

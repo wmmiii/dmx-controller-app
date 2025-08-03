@@ -61,7 +61,7 @@ export function OutputSelector({
       getActivePatch(project).outputs,
     )) {
       switch (output.output.case) {
-        case 'SerialDmxOutput':
+        case 'serialDmxOutput':
           for (const [dmxFixtureId, dmxFixture] of Object.entries(
             output.output.value.fixtures,
           )) {
@@ -83,6 +83,32 @@ export function OutputSelector({
               name: '⧇ ' + dmxFixture.name,
             });
           }
+          break;
+        case 'wledOutput':
+          for (const [wledFixtureId, segment] of Object.entries(
+            output.output.value.segments,
+          )) {
+            targets.push({
+              target: create(OutputTargetSchema, {
+                output: {
+                  case: 'fixtures',
+                  value: {
+                    fixtureIds: [
+                      {
+                        patch: project.activePatch,
+                        output: BigInt(outputId),
+                        fixture: BigInt(wledFixtureId),
+                      },
+                    ],
+                  },
+                },
+              }),
+              name: '⧇ ' + segment.name,
+            });
+          }
+          break;
+        default:
+          throw Error('Unknown output type in output selector!');
       }
     }
     return targets;
@@ -140,8 +166,10 @@ export function OutputSelector({
                 (id) => id.patch !== project.activePatch,
               );
             setValue(value);
+            return;
           } else {
             setValue(undefined);
+            return;
           }
         }
 
@@ -155,6 +183,10 @@ export function OutputSelector({
               newTarget.target.output.value.fixtureIds[0],
             );
             if (value != null && value.output.case === 'fixtures') {
+              value.output.value.fixtureIds =
+                value.output.value.fixtureIds.filter(
+                  (id) => id.patch !== project.activePatch,
+                );
               value.output.value.fixtureIds.push(newFixtureId);
               newValue = value;
             } else {
@@ -214,8 +246,11 @@ export function getOutputTargetName(
           getActivePatch(project).outputs[fixtureId.output.toString()].output;
         let name: string;
         switch (output.case) {
-          case 'SerialDmxOutput':
+          case 'serialDmxOutput':
             name = output.value.fixtures[fixtureId.fixture.toString()].name;
+            break;
+          case 'wledOutput':
+            name = output.value.segments[Number(fixtureId.fixture)].name;
             break;
           default:
             throw Error(

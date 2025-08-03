@@ -53,7 +53,7 @@ export function isAngleChannel(type: string): type is AngleChannel {
   return ANGLE_CHANNELS.includes(type as AngleChannel);
 }
 export const AMOUNT_CHANNEL_DESCRIPTION: Map<
-  keyof FixtureState,
+  keyof FixtureState | 'speed',
   ChannelDescription
 > = new Map();
 AMOUNT_CHANNEL_DESCRIPTION.set('dimmer', {
@@ -65,6 +65,9 @@ AMOUNT_CHANNEL_DESCRIPTION.set('height', {
 AMOUNT_CHANNEL_DESCRIPTION.set('strobe', {
   description: 'The internal strobe of a fixture.',
 });
+AMOUNT_CHANNEL_DESCRIPTION.set('speed', {
+  description: 'The speed of the WLED effect.',
+});
 AMOUNT_CHANNEL_DESCRIPTION.set('width', {
   description: 'The width of a fixture such as display width.',
 });
@@ -73,16 +76,23 @@ AMOUNT_CHANNEL_DESCRIPTION.set('zoom', {
 });
 export const AMOUNT_CHANNELS = Array.from(
   AMOUNT_CHANNEL_DESCRIPTION.keys(),
-) as Array<keyof FixtureState>;
+) as Array<keyof FixtureState | 'speed'>;
 export type AmountChannel = (typeof AMOUNT_CHANNELS)[number];
 export function isAmountChannel(type: string): type is AmountChannel {
   return AMOUNT_CHANNELS.includes(type as AmountChannel);
+}
+
+export const WLED_CHANNELS = ['wled_effect', 'wled_palette'];
+export type WledChannel = (typeof WLED_CHANNELS)[number];
+export function isWledChannel(type: string): type is WledChannel {
+  return WLED_CHANNELS.includes(type as WledChannel);
 }
 
 export const ALL_CHANNELS = [
   ...COLOR_CHANNELS,
   ...ANGLE_CHANNELS,
   ...AMOUNT_CHANNELS,
+  ...WLED_CHANNELS,
 ];
 
 export type ChannelTypes = ColorChannel | AngleChannel | AmountChannel;

@@ -3,6 +3,7 @@ syntax = "proto3";
 package dmx_controller;
 
 import "proto/dmx.proto";
+import "proto/wled.proto";
 
 message QualifiedFixtureId {
   uint64 patch = 1;
@@ -36,7 +37,8 @@ message Output {
   uint32 latency_ms = 2;
 
   oneof output {
-    SerialDmxOutput SerialDmxOutput = 3;
+    SerialDmxOutput serialDmxOutput = 3;
+    WledOutput wledOutput = 4;
   }
 }
 

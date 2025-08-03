@@ -7,9 +7,15 @@ import {
   OutputTarget,
   QualifiedFixtureId,
 } from '@dmx-controller/proto/output_pb';
-import { ALL_CHANNELS, ChannelTypes } from '../channel';
+import {
+  ALL_CHANNELS,
+  AmountChannel,
+  ChannelTypes,
+  ColorChannel,
+  WLED_CHANNELS,
+} from '../channel';
 import { getAllFixtures } from '../group';
-import { getFixtureChannels as getDmxFixtureChannels } from './dmxDevices';
+import { getDmxFixtureChannels } from './dmxDevices';
 
 export function getAvailableChannels(
   target: OutputTarget | undefined,
@@ -45,12 +51,22 @@ export function getAvailableChannels(
   for (const fixtureId of fixtureIds) {
     const output = getOutput(project, fixtureId.output);
     switch (output.output.case) {
-      case 'SerialDmxOutput':
+      case 'serialDmxOutput':
         getDmxFixtureChannels(
           project,
           output.output.value,
           fixtureId.fixture,
         ).forEach((c) => channels.add(c));
+        break;
+      case 'wledOutput':
+        WLED_CHANNELS.forEach((c) => channels.add(c));
+        const colorChannels: ColorChannel[] = ['red', 'green', 'blue'];
+        colorChannels.forEach((c) => channels.add(c));
+        const amountChannels: AmountChannel[] = ['dimmer'];
+        amountChannels.forEach((c) => channels.add(c));
+        break;
+      default:
+        throw Error('Tried to get channels of unknown output type!');
     }
     output.output.case;
   }
@@ -99,7 +115,7 @@ export function deleteFixture(project: Project, fixtureId: QualifiedFixtureId) {
 
   const output = getOutput(project, fixtureId.output).output;
   switch (output.case) {
-    case 'SerialDmxOutput':
+    case 'serialDmxOutput':
       delete output.value.fixtures[fixtureId.fixture.toString()];
       break;
     default:

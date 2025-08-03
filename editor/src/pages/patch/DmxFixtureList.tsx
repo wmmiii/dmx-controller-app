@@ -31,7 +31,7 @@ import {
   isAmountChannel,
   isAngleChannel,
 } from '../../engine/channel';
-import { DmxOutput } from '../../engine/context';
+import { WritableOutput } from '../../engine/context';
 import { deleteFixture } from '../../engine/fixtures/fixture';
 import IconBxCopyAlt from '../../icons/IconBxCopy';
 import IconBxX from '../../icons/IconBxX';
@@ -125,7 +125,7 @@ export function DmxFixtureList({
                     onDragStart={() => {
                       const newFixtureId = randomUint64();
                       const output = getOutput(project, outputId);
-                      if (output.output.case !== 'SerialDmxOutput') {
+                      if (output.output.case !== 'serialDmxOutput') {
                         throw Error('Tried to edit non DMX output!');
                       }
                       output.output.value.fixtures[newFixtureId.toString()] =
@@ -143,7 +143,7 @@ export function DmxFixtureList({
                     onDragEnd={() => {
                       if (dragFixtureId != null) {
                         const output = getOutput(project, outputId);
-                        if (output.output.case !== 'SerialDmxOutput') {
+                        if (output.output.case !== 'serialDmxOutput') {
                           throw Error('Tried to edit non DMX output!');
                         }
                         const fixture =
@@ -273,9 +273,11 @@ function EditDefinitionDialog({
   }, [setTestValues]);
 
   useEffect(() => {
-    const render = (_frame: number, output: DmxOutput) => {
-      for (let i = 0; i < mode.numChannels; ++i) {
-        output.universe[i + testIndex] = testValues[i] || 0;
+    const render = (_frame: number, output: WritableOutput) => {
+      if (output.type === 'dmx') {
+        for (let i = 0; i < mode.numChannels; ++i) {
+          output.universe[i + testIndex] = testValues[i] || 0;
+        }
       }
     };
 

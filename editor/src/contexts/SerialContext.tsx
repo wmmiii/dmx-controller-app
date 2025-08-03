@@ -12,7 +12,7 @@ import {
 import { Modal } from '../components/Modal';
 import IconBxErrorAlt from '../icons/IconBxErrorAlt';
 
-import { DmxOutput } from '../engine/context';
+import { WritableDmxOutput } from '../engine/context';
 import { getDmxWritableOutput } from '../engine/outputs/dmxOutput';
 import { getSerialOutputId } from '../util/projectUtils';
 import { DialogContext } from './DialogContext';
@@ -22,7 +22,7 @@ import { ShortcutContext } from './ShortcutContext';
 
 type SerialPort = any;
 
-export const BLACKOUT_UNIVERSE: DmxOutput = {
+export const BLACKOUT_UNIVERSE: WritableDmxOutput = {
   type: 'dmx',
   universe: new Array(512).fill(0),
   nonInterpolatedIndices: [],
@@ -185,7 +185,7 @@ function SerialProviderImpl({
     let lastFrame = new Date().getTime();
     (async () => {
       while (!closed) {
-        let serialOutput: DmxOutput;
+        let serialOutput: WritableDmxOutput;
         if (blackout.current) {
           serialOutput = BLACKOUT_UNIVERSE;
         } else {

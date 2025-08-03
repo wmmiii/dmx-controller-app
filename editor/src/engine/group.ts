@@ -70,36 +70,68 @@ export function getApplicableMembers(
     getActivePatch(project).outputs,
   )) {
     switch (output.output.case) {
-      case 'SerialDmxOutput': {
-        const dmxOutput = output.output.value;
-        for (const [fixtureId, fixture] of Object.entries(dmxOutput.fixtures)) {
-          if (
-            fixtureMembers.find(
-              (m) =>
-                m.output.toString() === outputId &&
-                m.fixture.toString() === fixtureId,
-            ) == null
-          ) {
-            applicable.push({
-              id: create(OutputTargetSchema, {
-                output: {
-                  case: 'fixtures',
-                  value: {
-                    fixtureIds: [
-                      {
-                        patch: project.activePatch,
-                        output: BigInt(outputId),
-                        fixture: BigInt(fixtureId),
-                      },
-                    ],
+      case 'serialDmxOutput':
+        {
+          const dmxOutput = output.output.value;
+          for (const [fixtureId, fixture] of Object.entries(
+            dmxOutput.fixtures,
+          )) {
+            if (
+              fixtureMembers.find(
+                (m) =>
+                  m.output.toString() === outputId &&
+                  m.fixture.toString() === fixtureId,
+              ) == null
+            ) {
+              applicable.push({
+                id: create(OutputTargetSchema, {
+                  output: {
+                    case: 'fixtures',
+                    value: {
+                      fixtureIds: [
+                        {
+                          patch: project.activePatch,
+                          output: BigInt(outputId),
+                          fixture: BigInt(fixtureId),
+                        },
+                      ],
+                    },
                   },
-                },
-              }),
-              name: fixture.name,
-            });
+                }),
+                name: fixture.name,
+              });
+            }
           }
         }
-      }
+        break;
+      case 'wledOutput':
+        const wledOutput = output.output.value;
+        for (const [segmentId, segment] of Object.entries(
+          wledOutput.segments,
+        )) {
+          applicable.push({
+            id: create(OutputTargetSchema, {
+              output: {
+                case: 'fixtures',
+                value: {
+                  fixtureIds: [
+                    {
+                      patch: project.activePatch,
+                      output: BigInt(outputId),
+                      fixture: BigInt(segmentId),
+                    },
+                  ],
+                },
+              },
+            }),
+            name: segment.name,
+          });
+        }
+        break;
+      default:
+        throw Error(
+          `Unknown output when trying to get all group members! ${output.output.case}`,
+        );
     }
   }
 
@@ -135,7 +167,7 @@ export function getAllFixtures(
       getActivePatch(project).outputs,
     )) {
       switch (output.output.case) {
-        case 'SerialDmxOutput':
+        case 'serialDmxOutput':
           for (const fixtureId of Object.keys(output.output.value.fixtures)) {
             fixtureIds.add(
               toJsonString(
@@ -144,6 +176,20 @@ export function getAllFixtures(
                   patch: project.activePatch,
                   output: BigInt(outputId),
                   fixture: BigInt(fixtureId),
+                }),
+              ),
+            );
+          }
+          break;
+        case 'wledOutput':
+          for (const segmentId of Object.keys(output.output.value.segments)) {
+            fixtureIds.add(
+              toJsonString(
+                QualifiedFixtureIdSchema,
+                create(QualifiedFixtureIdSchema, {
+                  patch: project.activePatch,
+                  output: BigInt(outputId),
+                  fixture: BigInt(segmentId),
                 }),
               ),
             );

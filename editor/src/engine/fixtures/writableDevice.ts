@@ -10,6 +10,7 @@ import { AmountChannel, AngleChannel } from '../channel';
 import { WritableOutput } from '../context';
 import { getAllFixtures } from '../group';
 import { getDmxWritableDevice } from './dmxDevices';
+import { getWledWritableDevice } from './wledDevices';
 
 export const GROUP_ALL_ID = 0n;
 
@@ -108,21 +109,18 @@ function getWritableDevice(
 function getPhysicalWritableDevice(
   project: Project,
   fixtureId: QualifiedFixtureId,
-): WritableDevice | null {
+): WritableDevice {
   const output = getOutput(project, fixtureId.output);
-  if (
-    output.output.case === undefined ||
-    output.output.case !== 'SerialDmxOutput'
-  ) {
-    console.error(
-      'Unsupported output type when trying to get writable device:' +
-        output.output.case,
-    );
-    return null;
+  switch (output.output.case) {
+    case 'serialDmxOutput':
+      const physicalDmxFixture =
+        output.output.value.fixtures[fixtureId.fixture.toString()];
+      return getDmxWritableDevice(project, physicalDmxFixture);
+    case 'wledOutput':
+      return getWledWritableDevice(Number(fixtureId.fixture));
+    default:
+      return NULL_WRITABLE_DEVICE;
   }
-  const physicalFixture =
-    output.output.value.fixtures[fixtureId.fixture.toString()];
-  return getDmxWritableDevice(project, physicalFixture);
 }
 
 function getPhysicalWritableDeviceFromGroup(

@@ -3,20 +3,35 @@ import { OutputTarget } from '@dmx-controller/proto/output_pb';
 import { Project } from '@dmx-controller/proto/project_pb';
 import { WritableDeviceCache } from './fixtures/writableDevice';
 
-interface Output<T> {
+interface BaseOutput<T> {
   outputId: bigint;
   clone: () => T;
-  interpolate: (a: T, b: T, t: number) => void;
+  interpolate: (a: WritableOutput, b: WritableOutput, t: number) => void;
 }
 
-export interface DmxOutput extends Output<DmxOutput> {
+export interface WritableDmxOutput extends BaseOutput<WritableDmxOutput> {
   type: 'dmx';
   universe: number[];
   nonInterpolatedIndices: number[];
   uint8Array: Uint8Array;
 }
 
-export type WritableOutput = DmxOutput;
+export interface WritableWledOutput extends BaseOutput<WritableWledOutput> {
+  type: 'wled';
+  segments: Array<{
+    effect: number;
+    palette: number;
+    primaryColor: {
+      red: number;
+      green: number;
+      blue: number;
+    };
+    speed: number;
+    brightness: number;
+  }>;
+}
+
+export type WritableOutput = WritableDmxOutput | WritableWledOutput;
 
 export interface RenderContext {
   readonly globalT: number;

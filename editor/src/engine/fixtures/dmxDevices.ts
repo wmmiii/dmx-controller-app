@@ -14,44 +14,50 @@ import {
   isAmountChannel,
   isAngleChannel,
 } from '../channel';
-import { DmxOutput } from '../context';
+import { WritableDmxOutput } from '../context';
 import { DmxUniverse } from '../outputs/dmxOutput';
 import { mapDegrees } from './fixture';
-import { WritableDevice } from './writableDevice';
+import { NULL_WRITABLE_DEVICE, WritableDevice } from './writableDevice';
 
 interface FunctionCollection {
   manualFunctions: Array<
-    (output: DmxOutput, index: number, value: number) => void
+    (output: WritableDmxOutput, index: number, value: number) => void
   >;
   colorFunctions: Array<
-    (output: DmxOutput, r: number, g: number, b: number, w: number) => void
+    (
+      output: WritableDmxOutput,
+      r: number,
+      g: number,
+      b: number,
+      w: number,
+    ) => void
   >;
   angleFunctions: Map<
     AngleChannel,
-    Array<(output: DmxOutput, a: number) => void>
+    Array<(output: WritableDmxOutput, a: number) => void>
   >;
   amountFunctions: Map<
     AmountChannel,
-    Array<(output: DmxOutput, a: number) => void>
+    Array<(output: WritableDmxOutput, a: number) => void>
   >;
 }
 
 export function getDmxWritableDevice(
   project: Project,
   physicalFixture: PhysicalDmxFixture,
-): WritableDevice | null {
+): WritableDevice {
   const definition =
     project.fixtureDefinitions?.dmxFixtureDefinitions[
       physicalFixture.fixtureDefinitionId
     ];
   // Check to ensure this fixture has a definition.
   if (definition == null) {
-    return null;
+    return NULL_WRITABLE_DEVICE;
   }
 
   const mode = definition.modes[physicalFixture.fixtureMode];
   if (mode == null) {
-    return null;
+    return NULL_WRITABLE_DEVICE;
   }
 
   const functionCollection: FunctionCollection = {
@@ -70,7 +76,7 @@ function collectFunctions(
   mode: DmxFixtureDefinition_Mode,
   collection: FunctionCollection,
 ) {
-  collection.manualFunctions.push((output: DmxOutput, index, value) => {
+  collection.manualFunctions.push((output: WritableDmxOutput, index, value) => {
     output.universe[fixture.channelOffset + index] = value;
   });
 
@@ -219,19 +225,33 @@ function functionCollectionToDevice(
 ): WritableDevice {
   return {
     setChannel: (output, index, value) =>
-      collection.manualFunctions.forEach((f) => f(output, index, value)),
-    setColor: (universe, red, green, blue, white) =>
-      collection.colorFunctions.forEach((f) =>
-        f(universe, red, green, blue, white || 0),
-      ),
-    setAngle: (universe, type, angle) =>
-      collection.angleFunctions.get(type)?.forEach((f) => f(universe, angle)),
-    setAmount: (universe, type, amount) =>
-      collection.amountFunctions.get(type)?.forEach((f) => f(universe, amount)),
+      collection.manualFunctions.forEach((f) => {
+        if (output.type === 'dmx') {
+          f(output, index, value);
+        }
+      }),
+    setColor: (output, red, green, blue, white) =>
+      collection.colorFunctions.forEach((f) => {
+        if (output.type === 'dmx') {
+          f(output, red, green, blue, white || 0);
+        }
+      }),
+    setAngle: (output, type, angle) =>
+      collection.angleFunctions.get(type)?.forEach((f) => {
+        if (output.type === 'dmx') {
+          f(output, angle);
+        }
+      }),
+    setAmount: (output, type, amount) =>
+      collection.amountFunctions.get(type)?.forEach((f) => {
+        if (output.type === 'dmx') {
+          f(output, amount);
+        }
+      }),
   };
 }
 
-export function getFixtureChannels(
+export function getDmxFixtureChannels(
   project: Project,
   output: SerialDmxOutput,
   fixtureId: bigint,
@@ -256,7 +276,7 @@ export function universeToUint8Array(
   }
 
   const output = getOutput(project, outputId);
-  if (output.output.case !== 'SerialDmxOutput') {
+  if (output.output.case !== 'serialDmxOutput') {
     throw Error(
       `Cannot convert output of type ${output.output.case} to universe uint8 array!`,
     );

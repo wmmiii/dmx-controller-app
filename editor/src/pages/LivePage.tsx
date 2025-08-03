@@ -41,7 +41,7 @@ import { ProjectContext } from '../contexts/ProjectContext';
 import { getAvailableChannels } from '../engine/fixtures/fixture';
 import {
   DEFAULT_COLOR_PALETTE,
-  renderSceneToUniverse as renderActiveSceneToUniverse,
+  renderSceneToUniverse as renderActiveScene,
 } from '../engine/render';
 import IconBxPlus from '../icons/IconBxPlus';
 import IconBxX from '../icons/IconBxX';
@@ -75,15 +75,13 @@ export function LivePage(): JSX.Element {
     const render = (frame: number, output: WritableOutput) => {
       const project = projectRef.current;
       if (project != null) {
-        renderActiveSceneToUniverse(
+        renderActiveScene(
           new Date().getTime(),
           beatMetadata,
           frame,
           project,
           output,
         );
-      } else {
-        output.universe.fill(0);
       }
     };
     setRenderFunction(render);

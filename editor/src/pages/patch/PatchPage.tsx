@@ -1,14 +1,17 @@
 import { JSX, useContext, useState } from 'react';
 
+import { Button } from '../../components/Button';
 import { TextInput } from '../../components/Input';
 import { Tabs } from '../../components/Tabs';
 import { ProjectContext } from '../../contexts/ProjectContext';
 import { GROUP_ALL_ID } from '../../engine/fixtures/writableDevice';
+import { createNewWledOutput } from '../../engine/outputs/wledOutput';
 import { randomUint64 } from '../../util/numberUtils';
 import { createNewPatch, getActivePatch } from '../../util/projectUtils';
 import { DmxEditor } from './DmxEditor';
 import { GroupList } from './GroupList';
 import styles from './PatchPage.module.scss';
+import { WledEditor } from './WledEditor';
 
 export default function PatchPage(): JSX.Element {
   const { project, save } = useContext(ProjectContext);
@@ -26,10 +29,16 @@ export default function PatchPage(): JSX.Element {
   )) {
     const outputId = BigInt(outputIdString);
     switch (output.output.case) {
-      case 'SerialDmxOutput':
+      case 'serialDmxOutput':
         tabs[outputId.toString()] = {
           name: output.name,
           contents: <DmxEditor outputId={outputId} />,
+        };
+        break;
+      case 'wledOutput':
+        tabs[outputId.toString()] = {
+          name: output.name,
+          contents: <WledEditor outputId={outputId} />,
         };
         break;
       default:
@@ -68,6 +77,16 @@ export default function PatchPage(): JSX.Element {
             save(`Set patch name to "${v}".`);
           }}
         />
+        <Button
+          onClick={() => {
+            const id = randomUint64();
+            getActivePatch(project).outputs[id.toString()] =
+              createNewWledOutput();
+            save('Add WLED device.');
+          }}
+        >
+          Create new WLED device
+        </Button>
       </div>
       <Tabs
         className={styles.tabWrapper}

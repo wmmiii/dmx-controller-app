@@ -19,7 +19,7 @@ export function getOutput(project: Project, outputId: bigint) {
 
 export function getSerialOutputId(project: Project) {
   return Object.entries(getActivePatch(project).outputs)
-    .filter(([_, output]) => output.output.case === 'SerialDmxOutput')
+    .filter(([_, output]) => output.output.case === 'serialDmxOutput')
     .map(([id, _]) => BigInt(id))[0];
 }
 
@@ -89,7 +89,7 @@ export function createNewPatch(name: string) {
         name: 'DMX Serial Output',
         latencyMs: 0,
         output: {
-          case: 'SerialDmxOutput',
+          case: 'serialDmxOutput',
           value: {
             fixtures: {},
           },

@@ -9,7 +9,7 @@ export function getWritableOutput(
 ): WritableOutput {
   const output = getOutput(project, outputId);
   switch (output.output.case) {
-    case 'SerialDmxOutput':
+    case 'serialDmxOutput':
       return getDmxWritableOutput(project, outputId);
     default:
       throw Error(
