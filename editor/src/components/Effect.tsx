@@ -338,6 +338,7 @@ export function EffectDetails({
     <div className={classes.join(' ')}>
       <div className={styles.effectType}>
         <span>Effect type</span>
+        <div className={styles.spacer}></div>
         <EffectSelector
           effect={effect.effect}
           setEffect={(e, description) => {
@@ -451,8 +452,6 @@ function StaticEffectDetails({
   effect,
   availableChannels,
 }: EffectDetailsBaseProps<Effect_StaticEffect>): JSX.Element {
-  const { save } = useContext(ProjectContext);
-
   if (effect.state == null) {
     throw new Error('Static effect does not have a state!');
   }
@@ -460,11 +459,12 @@ function StaticEffectDetails({
   return (
     <>
       <EffectState
-        state={effect.state}
-        onChange={(s) => {
-          effect.state = s;
-          save('Change static effect state.');
-        }}
+        states={[
+          {
+            name: 'Effect',
+            state: effect.state,
+          },
+        ]}
         availableChannels={availableChannels}
       />
     </>
@@ -570,23 +570,14 @@ function RampEffectDetails({
       )}
 
       <hr />
-      <h2>Start</h2>
       <EffectState
-        state={effect.stateStart}
-        onChange={(s) => {
-          effect.stateStart = s;
-          save('Change ramp effect start state.');
-        }}
-        availableChannels={availableChannels}
-      />
-      <hr />
-      <h2>End</h2>
-      <EffectState
-        state={effect.stateEnd}
-        onChange={(s) => {
-          effect.stateEnd = s;
-          save('Change ramp effect end state.');
-        }}
+        states={[
+          {
+            name: 'Start',
+            state: effect.stateStart,
+          },
+          { name: 'End', state: effect.stateEnd },
+        ]}
         availableChannels={availableChannels}
       />
     </>
@@ -634,23 +625,11 @@ function StrobeEffectDetails({
         />
       </label>
       <hr />
-      <h2>State A</h2>
       <EffectState
-        state={effect.stateA}
-        onChange={(s) => {
-          effect.stateA = s;
-          save('Change strobe effect A.');
-        }}
-        availableChannels={availableChannels}
-      />
-      <hr />
-      <h2>State B</h2>
-      <EffectState
-        state={effect.stateB}
-        onChange={(s) => {
-          effect.stateB = s;
-          save('Change strobe effect B.');
-        }}
+        states={[
+          { name: 'State A', state: effect.stateA },
+          { name: 'State B', state: effect.stateB },
+        ]}
         availableChannels={availableChannels}
       />
     </>
@@ -776,6 +755,7 @@ function RandomEffectDetails({
       <h2>Effect A</h2>
       <div className={styles.effectType}>
         <span>Effect type</span>
+        <div className={styles.spacer}></div>
         <EffectSelector
           effect={mapToStandardEffect(effect.effectA)}
           setEffect={(e, description) => {
@@ -798,6 +778,7 @@ function RandomEffectDetails({
       <h2>Effect B</h2>
       <div className={styles.effectType}>
         <span>Effect B type</span>
+        <div className={styles.spacer}></div>
         <EffectSelector
           effect={mapToStandardEffect(effect.effectB)}
           setEffect={(e, description) => {

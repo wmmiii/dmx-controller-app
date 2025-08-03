@@ -1,5 +1,12 @@
 @import '../vars';
 
+.effect-state {
+  align-items: center;
+  display: grid;
+  gap: spacing(1);
+  grid-template-columns: repeat(1fr);
+}
+
 .state-row {
   align-items: center;
   display: flex;
@@ -24,4 +31,27 @@
       width: 0;
     }
   }
+}
+
+.value {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+
+  input {
+    flex: 1;
+  }
+
+  button {
+    flex-shrink: 0;
+    min-width: 0;
+  }
+}
+
+.add-button {
+  width: 100%;
+}
+
+.custom-channels-title {
+  margin-top: spacing(1);
 }

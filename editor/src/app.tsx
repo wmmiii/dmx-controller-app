@@ -11,7 +11,7 @@ import { RenderingProvider } from './contexts/RenderingContext';
 import { SerialProvider } from './contexts/SerialContext';
 import { ShortcutProvider } from './contexts/ShortcutContext';
 import { TimeProvider } from './contexts/TimeContext';
-import { WledRenderer } from './contexts/WledRenderer';
+import { WledRendererProvider } from './contexts/WledRendererContext';
 
 // import wasm, {hello_world} from '@dmx-controller/core_interface/core_wasm';
 
@@ -31,8 +31,9 @@ root.render(
                 <SerialProvider>
                   <BeatProvider>
                     <ControllerProvider>
-                      <WledRenderer />
-                      <Index />
+                      <WledRendererProvider>
+                        <Index />
+                      </WledRendererProvider>
                     </ControllerProvider>
                   </BeatProvider>
                 </SerialProvider>

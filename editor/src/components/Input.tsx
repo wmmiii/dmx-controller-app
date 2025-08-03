@@ -52,11 +52,13 @@ export function TextInput({ value, onChange }: TextInputProps): JSX.Element {
   );
 }
 
+export type NumberInpuType = 'float' | 'integer';
+
 interface NumberInputProps {
   className?: string;
   title?: string;
   disabled?: boolean;
-  type?: 'float' | 'integer';
+  type?: NumberInpuType;
   value: number;
   onChange: (value: number) => void;
   min: number;

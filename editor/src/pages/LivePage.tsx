@@ -488,6 +488,7 @@ function EffectGroupEditor({ effect, name }: EffectGroupEditorProps) {
             <IconButton
               className={styles.deleteEffect}
               title="Delete Channel"
+              variant="warning"
               onClick={() => {
                 effect.channels.splice(i, 1);
                 save(`Delete channel from ${name}`);

@@ -1,4 +1,10 @@
-import { useContext, useEffect } from 'react';
+import {
+  createContext,
+  PropsWithChildren,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
 
 import { WledOutput } from '@dmx-controller/proto/wled_pb';
 import { getWledWritableOutput } from '../engine/outputs/wledOutput';
@@ -6,9 +12,14 @@ import { getActivePatch, getOutput } from '../util/projectUtils';
 import { ProjectContext } from './ProjectContext';
 import { RenderingContext } from './RenderingContext';
 
-export function WledRenderer() {
-  const { renderFunction } = useContext(RenderingContext);
+export const WledRendererContext = createContext({
+  warnings: {} as { [outputId: string]: string },
+});
+
+export function WledRendererProvider({ children }: PropsWithChildren) {
   const { project, update } = useContext(ProjectContext);
+  const { renderFunction } = useContext(RenderingContext);
+  const [warnings, setWarnings] = useState<{ [outputId: string]: string }>({});
 
   const startRenderLoop = (outputId: bigint) => {
     let cont = true;
@@ -62,9 +73,26 @@ export function WledRenderer() {
           latencySamples.push(new Date().getTime() - startMs);
           if (!response.ok) {
             console.error(await response.text());
+            const output = getOutput(project, outputId);
+            setWarnings(
+              Object.assign({}, warnings, {
+                [outputId.toString()]: `Error response from WLED device ${output.name}!`,
+              }),
+            );
+          } else {
+            setWarnings((warnings) => {
+              delete warnings[outputId.toString()];
+              return Object.assign({}, warnings);
+            });
           }
         } catch (e) {
           console.error(e);
+          const output = getOutput(project, outputId);
+          setWarnings(
+            Object.assign({}, warnings, {
+              [outputId.toString()]: `Could not connect to WLED device ${output.name}!`,
+            }),
+          );
         }
 
         if (latencySamples.length >= 40) {
@@ -89,5 +117,9 @@ export function WledRenderer() {
     return () => renderLoops.forEach((f) => f());
   }, [project]);
 
-  return <></>;
+  return (
+    <WledRendererContext.Provider value={{ warnings }}>
+      {children}
+    </WledRendererContext.Provider>
+  );
 }

@@ -1,11 +1,14 @@
 import { create } from '@bufbuild/protobuf';
-import { ColorSchema, PaletteColor } from '@dmx-controller/proto/color_pb';
+import {
+  Color,
+  ColorSchema,
+  PaletteColor,
+} from '@dmx-controller/proto/color_pb';
 import {
   FixtureState_ChannelSchema,
   type FixtureState as FixtureStateProto,
-  type FixtureState_Channel,
 } from '@dmx-controller/proto/effect_pb';
-import { JSX, useCallback } from 'react';
+import { Fragment, JSX, useContext } from 'react';
 
 import {
   AMOUNT_CHANNELS,
@@ -14,256 +17,370 @@ import {
   ChannelTypes,
 } from '../engine/channel';
 import IconBxPlus from '../icons/IconBxPlus';
-import IconBxX from '../icons/IconBxX';
 
+import { BiX } from 'react-icons/bi';
+import { ProjectContext } from '../contexts/ProjectContext';
 import { Button, IconButton } from './Button';
 import { ColorSwatch } from './ColorSwatch';
 import styles from './EffectState.module.scss';
-import { NumberInput } from './Input';
+import { NumberInpuType, NumberInput } from './Input';
 
 type ColorSelectorType = 'none' | 'color' | PaletteColor;
 
 interface EffectStateProps {
-  state: FixtureStateProto;
-  onChange: (state: FixtureStateProto) => void;
+  states: Array<{
+    name: string;
+    state: FixtureStateProto;
+  }>;
   availableChannels: ChannelTypes[];
 }
 
 export function EffectState({
-  state,
-  onChange,
+  states,
   availableChannels,
 }: EffectStateProps): JSX.Element {
-  const onColorTypeChange = useCallback(
-    (type: ColorSelectorType) => {
-      if (type === 'none') {
-        state.lightColor = {
-          case: undefined,
-          value: undefined,
-        };
-      } else if (type === 'color') {
-        state.lightColor = {
-          case: 'color',
-          value: create(ColorSchema, {
-            red: 1,
-            green: 1,
-            blue: 1,
-            white: 0,
-          }),
-        };
-      } else {
-        state.lightColor = {
-          case: 'paletteColor',
-          value: parseInt(type.toString()),
-        };
-      }
-      onChange(state);
-    },
-    [state, onChange],
-  );
-
-  let colorType: ColorSelectorType;
-  if (state.lightColor.case === undefined) {
-    colorType = 'none';
-  } else if (state.lightColor.case === 'color') {
-    colorType = 'color';
-  } else if (state.lightColor.case === 'paletteColor') {
-    colorType = state.lightColor.value;
-  } else {
-    throw new Error(`Unrecognized light color type! ${state.lightColor}`);
-  }
+  const { save } = useContext(ProjectContext);
 
   return (
-    <>
+    <div className={styles.effectState}>
+      {states.map((s, i) => (
+        <div
+          style={{
+            gridColumnStart: i + 2,
+            gridColumnEnd: i + 3,
+          }}
+        >
+          {s.name}
+        </div>
+      ))}
       {availableChannels.findIndex(
         (channel) =>
           COLOR_CHANNELS.indexOf(channel as any) > -1 ||
           channel === 'color_wheel',
-      ) > -1 && (
-        <>
-          <label>
-            <span>Color mode</span>
-            <select
-              value={colorType}
-              onChange={(e) =>
-                onColorTypeChange(e.target.value as ColorSelectorType)
-              }
-            >
-              <option value="none">None</option>
-              <option value="color">Custom Color</option>
-              <option value={PaletteColor.PALETTE_PRIMARY}>Primary</option>
-              <option value={PaletteColor.PALETTE_SECONDARY}>Secondary</option>
-              <option value={PaletteColor.PALETTE_TERTIARY}>Tertiary</option>
-              <option value={PaletteColor.PALETTE_WHITE}>White</option>
-              <option value={PaletteColor.PALETTE_BLACK}>Black</option>
-            </select>
-          </label>
-          {state.lightColor.case === 'color' && (
-            <label>
-              <span>Custom color</span>
-              <ColorSwatch
-                color={state.lightColor.value}
-                updateDescription="Update custom color."
-              />
-            </label>
-          )}
-          {state.lightColor.case === 'color' && (
-            <RangeChannel
-              name="White"
-              value={state.lightColor.value.white}
-              onChange={(v) => {
-                if (state.lightColor.case === 'color') {
-                  state.lightColor.value.white = v;
-                  onChange(state);
+      ) > -1 && <ColorChannel values={states.map((s) => s.state)} />}
+      {availableChannels
+        .filter((channel) => ANGLE_CHANNELS.indexOf(channel as any) > -1)
+        .map((channel) => (
+          <Channel
+            name={channel}
+            values={states.map((s) => ({
+              value: (s.state as any)[channel],
+              onChange: (value) => {
+                (s.state as any)[channel] = value;
+                if (value === undefined) {
+                  save(`Removed ${channel} on ${s.name}.`);
+                } else {
+                  save(`Set ${channel} on ${s.name}.`);
                 }
-              }}
-            />
-          )}
-        </>
-      )}
-      {(
-        availableChannels.filter(
-          (channel) => ANGLE_CHANNELS.indexOf(channel as any) > -1,
-        ) as Array<keyof FixtureStateProto>
-      ).map((channel, i) => (
-        <label className={styles.stateRow} key={i}>
-          <span>{channel}</span>
-          {state[channel] != null ? (
-            <>
-              <NumberInput
-                type="float"
-                max={720}
-                min={-720}
-                value={state[channel] as number}
-                onChange={(v) => {
-                  (state as any)[channel] = v;
-                  onChange(state);
-                }}
-              />
-              &nbsp;
-              <IconButton
-                title={`Remove ${channel}`}
-                onClick={() => {
-                  (state as any)[channel] = undefined;
-                  onChange(state);
-                }}
-              >
-                <IconBxX />
-              </IconButton>
-            </>
-          ) : (
-            <IconButton
-              title={`Add ${channel}`}
-              onClick={() => {
-                (state as any)[channel] = 0;
-                onChange(state);
-              }}
-            >
-              <IconBxPlus />
-            </IconButton>
-          )}
-        </label>
-      ))}
+              },
+            }))}
+            min={-720}
+            max={720}
+            type="float"
+          />
+        ))}
       {(
         availableChannels.filter(
           (channel) => AMOUNT_CHANNELS.indexOf(channel as any) > -1,
         ) as Array<keyof FixtureStateProto>
-      ).map((channel, i) => (
-        <RangeChannel
-          key={i}
+      ).map((channel) => (
+        <Channel
           name={channel}
-          value={state[channel] as number}
-          onChange={(v) => {
-            (state as any)[channel] = v;
-            onChange(state);
-          }}
+          values={states.map((s) => ({
+            value: (s.state as any)[channel],
+            onChange: (value) => {
+              (s.state as any)[channel] = value;
+              if (value === undefined) {
+                save(`Removed ${channel} on ${s.name}.`);
+              } else {
+                save(`Set ${channel} on ${s.name}.`);
+              }
+            },
+          }))}
+          min={0}
+          max={1}
+          type="float"
         />
       ))}
-      <label>Channels:</label>
-      {state.channels.map((c: FixtureState_Channel, i: number) => (
-        <div key={i} className={styles.stateRow}>
-          <NumberInput
-            className={styles.input}
-            title="index"
-            value={c.index + 1}
-            onChange={(v) => {
-              c.index = v - 1;
-              onChange(state);
-            }}
-            min={1}
-            max={512}
-          />
-          <NumberInput
-            className={styles.input}
-            title="value"
-            value={c.value}
-            onChange={(v) => {
-              c.value = v;
-              onChange(state);
-            }}
-            min={0}
-            max={255}
-          />
-          <IconButton
-            title="Remove Channel"
-            onClick={() => {
-              state.channels.splice(i, 1);
-              onChange(state);
-            }}
-          >
-            <IconBxX />
-          </IconButton>
-        </div>
+      <CustomChannels states={states.map((s) => s.state)} />
+    </div>
+  );
+}
+
+interface ChannelProps {
+  name: string;
+  values: Array<{
+    value: number | undefined;
+    onChange: (value: number | undefined) => void;
+  }>;
+  min: number;
+  max: number;
+  type: NumberInpuType;
+}
+
+function Channel({ name, values, min, max, type }: ChannelProps) {
+  const displayName = name.charAt(0).toUpperCase() + name.slice(1);
+  return (
+    <>
+      <span style={{ gridColumnStart: 1, gridColumnEnd: 2 }}>
+        {displayName}
+      </span>
+      {values.map((v, i) => (
+        <ChannelValue
+          key={i}
+          stateIndex={i}
+          name={name}
+          min={min}
+          max={max}
+          type={type}
+          value={v.value}
+          onChange={v.onChange}
+        />
       ))}
-      <Button
-        onClick={() => {
-          state.channels.push(
-            create(FixtureState_ChannelSchema, {
-              index: 0,
-              value: 0,
-            }),
-          );
-          onChange(state);
-        }}
-      >
-        Add custom channel
-      </Button>
     </>
   );
 }
 
-interface RangeChannelProps {
+interface ColorChannelProps {
+  values: Array<FixtureStateProto>;
+}
+
+function ColorChannel({ values }: ColorChannelProps) {
+  const { save } = useContext(ProjectContext);
+
+  const colorType = (
+    state: FixtureStateProto['lightColor'],
+  ): ColorSelectorType => {
+    if (state.case === undefined) {
+      return 'none';
+    } else if (state.case === 'color') {
+      return 'color';
+    } else if (state.case === 'paletteColor') {
+      return state.value;
+    } else {
+      throw new Error(
+        `Unrecognized light color type! ${(state as unknown as any).lightColor}`,
+      );
+    }
+  };
+
+  return (
+    <>
+      <span style={{ gridColumnStart: 1, gridColumnEnd: 2 }}>Color</span>
+      {values.map((s, i) => (
+        <div key={i} style={{ gridColumnStart: i + 2, gridColumnEnd: i + 3 }}>
+          <select
+            value={colorType(s.lightColor)}
+            onChange={(e) => {
+              if (e.target.value === 'none') {
+                s.lightColor = { case: undefined, value: undefined };
+              } else if (e.target.value === 'color') {
+                s.lightColor = {
+                  case: 'color',
+                  value: create(ColorSchema, {
+                    red: 0,
+                    green: 0,
+                    blue: 0,
+                  }),
+                };
+              } else {
+                s.lightColor = {
+                  case: 'paletteColor',
+                  value: Number(e.target.value) as unknown as PaletteColor,
+                };
+              }
+              save(`Set color of effect.`);
+            }}
+          >
+            <option value="none">None</option>
+            <option value="color">Custom Color</option>
+            <option value={PaletteColor.PALETTE_PRIMARY}>Primary</option>
+            <option value={PaletteColor.PALETTE_SECONDARY}>Secondary</option>
+            <option value={PaletteColor.PALETTE_TERTIARY}>Tertiary</option>
+            <option value={PaletteColor.PALETTE_WHITE}>White</option>
+            <option value={PaletteColor.PALETTE_BLACK}>Black</option>
+          </select>
+          {s.lightColor.case === 'color' && (
+            <div>
+              <ColorSwatch
+                color={s.lightColor.value}
+                updateDescription="Update custom color."
+              />
+              <label>
+                White:&nbsp;
+                <NumberInput
+                  min={0}
+                  max={0}
+                  type="float"
+                  value={s.lightColor.value.white || 0}
+                  onChange={(value) => {
+                    (s.lightColor.value as Color).white = value;
+                    save(`Set color of effect.`);
+                  }}
+                />
+              </label>
+            </div>
+          )}
+        </div>
+      ))}
+    </>
+  );
+}
+
+interface ChannelValueProps {
+  stateIndex: number;
   name: string;
+  min: number;
+  max: number;
+  type: NumberInpuType;
   value: number | undefined;
   onChange: (value: number | undefined) => void;
 }
 
-function RangeChannel({ name, value, onChange }: RangeChannelProps) {
+function ChannelValue({
+  stateIndex,
+  name,
+  min,
+  max,
+  type,
+  value,
+  onChange,
+}: ChannelValueProps) {
   return (
-    <label className={styles.stateRow}>
-      <span>{name}</span>
-      {value != null ? (
-        <>
+    <div
+      style={{ gridColumnStart: stateIndex + 2, gridColumnEnd: stateIndex + 3 }}
+    >
+      {value !== undefined ? (
+        <div className={styles.value}>
           <NumberInput
-            type="float"
-            max={1}
-            min={0}
+            min={min}
+            max={max}
+            type={type}
             value={value}
             onChange={onChange}
           />
-          &nbsp;
           <IconButton
             title={`Remove ${name}`}
             onClick={() => onChange(undefined)}
           >
-            <IconBxX />
+            <BiX />
           </IconButton>
-        </>
+        </div>
       ) : (
-        <IconButton title="Add Strobe" onClick={() => onChange(0)}>
+        <IconButton
+          className={styles.addButton}
+          title={`Add ${name}`}
+          onClick={() => onChange(0)}
+        >
           <IconBxPlus />
         </IconButton>
       )}
-    </label>
+    </div>
+  );
+}
+
+interface CustomChannelsProps {
+  states: Array<FixtureStateProto>;
+}
+
+function CustomChannels({ states }: CustomChannelsProps) {
+  const { save } = useContext(ProjectContext);
+
+  const setChannels = new Set(
+    states
+      .flatMap((s) => s.channels)
+      .map((c) => c.index)
+      .sort((a, b) => a - b),
+  );
+
+  return (
+    <>
+      <div
+        className={styles.customChannelsTitle}
+        style={{
+          gridColumnStart: 1,
+          gridColumnEnd: states.length + 2,
+        }}
+      >
+        Custom DMX Channels
+      </div>
+      {[...setChannels].map((index) => {
+        return (
+          <Fragment key={index}>
+            <div style={{ gridColumnStart: 1, gridColumnEnd: 2 }}>
+              <NumberInput
+                value={index}
+                onChange={(newIndex) => {
+                  for (const state of states) {
+                    const channel = state.channels.find(
+                      (c) => c.index === index,
+                    );
+                    state.channels = state.channels.filter(
+                      (c) => c.index !== newIndex,
+                    );
+                    if (channel) {
+                      channel.index = newIndex;
+                    }
+                  }
+                  save(`Move channel ${index} to ${newIndex}.`);
+                }}
+                min={1}
+                max={512}
+                type="integer"
+              />
+            </div>
+            {states.map((s, i) => {
+              const channel = s.channels.find((c) => c.index === index);
+              return (
+                <ChannelValue
+                  key={i}
+                  stateIndex={i}
+                  name={`Channel ${index}`}
+                  min={0}
+                  max={255}
+                  type="integer"
+                  value={channel?.value}
+                  onChange={(value) => {
+                    if (value !== undefined) {
+                      if (channel) {
+                        channel.value = value;
+                      } else {
+                        s.channels.push(
+                          create(FixtureState_ChannelSchema, {
+                            index: index,
+                            value: value,
+                          }),
+                        );
+                      }
+                      save(`Set custom channel.`);
+                    } else {
+                      s.channels = s.channels.filter((c) => c.index !== index);
+                      save(`Remove custom channel.`);
+                    }
+                  }}
+                />
+              );
+            })}
+          </Fragment>
+        );
+      })}
+      <div style={{ gridColumnStart: 1, gridColumnEnd: states.length + 2 }}>
+        <Button
+          onClick={() => {
+            const newIndex = Math.max(...setChannels, 0) + 1;
+            console.log('new index', newIndex);
+            states[0].channels.push(
+              create(FixtureState_ChannelSchema, {
+                index: newIndex,
+                value: 0,
+              }),
+            );
+            save(`Add custom channel.`);
+          }}
+        >
+          + Add Custom DMX Channel
+        </Button>
+      </div>
+    </>
   );
 }

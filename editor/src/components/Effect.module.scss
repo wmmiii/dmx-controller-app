@@ -50,7 +50,11 @@ $handle-size: 30px;
 .effect-type {
   display: flex;
   flex-direction: row;
-  justify-content: space-between;
+  gap: spacing(1);
+
+  .spacer {
+    flex: 1;
+  }
 }
 
 .icon {
