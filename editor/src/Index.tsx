@@ -2,6 +2,18 @@ import { JSX, createRef, useContext, useEffect, useState } from 'react';
 import { SiMidi } from 'react-icons/si';
 import { Route, Routes, useNavigate } from 'react-router';
 
+import {
+  BiBulb,
+  BiDownload,
+  BiError,
+  BiLink,
+  BiLogoGithub,
+  BiLogoWindows,
+  BiMenu,
+  BiSolidBulb,
+  BiUnlink,
+  BiUpload,
+} from 'react-icons/bi';
 import styles from './Index.module.scss';
 import { Button, IconButton } from './components/Button';
 import { DmxUniverseVisualizer } from './components/DmxUniverseVisualizer';
@@ -13,16 +25,6 @@ import { ControllerContext } from './contexts/ControllerContext';
 import { DialogContext } from './contexts/DialogContext';
 import { ProjectContext } from './contexts/ProjectContext';
 import { SerialContext } from './contexts/SerialContext';
-import IconBxBulb from './icons/IconBxBulb';
-import IconBxDownload from './icons/IconBxDownload';
-import IconBxError from './icons/IconBxError';
-import IconBxLink from './icons/IconBxLink';
-import IconBxMenu from './icons/IconBxMenu';
-import IconBxUnlink from './icons/IconBxUnlink';
-import IconBxUpload from './icons/IconBxUpload';
-import IconBxlGithub from './icons/IconBxlGithub';
-import IconBxlWindows from './icons/IconBxlWindows';
-import IconBxsBulb from './icons/IconBxsBulb';
 import AssetBrowserPage from './pages/AssetBrowserPage';
 import { LivePage } from './pages/LivePage';
 import ProjectPage from './pages/ProjectPage';
@@ -72,7 +74,7 @@ export default function Index(): JSX.Element {
             e.stopPropagation();
           }}
         >
-          <IconBxMenu className={styles.menuIcon} />
+          <BiMenu className={styles.menuIcon} />
           {showMenu && (
             <Dropdown onClose={() => setShowMenu(false)}>
               {[
@@ -99,29 +101,29 @@ export default function Index(): JSX.Element {
                 { type: 'separator' },
                 {
                   title: 'Download',
-                  icon: <IconBxDownload />,
+                  icon: <BiDownload />,
                   onSelect: downloadProject,
                 },
                 {
                   title: 'Upload',
-                  icon: <IconBxUpload />,
+                  icon: <BiUpload />,
                   onSelect: () => uploadButtonRef.current?.click(),
                 },
                 { type: 'separator' },
                 {
                   title: 'Connect to serial',
-                  icon: port ? <IconBxLink /> : <IconBxUnlink />,
+                  icon: port ? <BiLink /> : <BiUnlink />,
                   onSelect: () => (port ? disconnect() : connect()),
                 },
                 {
                   title: 'Toggle Blackout',
-                  icon: blackout ? <IconBxBulb /> : <IconBxsBulb />,
+                  icon: blackout ? <BiBulb /> : <BiSolidBulb />,
                   onSelect: () => setBlackout(!blackout),
                 },
                 { type: 'separator' },
                 {
                   title: 'GitHub Page',
-                  icon: <IconBxlGithub />,
+                  icon: <BiLogoGithub />,
                   onSelect: () =>
                     window.open(
                       'https://github.com/wmmiii/dmx-controller-app/',
@@ -252,7 +254,7 @@ function WarningDialog() {
         . Thanks!
       </p>
       <h3>
-        <IconBxError />
+        <BiError />
         &nbsp;Warning
       </h3>
       <p>
@@ -265,7 +267,7 @@ function WarningDialog() {
       {navigator.userAgent.toLowerCase().indexOf('win') > -1 && (
         <>
           <h3>
-            <IconBxlWindows /> Windows Users
+            <BiLogoWindows /> Windows Users
           </h3>
           <p>
             You may need to install{' '}

@@ -4,9 +4,9 @@ import { JSX, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { getApplicableMembers } from '../engine/group';
 import { renderGroupDebug } from '../engine/render';
-import IconBxX from '../icons/IconBxX';
 
 import { TargetGroup } from '@dmx-controller/proto/output_pb';
+import { BiX } from 'react-icons/bi';
 import { RenderingContext } from '../contexts/RenderingContext';
 import { WritableOutput } from '../engine/context';
 import { Button, IconButton } from './Button';
@@ -108,7 +108,7 @@ export function EditGroupDialog({
                 save(`Remove fixture ${name} from group ${group.name}.`);
               }}
             >
-              <IconBxX />
+              <BiX />
             </IconButton>
           </div>
         );

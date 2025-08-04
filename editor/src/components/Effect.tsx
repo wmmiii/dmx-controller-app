@@ -29,27 +29,30 @@ import {
   useEffect,
   useState,
 } from 'react';
-import { BiDice6, BiPause } from 'react-icons/bi';
+import {
+  BiDice6,
+  BiLineChart,
+  BiMove,
+  BiPalette,
+  BiPause,
+  BiSolidBinoculars,
+  BiSolidBolt,
+  BiSun,
+} from 'react-icons/bi';
 
 import { EffectRenderingContext } from '../contexts/EffectRenderingContext';
 import { PaletteContext } from '../contexts/PaletteContext';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { ShortcutContext } from '../contexts/ShortcutContext';
 import { ChannelTypes } from '../engine/channel';
-import IconBxLineChart from '../icons/IconBxLineChart';
-import IconBxMove from '../icons/IconBxMove';
-import IconBxPalette from '../icons/IconBxPalette';
-import IconBxsBinoculars from '../icons/IconBxsBinoculars';
-import IconBxsBolt from '../icons/IconBxsBolt';
-import IconBxsSun from '../icons/IconBxsSun';
-import IconPanTilt from '../icons/IconPanTilt';
-import IconRgb from '../icons/IconRgb';
 import { getStates } from '../util/effectUtils';
 import {
   DEFAULT_EFFECT_COLOR,
   DEFAULT_EFFECT_COLOR_ALT,
 } from '../util/styleUtils';
 
+import IconPanTilt from '../icons/IconPanTilt';
+import IconRgb from '../icons/IconRgb';
 import { Button, IconButton } from './Button';
 import styles from './Effect.module.scss';
 import { EffectState } from './EffectState';
@@ -124,7 +127,7 @@ export function Effect({
 
   // React makes the original style immutable so we clone it to modify it.
   const style = Object.assign({}, originalStyle);
-  const icons: Set<(props: any) => JSX.Element> = new Set();
+  const icons: Set<(props: any) => React.ReactNode> = new Set();
   if (effect.effect.case === 'staticEffect') {
     if (effect.effect.value.state) {
       style.background = effectColor(effect.effect.value.state, palette);
@@ -423,27 +426,27 @@ function effectColor(
 
 function effectIcons(
   effect: FixtureStateProto,
-): Array<(props: any) => JSX.Element> {
-  const icons: Array<(props: any) => JSX.Element> = [];
+): Array<(props: any) => React.ReactNode> {
+  const icons: Array<(props: any) => React.ReactNode> = [];
   if (effect.lightColor.case === 'color') {
     icons.push(IconRgb);
   } else if (effect.lightColor.case === 'paletteColor') {
-    icons.push(IconBxPalette);
+    icons.push(BiPalette);
   }
   if (effect?.dimmer != null) {
-    icons.push(IconBxsSun);
+    icons.push(BiSun);
   }
   if (effect?.pan != null || effect?.tilt != null) {
     icons.push(IconPanTilt);
   }
   if (effect?.height != null || effect?.width != null) {
-    icons.push(IconBxMove);
+    icons.push(BiMove);
   }
   if (effect?.zoom != null) {
-    icons.push(IconBxsBinoculars);
+    icons.push(BiSolidBinoculars);
   }
   if (effect?.strobe) {
-    icons.push(IconBxsBolt);
+    icons.push(BiSolidBolt);
   }
   return icons;
 }
@@ -858,7 +861,7 @@ function EffectSelector({
           );
         }}
       >
-        <IconBxLineChart />
+        <BiLineChart />
       </IconButton>
       <IconButton
         title="Strobe Effect"
@@ -882,7 +885,7 @@ function EffectSelector({
           );
         }}
       >
-        <IconBxsBolt />
+        <BiSolidBolt />
       </IconButton>
       {showRandom && (
         <IconButton

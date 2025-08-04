@@ -17,13 +17,6 @@ import SpectrogramPlugin from 'wavesurfer.js/dist/plugins/spectrogram.js';
 
 import { ProjectContext } from '../contexts/ProjectContext';
 import { ShortcutContext } from '../contexts/ShortcutContext';
-import IconBxPause from '../icons/IconBxPause';
-import IconBxPlay from '../icons/IconBxPlay';
-import IconBxPulse from '../icons/IconBxPulse';
-import IconBxSkipNext from '../icons/IconBxSkipNext';
-import IconBxSkipPrevious from '../icons/IconBxSkipPrevious';
-import IconBxZoomOut from '../icons/IconBxZoomOut';
-import IconBxZoomIn from '../icons/IconBxZoomin';
 import {
   WAVEFORM_COLOR,
   WAVEFORM_CURSOR_COLOR,
@@ -31,6 +24,15 @@ import {
   WAVEFORM_SAMPLE_RATE,
 } from '../util/styleUtils';
 
+import {
+  BiPause,
+  BiPlay,
+  BiPulse,
+  BiSkipNext,
+  BiSkipPrevious,
+  BiZoomIn,
+  BiZoomOut,
+} from 'react-icons/bi';
 import styles from './BeatEditor.module.scss';
 import { Button } from './Button';
 import { NumberInput } from './Input';
@@ -290,10 +292,7 @@ export function BeatEditor({ file, onCancel }: BeatEditorProps): JSX.Element {
       }
     >
       <div className={styles.buttonRow}>
-        <Button
-          icon={<IconBxZoomIn />}
-          onClick={() => setZoomLevel(zoomLevel * 2)}
-        >
+        <Button icon={<BiZoomIn />} onClick={() => setZoomLevel(zoomLevel * 2)}>
           Zoom In
         </Button>
         <div
@@ -301,10 +300,10 @@ export function BeatEditor({ file, onCancel }: BeatEditorProps): JSX.Element {
           style={{ opacity: 1 - beat }}
           title="Beat Indicator"
         >
-          <IconBxPulse />
+          <BiPulse />
         </div>
         <Button
-          icon={<IconBxZoomOut />}
+          icon={<BiZoomOut />}
           onClick={() => setZoomLevel(zoomLevel / 2)}
         >
           Zoom Out
@@ -312,19 +311,13 @@ export function BeatEditor({ file, onCancel }: BeatEditorProps): JSX.Element {
       </div>
       <div ref={waveRef}></div>
       <div className={styles.buttonRow}>
-        <Button
-          onClick={() => waveSurfer?.seekTo(0)}
-          icon={<IconBxSkipPrevious />}
-        >
+        <Button onClick={() => waveSurfer?.seekTo(0)} icon={<BiSkipPrevious />}>
           Jump to start
         </Button>
-        <Button
-          onClick={playPause}
-          icon={playing ? <IconBxPause /> : <IconBxPlay />}
-        >
+        <Button onClick={playPause} icon={playing ? <BiPause /> : <BiPlay />}>
           {playing ? 'Pause' : 'Play'}
         </Button>
-        <Button onClick={() => waveSurfer?.seekTo(1)} icon={<IconBxSkipNext />}>
+        <Button onClick={() => waveSurfer?.seekTo(1)} icon={<BiSkipNext />}>
           Jump to end
         </Button>
       </div>

@@ -4,8 +4,8 @@ import { ControllerMapping_ColorPaletteSelectionSchema } from '@dmx-controller/p
 import { useContext, useMemo, useState } from 'react';
 
 import { ProjectContext } from '../contexts/ProjectContext';
-import IconBxsCog from '../icons/IconBxsCog';
 
+import { BiCog } from 'react-icons/bi';
 import { Button, IconButton } from './Button';
 import { ColorSwatch } from './ColorSwatch';
 import { ControllerConnection } from './ControllerConnection';
@@ -55,7 +55,7 @@ export function PaletteSwatch({
       <ColorSwatch color={palette.secondary!.color} />
       <ColorSwatch color={palette.tertiary!.color} />
       <IconButton title="Modify palette" onClick={() => setEditPalette(true)}>
-        <IconBxsCog />
+        <BiCog />
       </IconButton>
       {editPalette && (
         <EditPaletteDialog

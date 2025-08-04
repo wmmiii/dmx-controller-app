@@ -1,8 +1,8 @@
 import { JSX, useContext, useEffect } from 'react';
 
 import { ShortcutContext } from '../contexts/ShortcutContext';
-import IconBxX from '../icons/IconBxX';
 
+import { BiX } from 'react-icons/bi';
 import { IconButton } from './Button';
 import styles from './Modal.module.scss';
 
@@ -74,7 +74,7 @@ export function Modal({
           {title}
           <div className={styles.spacer}></div>
           <IconButton title="close" onClick={onClose}>
-            <IconBxX />
+            <BiX />
           </IconButton>
         </div>
         <div className={bodyClasses.join(' ')}>{children}</div>

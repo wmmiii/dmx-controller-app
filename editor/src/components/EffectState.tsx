@@ -17,9 +17,8 @@ import {
   ChannelTypes,
   WLED_CHANNELS,
 } from '../engine/channel';
-import IconBxPlus from '../icons/IconBxPlus';
 
-import { BiX } from 'react-icons/bi';
+import { BiPlus, BiX } from 'react-icons/bi';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { Button, IconButton } from './Button';
 import { ColorSwatch } from './ColorSwatch';
@@ -296,7 +295,7 @@ function ChannelValue({
           title={`Add ${name}`}
           onClick={() => onChange(0)}
         >
-          <IconBxPlus />
+          <BiPlus />
         </IconButton>
       )}
     </div>

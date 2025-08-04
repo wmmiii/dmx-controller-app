@@ -9,12 +9,14 @@ import {
   getOutputTargetName,
 } from '../components/OutputSelector';
 import { ProjectContext } from '../contexts/ProjectContext';
-import IconBxBrushAlt from '../icons/IconBxBrush';
-import IconBxChevronDown from '../icons/IconBxChevronDown';
-import IconBxChevronUp from '../icons/IconBxChevronUp';
-import IconBxPlus from '../icons/IconBxPlus';
-import IconBxX from '../icons/IconBxX';
 
+import {
+  BiBrushAlt,
+  BiChevronDown,
+  BiChevronUp,
+  BiPlus,
+  BiX,
+} from 'react-icons/bi';
 import { Button, IconButton } from './Button';
 import styles from './LightTrack.module.scss';
 
@@ -74,7 +76,7 @@ export function LightTrack({
               );
             }}
           >
-            {track.collapsed ? <IconBxChevronDown /> : <IconBxChevronUp />}
+            {track.collapsed ? <BiChevronDown /> : <BiChevronUp />}
           </IconButton>
         </div>
         {!track.collapsed && (
@@ -91,19 +93,19 @@ export function LightTrack({
                   );
                 }}
               >
-                <IconBxBrushAlt />
+                <BiBrushAlt />
               </IconButton>
               <IconButton title="Delete Track" onClick={deleteTrack}>
-                <IconBxX />
+                <BiX />
               </IconButton>
               {swapUp && (
                 <IconButton title="Move Up" onClick={swapUp}>
-                  <IconBxChevronUp />
+                  <BiChevronUp />
                 </IconButton>
               )}
               {swapDown && (
                 <IconButton title="Move Down" onClick={swapDown}>
-                  <IconBxChevronUp />
+                  <BiChevronDown />
                 </IconButton>
               )}
             </div>
@@ -136,7 +138,7 @@ export function LightTrack({
         {!track.collapsed && (
           <div className={styles.newLayer}>
             <Button
-              icon={<IconBxPlus />}
+              icon={<BiPlus />}
               onClick={() => {
                 track.layers.push(create(LightLayerSchema, {}));
                 save('Create new track.');

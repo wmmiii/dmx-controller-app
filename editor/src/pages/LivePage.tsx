@@ -43,12 +43,10 @@ import {
   DEFAULT_COLOR_PALETTE,
   renderScene as renderActiveScene,
 } from '../engine/render';
-import IconBxPlus from '../icons/IconBxPlus';
-import IconBxX from '../icons/IconBxX';
 
+import { BiCog, BiPlus, BiX } from 'react-icons/bi';
 import { RenderingContext } from '../contexts/RenderingContext';
 import { WritableOutput } from '../engine/context';
-import IconBxsCog from '../icons/IconBxsCog';
 import styles from './LivePage.module.scss';
 
 export function LivePage(): JSX.Element {
@@ -100,7 +98,7 @@ export function LivePage(): JSX.Element {
       <div className={styles.wrapper}>
         <div className={styles.header}>
           <IconButton title="Edit scene" onClick={() => setEditScene(scene)}>
-            <IconBxsCog />
+            <BiCog />
           </IconButton>
           <select
             value={project.activeScene}
@@ -203,7 +201,7 @@ export function LivePage(): JSX.Element {
               />
             ))}
             <Button
-              icon={<IconBxPlus />}
+              icon={<BiPlus />}
               onClick={() => {
                 const newPalette = clone(
                   ColorPaletteSchema,
@@ -252,7 +250,7 @@ function SceneEditor({ scene, onDelete, onClose }: SceneEditorProps) {
         onClick={onDelete ?? (() => {})}
         disabled={onDelete == null}
       >
-        <IconBxX />
+        <BiPlus />
       </IconButton>
       <TextInput
         value={scene.name}
@@ -494,7 +492,7 @@ function EffectGroupEditor({ effect, name }: EffectGroupEditorProps) {
                 save(`Delete channel from ${name}`);
               }}
             >
-              <IconBxX />
+              <BiX />
             </IconButton>
             <label className={styles.stateHeader}>
               <span>Output</span>
@@ -525,7 +523,7 @@ function EffectGroupEditor({ effect, name }: EffectGroupEditorProps) {
             save('Add channel to effect.');
           }}
         >
-          <IconBxPlus />
+          <BiPlus />
         </IconButton>
       </div>
     </div>
@@ -575,7 +573,7 @@ function AddNewDialog({ scene, x, y, onSelect, onClose }: AddNewDialogProps) {
         state. They do not change over time.
       </div>
       <Button
-        icon={<IconBxPlus />}
+        icon={<BiPlus />}
         onClick={() => {
           const tileMap = addTile(
             {
@@ -599,7 +597,7 @@ function AddNewDialog({ scene, x, y, onSelect, onClose }: AddNewDialogProps) {
         may control multiple fixtures and groups.
       </div>
       <Button
-        icon={<IconBxPlus />}
+        icon={<BiPlus />}
         onClick={() => {
           const tile = addTile(
             {

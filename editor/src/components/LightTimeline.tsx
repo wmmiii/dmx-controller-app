@@ -15,10 +15,8 @@ import { EffectRenderingContext } from '../contexts/EffectRenderingContext';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { ShortcutContext } from '../contexts/ShortcutContext';
 import { getAvailableChannels } from '../engine/fixtures/fixture';
-import IconBxPulse from '../icons/IconBxPulse';
-import IconBxZoomOut from '../icons/IconBxZoomOut';
-import IconBxZoomIn from '../icons/IconBxZoomin';
 
+import { BiPlus, BiZoomIn, BiZoomOut } from 'react-icons/bi';
 import { AudioController, AudioTrackVisualizer } from './AudioTrackVisualizer';
 import { Button } from './Button';
 import { EffectAddress, EffectDetails, EffectSelectContext } from './Effect';
@@ -297,20 +295,20 @@ function Tracks({
         </div>
         <div className={styles.right}>
           <Button
-            icon={<IconBxZoomIn />}
+            icon={<BiZoomIn />}
             onClick={() => setMinPxPerSec(minPxPerSec * 2)}
           >
             Zoom In
           </Button>
           <Button
-            icon={<IconBxZoomOut />}
+            icon={<BiZoomOut />}
             onClick={() => setMinPxPerSec(minPxPerSec / 2)}
           >
             Zoom Out
           </Button>
           <Button
             variant={snapToBeat ? 'primary' : 'default'}
-            icon={<IconBxPulse />}
+            icon={<BiPlus />}
             onClick={() => setSnapToBeat(!snapToBeat)}
           >
             Snap to Beat

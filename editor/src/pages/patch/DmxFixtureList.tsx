@@ -16,7 +16,7 @@ import {
   PhysicalDmxFixtureSchema,
 } from '@dmx-controller/proto/dmx_pb';
 import { QualifiedFixtureIdSchema } from '@dmx-controller/proto/output_pb';
-import { BiGridVertical, BiPlus, BiX } from 'react-icons/bi';
+import { BiCopyAlt, BiGridVertical, BiPlus, BiX } from 'react-icons/bi';
 import { Button, IconButton } from '../../components/Button';
 import { ColorSwatch } from '../../components/ColorSwatch';
 import { NumberInput, TextInput } from '../../components/Input';
@@ -33,8 +33,6 @@ import {
 } from '../../engine/channel';
 import { WritableOutput } from '../../engine/context';
 import { deleteFixture } from '../../engine/fixtures/fixture';
-import IconBxCopyAlt from '../../icons/IconBxCopy';
-import IconBxX from '../../icons/IconBxX';
 import { extractGdtf } from '../../util/gdtf';
 import { randomUint64 } from '../../util/numberUtils';
 import { getOutput } from '../../util/projectUtils';
@@ -307,14 +305,14 @@ function EditDefinitionDialog({
       }
     >
       <IconButton title="Copy Fixture Profile" onClick={copy}>
-        <IconBxCopyAlt />
+        <BiCopyAlt />
       </IconButton>
       <IconButton
         variant="warning"
         title="Delete Fixture Profile"
         onClick={deleteDefinition}
       >
-        <IconBxX />
+        <BiX />
       </IconButton>
       <div>
         <label>

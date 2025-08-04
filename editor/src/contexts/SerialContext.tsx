@@ -10,8 +10,8 @@ import {
 } from 'react';
 
 import { Modal } from '../components/Modal';
-import IconBxErrorAlt from '../icons/IconBxErrorAlt';
 
+import { BiErrorAlt } from 'react-icons/bi';
 import { WritableDmxOutput } from '../engine/context';
 import { getDmxWritableOutput } from '../engine/outputs/dmxOutput';
 import { getOutput, getSerialOutputId } from '../util/projectUtils';
@@ -64,7 +64,7 @@ export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
         {open && (
           <Modal
             title="Unsupported Browser"
-            icon={<IconBxErrorAlt />}
+            icon={<BiErrorAlt />}
             onClose={() => setOpen(false)}
           >
             <p>
