@@ -5,6 +5,7 @@ import { ShortcutContext } from '../contexts/ShortcutContext';
 import { BiX } from 'react-icons/bi';
 import { IconButton } from './Button';
 import styles from './Modal.module.scss';
+import { Spacer } from './Spacer';
 
 interface ModalProps {
   title: string;
@@ -72,7 +73,7 @@ export function Modal({
         <div className={styles.header}>
           {icon && <div className={styles.icon}>{icon}</div>}
           {title}
-          <div className={styles.spacer}></div>
+          <Spacer />
           <IconButton title="close" onClick={onClose}>
             <BiX />
           </IconButton>

@@ -20,6 +20,7 @@ import { DmxUniverseVisualizer } from './components/DmxUniverseVisualizer';
 import { Dropdown } from './components/Dropdown';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Modal } from './components/Modal';
+import { Spacer } from './components/Spacer';
 import { WledVisualizer } from './components/WledVisualizer';
 import { ControllerContext } from './contexts/ControllerContext';
 import { DialogContext } from './contexts/DialogContext';
@@ -153,7 +154,7 @@ export default function Index(): JSX.Element {
             }
           },
         )}
-        <div className={styles.spacer}></div>
+        <Spacer />
         <div className={styles.message}>{lastOperation}</div>
         <FpsIndicator />
         <IconButton

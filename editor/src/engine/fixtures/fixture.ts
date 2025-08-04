@@ -1,7 +1,6 @@
-import { LightTrack } from '@dmx-controller/proto/light_track_pb';
 import { Project } from '@dmx-controller/proto/project_pb';
 
-import { getOutput } from '../../util/projectUtils';
+import { deleteFromOutputTargets, getOutput } from '../../util/projectUtils';
 
 import {
   OutputTarget,
@@ -74,44 +73,13 @@ export function getAvailableChannels(
 }
 
 export function deleteFixture(project: Project, fixtureId: QualifiedFixtureId) {
-  const deleteFromOutputTarget = (target: OutputTarget | undefined) => {
-    if (target?.output.case === 'fixtures') {
-      const fixtureIds = target.output.value.fixtureIds.filter(
-        (id) =>
-          id.patch !== fixtureId.patch ||
-          id.output !== fixtureId.output ||
-          id.fixture !== fixtureId.fixture,
-      );
-      target.output.value.fixtureIds = fixtureIds;
-    }
-  };
-
-  // Delete from groups.
-  for (const group of Object.values(project.groups)) {
-    group.targets.forEach(deleteFromOutputTarget);
-  }
-
-  const deleteFromLightTrack = (t: LightTrack) => {
-    deleteFromOutputTarget(t.outputTarget);
-  };
-
-  // Delete from shows.
-  project.shows.flatMap((s) => s.lightTracks).forEach(deleteFromLightTrack);
-
-  // Delete from scenes.
-  project.scenes
-    .flatMap((s) => s.tileMap)
-    .map((r) => r.tile!)
-    .forEach((t) => {
-      const description = t.description;
-      if (description.case === 'effectGroup') {
-        description.value.channels.forEach((c) =>
-          deleteFromOutputTarget(c.outputTarget),
-        );
-      } else if (description.case === 'sequence') {
-        description.value.lightTracks.forEach(deleteFromLightTrack);
-      }
-    });
+  deleteFromOutputTargets(
+    project,
+    (id) =>
+      id.patch === fixtureId.patch ||
+      id.output === fixtureId.output ||
+      id.fixture === fixtureId.fixture,
+  );
 
   const output = getOutput(project, fixtureId.output).output;
   switch (output.case) {

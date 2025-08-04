@@ -40,16 +40,6 @@ export function WledEditor({ outputId }: WledEditorProps) {
   return (
     <div>
       <label>
-        Name
-        <TextInput
-          value={output.name}
-          onChange={(name) => {
-            output.name = name;
-            save(`Update name of WLED device to ${name}.`);
-          }}
-        />
-      </label>
-      <label>
         IP Address
         <TextInput
           value={wledOutput.ipAddress}

@@ -24,6 +24,7 @@ import { NumberInput } from './Input';
 import styles from './LightTimeline.module.scss';
 import { LightTrack, MappingFunctions } from './LightTrack';
 import { getOutputTargetName } from './OutputSelector';
+import { Spacer } from './Spacer';
 import { HorizontalSplitPane } from './SplitPane';
 
 export const LEFT_WIDTH = 180;
@@ -324,7 +325,7 @@ function Tracks({
               onChange={setBeatSubdivisions}
             />
           </span>
-          <div className={styles.spacer}></div>
+          <Spacer />
           <span>MS: {Math.floor(tState)}</span>
           {beatNumber != null && <span>Beat number: {beatNumber}</span>}
         </div>

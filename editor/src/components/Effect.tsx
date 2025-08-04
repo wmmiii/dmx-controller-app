@@ -57,6 +57,7 @@ import { Button, IconButton } from './Button';
 import styles from './Effect.module.scss';
 import { EffectState } from './EffectState';
 import { NumberInput, ToggleInput } from './Input';
+import { Spacer } from './Spacer';
 
 export interface EffectAddress {
   track: number;
@@ -341,7 +342,7 @@ export function EffectDetails({
     <div className={classes.join(' ')}>
       <div className={styles.effectType}>
         <span>Effect type</span>
-        <div className={styles.spacer}></div>
+        <Spacer />
         <EffectSelector
           effect={effect.effect}
           setEffect={(e, description) => {
@@ -758,7 +759,7 @@ function RandomEffectDetails({
       <h2>Effect A</h2>
       <div className={styles.effectType}>
         <span>Effect type</span>
-        <div className={styles.spacer}></div>
+        <Spacer />
         <EffectSelector
           effect={mapToStandardEffect(effect.effectA)}
           setEffect={(e, description) => {
@@ -781,7 +782,7 @@ function RandomEffectDetails({
       <h2>Effect B</h2>
       <div className={styles.effectType}>
         <span>Effect B type</span>
-        <div className={styles.spacer}></div>
+        <Spacer />
         <EffectSelector
           effect={mapToStandardEffect(effect.effectB)}
           setEffect={(e, description) => {

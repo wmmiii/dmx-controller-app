@@ -1,5 +1,9 @@
 import { Project } from '@dmx-controller/proto/project_pb';
-import { getOutput } from '../../util/projectUtils';
+import {
+  deleteFromOutputTargets,
+  getActivePatch,
+  getOutput,
+} from '../../util/projectUtils';
 import { WritableOutput } from '../context';
 import { getDmxWritableOutput } from './dmxOutput';
 
@@ -16,4 +20,10 @@ export function getWritableOutput(
         `Unknown output type in getWritableOutput! ${output.output.case}`,
       );
   }
+}
+
+export function deleteOutput(project: Project, outputId: bigint) {
+  deleteFromOutputTargets(project, (id) => id.output === outputId);
+
+  delete getActivePatch(project).outputs[outputId.toString()];
 }

@@ -52,6 +52,29 @@ export function TextInput({ value, onChange }: TextInputProps): JSX.Element {
   );
 }
 
+interface EditableTextProps {
+  value: string;
+  onChange: (value: string) => void;
+}
+
+export function EditableText({ value, onChange }: EditableTextProps) {
+  const [edit, setEdit] = useState(false);
+
+  if (edit) {
+    return (
+      <TextInput
+        value={value}
+        onChange={(value) => {
+          onChange(value);
+          setEdit(false);
+        }}
+      />
+    );
+  } else {
+    return <span onDoubleClick={() => setEdit(true)}>{value}</span>;
+  }
+}
+
 export type NumberInpuType = 'float' | 'integer';
 
 interface NumberInputProps {

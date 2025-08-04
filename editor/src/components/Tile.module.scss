@@ -9,7 +9,7 @@ $triangle-diag: 40px;
   gap: spacing(1);
   grid-template-columns: repeat(auto-fill, $element-size);
   grid-template-rows: repeat(auto-fill, $element-size);
-  margin: 0 spacing(1) spacing(1);
+  margin: spacing(1);
 }
 
 .tile-placeholder {

@@ -1,6 +1,11 @@
 import { create } from '@bufbuild/protobuf';
 import { Effect, FixtureState } from '@dmx-controller/proto/effect_pb';
-import { PatchSchema } from '@dmx-controller/proto/output_pb';
+import { LightTrack } from '@dmx-controller/proto/light_track_pb';
+import {
+  OutputTarget,
+  PatchSchema,
+  QualifiedFixtureId,
+} from '@dmx-controller/proto/output_pb';
 import { Project, ProjectSchema } from '@dmx-controller/proto/project_pb';
 import { Scene_Tile } from '@dmx-controller/proto/scene_pb';
 import { randomUint64 } from './numberUtils';
@@ -21,6 +26,54 @@ export function getSerialOutputId(project: Project) {
   return Object.entries(getActivePatch(project).outputs)
     .filter(([_, output]) => output.output.case === 'serialDmxOutput')
     .map(([id, _]) => BigInt(id))[0];
+}
+
+/**
+ * Iterates through all occurrences of output targets and removes any that match the provided predicate.
+ */
+export function deleteFromOutputTargets(
+  project: Project,
+  deletePredicate: (id: QualifiedFixtureId) => boolean,
+) {
+  const deleteFromOutputTarget = (target: OutputTarget | undefined) => {
+    if (target?.output.case === 'fixtures') {
+      const fixtureIds = target.output.value.fixtureIds.filter(
+        (id) => !deletePredicate(id),
+      );
+      target.output.value.fixtureIds = fixtureIds;
+    }
+  };
+
+  // Delete from groups.
+  for (const group of Object.values(project.groups)) {
+    group.targets.forEach(deleteFromOutputTarget);
+    group.targets = group.targets.filter(
+      (t) =>
+        t.output.case === 'fixtures' && t.output.value.fixtureIds.length !== 0,
+    );
+  }
+
+  const deleteFromLightTrack = (t: LightTrack) => {
+    deleteFromOutputTarget(t.outputTarget);
+  };
+
+  // Delete from shows.
+  project.shows.flatMap((s) => s.lightTracks).forEach(deleteFromLightTrack);
+
+  // Delete from scenes.
+  project.scenes
+    .flatMap((s) => s.tileMap)
+    .map((r) => r.tile!)
+    .forEach((t) => {
+      const description = t.description;
+      if (description.case === 'effectGroup') {
+        description.value.channels.forEach((c) =>
+          deleteFromOutputTarget(c.outputTarget),
+        );
+      } else if (description.case === 'sequence') {
+        description.value.lightTracks.forEach(deleteFromLightTrack);
+      }
+    });
 }
 
 export function createNewProject() {

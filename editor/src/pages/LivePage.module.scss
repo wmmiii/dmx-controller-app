@@ -1,6 +1,6 @@
 @import '../vars';
 
-.wrapper {
+.tab-container {
   @include fill;
 
   display: flex;
@@ -38,11 +38,11 @@
 }
 
 .body {
+  @include fill;
+
   display: flex;
   flex-direction: row;
-  flex: 1;
   min-height: 0;
-  position: relative;
 }
 
 .grid-wrapper {
@@ -59,6 +59,7 @@
   border-left: 1px solid $col-border;
   flex-shrink: 0;
   overflow-y: auto;
+  padding: spacing(1);
 
   > button {
     width: 100%;

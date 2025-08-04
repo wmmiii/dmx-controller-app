@@ -51,10 +51,6 @@ $handle-size: 30px;
   display: flex;
   flex-direction: row;
   gap: spacing(1);
-
-  .spacer {
-    flex: 1;
-  }
 }
 
 .icon {
