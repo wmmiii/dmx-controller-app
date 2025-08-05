@@ -1,10 +1,10 @@
 import { create } from '@bufbuild/protobuf';
 import { type ColorPalette } from '@dmx-controller/proto/color_pb';
-import { ControllerMapping_ColorPaletteSelectionSchema } from '@dmx-controller/proto/controller_pb';
 import { useContext, useMemo, useState } from 'react';
 
 import { ProjectContext } from '../contexts/ProjectContext';
 
+import { ControllerMapping_ActionSchema } from '@dmx-controller/proto/controller_pb';
 import { BiCog } from 'react-icons/bi';
 import { Button, IconButton } from './Button';
 import { ColorSwatch } from './ColorSwatch';
@@ -14,7 +14,7 @@ import { Modal } from './Modal';
 import styles from './Palette.module.scss';
 
 interface PaletteSwatchProps {
-  id: string;
+  paletteId: bigint;
   sceneId: bigint;
   palette: ColorPalette;
   active: boolean;
@@ -24,7 +24,7 @@ interface PaletteSwatchProps {
 }
 
 export function PaletteSwatch({
-  id,
+  paletteId,
   sceneId,
   palette,
   active,
@@ -59,7 +59,7 @@ export function PaletteSwatch({
       </IconButton>
       {editPalette && (
         <EditPaletteDialog
-          id={id}
+          paletteId={paletteId}
           sceneId={sceneId}
           palette={palette}
           onDelete={onDelete}
@@ -71,7 +71,7 @@ export function PaletteSwatch({
 }
 
 interface EditPaletteDialogProps {
-  id: string;
+  paletteId: bigint;
   sceneId: bigint;
   palette: ColorPalette;
   onDelete: () => void;
@@ -79,7 +79,7 @@ interface EditPaletteDialogProps {
 }
 
 function EditPaletteDialog({
-  id,
+  paletteId,
   sceneId,
   palette,
   onDelete,
@@ -102,11 +102,22 @@ function EditPaletteDialog({
 
   const action = useMemo(
     () =>
-      create(ControllerMapping_ColorPaletteSelectionSchema, {
-        sceneId: sceneId,
-        paletteId: id,
+      create(ControllerMapping_ActionSchema, {
+        action: {
+          case: 'sceneMapping',
+          value: {
+            actions: {
+              [sceneId.toString()]: {
+                action: {
+                  case: 'colorPaletteId',
+                  value: paletteId,
+                },
+              },
+            },
+          },
+        },
       }),
-    [id],
+    [paletteId],
   );
 
   return (
@@ -122,13 +133,7 @@ function EditPaletteDialog({
           update();
         }}
       />
-      <ControllerConnection
-        title="Color Palette"
-        action={{
-          case: 'colorPaletteSelection',
-          value: action,
-        }}
-      />
+      <ControllerConnection title="Color Palette" action={action} />
       <Button
         variant="warning"
         onClick={() => {

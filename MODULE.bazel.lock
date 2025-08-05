@@ -369,7 +369,7 @@
         "bzlTransitiveDigest": "jKmjnWlkDM/icrY5ZuDnmiAOdfQUdcqq1cSCjvlR9yw=",
         "usagesDigest": "bJqg+9by4wZOpx8S9JJC1D7T478qXrWRgToobYGVq0k=",
         "recordedFileInputs": {
-          "@@//pnpm-lock.yaml": "62577afa4d9db434b409b4774b2671d30d26d74a30a09c99c4e411481bb1fad3"
+          "@@//pnpm-lock.yaml": "cc5240f2b921ade37e93b2879b5e403c8236b9af5af14fed39a6f5db15e56fa1"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},

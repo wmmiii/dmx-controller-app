@@ -1,9 +1,6 @@
 import { clone, create } from '@bufbuild/protobuf';
 import { ColorPaletteSchema } from '@dmx-controller/proto/color_pb';
-import {
-  ControllerMapping_TileStrengthSchema,
-  type ControllerMapping_Action,
-} from '@dmx-controller/proto/controller_pb';
+import { ControllerMapping_ActionSchema } from '@dmx-controller/proto/controller_pb';
 import { type Project } from '@dmx-controller/proto/project_pb';
 import {
   SceneSchema,
@@ -55,6 +52,7 @@ import { Tabs, TabsType } from '../components/Tabs';
 import { RenderingContext } from '../contexts/RenderingContext';
 import { WritableOutput } from '../engine/context';
 import { randomUint64 } from '../util/numberUtils';
+import { getActiveScene } from '../util/sceneUtils';
 import styles from './LivePage.module.scss';
 
 const NEW_SCENE_KEY = 'new';
@@ -71,8 +69,6 @@ export function LivePage(): JSX.Element {
     useContext(RenderingContext);
 
   const [selected, setSelected] = useState<Scene_TileMap | null>(null);
-
-  console.log(project.activeScene);
 
   const scene = project?.scenes[project.activeScene.toString()];
 
@@ -117,29 +113,33 @@ export function LivePage(): JSX.Element {
         />
       </div>
       <div className={styles.palettes}>
-        {Object.entries(scene?.colorPalettes).map((e, i) => (
+        {Object.entries(scene?.colorPalettes).map(([paletteId, palette], i) => (
           <PaletteSwatch
             key={i}
-            id={e[0]}
+            paletteId={BigInt(paletteId)}
             sceneId={project.activeScene}
-            palette={e[1]}
-            active={scene.activeColorPalette === e[0]}
+            palette={palette}
+            active={scene.activeColorPalette === BigInt(paletteId)}
             onClick={() => {
               scene.lastActiveColorPalette = scene.activeColorPalette;
-              scene.activeColorPalette = e[0];
+              scene.activeColorPalette = BigInt(paletteId);
               scene.colorPaletteStartTransition = BigInt(new Date().getTime());
-              save(`Set color palette to ${e[1].name}.`);
+              save(`Set color palette to ${palette.name}.`);
             }}
             onDelete={() => {
               if (Object.keys(scene.colorPalettes).length <= 1) {
                 return;
               }
 
-              scene.activeColorPalette = Object.keys(scene.colorPalettes)[0];
-              scene.activeColorPalette = Object.keys(scene.colorPalettes)[0];
-              delete scene.colorPalettes[e[0]];
+              scene.activeColorPalette = BigInt(
+                Object.keys(scene.colorPalettes)[0],
+              );
+              scene.activeColorPalette = BigInt(
+                Object.keys(scene.colorPalettes)[0],
+              );
+              delete scene.colorPalettes[paletteId];
 
-              save(`Delete color palette ${e[1].name}`);
+              save(`Delete color palette ${palette.name}`);
             }}
           />
         ))}
@@ -148,7 +148,7 @@ export function LivePage(): JSX.Element {
           onClick={() => {
             const newPalette = clone(ColorPaletteSchema, DEFAULT_COLOR_PALETTE);
             newPalette.name = 'New color palette';
-            scene.colorPalettes[crypto.randomUUID()] = newPalette;
+            scene.colorPalettes[randomUint64().toString()] = newPalette;
             save('Add new color palette');
           }}
         >
@@ -205,7 +205,7 @@ export function LivePage(): JSX.Element {
     <PaletteContext.Provider
       value={{
         palette:
-          scene?.colorPalettes[scene.activeColorPalette] ||
+          scene?.colorPalettes[scene.activeColorPalette.toString()] ||
           DEFAULT_COLOR_PALETTE,
       }}
     >
@@ -241,7 +241,7 @@ export function LivePage(): JSX.Element {
       />
       {addTileIndex != null && (
         <AddNewDialog
-          scene={project.scenes[project.activeScene.toString()]}
+          scene={getActiveScene(project)}
           x={addTileIndex.x}
           y={addTileIndex.y}
           onSelect={setSelected}
@@ -269,13 +269,21 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
 
   const action = useMemo(
     () =>
-      ({
-        case: 'tileStrength',
-        value: create(ControllerMapping_TileStrengthSchema, {
-          sceneId: project.activeScene,
-          tileId: tileMap.id,
-        }),
-      }) as ControllerMapping_Action['action'],
+      create(ControllerMapping_ActionSchema, {
+        action: {
+          case: 'sceneMapping',
+          value: {
+            actions: {
+              [project.activeScene.toString()]: {
+                action: {
+                  case: 'tileStrengthId',
+                  value: tileMap.id,
+                },
+              },
+            },
+          },
+        },
+      }),
     [],
   );
 
@@ -419,8 +427,7 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
             <Button
               variant="warning"
               onClick={() => {
-                const tileMap =
-                  project.scenes[project.activeScene.toString()].tileMap;
+                const tileMap = getActiveScene(project).tileMap;
                 const index = tileMap.findIndex((c) => c.tile === tile);
                 if (index > -1) {
                   tileMap.splice(index, 1);
@@ -552,6 +559,7 @@ function AddNewDialog({ scene, x, y, onSelect, onClose }: AddNewDialogProps) {
       },
     });
     const tileMap = create(Scene_TileMapSchema, {
+      id: randomUint64(),
       tile: tile,
       x: x,
       y: y,

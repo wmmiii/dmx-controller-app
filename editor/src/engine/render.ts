@@ -24,6 +24,7 @@ import {
   OutputTarget,
   OutputTargetSchema,
 } from '@dmx-controller/proto/output_pb';
+import { getActiveScene } from '../util/sceneUtils';
 import { RenderContext, WritableOutput } from './context';
 import { applyState } from './effect';
 import { WritableDeviceCache } from './fixtures/writableDevice';
@@ -119,7 +120,7 @@ export function renderScene(
 
   const writableDeviceCache = new WritableDeviceCache(project, output.outputId);
 
-  const scene = project.scenes[project.activeScene.toString()];
+  const scene = getActiveScene(project);
   if (!scene) {
     return;
   }
@@ -130,8 +131,8 @@ export function renderScene(
       scene.colorPaletteTransitionDurationMs,
   );
   const colorPalette = interpolatePalettes(
-    scene.colorPalettes[scene.lastActiveColorPalette],
-    scene.colorPalettes[scene.activeColorPalette],
+    scene.colorPalettes[scene.lastActiveColorPalette.toString()],
+    scene.colorPalettes[scene.activeColorPalette.toString()],
     colorPaletteT,
   );
 

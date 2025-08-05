@@ -5,7 +5,6 @@ import {
   type Color,
   type ColorPalette,
 } from '@dmx-controller/proto/color_pb';
-import { ControllerMapping_TileStrengthSchema } from '@dmx-controller/proto/controller_pb';
 import { type FixtureState } from '@dmx-controller/proto/effect_pb';
 import {
   Scene_TileSchema,
@@ -19,15 +18,15 @@ import { ControllerContext } from '../contexts/ControllerContext';
 import { PaletteContext } from '../contexts/PaletteContext';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { TimeContext } from '../contexts/TimeContext';
-import { findAction } from '../external_controller/externalController';
 import { tileTileDetails } from '../util/projectUtils';
 import { tileActiveAmount, toggleTile } from '../util/tile';
 
+import { ControllerMapping_ActionSchema } from '@dmx-controller/proto/controller_pb';
+import { hasAction } from '../external_controller/externalController';
 import styles from './Tile.module.scss';
 
 interface TileProps {
-  id: string;
-  sceneId: bigint;
+  tileId: bigint;
   tile: Scene_Tile;
   onDragTile: () => void;
   onDropTile: () => void;
@@ -38,8 +37,7 @@ interface TileProps {
 }
 
 export function Tile({
-  id,
-  sceneId: scene,
+  tileId,
   tile,
   onDragTile,
   onDropTile,
@@ -67,18 +65,32 @@ export function Tile({
     [toJson(Scene_TileSchema, tile)],
   );
 
-  const controllerMapping = useMemo(() => {
+  const hasControllerMapping = useMemo(() => {
     if (controllerName) {
-      return findAction(project, controllerName, {
-        case: 'tileStrength',
-        value: create(ControllerMapping_TileStrengthSchema, {
-          sceneId: scene,
-          tileId: id,
+      const hasMapping = hasAction(
+        project,
+        controllerName,
+        create(ControllerMapping_ActionSchema, {
+          action: {
+            case: 'sceneMapping',
+            value: {
+              actions: {
+                [project.activeScene.toString()]: {
+                  action: {
+                    case: 'tileStrengthId',
+                    value: tileId,
+                  },
+                },
+              },
+            },
+          },
         }),
-      });
+      );
+      return hasMapping;
+    } else {
+      return false;
     }
-    return undefined;
-  }, [project, controllerName]);
+  }, [project, controllerName, tileId]);
 
   const background = useMemo(() => {
     if (details.colors.length === 0) {
@@ -145,7 +157,7 @@ export function Tile({
           {tile.name}
         </div>
         {priority != 0 && <div className={styles.priority}>{priority}</div>}
-        {controllerMapping && (
+        {hasControllerMapping && (
           <div className={styles.controller}>
             <SiMidi />
           </div>

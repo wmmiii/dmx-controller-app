@@ -79,7 +79,7 @@ message Scene {
   }
 
   message TileMap {
-    string id = 6;
+    uint64 id = 6;
 
     Tile tile = 1;
 
@@ -95,9 +95,9 @@ message Scene {
 
   string name = 1;
   repeated TileMap tileMap = 13;
-  map<string, ColorPalette> color_palettes = 7;
-  string active_color_palette = 8;
-  string last_active_color_palette = 9;
+  map<uint64, ColorPalette> color_palettes = 7;
+  uint64 active_color_palette = 8;
+  uint64 last_active_color_palette = 9;
   uint32 color_palette_transition_duration_ms = 5;
   uint64 color_palette_start_transition = 6;
   reserved 10;

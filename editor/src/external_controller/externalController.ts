@@ -1,9 +1,10 @@
-import { create } from '@bufbuild/protobuf';
+import { create, equals } from '@bufbuild/protobuf';
 import {
   ControllerMappingSchema,
+  ControllerMapping_ActionSchema,
   ControllerMapping_ControllerSchema,
+  ControllerMapping_SceneActionSchema,
   type ControllerMapping_Action,
-  type ControllerMapping_TileStrength,
 } from '@dmx-controller/proto/controller_pb';
 import { type Project } from '@dmx-controller/proto/project_pb';
 
@@ -12,8 +13,12 @@ import {
   ControllerChannel,
 } from '../contexts/ControllerContext';
 
+import { getActiveScene } from '../util/sceneUtils';
 import { outputTileStrength, performTileStrength } from './tileStrength';
 
+/**
+ * Takes in details of a controller action and modifies the project accordingly.
+ */
 export function performAction(
   project: Project,
   controllerName: string,
@@ -22,77 +27,156 @@ export function performAction(
   cct: ControlCommandType,
   addBeatSample: (t: number) => void,
   output: (channel: ControllerChannel, value: number) => void,
-) {
+): boolean {
   const action =
-    project.controllerMapping!.controllers[controllerName]?.actions[channel]
+    project.controllerMapping?.controllers[controllerName]?.actions[channel]
       ?.action;
-
   switch (action?.case) {
     case 'beatMatch':
       if (cct === null && value > 0.5) {
         addBeatSample(new Date().getTime());
       }
       return false;
-    case 'colorPaletteSelection':
-      const scene = project.scenes[action.value.sceneId.toString()];
-      if (scene.activeColorPalette === action.value.paletteId) {
-        return false;
-      } else {
-        scene.lastActiveColorPalette =
-          project.scenes[action.value.sceneId.toString()].activeColorPalette;
-        scene.activeColorPalette = action.value.paletteId;
-        scene.colorPaletteStartTransition = BigInt(new Date().getTime());
-        return true;
+    case 'sceneMapping':
+      const sceneAction = action.value.actions[project.activeScene.toString()];
+      if (sceneAction) {
+        switch (sceneAction.action.case) {
+          case 'colorPaletteId':
+            getActiveScene(project).activeColorPalette =
+              sceneAction.action.value;
+            return true;
+          case 'tileStrengthId':
+            return performTileStrength(
+              project,
+              sceneAction.action.value,
+              value,
+              cct,
+            );
+          default:
+            throw Error('Unknown action type in sceneMapping!');
+        }
       }
-    case 'tileStrength':
-      return performTileStrength(project, action.value, value, cct);
     default:
       output(channel, value);
       return false;
   }
 }
 
+/**
+ * Assigns an action to a controller channel.
+ */
 export function assignAction(
   project: Project,
   controllerName: string,
   channel: ControllerChannel,
   action: ControllerMapping_Action,
 ) {
-  deleteAction(project, controllerName, action.action);
-  getActionMap(project, controllerName)[channel] = action;
+  deleteAction(project, controllerName, action);
+  const actionMap = getActionMap(project, controllerName);
+  switch (action.action.case) {
+    case 'sceneMapping':
+      const existingAction = actionMap[channel];
+      if (existingAction?.action.case === 'sceneMapping') {
+        existingAction.action.value.actions[project.activeScene.toString()] =
+          action.action.value.actions[project.activeScene.toString()];
+      } else {
+        actionMap[channel] = action;
+      }
+      break;
+    default:
+      actionMap[channel] = action;
+  }
 }
 
-export function findAction(
+/**
+ * Returns `true` if the supplied action already exists in the project mapped to any controller channel.
+ */
+export function hasAction(
   project: Project,
   controllerName: string,
-  action: ControllerMapping_Action['action'],
-) {
-  return Object.values(getActionMap(project, controllerName))
-    .map((a) => a.action)
-    .filter((a) => a.case === action.case)
-    .find((a) => JSON.stringify(a.value) === JSON.stringify(action.value));
+  action: ControllerMapping_Action,
+): boolean {
+  const actionMap = getActionMap(project, controllerName);
+  switch (action.action.case) {
+    case 'sceneMapping':
+      const newSceneAction =
+        action.action.value.actions[project.activeScene.toString()];
+      if (!newSceneAction) {
+        throw Error('Action passed to hasAction not in current scene!');
+      }
+
+      for (const a of Object.values(actionMap)) {
+        if (a.action.case === 'sceneMapping') {
+          const existingSceneAction =
+            a.action.value.actions[project.activeScene.toString()];
+          if (existingSceneAction) {
+            return equals(
+              ControllerMapping_SceneActionSchema,
+              newSceneAction,
+              existingSceneAction,
+            );
+          } else {
+            continue;
+          }
+        }
+      }
+      return false;
+    default:
+      return (
+        Object.values(actionMap).find((a) =>
+          equals(ControllerMapping_ActionSchema, a, action),
+        ) != null
+      );
+  }
 }
 
+/**
+ * Finds an action on any controller channel and deletes it once found.
+ */
 export function deleteAction(
   project: Project,
   controllerName: string,
-  action: ControllerMapping_Action['action'],
+  action: ControllerMapping_Action,
 ) {
-  const controllerActions = getActionMap(project, controllerName);
-  for (const channel in controllerActions) {
-    const foundAction = controllerActions[channel];
-    if (
-      foundAction.action.case === action.case &&
-      JSON.stringify(foundAction.action.value) === JSON.stringify(action.value)
-    ) {
-      controllerActions[channel].action = {
-        case: undefined,
-        value: undefined,
-      };
+  const actionMap = getActionMap(project, controllerName);
+
+  if (action.action.case === 'sceneMapping') {
+    for (const [channel, existingAction] of Object.entries(actionMap)) {
+      if (existingAction.action.case === 'sceneMapping') {
+        const existingSceneAction =
+          existingAction.action.value.actions[project.activeScene.toString()];
+        const newSceneAction =
+          action.action.value.actions[project.activeScene.toString()];
+        if (existingSceneAction) {
+          if (
+            equals(
+              ControllerMapping_SceneActionSchema,
+              existingSceneAction,
+              newSceneAction,
+            )
+          ) {
+            delete existingAction.action.value.actions[
+              project.activeScene.toString()
+            ];
+            if (Object.keys(existingAction.action.value.actions).length === 0) {
+              delete actionMap[channel];
+            }
+          }
+        }
+      }
+    }
+  } else {
+    for (const [channel, existingAction] of Object.entries(actionMap)) {
+      if (equals(ControllerMapping_ActionSchema, existingAction, action)) {
+        delete actionMap[channel];
+      }
     }
   }
 }
 
+/**
+ * Outputs the current state of the project to the controller.
+ */
 export function outputValues(
   project: Project,
   controllerName: string,
@@ -102,27 +186,42 @@ export function outputValues(
   const actions = Object.entries(
     project.controllerMapping?.controllers[controllerName].actions || {},
   );
-  for (const entry of actions) {
-    const channel = entry[0];
-    const action = entry[1].action;
+  for (const [channel, action] of actions) {
     let value = 0;
-    switch (action.case) {
+    switch (action.action.case) {
       case 'beatMatch':
         const beatMetadata = project.liveBeat!;
         const beatT = Number(t - beatMetadata.offsetMs);
         value = 1 - Math.round((beatT / beatMetadata.lengthMs) % 1);
         break;
-      case 'colorPaletteSelection':
-        value = 1;
+      case 'sceneMapping':
+        const sceneAction =
+          action.action.value.actions[project.activeScene.toString()]?.action;
+        if (sceneAction) {
+          switch (sceneAction.case) {
+            case 'colorPaletteId':
+              value = 1;
+              break;
+            case 'tileStrengthId':
+              value = outputTileStrength(project, sceneAction.value, t);
+              break;
+            default:
+              throw Error('Unknown action type in sceneMapping!');
+          }
+        }
         break;
-      case 'tileStrength':
-        value = outputTileStrength(project, action.value, t);
+      case undefined:
         break;
+      default:
+        throw Error('Unknown action type!');
     }
     output(channel, value);
   }
 }
 
+/**
+ * Returns the description of an action mapped to a controller channel.
+ */
 export function getActionDescription(
   project: Project,
   controllerName: string,
@@ -132,22 +231,36 @@ export function getActionDescription(
   switch (actionMapping?.action.case) {
     case 'beatMatch':
       return 'Samples the beat during beat-matching.';
-    case 'tileStrength':
-      const action: ControllerMapping_TileStrength =
-        actionMapping?.action.value!;
-      const tile = Array.from(
-        project.scenes[action.sceneId.toString()].tileMap.values(),
-      ).find((m) => m.id === action.tileId);
-      if (tile) {
-        return `Toggles the strength of ${tile.tile?.name}.`;
-      } else {
-        return null;
+    case 'sceneMapping':
+      const sceneMapping = actionMapping.action.value;
+      const sceneAction =
+        sceneMapping.actions[project.activeScene.toString()]?.action;
+      switch (sceneAction?.case) {
+        case 'colorPaletteId':
+          const colorPaletteName =
+            getActiveScene(project).colorPalettes[sceneAction.value.toString()]
+              .name;
+          return `Sets the color palette to ${colorPaletteName}.`;
+        case 'tileStrengthId':
+          const tileName = getActiveScene(project).tileMap.find(
+            (t) => t.id === sceneAction.value,
+          )?.tile?.name;
+          return `Modifies the strength of tile ${tileName}`;
+        case undefined:
+          return null;
+        default:
+          throw Error('Unknown type in sceneMapping!');
       }
-    default:
+    case undefined:
       return null;
+    default:
+      throw Error('Unknown action type!');
   }
 }
 
+/**
+ * Utility to get the action map for the current project and scene.
+ */
 export function getActionMap(project: Project, controllerName: string) {
   if (project.controllerMapping == null) {
     project.controllerMapping = create(ControllerMappingSchema, {});
@@ -162,6 +275,9 @@ export function getActionMap(project: Project, controllerName: string) {
 }
 
 let timeoutHandle: any;
+/**
+ * Debounces input based on the control command type of a controller input.
+ */
 export function debounceInput(cct: ControlCommandType, action: () => void) {
   if (cct === 'lsb' || cct === null) {
     clearTimeout(timeoutHandle);

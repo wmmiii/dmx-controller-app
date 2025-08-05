@@ -19,7 +19,7 @@ export function TileGrid({
   className,
   sceneId,
   onSelect,
-  setAddTileIndex: setAddTileIndex,
+  setAddTileIndex,
   maxX,
   maxY,
 }: TileGridProps): JSX.Element {
@@ -57,8 +57,7 @@ export function TileGrid({
             return (
               <Tile
                 key={x + ' ' + y}
-                id={mapping.id}
-                sceneId={project.activeScene}
+                tileId={mapping.id}
                 tile={mapping.tile!}
                 onDragTile={() => setDraggingTile(mapping)}
                 onDropTile={() => {

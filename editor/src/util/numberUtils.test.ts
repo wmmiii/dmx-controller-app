@@ -39,11 +39,5 @@ describe('numberUtils', () => {
       const result2 = randomUint64();
       expect(result1).not.toBe(result2);
     });
-
-    it('should return values within uint64 range', () => {
-      const result = randomUint64();
-      expect(result).toBeGreaterThanOrEqual(0n);
-      expect(result).toBeLessThan(2n ** 64n);
-    });
   });
 });

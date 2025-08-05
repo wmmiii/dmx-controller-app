@@ -235,7 +235,7 @@ export function ControllerProvider({
     };
     addListener(listener);
     return () => removeListener(listener);
-  }, [controller, addBeatSample, update, addListener, removeListener]);
+  }, [project, controller, addBeatSample, update, addListener, removeListener]);
 
   // Expose output function for debugging purposes.
   useEffect(() => {

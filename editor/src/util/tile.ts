@@ -1,9 +1,15 @@
 import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
 import { Scene_Tile } from '@dmx-controller/proto/scene_pb';
 
-export function getTileDurationMs(tile: Scene_Tile, beat: BeatMetadata) {
+export function getTileDurationMs(
+  tile: Scene_Tile,
+  beat: BeatMetadata | undefined,
+) {
   switch (tile.duration.case) {
     case 'durationBeat':
+      if (!beat) {
+        return 0;
+      }
       if (tile.description.case === 'sequence') {
         return tile.description.value.nativeBeats * beat.lengthMs;
       } else {
@@ -12,13 +18,13 @@ export function getTileDurationMs(tile: Scene_Tile, beat: BeatMetadata) {
     case 'durationMs':
       return tile.duration.value;
     default:
-      return beat.lengthMs;
+      throw Error('Unknown tile duration type in getTileDurationMs!');
   }
 }
 
 export function tileActiveAmount(
   tile: Scene_Tile,
-  beat: BeatMetadata,
+  beat: BeatMetadata | undefined,
   t: bigint,
 ): number {
   if (tile.transition.case === 'startFadeInMs') {

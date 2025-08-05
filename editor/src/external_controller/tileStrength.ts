@@ -1,43 +1,46 @@
-import { ControllerMapping_TileStrength } from '@dmx-controller/proto/controller_pb';
 import { Project } from '@dmx-controller/proto/project_pb';
 
 import { ControlCommandType } from '../contexts/ControllerContext';
+import { getActiveScene } from '../util/sceneUtils';
 import { tileActiveAmount, toggleTile } from '../util/tile';
 
 export function performTileStrength(
   project: Project,
-  action: ControllerMapping_TileStrength,
+  tileId: bigint,
   value: number,
   cct: ControlCommandType,
 ) {
-  const tileMapping = project.scenes[action.sceneId.toString()].tileMap.find(
-    (t) => t.id === action.tileId,
+  let actionPerformed = false;
+
+  const tile = getActiveScene(project).tileMap.find(
+    (tile) => tile.id === tileId,
   );
-  if (tileMapping && tileMapping.tile) {
+
+  if (tile?.tile) {
     if (cct != null) {
       // Fader input.
-      tileMapping.tile.transition = {
+      tile.tile.transition = {
         case: 'absoluteStrength',
         value: value,
       };
-      return true;
+      actionPerformed ||= true;
     } else if (value > 0.5) {
-      toggleTile(tileMapping.tile, project.liveBeat!);
-      return true;
+      toggleTile(tile.tile, project.liveBeat!);
+      actionPerformed ||= true;
     }
   }
-  return true;
+  return actionPerformed;
 }
 
 export function outputTileStrength(
   project: Project,
-  action: ControllerMapping_TileStrength,
+  tileId: bigint,
   t: bigint,
 ) {
-  const tile = project.scenes[action.sceneId.toString()].tileMap.find(
-    (m) => m.id === action.tileId,
+  const tile = getActiveScene(project).tileMap.find(
+    (m) => m.id === tileId,
   )?.tile;
-  if (tile && project.liveBeat) {
+  if (tile) {
     return tileActiveAmount(tile, project.liveBeat, t);
   } else {
     return 0;

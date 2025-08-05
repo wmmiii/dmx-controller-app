@@ -15,6 +15,7 @@
     "noImplicitReturns": true,
     "noUnusedParameters": true,
     "allowSyntheticDefaultImports": true,
+    "allowJs": true,
     "paths": {
       "@dmx-controller/*": ["./bazel-bin/*", "./*"]
     },

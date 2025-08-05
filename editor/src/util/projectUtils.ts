@@ -77,7 +77,7 @@ export function deleteFromOutputTargets(
 }
 
 export function createNewProject() {
-  const defaultColorPaletteId = crypto.randomUUID();
+  const defaultColorPaletteId = randomUint64();
   const defaultPatchId = randomUint64();
   const defaultSceneId = randomUint64();
 

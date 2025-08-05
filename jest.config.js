@@ -4,6 +4,10 @@ module.exports = {
   rootDir: '.',
   reporters: ['default'],
   preset: 'ts-jest',
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  moduleNameMapper: {
+    '^@dmx-controller/proto/(.*)$': '<rootDir>/bazel-bin/proto/$1',
+  },
   transform: {
     '^.+\\.(ts|tsx)$': [
       'ts-jest',
@@ -11,6 +15,13 @@ module.exports = {
         useESM: true,
       },
     ],
+    '^.+\\.js$': [
+      'ts-jest',
+      {
+        useESM: true,
+      },
+    ],
   },
+  transformIgnorePatterns: ['node_modules/(?!(@dmx-controller|@bufbuild))'],
   extensionsToTreatAsEsm: ['.ts'],
 };

@@ -30,7 +30,7 @@ esbuild(
         "**/*.scss",
         "**/*.ts",
         "**/*.tsx",
-    ]),
+    ], exclude=["**/*.test.ts"]),
     config = "esbuild.config.mjs",
     entry_point = "app.tsx",
     minify = select({
@@ -55,6 +55,7 @@ ts_project(
         "**/*.test.ts",
         "**/*.test.tsx",
     ]),
+    allow_js=True,
     source_map = True,
     tsconfig = "//:tsconfig",
     deps = COMMON_DEPS,

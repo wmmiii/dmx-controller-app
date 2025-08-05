@@ -1,8 +1,4 @@
-import { create } from '@bufbuild/protobuf';
-import {
-  ControllerMapping_ActionSchema,
-  type ControllerMapping_Action,
-} from '@dmx-controller/proto/controller_pb';
+import { type ControllerMapping_Action } from '@dmx-controller/proto/controller_pb';
 import { type Project } from '@dmx-controller/proto/project_pb';
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { SiMidi } from 'react-icons/si';
@@ -16,15 +12,15 @@ import { ProjectContext } from '../contexts/ProjectContext';
 import {
   assignAction,
   deleteAction,
-  findAction,
   getActionDescription,
+  hasAction,
 } from '../external_controller/externalController';
 
 import { Button, IconButton } from './Button';
 import { Modal } from './Modal';
 
 interface ControllerConnectionProps {
-  action: ControllerMapping_Action['action'];
+  action: ControllerMapping_Action;
   title: string;
   iconOnly?: boolean;
   requiredType?: 'slider' | 'button';
@@ -43,11 +39,11 @@ export function ControllerConnection({
   const [mappingControllerInput, setMappingControllerInput] = useState(false);
   const [error, setError] = useState<string | undefined>();
 
-  const existingAction = useMemo(() => {
+  const hasControllerMapping = useMemo(() => {
     if (controllerName) {
-      return findAction(project, controllerName, action);
+      return hasAction(project, controllerName, action);
     } else {
-      return undefined;
+      return false;
     }
   }, [project, controllerName, action]);
 
@@ -59,7 +55,6 @@ export function ControllerConnection({
         _value: number,
         cct: ControlCommandType,
       ) => {
-        setMappingControllerInput(false);
         const existing = getActionDescription(project, controllerName, channel);
         if (cct != null && requiredType === 'button') {
           setError('Input must be a button!');
@@ -68,16 +63,10 @@ export function ControllerConnection({
         } else if (existing) {
           setError(`Controller already assigned to "${existing}".`);
           return;
-        } else {
-          assignAction(
-            project,
-            controllerName,
-            channel,
-            create(ControllerMapping_ActionSchema, {
-              action: action,
-            }),
-          );
+        } else if (cct == null || cct == 'msb') {
+          assignAction(project, controllerName, channel, action);
           save('Add MIDI mapping.');
+          setMappingControllerInput(false);
         }
       };
       addListener(listener);
@@ -98,14 +87,14 @@ export function ControllerConnection({
           variant={
             mappingControllerInput
               ? 'warning'
-              : existingAction
+              : hasControllerMapping
                 ? 'primary'
                 : 'default'
           }
           onClick={() => {
             if (mappingControllerInput) {
               setMappingControllerInput(false);
-            } else if (existingAction && controllerName) {
+            } else if (hasControllerMapping && controllerName) {
               deleteAction(project, controllerName, action);
               save('Remove MIDI mapping.');
             } else {
@@ -121,14 +110,14 @@ export function ControllerConnection({
           variant={
             mappingControllerInput
               ? 'warning'
-              : existingAction
+              : hasControllerMapping
                 ? 'primary'
                 : 'default'
           }
           onClick={() => {
             if (mappingControllerInput) {
               setMappingControllerInput(false);
-            } else if (existingAction && controllerName) {
+            } else if (hasControllerMapping && controllerName) {
               deleteAction(project, controllerName, action);
               save('Remove MIDI mapping.');
             } else {

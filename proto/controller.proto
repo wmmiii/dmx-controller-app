@@ -9,9 +9,8 @@ message ControllerMapping {
 
   message Action {
     oneof action {
-      BeatMatch beat_match = 2;
-      TileStrength tile_strength = 1;
-      ColorPaletteSelection color_palette_selection = 3;
+      BeatMatch beat_match = 1;
+      SceneMapping scene_mapping = 2;
     }
   }
 
@@ -19,14 +18,15 @@ message ControllerMapping {
 
   }
 
-  message TileStrength {
-    uint64 scene_id = 1;
-    string tile_id = 2;
+  message SceneMapping {
+    map<uint64, SceneAction> actions = 1;
   }
 
-  message ColorPaletteSelection {
-    uint64 scene_id = 1;
-    string palette_id = 2;
+  message SceneAction {
+    oneof action {
+      uint64 tile_strength_id = 1;
+      uint64 color_palette_id = 3;
+    }
   }
 
   map<string, Controller> controllers = 1;
