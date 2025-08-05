@@ -20,12 +20,12 @@ message ControllerMapping {
   }
 
   message TileStrength {
-    uint32 scene = 1;
+    uint64 scene_id = 1;
     string tile_id = 2;
   }
 
   message ColorPaletteSelection {
-    uint32 scene = 1;
+    uint64 scene_id = 1;
     string palette_id = 2;
   }
 

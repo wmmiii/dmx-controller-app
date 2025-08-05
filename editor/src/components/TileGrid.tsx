@@ -8,7 +8,7 @@ import styles from './Tile.module.scss';
 
 interface TileGridProps {
   className?: string;
-  sceneId: number;
+  sceneId: bigint;
   onSelect: (tile: Scene_TileMap) => void;
   setAddTileIndex: (index: { x: number; y: number }) => void;
   maxX: number;
@@ -26,7 +26,10 @@ export function TileGrid({
   const { project, save, update } = useContext(ProjectContext);
   const [draggingTile, setDraggingTile] = useState<Scene_TileMap | null>(null);
 
-  const scene = useMemo(() => project?.scenes[sceneId], [project, sceneId]);
+  const scene = useMemo(
+    () => project?.scenes[sceneId.toString()],
+    [project, sceneId],
+  );
 
   if (scene == null) {
     return <div className={className}></div>;
@@ -55,7 +58,7 @@ export function TileGrid({
               <Tile
                 key={x + ' ' + y}
                 id={mapping.id}
-                scene={project.activeScene}
+                sceneId={project.activeScene}
                 tile={mapping.tile!}
                 onDragTile={() => setDraggingTile(mapping)}
                 onDropTile={() => {

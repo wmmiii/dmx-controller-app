@@ -244,7 +244,7 @@ export function deleteTargetGroup(project: Project, groupId: bigint) {
   };
 
   // Remove group from scenes.
-  for (const scene of project.scenes) {
+  for (const scene of Object.values(project.scenes)) {
     for (const tile of scene.tileMap) {
       switch (tile.tile?.description.case) {
         case 'effectGroup':

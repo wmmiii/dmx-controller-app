@@ -10,7 +10,7 @@ export function performTileStrength(
   value: number,
   cct: ControlCommandType,
 ) {
-  const tileMapping = project.scenes[action.scene].tileMap.find(
+  const tileMapping = project.scenes[action.sceneId.toString()].tileMap.find(
     (t) => t.id === action.tileId,
   );
   if (tileMapping && tileMapping.tile) {
@@ -34,7 +34,7 @@ export function outputTileStrength(
   action: ControllerMapping_TileStrength,
   t: bigint,
 ) {
-  const tile = project.scenes[action.scene].tileMap.find(
+  const tile = project.scenes[action.sceneId.toString()].tileMap.find(
     (m) => m.id === action.tileId,
   )?.tile;
   if (tile && project.liveBeat) {

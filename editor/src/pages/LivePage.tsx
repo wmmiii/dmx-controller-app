@@ -54,6 +54,7 @@ import { Spacer } from '../components/Spacer';
 import { Tabs, TabsType } from '../components/Tabs';
 import { RenderingContext } from '../contexts/RenderingContext';
 import { WritableOutput } from '../engine/context';
+import { randomUint64 } from '../util/numberUtils';
 import styles from './LivePage.module.scss';
 
 const NEW_SCENE_KEY = 'new';
@@ -73,7 +74,7 @@ export function LivePage(): JSX.Element {
 
   console.log(project.activeScene);
 
-  const scene = project?.scenes[project.activeScene];
+  const scene = project?.scenes[project.activeScene.toString()];
 
   useEffect(() => {
     projectRef.current = project;
@@ -120,7 +121,7 @@ export function LivePage(): JSX.Element {
           <PaletteSwatch
             key={i}
             id={e[0]}
-            scene={project.activeScene}
+            sceneId={project.activeScene}
             palette={e[1]}
             active={scene.activeColorPalette === e[0]}
             onClick={() => {
@@ -158,9 +159,11 @@ export function LivePage(): JSX.Element {
   );
 
   const tabs: TabsType = {};
-  for (let sceneId = 0; sceneId < project.scenes.length; ++sceneId) {
-    const scene = project.scenes[sceneId];
-    tabs[sceneId] = {
+  for (const [sceneIdString, scene] of Object.entries(project.scenes).sort(
+    ([_aId, a], [_bId, b]) => a.name.localeCompare(b.name),
+  )) {
+    const sceneId = BigInt(sceneIdString);
+    tabs[sceneId.toString()] = {
       name: (
         <>
           <EditableText
@@ -170,20 +173,23 @@ export function LivePage(): JSX.Element {
               save(`Change name of scene to ${name}.`);
             }}
           />
-          {project.scenes.length > 1 && project.activeScene === sceneId && (
-            <>
-              &nbsp;
-              <BiTrash
-                size="1em"
-                onClick={(ev) => {
-                  project.scenes.splice(sceneId, 1);
-                  project.activeScene = 0;
-                  save(`Delete scene ${scene.name}.`);
-                  ev.stopPropagation();
-                }}
-              />
-            </>
-          )}
+          {Object.keys(project.scenes).length > 1 &&
+            project.activeScene === sceneId && (
+              <>
+                &nbsp;
+                <BiTrash
+                  size="1em"
+                  onClick={(ev) => {
+                    delete project.scenes[sceneId.toString()];
+                    project.activeScene = BigInt(
+                      Object.keys(project.scenes)[0],
+                    );
+                    save(`Delete scene ${scene.name}.`);
+                    ev.stopPropagation();
+                  }}
+                />
+              </>
+            )}
         </>
       ),
       contents: body,
@@ -209,21 +215,20 @@ export function LivePage(): JSX.Element {
         selectedTab={project.activeScene.toString()}
         setSelectedTab={(tabKey) => {
           if (tabKey === NEW_SCENE_KEY) {
-            project.scenes.push(
-              create(SceneSchema, {
-                name: 'New Scene',
-                tileMap: [],
-                colorPalettes: scene.colorPalettes,
-                activeColorPalette: scene.activeColorPalette,
-                lastActiveColorPalette: scene.activeColorPalette,
-              }),
-            );
-            project.activeScene = project.scenes.length - 1;
+            const newSceneId = randomUint64();
+            project.scenes[newSceneId.toString()] = create(SceneSchema, {
+              name: 'New Scene',
+              tileMap: [],
+              colorPalettes: scene.colorPalettes,
+              activeColorPalette: scene.activeColorPalette,
+              lastActiveColorPalette: scene.activeColorPalette,
+            });
+            project.activeScene = newSceneId;
             save('Add new scene');
           } else {
-            const sceneId = Number(tabKey);
+            const sceneId = BigInt(tabKey);
             project.activeScene = sceneId;
-            const scene = project.scenes[sceneId];
+            const scene = project.scenes[sceneId.toString()];
             save(`Switch to scene ${scene.name}`);
           }
         }}
@@ -236,7 +241,7 @@ export function LivePage(): JSX.Element {
       />
       {addTileIndex != null && (
         <AddNewDialog
-          scene={project.scenes[project.activeScene]}
+          scene={project.scenes[project.activeScene.toString()]}
           x={addTileIndex.x}
           y={addTileIndex.y}
           onSelect={setSelected}
@@ -267,7 +272,7 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
       ({
         case: 'tileStrength',
         value: create(ControllerMapping_TileStrengthSchema, {
-          scene: project.activeScene,
+          sceneId: project.activeScene,
           tileId: tileMap.id,
         }),
       }) as ControllerMapping_Action['action'],
@@ -414,7 +419,8 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
             <Button
               variant="warning"
               onClick={() => {
-                const tileMap = project.scenes[project.activeScene].tileMap;
+                const tileMap =
+                  project.scenes[project.activeScene.toString()].tileMap;
                 const index = tileMap.findIndex((c) => c.tile === tile);
                 if (index > -1) {
                   tileMap.splice(index, 1);

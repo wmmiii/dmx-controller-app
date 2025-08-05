@@ -34,12 +34,12 @@ export function performAction(
       }
       return false;
     case 'colorPaletteSelection':
-      const scene = project.scenes[action.value.scene];
+      const scene = project.scenes[action.value.sceneId.toString()];
       if (scene.activeColorPalette === action.value.paletteId) {
         return false;
       } else {
         scene.lastActiveColorPalette =
-          project.scenes[action.value.scene].activeColorPalette;
+          project.scenes[action.value.sceneId.toString()].activeColorPalette;
         scene.activeColorPalette = action.value.paletteId;
         scene.colorPaletteStartTransition = BigInt(new Date().getTime());
         return true;
@@ -136,7 +136,7 @@ export function getActionDescription(
       const action: ControllerMapping_TileStrength =
         actionMapping?.action.value!;
       const tile = Array.from(
-        project.scenes[action.scene].tileMap.values(),
+        project.scenes[action.sceneId.toString()].tileMap.values(),
       ).find((m) => m.id === action.tileId);
       if (tile) {
         return `Toggles the strength of ${tile.tile?.name}.`;

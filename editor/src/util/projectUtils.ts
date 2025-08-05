@@ -61,7 +61,7 @@ export function deleteFromOutputTargets(
   project.shows.flatMap((s) => s.lightTracks).forEach(deleteFromLightTrack);
 
   // Delete from scenes.
-  project.scenes
+  Object.values(project.scenes)
     .flatMap((s) => s.tileMap)
     .map((r) => r.tile!)
     .forEach((t) => {
@@ -79,11 +79,13 @@ export function deleteFromOutputTargets(
 export function createNewProject() {
   const defaultColorPaletteId = crypto.randomUUID();
   const defaultPatchId = randomUint64();
+  const defaultSceneId = randomUint64();
 
   return create(ProjectSchema, {
     name: 'Untitled Project',
-    scenes: [
-      {
+    activeScene: defaultSceneId,
+    scenes: {
+      [defaultSceneId.toString()]: {
         name: 'Default scene',
         tileMap: [],
         colorPalettes: {
@@ -116,7 +118,7 @@ export function createNewProject() {
         lastActiveColorPalette: defaultColorPaletteId,
         colorPaletteTransitionDurationMs: 3000,
       },
-    ],
+    },
     liveBeat: {
       lengthMs: Math.floor(60_000 / 120),
       offsetMs: 0n,

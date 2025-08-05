@@ -27,7 +27,7 @@ import styles from './Tile.module.scss';
 
 interface TileProps {
   id: string;
-  scene: number;
+  sceneId: bigint;
   tile: Scene_Tile;
   onDragTile: () => void;
   onDropTile: () => void;
@@ -39,7 +39,7 @@ interface TileProps {
 
 export function Tile({
   id,
-  scene,
+  sceneId: scene,
   tile,
   onDragTile,
   onDropTile,
@@ -72,7 +72,7 @@ export function Tile({
       return findAction(project, controllerName, {
         case: 'tileStrength',
         value: create(ControllerMapping_TileStrengthSchema, {
-          scene: scene,
+          sceneId: scene,
           tileId: id,
         }),
       });

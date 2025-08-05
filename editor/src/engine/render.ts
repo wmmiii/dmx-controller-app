@@ -119,7 +119,7 @@ export function renderScene(
 
   const writableDeviceCache = new WritableDeviceCache(project, output.outputId);
 
-  const scene = project.scenes[project.activeScene];
+  const scene = project.scenes[project.activeScene.toString()];
   if (!scene) {
     return;
   }
