@@ -3,12 +3,13 @@ load("@aspect_rules_esbuild//esbuild:defs.bzl", "esbuild")
 load("@aspect_rules_ts//ts:defs.bzl", "ts_project")
 
 COMMON_DEPS = [
-    "//:node_modules/esbuild-scss-modules-plugin",
     "//:node_modules/@types/cie-rgb-color-converter",
+    "//:node_modules/@types/jest",
     "//:node_modules/@types/react",
-    "//:node_modules/@types/react-router",
     "//:node_modules/@types/react-dom",
+    "//:node_modules/@types/react-router",
     "//:node_modules/@zip.js/zip.js",
+    "//:node_modules/esbuild-scss-modules-plugin",
     "//:node_modules/cie-rgb-color-converter",
     "//:node_modules/crunker",
     "//:node_modules/radix-ui",
@@ -50,6 +51,9 @@ ts_project(
     srcs = glob([
         "**/*.ts",
         "**/*.tsx",
+    ], exclude = [
+        "**/*.test.ts",
+        "**/*.test.tsx",
     ]),
     source_map = True,
     tsconfig = "//:tsconfig",

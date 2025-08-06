@@ -18,13 +18,14 @@
     "paths": {
       "@dmx-controller/*": ["./bazel-bin/*", "./*"]
     },
-    "types": ["./editor/src/types"]
+    "types": ["./editor/src/types", "jest"]
   },
   "include": [
     "bazel-bin/*",
     "core/**/*.js",
     "editor/src/**/*.d.ts",
     "editor/src/**/*.ts",
-    "editor/src/**/*.tsx"
+    "editor/src/**/*.tsx",
+    "editor/src/**/*.test.ts"
   ]
 }
