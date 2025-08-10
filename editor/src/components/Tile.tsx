@@ -154,6 +154,7 @@ export function Tile({
           }}
         ></div>
         <div className={styles.title} style={{ background: background as any }}>
+          {details.wled && <div className={styles.wled}></div>}
           {tile.name}
         </div>
         {priority != 0 && <div className={styles.priority}>{priority}</div>}

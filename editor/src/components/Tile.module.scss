@@ -91,6 +91,19 @@ $triangle-diag: 40px;
       0 0 2px #000,
       0 0 4px #000;
     width: calc(100% - spacing(1));
+    z-index: 0;
+  }
+
+  .wled {
+    background-image: url('/static/wled.svg');
+    background-size: cover;
+    bottom: spacing(1);
+    left: spacing(1);
+    pointer-events: none;
+    position: absolute;
+    right: spacing(1);
+    top: spacing(1);
+    z-index: -1;
   }
 
   .priority {

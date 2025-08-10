@@ -8,6 +8,7 @@ import {
 } from '@dmx-controller/proto/output_pb';
 import { Project, ProjectSchema } from '@dmx-controller/proto/project_pb';
 import { Scene_Tile } from '@dmx-controller/proto/scene_pb';
+import { isWledChannel } from '../engine/channel';
 import { randomUint64 } from './numberUtils';
 
 export function getActivePatch(project: Project) {
@@ -156,13 +157,14 @@ type Color = FixtureState['lightColor'];
 
 export function tileTileDetails(tile: Scene_Tile) {
   const colors: Color[] = [];
+  let wled = false;
 
   const collect = (effect: Effect) => {
     if (effect.effect.case === 'staticEffect') {
       if (effect.effect.value.state?.lightColor.case) {
         colors.push(effect.effect.value.state?.lightColor);
-        return;
       }
+      wled ||= hasWledChannel(effect.effect.value.state);
     } else if (effect.effect.case === 'rampEffect') {
       if (
         effect.effect.value.stateStart?.lightColor.case ||
@@ -181,6 +183,8 @@ export function tileTileDetails(tile: Scene_Tile) {
           },
         );
       }
+      wled ||= hasWledChannel(effect.effect.value.stateStart);
+      wled ||= hasWledChannel(effect.effect.value.stateEnd);
     } else if (effect.effect.case === 'strobeEffect') {
       if (
         effect.effect.value.stateA?.lightColor.case ||
@@ -199,6 +203,8 @@ export function tileTileDetails(tile: Scene_Tile) {
           },
         );
       }
+      wled ||= hasWledChannel(effect.effect.value.stateA);
+      wled ||= hasWledChannel(effect.effect.value.stateB);
     }
   };
 
@@ -219,5 +225,16 @@ export function tileTileDetails(tile: Scene_Tile) {
 
   return {
     colors: colors,
+    wled: wled,
   };
+}
+
+function hasWledChannel(state: FixtureState | undefined) {
+  let hasChannels = false;
+  for (const [c, v] of Object.entries(state || {})) {
+    if (isWledChannel(c)) {
+      hasChannels ||= v != null;
+    }
+  }
+  return hasChannels;
 }
