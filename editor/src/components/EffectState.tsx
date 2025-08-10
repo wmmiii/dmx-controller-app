@@ -45,6 +45,7 @@ export function EffectState({
     <div className={styles.effectState}>
       {states.map((s, i) => (
         <div
+          key={i}
           style={{
             gridColumnStart: i + 2,
             gridColumnEnd: i + 3,
@@ -62,6 +63,7 @@ export function EffectState({
         .filter((channel) => ANGLE_CHANNELS.indexOf(channel as any) > -1)
         .map((channel) => (
           <Channel
+            key={channel}
             name={channel}
             values={states.map((s) => ({
               value: (s.state as any)[channel],
@@ -85,6 +87,7 @@ export function EffectState({
         ) as Array<keyof FixtureStateProto>
       ).map((channel) => (
         <Channel
+          key={channel}
           name={channel}
           values={states.map((s) => ({
             value: (s.state as any)[channel],
@@ -108,6 +111,7 @@ export function EffectState({
         ) as Array<keyof FixtureStateProto>
       ).map((channel) => (
         <Channel
+          key={channel}
           name={channel}
           values={states.map((s) => ({
             value: (s.state as any)[channel],

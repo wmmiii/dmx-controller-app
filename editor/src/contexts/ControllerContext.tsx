@@ -20,6 +20,8 @@ import { BeatContext } from './BeatContext';
 import { ProjectContext } from './ProjectContext';
 import { TimeContext } from './TimeContext';
 
+import styles from './ControllerContext.module.scss';
+
 export type ControllerChannel = string;
 export type ControlCommandType = 'msb' | 'lsb' | null;
 type Listener = (
@@ -285,7 +287,25 @@ function ControllerSelectionDialog({
   setController,
 }: ControllerSelectionDialogProps) {
   return (
-    <Modal title="Select Midi device" onClose={() => setController(null)}>
+    <Modal
+      title="Select Midi device"
+      bodyClass={styles.deviceSelect}
+      onClose={() => setController(null)}
+    >
+      <div>
+        Please choose which MIDI device you'd like to attach to. If you want to
+        change which device you are using simply open this dialog again.
+      </div>
+      <div>
+        Once a device is selected you may map MIDI inputs to actions. Simply:
+        <ol>
+          <li>Click on the MIDI button associated with the action.</li>
+          <li>Move the input on your MIDI device.</li>
+          <li>Your input is now bound! 🎉</li>
+        </ol>
+        To remove a mapping, just click on the MIDI button associated with the
+        action again to unmap.
+      </div>
       {candidateList.map((c, i) => (
         <Button key={i} onClick={() => setController(c.device)}>
           {c.name}

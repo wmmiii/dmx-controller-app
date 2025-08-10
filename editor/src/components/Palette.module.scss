@@ -2,17 +2,19 @@
 
 .palette-swatch {
   align-items: center;
-  border-radius: $dim-border-radius;
-  border: 1px solid transparent;
   cursor: pointer;
   display: flex;
   flex-direction: row;
   gap: spacing(1);
   padding: spacing(1);
+
+  button {
+    background-color: $col-bg;
+  }
 }
 
 .active {
-  border-color: $col-accent;
+  background: linear-gradient(to left, $col-bg-active, transparent);
 }
 
 .color-selectors {

@@ -63,10 +63,11 @@
   border-left: 1px solid $col-border;
   flex-shrink: 0;
   overflow-y: auto;
-  padding: spacing(1);
 
   > button {
-    width: 100%;
+    box-sizing: border-box;
+    margin: spacing(1);
+    width: calc(100% - spacing(2));
   }
 }
 

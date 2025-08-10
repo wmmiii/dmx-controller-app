@@ -4,7 +4,6 @@ import { Route, Routes, useNavigate } from 'react-router';
 import {
   BiBulb,
   BiDownload,
-  BiError,
   BiLink,
   BiLogoGithub,
   BiLogoWindows,
@@ -216,7 +215,7 @@ function WarningDialog() {
   return (
     <Modal
       bodyClass={styles.welcomeDialog}
-      title="Welcome!"
+      title="Welcome! 😊"
       onClose={() => setOpen(false)}
       footer={
         <div className={styles.buttonRow}>
@@ -230,16 +229,16 @@ function WarningDialog() {
             Don't show this dialog again
           </Button>
           <Button variant="primary" onClick={() => setOpen(false)}>
-            Close
+            Let's go!
           </Button>
         </div>
       }
     >
       <p>
         This app attempts to provide an experimental playground for easily
-        creating and playing DMX lighting performances! All the features have
-        been thrown together with haste so there are plenty of bugs and
-        engineer-UI everywhere.
+        creating and playing DMX (And now WLED!) lighting performances! All the
+        features have been thrown together with haste so there are plenty of
+        bugs and engineer-UI everywhere.
       </p>
       <p>
         To contribute to the project or report any issues please open an issue
@@ -252,10 +251,7 @@ function WarningDialog() {
         </a>
         . Thanks!
       </p>
-      <h3>
-        <BiError />
-        &nbsp;Warning
-      </h3>
+      <h3>⚠️ Warning</h3>
       <p>
         This web-app is currently in development and there is a&nbsp;
         <strong>significant risk of data-loss</strong>!
