@@ -13,3 +13,6 @@ jobs:
 
       - name: Build
         run: bazel build //dev/server
+
+      - name: Test
+        run: npm test
