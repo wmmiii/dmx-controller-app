@@ -74,9 +74,9 @@
 }
 
 .warning-variant {
-  background-color: $col-warning;
+  background-color: $col-bg;
   border-color: $col-warning;
-  color: $col-bg;
+  color: $col-warning;
 
   &:disabled {
     background-color: $col-disabled !important;
@@ -87,7 +87,53 @@
   &:active,
   &:hover,
   &:focus {
-    background-color: $col-warning-hover;
+    background-color: rgba(255, 255, 255, 0.1);
     border-color: $col-warning-hover;
+    color: $col-warning-hover;
+  }
+}
+
+.controller-button {
+  align-items: center;
+  border: none;
+  color: $col-text;
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: row;
+  gap: spacing(1);
+  padding: spacing(1);
+  justify-content: center;
+  margin: 1px;
+  position: relative;
+  z-index: 0;
+
+  .icon {
+    font-size: 24px;
+    height: 24px;
+    width: 24px;
+  }
+
+  &.inactive {
+    @include gradient-border(
+      linear-gradient(to right, $col-midi, $col-accent),
+      $col-bg-higher,
+      1px
+    );
+  }
+
+  &.active {
+    @include gradient-border(
+      linear-gradient(to right, $col-midi, $col-accent),
+      linear-gradient(to right, $col-midi, $col-accent),
+      1px
+    );
+  }
+
+  &.mapping {
+    @include gradient-border(
+      linear-gradient(to right, $col-midi, $col-warning),
+      linear-gradient(to right, $col-midi, $col-warning),
+      1px
+    );
   }
 }

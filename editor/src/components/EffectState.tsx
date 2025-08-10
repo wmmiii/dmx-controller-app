@@ -18,7 +18,7 @@ import {
   WLED_CHANNELS,
 } from '../engine/channel';
 
-import { BiPlus, BiX } from 'react-icons/bi';
+import { BiPlus, BiTrash } from 'react-icons/bi';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { Button, IconButton } from './Button';
 import { ColorSwatch } from './ColorSwatch';
@@ -286,7 +286,7 @@ function ChannelValue({
             title={`Remove ${name}`}
             onClick={() => onChange(undefined)}
           >
-            <BiX />
+            <BiTrash />
           </IconButton>
         </div>
       ) : (

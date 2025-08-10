@@ -1,3 +1,7 @@
+$col-accent: #11a2ca;
+$col-warning: #b02461;
+$col-midi: #7216c8;
+
 $col-bg: #111;
 $col-bg-higher: #1a1a1a;
 $col-bg-higher-hover: lighten($col-bg-higher, 10%);
@@ -8,13 +12,11 @@ $col-text-dim: #8f8f8f;
 $col-border: #333333;
 $col-border-higher: #555555;
 $col-border-lower: #222222;
-$col-accent: #11a2ca;
 $col-scroll-thumb: #666666;
 $col-scroll-track: #333333;
 $col-interactive: lighten($col-accent, 20%);
 $col-interactive-hover: lighten($col-accent, 50%);
 $col-disabled: desaturate($col-interactive, 100%);
-$col-warning: #b06f24;
 $col-warning-hover: lighten($col-warning, 50%);
 
 $dim-border-radius: 8px;
@@ -48,4 +50,31 @@ $z-index-interactive-mask: 9999;
 
 @mixin inset-shadow {
   box-shadow: inset 0 0 4px #000000;
+}
+
+@mixin gradient-border($border-color, $bg-color, $width) {
+  &:before {
+    background-color: $bg-color;
+    border-radius: inherit;
+    bottom: 0;
+    content: '';
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    z-index: -1;
+  }
+
+  &:after {
+    background: $border-color;
+    border-radius: inherit; /* !importanté */
+    bottom: 0;
+    content: '';
+    left: 0;
+    margin: -$width; /* !importanté */
+    position: absolute;
+    right: 0;
+    top: 0;
+    z-index: -2;
+  }
 }

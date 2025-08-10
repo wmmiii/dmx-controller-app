@@ -1,5 +1,4 @@
 import { JSX, createRef, useContext, useEffect, useState } from 'react';
-import { SiMidi } from 'react-icons/si';
 import { Route, Routes, useNavigate } from 'react-router';
 
 import {
@@ -15,7 +14,7 @@ import {
   BiUpload,
 } from 'react-icons/bi';
 import styles from './Index.module.scss';
-import { Button, IconButton } from './components/Button';
+import { Button, ControllerButton } from './components/Button';
 import { DmxUniverseVisualizer } from './components/DmxUniverseVisualizer';
 import { Dropdown } from './components/Dropdown';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -157,13 +156,12 @@ export default function Index(): JSX.Element {
         <Spacer />
         <div className={styles.message}>{lastOperation}</div>
         <FpsIndicator />
-        <IconButton
+        <ControllerButton
           title="Midi Controller"
-          variant={controllerName ? 'primary' : 'default'}
+          iconOnly={true}
+          midiState={controllerName ? 'active' : 'inactive'}
           onClick={connectMidi}
-        >
-          <SiMidi />
-        </IconButton>
+        />
       </header>
       <main>
         <ErrorBoundary>

@@ -15,7 +15,7 @@ import {
   BiChevronDown,
   BiChevronUp,
   BiPlus,
-  BiX,
+  BiTrash,
 } from 'react-icons/bi';
 import { Button, IconButton } from './Button';
 import styles from './LightTrack.module.scss';
@@ -96,7 +96,7 @@ export function LightTrack({
                 <BiBrushAlt />
               </IconButton>
               <IconButton title="Delete Track" onClick={deleteTrack}>
-                <BiX />
+                <BiTrash />
               </IconButton>
               {swapUp && (
                 <IconButton title="Move Up" onClick={swapUp}>

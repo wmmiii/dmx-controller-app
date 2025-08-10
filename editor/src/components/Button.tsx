@@ -1,5 +1,6 @@
 import { JSX } from 'react';
 
+import { SiMidi } from 'react-icons/si';
 import styles from './Button.module.scss';
 
 interface BaseButtonProps {
@@ -11,7 +12,7 @@ interface BaseButtonProps {
 
 interface ButtonProps extends BaseButtonProps {
   icon?: JSX.Element;
-  children: JSX.Element | string;
+  children: React.ReactNode;
 }
 
 export function Button({
@@ -43,6 +44,49 @@ export function Button({
   );
 }
 
+type ControllerButtonProps = Omit<
+  Omit<IconButtonProps, 'variant'>,
+  'children'
+> & {
+  midiState: 'inactive' | 'active' | 'mapping';
+  iconOnly: boolean;
+};
+
+export function ControllerButton(props: ControllerButtonProps) {
+  const classes = [styles.baseButton, styles.controllerButton];
+  switch (props.midiState) {
+    case 'active':
+      classes.push(styles.active);
+      break;
+    case 'inactive':
+      classes.push(styles.inactive);
+      break;
+    case 'mapping':
+      classes.push(styles.mapping);
+      break;
+  }
+  if (props.className) {
+    classes.push(props.className);
+  }
+
+  return (
+    <button
+      className={classes.join(' ')}
+      onClick={(e) => {
+        props.onClick();
+        e.stopPropagation();
+        e.preventDefault();
+      }}
+      disabled={props.disabled}
+    >
+      <div className={styles.icon}>
+        <SiMidi />
+      </div>
+      {!props.iconOnly && props.title}
+    </button>
+  );
+}
+
 interface IconButtonProps extends BaseButtonProps {
   title: string;
   children: JSX.Element;
@@ -62,7 +106,7 @@ export function IconButton({
     classFromVariant(variant),
   ];
   if (className) {
-    classes.push(className);
+    classes.unshift(className);
   }
 
   return (

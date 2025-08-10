@@ -141,7 +141,7 @@ function EditPaletteDialog({
           onDelete();
         }}
       >
-        <>Delete palette {palette.name}</>
+        Delete palette {palette.name}
       </Button>
       <div className={styles.colorSelectors}>
         <ColorSwatch

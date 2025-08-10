@@ -16,7 +16,7 @@ import {
   PhysicalDmxFixtureSchema,
 } from '@dmx-controller/proto/dmx_pb';
 import { QualifiedFixtureIdSchema } from '@dmx-controller/proto/output_pb';
-import { BiCopyAlt, BiGridVertical, BiPlus, BiX } from 'react-icons/bi';
+import { BiCopyAlt, BiGridVertical, BiPlus, BiTrash } from 'react-icons/bi';
 import { Button, IconButton } from '../../components/Button';
 import { ColorSwatch } from '../../components/ColorSwatch';
 import { NumberInput, TextInput } from '../../components/Input';
@@ -312,7 +312,7 @@ function EditDefinitionDialog({
         title="Delete Fixture Profile"
         onClick={deleteDefinition}
       >
-        <BiX />
+        <BiTrash />
       </IconButton>
       <div>
         <label>
@@ -685,7 +685,7 @@ function ColorWheelEditor({ wheel, onClose }: ColorWheelEditorProps) {
                       save(`Deleted color ${c.name} from wheel.`);
                     }}
                   >
-                    <BiX />
+                    <BiTrash />
                   </IconButton>
                 </td>
               </tr>

@@ -1,7 +1,6 @@
 import { type ControllerMapping_Action } from '@dmx-controller/proto/controller_pb';
 import { type Project } from '@dmx-controller/proto/project_pb';
 import { useContext, useEffect, useMemo, useState } from 'react';
-import { SiMidi } from 'react-icons/si';
 
 import {
   ControlCommandType,
@@ -16,7 +15,7 @@ import {
   hasAction,
 } from '../external_controller/externalController';
 
-import { Button, IconButton } from './Button';
+import { ControllerButton } from './Button';
 import { Modal } from './Modal';
 
 interface ControllerConnectionProps {
@@ -81,53 +80,27 @@ export function ControllerConnection({
 
   return (
     <>
-      {iconOnly != false ? (
-        <IconButton
-          title={title}
-          variant={
-            mappingControllerInput
-              ? 'warning'
-              : hasControllerMapping
-                ? 'primary'
-                : 'default'
+      <ControllerButton
+        title={title}
+        iconOnly={Boolean(iconOnly)}
+        midiState={
+          mappingControllerInput
+            ? 'mapping'
+            : hasControllerMapping
+              ? 'active'
+              : 'inactive'
+        }
+        onClick={() => {
+          if (mappingControllerInput) {
+            setMappingControllerInput(false);
+          } else if (hasControllerMapping && controllerName) {
+            deleteAction(project, controllerName, action);
+            save('Remove MIDI mapping.');
+          } else {
+            setMappingControllerInput(true);
           }
-          onClick={() => {
-            if (mappingControllerInput) {
-              setMappingControllerInput(false);
-            } else if (hasControllerMapping && controllerName) {
-              deleteAction(project, controllerName, action);
-              save('Remove MIDI mapping.');
-            } else {
-              setMappingControllerInput(true);
-            }
-          }}
-        >
-          <SiMidi />
-        </IconButton>
-      ) : (
-        <Button
-          icon={<SiMidi />}
-          variant={
-            mappingControllerInput
-              ? 'warning'
-              : hasControllerMapping
-                ? 'primary'
-                : 'default'
-          }
-          onClick={() => {
-            if (mappingControllerInput) {
-              setMappingControllerInput(false);
-            } else if (hasControllerMapping && controllerName) {
-              deleteAction(project, controllerName, action);
-              save('Remove MIDI mapping.');
-            } else {
-              setMappingControllerInput(true);
-            }
-          }}
-        >
-          {title}
-        </Button>
-      )}
+        }}
+      />
       {error && (
         <Modal
           title="Controller Mapping Error"

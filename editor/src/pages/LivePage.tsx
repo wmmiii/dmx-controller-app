@@ -46,7 +46,7 @@ import {
   renderScene as renderActiveScene,
 } from '../engine/render';
 
-import { BiPlus, BiTrash, BiX } from 'react-icons/bi';
+import { BiPlus, BiTrash } from 'react-icons/bi';
 import { Spacer } from '../components/Spacer';
 import { Tabs, TabsType } from '../components/Tabs';
 import { RenderingContext } from '../contexts/RenderingContext';
@@ -298,7 +298,25 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
         defaultAmount={0.15}
         left={
           <div className={styles.metaPane}>
-            <h2>Live Details</h2>
+            <div className={styles.header}>
+              <h2>Tile Details</h2>
+              <IconButton
+                title="Delete tile"
+                variant="warning"
+                onClick={() => {
+                  const tileMap = getActiveScene(project).tileMap;
+                  const index = tileMap.findIndex((c) => c.tile === tile);
+                  if (index > -1) {
+                    tileMap.splice(index, 1);
+
+                    onClose();
+                    save(`Delete tile ${tile.name}.`);
+                  }
+                }}
+              >
+                <BiTrash />
+              </IconButton>
+            </div>
             <div className={styles.row}>
               <label>Name</label>
               <TextInput
@@ -424,21 +442,6 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
                 }}
               />
             </div>
-            <Button
-              variant="warning"
-              onClick={() => {
-                const tileMap = getActiveScene(project).tileMap;
-                const index = tileMap.findIndex((c) => c.tile === tile);
-                if (index > -1) {
-                  tileMap.splice(index, 1);
-
-                  onClose();
-                  save(`Delete tile ${tile.name}.`);
-                }
-              }}
-            >
-              Delete Tile
-            </Button>
           </div>
         }
         right={
@@ -483,17 +486,19 @@ function EffectGroupEditor({ effect, name }: EffectGroupEditorProps) {
         }
         return (
           <div key={i} className={styles.effect}>
-            <IconButton
-              className={styles.deleteEffect}
-              title="Delete Channel"
-              variant="warning"
-              onClick={() => {
-                effect.channels.splice(i, 1);
-                save(`Delete channel from ${name}`);
-              }}
-            >
-              <BiX />
-            </IconButton>
+            <div className={styles.header}>
+              <h3>Effect {i + 1}</h3>
+              <IconButton
+                title="Delete Channel"
+                variant="warning"
+                onClick={() => {
+                  effect.channels.splice(i, 1);
+                  save(`Delete channel from ${name}`);
+                }}
+              >
+                <BiTrash />
+              </IconButton>
+            </div>
             <label className={styles.stateHeader}>
               <span>Output</span>
               <OutputSelector
