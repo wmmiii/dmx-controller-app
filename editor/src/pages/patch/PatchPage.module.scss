@@ -52,11 +52,99 @@ $channel-size: 100px;
   padding-top: spacing(1);
 }
 
-.row {
+.empty-pane {
+  @include fill;
+
   align-items: center;
+  color: $col-text-dim;
   display: flex;
-  flex-direction: row;
-  gap: spacing(2);
+  justify-content: center;
+}
+
+.group-list {
+  ul {
+    list-style: none;
+    font-size: 1.5em;
+    padding: 0;
+    margin: 0;
+  }
+
+  li {
+    cursor: pointer;
+    padding: spacing(1);
+
+    &.selected {
+      background: linear-gradient(to right, $col-bg-active, transparent);
+    }
+
+    &:hover {
+      background-color: $col-bg-active;
+    }
+  }
+
+  button {
+    margin: spacing(1);
+  }
+}
+
+.group-editor {
+  @include fill;
+  display: flex;
+  flex-direction: column;
+
+  .header {
+    display: flex;
+    flex-direction: row;
+    flex-shrink: 0;
+    justify-content: space-between;
+    min-height: 0;
+    margin: spacing(1);
+  }
+
+  .members {
+    flex: 1;
+    margin: spacing(1);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .inMembers,
+  .outMembers {
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    width: calc(50% - spacing(1));
+
+    ul,
+    ol {
+      border: 1px solid $col-border-lower;
+      flex: 1;
+      list-style: none;
+      margin: 0;
+      overflow-y: auto;
+      padding: 0 spacing(1);
+    }
+
+    li {
+      cursor: grab;
+
+      &:hover {
+        background-color: $col-bg-active;
+      }
+    }
+  }
+
+  .inMembers {
+    right: 0;
+  }
+
+  .outMembers {
+    left: 0;
+  }
 }
 
 .universe-grid {
@@ -111,6 +199,7 @@ $channel-size: 100px;
     .collision-warning {
       align-self: flex-start;
       box-sizing: border-box;
+      color: $col-warning;
       padding: 0 spacing(1);
     }
 

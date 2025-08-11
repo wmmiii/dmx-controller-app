@@ -1,4 +1,9 @@
-import { create, fromJsonString, toJsonString } from '@bufbuild/protobuf';
+import {
+  create,
+  equals,
+  fromJsonString,
+  toJsonString,
+} from '@bufbuild/protobuf';
 import { Project } from '@dmx-controller/proto/project_pb';
 
 import {
@@ -10,9 +15,67 @@ import {
 import { getActivePatch } from '../util/projectUtils';
 import { GROUP_ALL_ID } from './fixtures/writableDevice';
 
-interface GroupMember {
-  id: OutputTarget;
-  name: string;
+/**
+ *
+ * @param project
+ * @param groupId
+ * @returns
+ */
+export function addToGroup(
+  project: Project,
+  groupId: bigint,
+  target: OutputTarget,
+) {
+  const group = project.groups[groupId.toString()];
+
+  // First add new target to the group.
+  group.targets.push(target);
+
+  // Next, collect all fixtures based on group;
+  const fixtureMembers: QualifiedFixtureId[] = [];
+
+  const frontier: bigint[] = group.targets
+    .filter((t) => t.output.case === 'group')
+    .map((t) => t.output.value as bigint);
+  while (frontier.length != 0) {
+    const groupId = frontier.pop()!;
+    const group = project.groups[groupId.toString()];
+    for (const output of group.targets.map((t) => t.output)) {
+      switch (output.case) {
+        case 'fixtures':
+          for (const fixture of output.value.fixtureIds) {
+            fixtureMembers.push(fixture);
+          }
+          break;
+        case 'group':
+          frontier.push(output.value);
+          break;
+        default:
+          throw Error('Unknown output type in addAllFixtures!');
+      }
+    }
+  }
+
+  // Finally, remove any fixtures that are also included in groups.
+  group.targets = group.targets.filter((t) => {
+    switch (t.output.case) {
+      case 'fixtures':
+        for (const id of t.output.value.fixtureIds) {
+          if (
+            fixtureMembers.find((member) =>
+              equals(QualifiedFixtureIdSchema, member, id),
+            )
+          ) {
+            return false;
+          }
+        }
+        return true;
+      case 'group':
+        return true;
+      default:
+        throw Error('Unknown output type in addToGroup!');
+    }
+  });
 }
 
 /**
@@ -21,49 +84,49 @@ interface GroupMember {
 export function getApplicableMembers(
   project: Project,
   groupId: bigint,
-): GroupMember[] {
-  const group = project.groups[groupId.toString()];
-
-  const groupMembers: bigint[] = [];
+): OutputTarget[] {
+  const groupMembers: bigint[] = [groupId];
   const fixtureMembers: QualifiedFixtureId[] = [];
 
   // First collect all existing members of the group.
-  for (const outputTarget of group.targets) {
-    switch (outputTarget.output.case) {
-      case 'fixtures': {
-        const fixtures = outputTarget.output.value;
-        const fixtureId = fixtures.fixtureIds.find(
-          (id) => id.patch === project.activePatch,
-        );
-        if (fixtureId == null) {
-          continue;
-        }
-        fixtureMembers.push(fixtureId);
-        break;
+  const frontier: bigint[] = [groupId];
+  while (frontier.length != 0) {
+    const groupId = frontier.pop()!;
+    const group = project.groups[groupId.toString()];
+    for (const output of group.targets.map((t) => t.output)) {
+      switch (output.case) {
+        case 'fixtures':
+          for (const fixture of output.value.fixtureIds) {
+            if (fixture.patch === project.activePatch) {
+              fixtureMembers.push(fixture);
+            }
+          }
+          break;
+        case 'group':
+          groupMembers.push(output.value);
+          frontier.push(output.value);
+          break;
+        default:
+          throw Error('Unknown output type in addAllFixtures!');
       }
-      case 'group': {
-        addAllGroups(project, outputTarget.output.value, groupMembers);
-        break;
-      }
-      default:
-        throw Error('Unknown type in output ID!');
     }
   }
 
   // Next collect all output targets not in the group.
-  const applicable: GroupMember[] = [];
-  for (const groupId of Object.keys(project.groups).map(BigInt)) {
-    if (groupMembers.indexOf(groupId) != -1) {
-      const name = project.groups[groupId.toString()].name;
-      applicable.push({
-        id: create(OutputTargetSchema, {
+  const applicable: OutputTarget[] = [];
+  for (const testGroupId of Object.keys(project.groups).map(BigInt)) {
+    if (
+      groupMembers.indexOf(testGroupId) == -1 &&
+      !isTransitiveMemberOfGroup(project, groupId, testGroupId)
+    ) {
+      applicable.push(
+        create(OutputTargetSchema, {
           output: {
             case: 'group',
-            value: groupId,
+            value: testGroupId,
           },
         }),
-        name: name,
-      });
+      );
     }
   }
   for (const [outputId, output] of Object.entries(
@@ -73,9 +136,7 @@ export function getApplicableMembers(
       case 'serialDmxOutput':
         {
           const dmxOutput = output.output.value;
-          for (const [fixtureId, fixture] of Object.entries(
-            dmxOutput.fixtures,
-          )) {
+          for (const fixtureId of Object.keys(dmxOutput.fixtures)) {
             if (
               fixtureMembers.find(
                 (m) =>
@@ -83,8 +144,8 @@ export function getApplicableMembers(
                   m.fixture.toString() === fixtureId,
               ) == null
             ) {
-              applicable.push({
-                id: create(OutputTargetSchema, {
+              applicable.push(
+                create(OutputTargetSchema, {
                   output: {
                     case: 'fixtures',
                     value: {
@@ -98,19 +159,16 @@ export function getApplicableMembers(
                     },
                   },
                 }),
-                name: fixture.name,
-              });
+              );
             }
           }
         }
         break;
       case 'wledOutput':
         const wledOutput = output.output.value;
-        for (const [segmentId, segment] of Object.entries(
-          wledOutput.segments,
-        )) {
-          applicable.push({
-            id: create(OutputTargetSchema, {
+        for (const segmentId of Object.keys(wledOutput.segments)) {
+          applicable.push(
+            create(OutputTargetSchema, {
               output: {
                 case: 'fixtures',
                 value: {
@@ -124,8 +182,7 @@ export function getApplicableMembers(
                 },
               },
             }),
-            name: segment.name,
-          });
+          );
         }
         break;
       default:
@@ -138,22 +195,30 @@ export function getApplicableMembers(
   return applicable;
 }
 
-export function addAllGroups(
+function isTransitiveMemberOfGroup(
   project: Project,
-  groupId: bigint,
-  members: bigint[],
+  potentialMember: bigint,
+  test: bigint,
 ) {
-  const frontier: bigint[] = [groupId];
+  const frontier: bigint[] = [test];
   while (frontier.length != 0) {
     const groupId = frontier.pop()!;
     const group = project.groups[groupId.toString()];
-    members.push(groupId);
-    frontier.push(
-      ...group.targets
-        .filter((t) => t.output.case === 'group')
-        .map((t) => t.output.value as bigint),
-    );
+    if (
+      group.targets.find(
+        (t) => t.output.case === 'group' && t.output.value === potentialMember,
+      )
+    ) {
+      return true;
+    } else {
+      frontier.push(
+        ...group.targets
+          .filter((t) => t.output.case === 'group')
+          .map((t) => t.output.value as bigint),
+      );
+    }
   }
+  return false;
 }
 
 export function getAllFixtures(

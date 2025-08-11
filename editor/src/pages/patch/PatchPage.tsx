@@ -9,7 +9,7 @@ import { createNewWledOutput } from '../../engine/outputs/wledOutput';
 import { randomUint64 } from '../../util/numberUtils';
 import { createNewPatch, getActivePatch } from '../../util/projectUtils';
 import { DmxEditor } from './DmxEditor';
-import { GroupList } from './GroupList';
+import { GroupEditor } from './GroupEditor';
 import styles from './PatchPage.module.scss';
 import { WledEditor } from './WledEditor';
 
@@ -23,7 +23,7 @@ export default function PatchPage(): JSX.Element {
   const tabs: TabsType = {
     [GROUP_KEY]: {
       name: 'Groups',
-      contents: <GroupList />,
+      contents: <GroupEditor />,
     },
   };
 
