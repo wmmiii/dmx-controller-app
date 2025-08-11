@@ -7,18 +7,51 @@
   flex-direction: row;
   gap: spacing(1);
   padding: spacing(1);
-
-  button {
-    background-color: $col-bg;
-  }
 }
 
 .active {
   background: linear-gradient(to left, $col-bg-active, transparent);
 }
 
+.header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
 .color-selectors {
   display: flex;
+  flex-direction: row;
+  gap: spacing(2);
   justify-content: space-around;
   padding: spacing(2);
+}
+
+.visualizer {
+  height: 433px;
+  position: relative;
+  width: 433px;
+
+  .gradient {
+    aspect-ratio: 1/1;
+    mix-blend-mode: lighten;
+    position: absolute;
+    width: 75%;
+  }
+
+  .primary {
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .secondary {
+    right: 0;
+    top: 0;
+  }
+
+  .tertiary {
+    bottom: 0;
+    right: 0;
+  }
 }

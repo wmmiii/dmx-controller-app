@@ -25,9 +25,9 @@ specifiers:
   prettier-plugin-organize-imports: ^4.1.0
   radix-ui: 1.1.3
   react: 19.1.0
+  react-color-palette: ^7.3.1
   react-dom: 19.1.0
   react-icons: 5.5.0
-  react-pick-color: 2.0.0
   react-router: 7.5.0
   realtime-bpm-analyzer: 4.0.2
   ts-jest: ^29.4.1
@@ -46,9 +46,9 @@ dependencies:
   jest-junit: 16.0.0
   radix-ui: 1.1.3_jrfmqmhham24lcwznmvskiopoa
   react: 19.1.0
+  react-color-palette: 7.3.1_react@19.1.0
   react-dom: 19.1.0_react@19.1.0
   react-icons: 5.5.0_react@19.1.0
-  react-pick-color: 2.0.0_j6k6oay3ugsr56slyfvma2drry
   react-router: 7.5.0_j6k6oay3ugsr56slyfvma2drry
   realtime-bpm-analyzer: 4.0.2
   uuid-by-string: 4.0.0
@@ -5866,6 +5866,18 @@ packages:
       react-dom: 19.1.0_react@19.1.0
     dev: false
 
+  /react-color-palette/7.3.1_react@19.1.0:
+    resolution:
+      {
+        integrity: sha512-O8eTbogOKExVbhFOCaQ6WACQtGznymLqbd95i4C42PZd8im9OwL1NjuGxswk2JxJR5jfcTu7KQzl7VbpU48m+g==,
+      }
+    engines: { node: '>=10' }
+    peerDependencies:
+      react: '>=16.8'
+    dependencies:
+      react: 19.1.0
+    dev: false
+
   /react-dom/19.1.0_react@19.1.0:
     resolution:
       {
@@ -5894,20 +5906,6 @@ packages:
       {
         integrity: sha512-/LLMVyas0ljjAtoYiPqYiL8VWXzUUdThrmU5+n20DZv+a+ClRoevUzw5JxU+Ieh5/c87ytoTBV9G1FiKfNJdmg==,
       }
-
-  /react-pick-color/2.0.0_j6k6oay3ugsr56slyfvma2drry:
-    resolution:
-      {
-        integrity: sha512-GLYyUN1k60cxkrizqRDqfmCBNP6vJZDam5TfCMMxgxPjNul9zmunAZAJ8x9wy1yMb1NqMa/MI2np7oDQLCEbDg==,
-      }
-    peerDependencies:
-      react: '>=16.8.0'
-      react-dom: '>=16.8.0'
-    dependencies:
-      react: 19.1.0
-      react-dom: 19.1.0_react@19.1.0
-      tinycolor2: 1.6.0
-    dev: false
 
   /react-remove-scroll-bar/2.3.8_ys7c5ke7xl3xzsojot4lic4rti:
     resolution:
@@ -6301,13 +6299,6 @@ packages:
       '@istanbuljs/schema': 0.1.3
       glob: 7.2.3
       minimatch: 3.1.2
-
-  /tinycolor2/1.6.0:
-    resolution:
-      {
-        integrity: sha512-XPaBkWQJdsf3pLKJV9p4qN/S+fm2Oj8AIPo1BTUhg5oxkvm9+SVEGFdhyOz7tTdUTfvxMiAs4sp6/eZO2Ew+pw==,
-      }
-    dev: false
 
   /tldts-core/6.1.86:
     resolution:

@@ -1,12 +1,14 @@
 import { create } from '@bufbuild/protobuf';
-import { type ColorPalette } from '@dmx-controller/proto/color_pb';
-import { useContext, useMemo, useState } from 'react';
+import { Color, type ColorPalette } from '@dmx-controller/proto/color_pb';
+import { useCallback, useContext, useMemo, useState } from 'react';
+import { ColorPicker, IColor, useColor } from 'react-color-palette';
 
 import { ProjectContext } from '../contexts/ProjectContext';
 
 import { ControllerMapping_ActionSchema } from '@dmx-controller/proto/controller_pb';
-import { BiCog } from 'react-icons/bi';
-import { Button, IconButton } from './Button';
+import { BiCog, BiTrash } from 'react-icons/bi';
+import { stringifyColor } from '../util/colorUtil';
+import { IconButton } from './Button';
 import { ColorSwatch } from './ColorSwatch';
 import { ControllerConnection } from './ControllerConnection';
 import { TextInput } from './Input';
@@ -54,7 +56,11 @@ export function PaletteSwatch({
       <ColorSwatch color={palette.primary!.color} />
       <ColorSwatch color={palette.secondary!.color} />
       <ColorSwatch color={palette.tertiary!.color} />
-      <IconButton title="Modify palette" onClick={() => setEditPalette(true)}>
+      <IconButton
+        title="Modify palette"
+        iconOnly={true}
+        onClick={() => setEditPalette(true)}
+      >
         <BiCog />
       </IconButton>
       {editPalette && (
@@ -95,6 +101,23 @@ function EditPaletteDialog({
     throw new Error('Palette color not set!');
   }
 
+  const [iPrimary, setIPrimary] = useColor(
+    stringifyColor(palette.primary!.color!),
+  );
+  const [iSecondary, setISecondary] = useColor(
+    stringifyColor(palette.secondary!.color!),
+  );
+  const [iTertiary, setITertiary] = useColor(
+    stringifyColor(palette.tertiary!.color!),
+  );
+
+  const updateColor = useCallback((newColor: IColor, paletteColor: Color) => {
+    paletteColor.red = newColor.rgb.r / 255;
+    paletteColor.green = newColor.rgb.g / 255;
+    paletteColor.blue = newColor.rgb.b / 255;
+    update();
+  }, []);
+
   const done = () => {
     save(`Edit color palette ${palette.name}.`);
     onClose();
@@ -126,37 +149,85 @@ function EditPaletteDialog({
       onClose={done}
       bodyClass={styles.editModal}
     >
-      <TextInput
-        value={palette.name}
-        onChange={(v) => {
-          palette.name = v;
-          update();
-        }}
-      />
-      <ControllerConnection title="Color Palette" action={action} />
-      <Button
-        variant="warning"
-        onClick={() => {
-          onClose();
-          onDelete();
-        }}
-      >
-        Delete palette {palette.name}
-      </Button>
+      <div className={styles.header}>
+        <IconButton
+          title={`Delete palette "${palette.name}"`}
+          variant="warning"
+          onClick={() => {
+            onClose();
+            onDelete();
+          }}
+        >
+          <BiTrash />
+        </IconButton>
+        <div>
+          Name:&nbsp;
+          <TextInput
+            value={palette.name}
+            onChange={(v) => {
+              palette.name = v;
+              update();
+            }}
+          />
+        </div>
+        <ControllerConnection title="Switch to color palette" action={action} />
+      </div>
       <div className={styles.colorSelectors}>
-        <ColorSwatch
-          color={palette.primary!.color}
-          updateDescription={`Update primary color for ${palette.name}`}
+        <ColorPicker
+          hideAlpha={true}
+          color={iPrimary}
+          onChange={(color) => {
+            setIPrimary(color);
+            updateColor(color, palette.primary!.color!);
+          }}
         />
-        <ColorSwatch
-          color={palette.secondary!.color}
-          updateDescription={`Update secondary color for ${palette.name}`}
+        <ColorPicker
+          hideAlpha={true}
+          color={iSecondary}
+          onChange={(color) => {
+            setISecondary(color);
+            updateColor(color, palette.secondary!.color!);
+          }}
         />
-        <ColorSwatch
-          color={palette.tertiary!.color}
-          updateDescription={`Update tertiary color for ${palette.name}`}
+        <ColorPicker
+          hideAlpha={true}
+          color={iTertiary}
+          onChange={(color) => {
+            setITertiary(color);
+            updateColor(color, palette.tertiary!.color!);
+          }}
         />
+        <PaletteVisualizer palette={palette} />
       </div>
     </Modal>
+  );
+}
+
+interface PaletteVisualizerProps {
+  palette: ColorPalette;
+}
+
+function PaletteVisualizer({ palette }: PaletteVisualizerProps) {
+  return (
+    <div className={styles.visualizer}>
+      <div
+        className={`${styles.gradient} ${styles.primary}`}
+        style={{
+          background: `radial-gradient(circle closest-side, ${stringifyColor(palette.primary!.color!)} 10%, transparent 100%)`,
+        }}
+      ></div>
+      <div
+        className={`${styles.gradient} ${styles.secondary}`}
+        style={{
+          background: `radial-gradient(circle closest-side, ${stringifyColor(palette.secondary!.color!)} 10%, transparent 100%)`,
+        }}
+      ></div>
+      <div
+        className={`${styles.gradient} ${styles.tertiary}`}
+        style={{
+          background: `radial-gradient(circle closest-side, ${stringifyColor(palette.tertiary!.color!)} 10%, transparent 100%)`,
+        }}
+      ></div>
+    </div>
   );
 }

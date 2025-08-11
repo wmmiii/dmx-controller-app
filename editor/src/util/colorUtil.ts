@@ -7,6 +7,13 @@ import {
 } from '@dmx-controller/proto/color_pb';
 import ColorConverter from 'cie-rgb-color-converter';
 
+export function rgbwToHex(r: number, g: number, b: number, w: number) {
+  r = Math.min((r + w) * 255, 255);
+  g = Math.min((g + w) * 255, 255);
+  b = Math.min((b + w) * 255, 255);
+  return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+}
+
 export function stringifyColor(color: Color) {
   return `rgb(${color.red * 255}, ${color.green * 255}, ${color.blue * 255})`;
 }

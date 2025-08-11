@@ -48,6 +48,16 @@
   }
 }
 
+.custom-color {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+.color-swatch {
+  margin: spacing(1) 0;
+}
+
 .add-button {
   width: 100%;
 }

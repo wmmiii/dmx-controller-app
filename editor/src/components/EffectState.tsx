@@ -228,8 +228,9 @@ function ColorChannel({ values }: ColorChannelProps) {
             <option value={PaletteColor.PALETTE_BLACK}>Black</option>
           </select>
           {s.lightColor.case === 'color' && (
-            <div>
+            <div className={styles.customColor}>
               <ColorSwatch
+                className={styles.colorSwatch}
                 color={s.lightColor.value}
                 updateDescription="Update custom color."
               />

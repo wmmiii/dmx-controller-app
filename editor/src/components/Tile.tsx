@@ -23,6 +23,7 @@ import { tileActiveAmount, toggleTile } from '../util/tile';
 
 import { ControllerMapping_ActionSchema } from '@dmx-controller/proto/controller_pb';
 import { hasAction } from '../external_controller/externalController';
+import { rgbwToHex } from '../util/colorUtil';
 import styles from './Tile.module.scss';
 
 interface TileProps {
@@ -196,11 +197,4 @@ function complexColorToHex(
   }
 
   return rgbwToHex(color.red, color.green, color.blue, color.white || 0);
-}
-
-function rgbwToHex(r: number, g: number, b: number, w: number) {
-  r = Math.min((r + w) * 255, 255);
-  g = Math.min((g + w) * 255, 255);
-  b = Math.min((b + w) * 255, 255);
-  return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
 }

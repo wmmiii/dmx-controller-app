@@ -369,7 +369,7 @@
         "bzlTransitiveDigest": "jKmjnWlkDM/icrY5ZuDnmiAOdfQUdcqq1cSCjvlR9yw=",
         "usagesDigest": "bJqg+9by4wZOpx8S9JJC1D7T478qXrWRgToobYGVq0k=",
         "recordedFileInputs": {
-          "@@//pnpm-lock.yaml": "cc5240f2b921ade37e93b2879b5e403c8236b9af5af14fed39a6f5db15e56fa1"
+          "@@//pnpm-lock.yaml": "ea4f1bab03889ce5fbce1871f4465da71d6cf566a05bbdf699ba1a057b914c8f"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -45247,6 +45247,68 @@
               ]
             }
           },
+          "npm__react-color-palette__7.3.1__react_19.1.0": {
+            "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
+            "ruleClassName": "npm_import_rule",
+            "attributes": {
+              "package": "react-color-palette",
+              "version": "7.3.1_react@19.1.0",
+              "root_package": "",
+              "link_workspace": "",
+              "link_packages": {
+                "": [
+                  "react-color-palette"
+                ]
+              },
+              "integrity": "sha512-O8eTbogOKExVbhFOCaQ6WACQtGznymLqbd95i4C42PZd8im9OwL1NjuGxswk2JxJR5jfcTu7KQzl7VbpU48m+g==",
+              "url": "https://registry.npmjs.org/react-color-palette/-/react-color-palette-7.3.1.tgz",
+              "commit": "",
+              "patch_args": [],
+              "patches": [],
+              "custom_postinstall": "",
+              "npm_auth": "",
+              "npm_auth_basic": "",
+              "npm_auth_username": "",
+              "npm_auth_password": "",
+              "lifecycle_hooks": [],
+              "extra_build_content": "",
+              "generate_bzl_library_targets": false
+            }
+          },
+          "npm__react-color-palette__7.3.1__react_19.1.0__links": {
+            "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
+            "ruleClassName": "npm_import_links",
+            "attributes": {
+              "package": "react-color-palette",
+              "version": "7.3.1_react@19.1.0",
+              "dev": false,
+              "root_package": "",
+              "link_packages": {
+                "": [
+                  "react-color-palette"
+                ]
+              },
+              "deps": {
+                "react": "19.1.0"
+              },
+              "transitive_closure": {
+                "react-color-palette": [
+                  "7.3.1_react@19.1.0"
+                ],
+                "react": [
+                  "19.1.0"
+                ]
+              },
+              "lifecycle_build_target": false,
+              "lifecycle_hooks_env": [],
+              "lifecycle_hooks_execution_requirements": [],
+              "bins": {},
+              "npm_translate_lock_repo": "npm",
+              "package_visibility": [
+                "//visibility:public"
+              ]
+            }
+          },
           "npm__react-dom__19.1.0__react_19.1.0": {
             "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
             "ruleClassName": "npm_import_rule",
@@ -45412,79 +45474,6 @@
               "transitive_closure": {
                 "react-is": [
                   "18.3.1"
-                ]
-              },
-              "lifecycle_build_target": false,
-              "lifecycle_hooks_env": [],
-              "lifecycle_hooks_execution_requirements": [],
-              "bins": {},
-              "npm_translate_lock_repo": "npm",
-              "package_visibility": [
-                "//visibility:public"
-              ]
-            }
-          },
-          "npm__react-pick-color__2.0.0__j6k6oay3ugsr56slyfvma2drry": {
-            "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
-            "ruleClassName": "npm_import_rule",
-            "attributes": {
-              "package": "react-pick-color",
-              "version": "2.0.0_j6k6oay3ugsr56slyfvma2drry",
-              "root_package": "",
-              "link_workspace": "",
-              "link_packages": {
-                "": [
-                  "react-pick-color"
-                ]
-              },
-              "integrity": "sha512-GLYyUN1k60cxkrizqRDqfmCBNP6vJZDam5TfCMMxgxPjNul9zmunAZAJ8x9wy1yMb1NqMa/MI2np7oDQLCEbDg==",
-              "url": "https://registry.npmjs.org/react-pick-color/-/react-pick-color-2.0.0.tgz",
-              "commit": "",
-              "patch_args": [],
-              "patches": [],
-              "custom_postinstall": "",
-              "npm_auth": "",
-              "npm_auth_basic": "",
-              "npm_auth_username": "",
-              "npm_auth_password": "",
-              "lifecycle_hooks": [],
-              "extra_build_content": "",
-              "generate_bzl_library_targets": false
-            }
-          },
-          "npm__react-pick-color__2.0.0__j6k6oay3ugsr56slyfvma2drry__links": {
-            "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
-            "ruleClassName": "npm_import_links",
-            "attributes": {
-              "package": "react-pick-color",
-              "version": "2.0.0_j6k6oay3ugsr56slyfvma2drry",
-              "dev": false,
-              "root_package": "",
-              "link_packages": {
-                "": [
-                  "react-pick-color"
-                ]
-              },
-              "deps": {
-                "react": "19.1.0",
-                "react-dom": "19.1.0_react@19.1.0",
-                "tinycolor2": "1.6.0"
-              },
-              "transitive_closure": {
-                "react-pick-color": [
-                  "2.0.0_j6k6oay3ugsr56slyfvma2drry"
-                ],
-                "react": [
-                  "19.1.0"
-                ],
-                "react-dom": [
-                  "19.1.0_react@19.1.0"
-                ],
-                "tinycolor2": [
-                  "1.6.0"
-                ],
-                "scheduler": [
-                  "0.26.0"
                 ]
               },
               "lifecycle_build_target": false,
@@ -47874,55 +47863,6 @@
                 ],
                 "wrappy": [
                   "1.0.2"
-                ]
-              },
-              "lifecycle_build_target": false,
-              "lifecycle_hooks_env": [],
-              "lifecycle_hooks_execution_requirements": [],
-              "bins": {},
-              "npm_translate_lock_repo": "npm",
-              "package_visibility": [
-                "//visibility:public"
-              ]
-            }
-          },
-          "npm__tinycolor2__1.6.0": {
-            "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
-            "ruleClassName": "npm_import_rule",
-            "attributes": {
-              "package": "tinycolor2",
-              "version": "1.6.0",
-              "root_package": "",
-              "link_workspace": "",
-              "link_packages": {},
-              "integrity": "sha512-XPaBkWQJdsf3pLKJV9p4qN/S+fm2Oj8AIPo1BTUhg5oxkvm9+SVEGFdhyOz7tTdUTfvxMiAs4sp6/eZO2Ew+pw==",
-              "url": "https://registry.npmjs.org/tinycolor2/-/tinycolor2-1.6.0.tgz",
-              "commit": "",
-              "patch_args": [],
-              "patches": [],
-              "custom_postinstall": "",
-              "npm_auth": "",
-              "npm_auth_basic": "",
-              "npm_auth_username": "",
-              "npm_auth_password": "",
-              "lifecycle_hooks": [],
-              "extra_build_content": "",
-              "generate_bzl_library_targets": false
-            }
-          },
-          "npm__tinycolor2__1.6.0__links": {
-            "bzlFile": "@@aspect_rules_js~//npm/private:npm_import.bzl",
-            "ruleClassName": "npm_import_links",
-            "attributes": {
-              "package": "tinycolor2",
-              "version": "1.6.0",
-              "dev": false,
-              "root_package": "",
-              "link_packages": {},
-              "deps": {},
-              "transitive_closure": {
-                "tinycolor2": [
-                  "1.6.0"
                 ]
               },
               "lifecycle_build_target": false,
