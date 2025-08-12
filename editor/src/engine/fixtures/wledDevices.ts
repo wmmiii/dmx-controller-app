@@ -2,12 +2,13 @@ import { WritableDevice } from './writableDevice';
 
 export function getWledWritableDevice(segmentId: number): WritableDevice {
   return {
-    setColor: (output, red, green, blue) => {
+    setColor: (output, red, green, blue, white) => {
       if (output.type === 'wled') {
+        white ||= 0;
         output.segments[segmentId].primaryColor = {
-          red: red,
-          green: green,
-          blue: blue,
+          red: red + white,
+          green: green + white,
+          blue: blue + white,
         };
       }
     },

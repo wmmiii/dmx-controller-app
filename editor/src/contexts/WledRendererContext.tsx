@@ -43,9 +43,9 @@ export function WledRendererProvider({ children }: PropsWithChildren) {
             id: i,
             col: [
               [
-                Math.floor(s.primaryColor.red * 255),
-                Math.floor(s.primaryColor.green * 255),
-                Math.floor(s.primaryColor.blue * 255),
+                Math.min(Math.floor(s.primaryColor.red * 255), 255),
+                Math.min(Math.floor(s.primaryColor.green * 255), 255),
+                Math.min(Math.floor(s.primaryColor.blue * 255), 255),
               ],
             ],
             fx: s.effect,

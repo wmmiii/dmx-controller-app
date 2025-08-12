@@ -61,7 +61,15 @@ export function randomEffect(
       break;
     case 'aRampEffect':
     case 'bRampEffect':
-      rampEffect(context, subEffect.value, subEffectT);
+      const ramp = subEffect.value;
+      const relativeT =
+        subEffectT * ramp.timingMultiplier || 1 * (ramp.mirrored ? 2 : 1);
+
+      let rampT = relativeT % 1;
+      if (ramp.mirrored && Math.floor(relativeT) % 2) {
+        rampT = 1 - rampT;
+      }
+      rampEffect(context, subEffect.value, rampT);
       break;
     case 'aStrobeEffect':
     case 'bStrobeEffect':
