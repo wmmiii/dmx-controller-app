@@ -574,9 +574,17 @@ function AddNewDialog({ scene, x, y, onSelect, onClose }: AddNewDialogProps) {
   };
   return (
     <Modal bodyClass={styles.addTile} title={`Add new tile`} onClose={onClose}>
+      <p>
+        Both effect types can be timed to fire once, or loop over a fixed period
+        or to the beat. The intensity of both effects can be controlled directly
+        by MIDI.
+      </p>
+      <hr />
       <div className={styles.addTileDescription}>
-        Static effects simply set a fixture or group of fixtures to a specific
-        state. They do not change over time.
+        An effect group defines a series of states that are all applied with the
+        same timing. This is useful for defining simple static effects which can
+        be enabled/disabled or more complex loops that transition between two
+        states.
       </div>
       <Button
         icon={<BiPlus />}
@@ -596,11 +604,16 @@ function AddNewDialog({ scene, x, y, onSelect, onClose }: AddNewDialogProps) {
           onSelect(tileMap);
         }}
       >
-        Add Static Effect
+        Add Effect Group
       </Button>
+      <hr />
       <div className={styles.addTileDescription}>
-        Sequences can change over time and loop over a specified duration. They
-        may control multiple fixtures and groups.
+        A sequence defines a complex series of state changes over time. This is
+        useful for defining more intricate sequences between states (such as
+        transitioning between states A &gt; B &gt; C &gt; A).
+        <br />
+        <br />
+        From the lighting world this is most similar to a "chaser".
       </div>
       <Button
         icon={<BiPlus />}

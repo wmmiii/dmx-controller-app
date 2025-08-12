@@ -106,7 +106,7 @@ function SerialProviderImpl({
 }: SerialProviderImplProps): JSX.Element {
   const { renderFunction } = useContext(RenderingContext);
   const { project, update } = useContext(ProjectContext);
-  const shortcutContext = useContext(ShortcutContext);
+  const { setShortcuts } = useContext(ShortcutContext);
   const [port, setPort] = useState<SerialPort | null>(null);
   const frameRef = useRef(0);
   const blackout = useRef(false);
@@ -151,7 +151,7 @@ function SerialProviderImpl({
   }, [connect, disconnect]);
 
   useEffect(() => {
-    shortcutContext.setShortcuts([
+    return setShortcuts([
       {
         shortcut: { key: 'KeyB' },
         action: () => setBlackoutState(!blackoutState),

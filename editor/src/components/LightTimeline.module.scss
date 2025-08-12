@@ -76,8 +76,16 @@
   padding: spacing(2);
 }
 
-.effect-details {
+.effect-details,
+.effect-details-placeholder {
   @include fill;
 
   padding: spacing(2);
+}
+
+.effect-details-placeholder {
+  align-items: center;
+  color: $col-text-dim;
+  display: flex;
+  justify-content: center;
 }

@@ -49,7 +49,7 @@ type ControllerButtonProps = Omit<
   'children'
 > & {
   midiState: 'inactive' | 'active' | 'mapping';
-  iconOnly: boolean;
+  iconOnly?: boolean;
 };
 
 export function ControllerButton(props: ControllerButtonProps) {

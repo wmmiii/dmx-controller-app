@@ -115,7 +115,7 @@ export default function LightTimeline(props: TracksProps): JSX.Element {
               availableChannels={availableChannels}
             />
           ) : (
-            <div className={styles.effectDetails}>
+            <div className={styles.effectDetailsPlaceholder}>
               Select an effect to view details.
             </div>
           )

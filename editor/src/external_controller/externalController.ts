@@ -183,8 +183,11 @@ export function outputValues(
   t: bigint,
   output: (channel: ControllerChannel, value: number) => void,
 ) {
+  if (!controllerName) {
+    return;
+  }
   const actions = Object.entries(
-    project.controllerMapping?.controllers[controllerName].actions || {},
+    project.controllerMapping?.controllers[controllerName]?.actions ?? {},
   );
   for (const [channel, action] of actions) {
     let value = 0;
@@ -224,6 +227,7 @@ export function outputValues(
  */
 export function getActionDescription(
   project: Project,
+  sceneId: bigint,
   controllerName: string,
   channel: ControllerChannel,
 ) {
@@ -233,8 +237,7 @@ export function getActionDescription(
       return 'Samples the beat during beat-matching.';
     case 'sceneMapping':
       const sceneMapping = actionMapping.action.value;
-      const sceneAction =
-        sceneMapping.actions[project.activeScene.toString()]?.action;
+      const sceneAction = sceneMapping.actions[sceneId.toString()]?.action;
       switch (sceneAction?.case) {
         case 'colorPaletteId':
           const colorPaletteName =
@@ -245,7 +248,7 @@ export function getActionDescription(
           const tileName = getActiveScene(project).tileMap.find(
             (t) => t.id === sceneAction.value,
           )?.tile?.name;
-          return `Modifies the strength of tile ${tileName}`;
+          return `Modifies the strength of tile "${tileName}".`;
         case undefined:
           return null;
         default:

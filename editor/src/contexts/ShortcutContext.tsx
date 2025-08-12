@@ -10,6 +10,8 @@ import {
 
 import { Modal } from '../components/Modal';
 
+import styles from './ShortcutContext.module.scss';
+
 type ShortcutBundle = Array<{
   shortcut: {
     key: string;
@@ -82,20 +84,24 @@ export function ShortcutProvider({ children }: PropsWithChildren): JSX.Element {
       {showHelp && (
         <Modal title="Keyboard Shortcuts" onClose={() => setShowHelp(false)}>
           <p>These are the keyboard shortcuts available right now.</p>
-          {shortcutBundles.current.map((b) =>
-            b.map((s) => {
-              const shortcut = [
-                ...(s.shortcut.modifiers || []),
-                s.shortcut.key,
-              ];
-              return (
-                <p key={s.description}>
-                  <strong>{shortcut.join(' + ')}</strong>:&nbsp;
-                  {s.description}
-                </p>
-              );
-            }),
-          )}
+          <table className={styles.shortcutTable}>
+            <tbody>
+              {shortcutBundles.current.map((b) =>
+                b.map((s) => {
+                  const shortcut = [
+                    ...(s.shortcut.modifiers?.map(shortcutKeyName) || []),
+                    shortcutKeyName(s.shortcut.key),
+                  ];
+                  return (
+                    <tr key={s.description}>
+                      <th>{shortcut.join(' + ')}</th>
+                      <td>{s.description}</td>
+                    </tr>
+                  );
+                }),
+              )}
+            </tbody>
+          </table>
         </Modal>
       )}
     </ShortcutContext.Provider>
@@ -113,4 +119,27 @@ function matchesShortcut(
     event.ctrlKey === modifiers.includes('ctrl') &&
     event.shiftKey === modifiers.includes('shift')
   );
+}
+
+function shortcutKeyName(keyCode: string) {
+  if (keyCode.startsWith('Key')) {
+    return keyCode.substring(3).toLowerCase();
+  } else if (keyCode === 'Slash') {
+    return '/';
+  } else if (keyCode === 'Escape') {
+    return 'esc';
+  } else if (keyCode === 'Delete') {
+    return 'del';
+  } else if (keyCode === 'Space') {
+    return 'space';
+  } else if (keyCode === 'PageUp') {
+    return 'page up';
+  } else if (keyCode === 'PageDown') {
+    return 'page down';
+  } else if (keyCode === 'Home') {
+    return 'home';
+  } else if (keyCode === 'End') {
+    return 'end';
+  }
+  return keyCode;
 }

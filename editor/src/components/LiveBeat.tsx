@@ -32,7 +32,7 @@ export function LiveBeat({ className }: LiveBeatProps): JSX.Element {
             key: 'Space',
           },
           action: () => addBeatSample(new Date().getTime()),
-          description: 'Sample beat',
+          description: 'Sample beat.',
         },
       ]),
     [addBeatSample, setShortcuts],

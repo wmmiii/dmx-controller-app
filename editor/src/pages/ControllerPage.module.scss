@@ -1,0 +1,23 @@
+@import '../vars';
+
+.wrapper {
+  @include fill;
+
+  padding: spacing(1);
+}
+
+.mappings {
+  tr {
+    background-color: transparent;
+    transition: background-color 1s;
+
+    &.active {
+      background-color: $col-bg-active;
+      transition: background-color 0s;
+    }
+  }
+
+  td {
+    padding: spacing(1);
+  }
+}

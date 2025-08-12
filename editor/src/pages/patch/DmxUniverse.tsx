@@ -151,9 +151,6 @@ export function DmxUniverse({
                 }
               >
                 <div className={styles.channelNumber}>{i + 1}</div>
-                <div className={styles.fixtureTitle}>
-                  {fixtureStartCi.fixtureName}
-                </div>
                 {channelDescriptions}
               </div>
             );

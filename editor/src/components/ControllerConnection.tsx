@@ -54,7 +54,12 @@ export function ControllerConnection({
         _value: number,
         cct: ControlCommandType,
       ) => {
-        const existing = getActionDescription(project, controllerName, channel);
+        const existing = getActionDescription(
+          project,
+          project.activeScene,
+          controllerName,
+          channel,
+        );
         if (cct != null && requiredType === 'button') {
           setError('Input must be a button!');
         } else if (cct == null && requiredType === 'slider') {
@@ -82,7 +87,7 @@ export function ControllerConnection({
     <>
       <ControllerButton
         title={title}
-        iconOnly={Boolean(iconOnly)}
+        iconOnly={iconOnly}
         midiState={
           mappingControllerInput
             ? 'mapping'
