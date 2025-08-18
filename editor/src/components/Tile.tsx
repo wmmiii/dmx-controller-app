@@ -1,4 +1,4 @@
-import { create, toJson } from '@bufbuild/protobuf';
+import { create, toJsonString } from '@bufbuild/protobuf';
 import {
   ColorSchema,
   PaletteColor,
@@ -13,7 +13,6 @@ import {
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { SiMidi } from 'react-icons/si';
 
-import { BeatContext } from '../contexts/BeatContext';
 import { ControllerContext } from '../contexts/ControllerContext';
 import { PaletteContext } from '../contexts/PaletteContext';
 import { ProjectContext } from '../contexts/ProjectContext';
@@ -21,6 +20,7 @@ import { TimeContext } from '../contexts/TimeContext';
 import { tileTileDetails } from '../util/projectUtils';
 import { tileActiveAmount, toggleTile } from '../util/tile';
 
+import { BeatMetadataSchema } from '@dmx-controller/proto/beat_pb';
 import { ControllerMapping_ActionSchema } from '@dmx-controller/proto/controller_pb';
 import { hasAction } from '../external_controller/externalController';
 import { rgbwToHex } from '../util/colorUtil';
@@ -47,10 +47,9 @@ export function Tile({
   y,
   priority,
 }: TileProps) {
-  const { controllerName } = useContext(ControllerContext);
-  const { beat } = useContext(BeatContext);
-  const { palette } = useContext(PaletteContext);
   const { project, save } = useContext(ProjectContext);
+  const { controllerName } = useContext(ControllerContext);
+  const { palette } = useContext(PaletteContext);
   const { addListener, removeListener } = useContext(TimeContext);
 
   const [t, setT] = useState(0n);
@@ -63,7 +62,7 @@ export function Tile({
 
   const details = useMemo(
     () => tileTileDetails(tile),
-    [toJson(Scene_TileSchema, tile)],
+    [toJsonString(Scene_TileSchema, tile)],
   );
 
   const hasControllerMapping = useMemo(() => {
@@ -115,13 +114,13 @@ export function Tile({
   }, [details, palette]);
 
   const toggle = useCallback(() => {
-    const [modified, enabled] = toggleTile(tile, beat);
+    const [modified, enabled] = toggleTile(tile, project.liveBeat!);
     if (modified) {
       save(`${enabled ? 'Enable' : 'Disable'} tile ${tile.name}.`);
     }
-  }, [tile, beat, save]);
+  }, [tile, toJsonString(BeatMetadataSchema, project.liveBeat!), save]);
 
-  const activeAmount = tileActiveAmount(tile, beat, t);
+  const activeAmount = tileActiveAmount(tile, project.liveBeat, t);
 
   const classes = [styles.tile];
 
@@ -154,7 +153,10 @@ export function Tile({
             e.stopPropagation();
           }}
         ></div>
-        <div className={styles.title} style={{ background: background as any }}>
+        <div
+          className={styles.title}
+          style={{ background: background || undefined }}
+        >
           {details.wled && <div className={styles.wled}></div>}
           {tile.name}
         </div>

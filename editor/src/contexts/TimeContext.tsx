@@ -20,7 +20,7 @@ export function TimeProvider({ children }: PropsWithChildren): JSX.Element {
     const handle = setInterval(() => {
       const t = BigInt(new Date().getTime());
       listeners.current.forEach((l) => l(t));
-    }, 100);
+    }, 50);
     return () => clearInterval(handle);
   }, []);
 

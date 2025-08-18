@@ -6,3 +6,18 @@
   flex-direction: row;
   gap: spacing(1);
 }
+
+.beat-indicator {
+  align-items: center;
+  background-color: $col-accent;
+  border-radius: 25%;
+  color: $col-bg;
+  display: flex;
+  justify-content: center;
+  padding: spacing(1);
+
+  &.sampling {
+    animation: gradient 1s ease infinite;
+    background: $col-interactive-hover;
+  }
+}

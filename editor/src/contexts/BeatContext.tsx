@@ -1,4 +1,4 @@
-import { create, toJsonString } from '@bufbuild/protobuf';
+import { create } from '@bufbuild/protobuf';
 import { BeatMetadataSchema } from '@dmx-controller/proto/beat_pb';
 import {
   JSX,
@@ -7,185 +7,106 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useMemo,
+  useRef,
   useState,
 } from 'react';
-import { createRealTimeBpmProcessor } from 'realtime-bpm-analyzer';
 
 import { ProjectContext } from './ProjectContext';
 
 const MAX_SAMPLES = 16;
-const DEVIATION_THRESHOLD = 75;
-
-type BeatDetectionStrategy = 'manual' | 'microphone';
-type SampleQuality =
-  | 'idle'
-  | 'not enough samples'
-  | 'poor'
-  | 'fair'
-  | 'excellent';
 
 export const BeatContext = createContext({
-  beat: create(BeatMetadataSchema, {
-    lengthMs: Number.MAX_SAFE_INTEGER,
-    offsetMs: BigInt(0),
-  }),
   setBeat: (_duration: number, _start?: bigint) => {},
   addBeatSample: (_t: number) => {},
-  sampleQuality: 'idle' as SampleQuality,
-  detectionStrategy: 'manual' as BeatDetectionStrategy,
-  setDetectionStrategy: (_strategy: BeatDetectionStrategy) => {},
+  setFirstBeat: (_t: number) => {},
+  sampling: false,
 });
 
 export function BeatProvider({ children }: PropsWithChildren): JSX.Element {
   const { project, save, update } = useContext(ProjectContext);
-  const [strategy, setStrategy] = useState<BeatDetectionStrategy>('manual');
   const [beatSamples, setBeatSamples] = useState<number[]>([]);
-  const [beatTimeout, setBeatTimeout] = useState<any>(null);
+  const [beatCount, setBeatCount] = useState(0);
+  const beatTimeout = useRef<any>(null);
+  const [sampling, setSampling] = useState(false);
 
-  useEffect(() => {
-    if (strategy === 'microphone') {
-      const audioContext = new AudioContext();
-      let media: MediaStream;
-      (async () => {
-        media = await navigator.mediaDevices.getUserMedia({
-          video: false,
-          audio: true,
-        });
-        const audioContext = new AudioContext();
-        const source = audioContext.createMediaStreamSource(media);
-
-        const realtimeAnalyzerNode = await createRealTimeBpmProcessor(
-          audioContext,
-          {
-            continuousAnalysis: true,
-            stabilizationTime: 16_000,
-          },
-        );
-
-        // We're not doing a lowpass here, it doesn't seem to help much.
-        source.connect(realtimeAnalyzerNode);
-
-        realtimeAnalyzerNode.port.onmessage = (event) => {
-          if (event.data.message === 'BPM_STABLE') {
-            const bpm = event.data.data.bpm[0].tempo;
-            console.log('Found stable bpm', bpm);
-            if (project.liveBeat == null) {
-              throw new Error('Project does not have live beat!');
-            }
-            project.liveBeat.lengthMs = 60_000 / bpm;
-            save(`Auto set BPM to ${bpm}.`, false);
-          }
-        };
-      })();
-      return () => {
-        audioContext.close();
-        if (media != null) {
-          media.getAudioTracks()[0].stop();
-        }
-      };
+  const calculateBeatDuration = useCallback(() => {
+    if (beatSamples.length < 2) {
+      return null;
     }
-    return undefined;
-  }, [strategy]);
 
-  const beat = useMemo(
-    () =>
-      project?.liveBeat ||
-      create(BeatMetadataSchema, {
-        lengthMs: Number.MAX_SAFE_INTEGER,
-        offsetMs: BigInt(0),
-      }),
-    [project],
-  );
+    const totalLength = beatSamples[beatSamples.length - 1] - beatSamples[0];
+    let lengthMs = totalLength / (beatSamples.length - 1);
+    const bpm = 60_000 / lengthMs;
+
+    // Try to snap to whole nearest BPM.
+    const nearestWholeBpm = Math.round(bpm);
+    if (Math.abs(nearestWholeBpm - bpm) < 0.1) {
+      lengthMs = 60_000 / nearestWholeBpm;
+    }
+    return lengthMs;
+  }, [beatSamples]);
 
   const addBeatSample = useCallback(
     (t: number) => {
       setBeatSamples((beatSamples) => {
-        const newSamples = [t, ...beatSamples];
-        return newSamples.slice(0, MAX_SAMPLES);
+        const newSamples = [...beatSamples, t];
+        return newSamples.slice(Math.max(newSamples.length - MAX_SAMPLES, 0));
       });
+      setBeatCount((c) => c + 1);
+      setSampling(true);
 
-      const handle = setTimeout(() => {
-        save(
-          `Set beat to ${Math.round(60_000 / (project.liveBeat?.lengthMs || 1))} BPM.`,
-        );
-        setBeatSamples([]);
-      }, 2_000);
-      clearTimeout(beatTimeout);
-      setBeatTimeout(handle);
+      // This should handle a BPM down to 30 BPM.
+      const handle = setTimeout(
+        () => {
+          save(
+            `Set beat to ${Math.round(60_000 / project.liveBeat!.lengthMs)} BPM.`,
+          );
+          setSampling(false);
+          setBeatCount(0);
+          setBeatSamples([]);
+        },
+        calculateBeatDuration() || 60_000 / 30,
+      );
+      clearTimeout(beatTimeout.current);
+      beatTimeout.current = handle;
     },
-    [beatSamples, beatTimeout],
+    [setBeatSamples, setSampling, calculateBeatDuration],
   );
 
-  const sampleQuality: SampleQuality = useMemo(() => {
-    const deviance = maxDevianceMs(beatSamples);
-
-    if (beatSamples.length === 0) {
-      return 'idle';
-    } else if (beatSamples.length < 4) {
-      return 'not enough samples';
-    } else if (deviance > DEVIATION_THRESHOLD * 2) {
-      return 'poor';
-    } else if (deviance > DEVIATION_THRESHOLD) {
-      return 'fair';
-    } else {
-      return 'excellent';
-    }
-  }, [beatSamples]);
+  const setFirstBeat = useCallback(
+    (t: number) => {
+      if (beatSamples.length === 0) {
+        project.liveBeat!.offsetMs = BigInt(t);
+        save('Manually set first beat.');
+      } else {
+        const lastSampled = beatSamples[beatSamples.length - 1];
+        if (Math.abs(lastSampled - t) < project.liveBeat!.lengthMs / 2) {
+          setBeatCount(0);
+        } else {
+          setBeatCount(1);
+        }
+      }
+    },
+    [setBeatCount, project, save],
+  );
 
   useEffect(() => {
-    if (beatSamples.length < 2) {
+    const lengthMs = calculateBeatDuration();
+    if (lengthMs == null) {
       return;
     }
 
-    const durations = sampleDurations(beatSamples);
-    const count = Math.min(durations.length, MAX_SAMPLES);
-    let divisor = 0;
-    let sum = 0;
-    for (let i = 0; i < count; ++i) {
-      const strength = (count - i) / count;
-      sum += durations[i] * strength;
-      divisor += strength;
-    }
-
-    let length = sum / divisor;
-    const bpm = 60_000 / length;
-
-    // Try to snap to whole nearest BPM.
-    if (sampleQuality === 'excellent') {
-      const nearestWholeBpm = Math.round(bpm);
-      if (Math.abs(nearestWholeBpm - bpm) < 0.1) {
-        length = 60_000 / nearestWholeBpm;
-      }
-    }
-
     const firstBeat =
-      beatSamples[beatSamples.length - 1] - beatSamples.length * length;
+      beatSamples[beatSamples.length - 1] - (beatCount - 1) * lengthMs;
     const offset = BigInt(Math.round(firstBeat));
-    if (sampleQuality === 'fair' || sampleQuality === 'excellent') {
-      project.liveBeat = create(BeatMetadataSchema, {
-        lengthMs: length,
-        offsetMs: offset,
-      });
-      update();
-    } else {
-      if (project.liveBeat == null) {
-        throw new Error('Project does not have live beat!');
-      }
-      project.liveBeat.offsetMs = offset;
-      update();
-    }
-  }, [
-    beatSamples,
-    project?.liveBeat
-      ? toJsonString(BeatMetadataSchema, project.liveBeat)
-      : null,
-  ]);
+    project.liveBeat!.lengthMs = lengthMs;
+    project.liveBeat!.offsetMs = offset;
+    update();
+  }, [calculateBeatDuration, beatSamples, beatCount]);
 
   return (
     <BeatContext.Provider
       value={{
-        beat,
         setBeat: (length, start) => {
           project.liveBeat = create(BeatMetadataSchema, {
             lengthMs: length,
@@ -194,25 +115,11 @@ export function BeatProvider({ children }: PropsWithChildren): JSX.Element {
           save('Manually set beat');
         },
         addBeatSample,
-        sampleQuality,
-        detectionStrategy: strategy,
-        setDetectionStrategy: setStrategy,
+        setFirstBeat,
+        sampling,
       }}
     >
       {children}
     </BeatContext.Provider>
   );
-}
-
-function maxDevianceMs(beatSamples: number[]) {
-  const durations = sampleDurations(beatSamples);
-  return Math.max(...durations) - Math.min(...durations);
-}
-
-function sampleDurations(beatSamples: number[]) {
-  const durations: number[] = [];
-  for (let i = 1; i < beatSamples.length; i++) {
-    durations.push(beatSamples[i - 1] - beatSamples[i]);
-  }
-  return durations;
 }

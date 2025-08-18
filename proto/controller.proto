@@ -10,11 +10,16 @@ message ControllerMapping {
   message Action {
     oneof action {
       BeatMatch beat_match = 1;
+      FirstBeat first_beat = 3;
       SceneMapping scene_mapping = 2;
     }
   }
 
   message BeatMatch {
+
+  }
+
+  message FirstBeat {
 
   }
 

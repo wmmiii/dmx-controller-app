@@ -224,7 +224,8 @@ function SerialProviderImpl({
 
         if (latencySamples.length >= 40) {
           const total = latencySamples.reduce((a, b) => a + b);
-          const latency = Math.floor(total / latencySamples.length);
+          // Added latency for decoding and sending the packet down the DMX line.
+          const latency = Math.floor(total / latencySamples.length) + 70;
           getOutput(project, outputId).latencyMs = latency;
           latencySamples.length = 0;
           update();

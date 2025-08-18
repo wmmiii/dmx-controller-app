@@ -1,4 +1,4 @@
-import { clone, create } from '@bufbuild/protobuf';
+import { clone, create, toJsonString } from '@bufbuild/protobuf';
 import { ColorPaletteSchema } from '@dmx-controller/proto/color_pb';
 import { ControllerMapping_ActionSchema } from '@dmx-controller/proto/controller_pb';
 import { type Project } from '@dmx-controller/proto/project_pb';
@@ -36,7 +36,6 @@ import { PaletteSwatch } from '../components/Palette';
 import { HorizontalSplitPane } from '../components/SplitPane';
 import { TileGrid } from '../components/TileGrid';
 import { UniverseSequenceEditor } from '../components/UniverseSequenceEditor';
-import { BeatContext } from '../contexts/BeatContext';
 import { ControllerContext } from '../contexts/ControllerContext';
 import { PaletteContext } from '../contexts/PaletteContext';
 import { ProjectContext } from '../contexts/ProjectContext';
@@ -46,6 +45,7 @@ import {
   renderScene as renderActiveScene,
 } from '../engine/render';
 
+import { BeatMetadataSchema } from '@dmx-controller/proto/beat_pb';
 import { BiPlus, BiTrash } from 'react-icons/bi';
 import { Spacer } from '../components/Spacer';
 import { Tabs, TabsType } from '../components/Tabs';
@@ -60,7 +60,6 @@ const NEW_SCENE_KEY = 'new';
 export function LivePage(): JSX.Element {
   const { project, save } = useContext(ProjectContext);
   const projectRef = useRef<Project>(project);
-  const { beat: beatMetadata } = useContext(BeatContext);
   const [addTileIndex, setAddTileIndex] = useState<{
     x: number;
     y: number;
@@ -82,7 +81,7 @@ export function LivePage(): JSX.Element {
       if (project != null) {
         renderActiveScene(
           new Date().getTime(),
-          beatMetadata,
+          project.liveBeat!,
           frame,
           project,
           output,
@@ -92,7 +91,7 @@ export function LivePage(): JSX.Element {
     setRenderFunction(render);
 
     return () => clearRenderFunction(render);
-  }, [beatMetadata, projectRef]);
+  }, [toJsonString(BeatMetadataSchema, project.liveBeat!), projectRef]);
 
   const body = (
     <div className={styles.body}>

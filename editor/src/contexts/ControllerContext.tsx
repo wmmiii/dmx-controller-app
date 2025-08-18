@@ -57,7 +57,7 @@ export function ControllerProvider({
     projectRef.current = project;
   }, [project]);
 
-  const { addBeatSample } = useContext(BeatContext);
+  const { addBeatSample, setFirstBeat } = useContext(BeatContext);
   const { addListener: addTimeListener, removeListener: removeTimeListener } =
     useContext(TimeContext);
 
@@ -223,6 +223,7 @@ export function ControllerProvider({
           value,
           cct,
           addBeatSample,
+          setFirstBeat,
           output,
         );
         if (modified) {

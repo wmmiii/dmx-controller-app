@@ -18,7 +18,6 @@ COMMON_DEPS = [
     "//:node_modules/react-dom",
     "//:node_modules/react-icons",
     "//:node_modules/react-router",
-    "//:node_modules/realtime-bpm-analyzer",
     "//:node_modules/uuid-by-string",
     "//:node_modules/wavesurfer.js",
     "//proto:ts_proto",

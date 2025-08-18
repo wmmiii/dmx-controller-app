@@ -33,6 +33,7 @@ describe('externalController', () => {
         1,
         null,
         addBeatSample,
+        () => {},
         (c, v) => {
           output = { channel: c, value: v };
         },
@@ -68,6 +69,7 @@ describe('externalController', () => {
         1,
         null,
         addBeatSample,
+        () => {},
         (c, v) => {
           output = { channel: c, value: v };
         },
@@ -110,6 +112,7 @@ describe('externalController', () => {
         1,
         null,
         () => fail('should not set beat match'),
+        () => fail('should not set first beat'),
         () => fail('should not set output'),
       );
 

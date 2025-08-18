@@ -1,10 +1,12 @@
 import { create } from '@bufbuild/protobuf';
 import { ControllerMapping_ActionSchema } from '@dmx-controller/proto/controller_pb';
-import { JSX, useContext, useEffect, useMemo } from 'react';
+import { JSX, useContext, useEffect, useMemo, useState } from 'react';
 
 import { BeatContext } from '../contexts/BeatContext';
 import { ShortcutContext } from '../contexts/ShortcutContext';
 
+import { BiPulse } from 'react-icons/bi';
+import { ProjectContext } from '../contexts/ProjectContext';
 import { ControllerConnection } from './ControllerConnection';
 import { NumberInput } from './Input';
 import styles from './LiveBeat.module.scss';
@@ -14,15 +16,29 @@ interface LiveBeatProps {
 }
 
 export function LiveBeat({ className }: LiveBeatProps): JSX.Element {
-  const {
-    beat,
-    setBeat,
-    sampleQuality,
-    addBeatSample,
-    detectionStrategy,
-    setDetectionStrategy,
-  } = useContext(BeatContext);
+  const { project } = useContext(ProjectContext);
+  const { setBeat, addBeatSample, sampling } = useContext(BeatContext);
   const { setShortcuts } = useContext(ShortcutContext);
+
+  const [amount, setAmount] = useState(0);
+
+  useEffect(() => {
+    let cont = true;
+    (async () => {
+      while (cont) {
+        setAmount(
+          ((new Date().getTime() - Number(project.liveBeat!.offsetMs)) %
+            project.liveBeat!.lengthMs) /
+            project.liveBeat!.lengthMs,
+        );
+        await new Promise((resolve) => setTimeout(() => resolve(null), 10));
+      }
+    })();
+
+    return () => {
+      cont = false;
+    };
+  }, [project, setAmount]);
 
   useEffect(
     () =>
@@ -38,26 +54,22 @@ export function LiveBeat({ className }: LiveBeatProps): JSX.Element {
     [addBeatSample, setShortcuts],
   );
 
-  const beatEmoji = useMemo(() => {
-    switch (sampleQuality) {
-      case 'excellent':
-        return '🤩';
-      case 'fair':
-        return '🙂';
-      case 'idle':
-        return '😎';
-      case 'not enough samples':
-        return '😄';
-      case 'poor':
-        return '😵‍💫';
-    }
-  }, [sampleQuality]);
-
-  const action = useMemo(
+  const beatMatchAction = useMemo(
     () =>
       create(ControllerMapping_ActionSchema, {
         action: {
           case: 'beatMatch',
+          value: {},
+        },
+      }),
+    [],
+  );
+
+  const firstBeatAction = useMemo(
+    () =>
+      create(ControllerMapping_ActionSchema, {
+        action: {
+          case: 'firstBeat',
           value: {},
         },
       }),
@@ -69,28 +81,36 @@ export function LiveBeat({ className }: LiveBeatProps): JSX.Element {
     classes.push(className);
   }
 
+  const indicatorClasses = [styles.beatIndicator];
+  if (sampling) {
+    indicatorClasses.push(styles.sampling);
+  }
+
   return (
     <div className={classes.join(' ')}>
-      {beatEmoji}&nbsp; &nbsp;BPM:{' '}
+      <div
+        className={indicatorClasses.join(' ')}
+        style={{ opacity: 1 - amount }}
+      >
+        <BiPulse size={24} />
+      </div>
       <NumberInput
         type="integer"
         min={0}
         max={300}
-        value={Math.floor(60_000 / (beat?.lengthMs || NaN))}
+        value={Math.floor(60_000 / (project.liveBeat!.lengthMs || NaN))}
         onChange={(v) => setBeat(60_000 / v)}
       />
-      &nbsp;
-      <select
-        value={detectionStrategy}
-        onChange={(e) => setDetectionStrategy(e.target.value as any)}
-      >
-        <option value="manual">Manual</option>
-        <option value="microphone">Microphone</option>
-      </select>
       <ControllerConnection
-        title="Beat Match"
+        title="Tap to learn"
         iconOnly={false}
-        action={action}
+        action={beatMatchAction}
+        requiredType="button"
+      />
+      <ControllerConnection
+        title="Set first beat"
+        iconOnly={false}
+        action={firstBeatAction}
         requiredType="button"
       />
     </div>

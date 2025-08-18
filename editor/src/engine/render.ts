@@ -59,12 +59,12 @@ export const DEFAULT_COLOR_PALETTE = create(ColorPaletteSchema, {
 }) as ColorPalette;
 
 export function renderShow(
-  t: number,
+  systemT: number,
   frame: number,
   project: Project,
   output: WritableOutput,
 ) {
-  t += output.latencyMs;
+  const t = systemT + output.latencyMs;
 
   const writableDeviceCache = new WritableDeviceCache(project, output.outputId);
 
@@ -109,14 +109,14 @@ export function renderShow(
 }
 
 export function renderScene(
-  t: number,
+  systemT: number,
   beatMetadata: BeatMetadata,
   frame: number,
   project: Project,
   output: WritableOutput,
 ) {
-  const absoluteT = t + output.latencyMs;
-  const beatT = t + output.latencyMs - Number(beatMetadata.offsetMs);
+  const t = systemT + output.latencyMs;
+  const beatT = t - Number(beatMetadata.offsetMs);
 
   const writableDeviceCache = new WritableDeviceCache(project, output.outputId);
 
@@ -157,7 +157,7 @@ export function renderScene(
     }
 
     const sinceTransition = Number(
-      BigInt(absoluteT) -
+      BigInt(t) -
         (tile.transition.case != 'absoluteStrength'
           ? tile.transition.value || 0n
           : 0n),
@@ -227,7 +227,7 @@ export function renderScene(
                   'Tried to render effect group tile without a duration!',
                 );
               }
-              effectT = (absoluteT * effectLength) / tile.duration.value;
+              effectT = (t * effectLength) / tile.duration.value;
             }
           }
 
@@ -288,7 +288,7 @@ export function renderScene(
               );
             }
             sequenceT =
-              ((absoluteT * SEQUENCE_BEAT_RESOLUTION * sequence.nativeBeats) /
+              ((t * SEQUENCE_BEAT_RESOLUTION * sequence.nativeBeats) /
                 tile.duration.value) %
               (sequence.nativeBeats * SEQUENCE_BEAT_RESOLUTION);
           }

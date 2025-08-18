@@ -26,6 +26,7 @@ export function performAction(
   value: number,
   cct: ControlCommandType,
   addBeatSample: (t: number) => void,
+  setFirstBeat: (t: number) => void,
   output: (channel: ControllerChannel, value: number) => void,
 ): boolean {
   const action =
@@ -35,6 +36,11 @@ export function performAction(
     case 'beatMatch':
       if (cct === null && value > 0.5) {
         addBeatSample(new Date().getTime());
+      }
+      return false;
+    case 'firstBeat':
+      if (cct === null && value > 0.5) {
+        setFirstBeat(new Date().getTime());
       }
       return false;
     case 'sceneMapping':
@@ -110,13 +116,15 @@ export function hasAction(
           const existingSceneAction =
             a.action.value.actions[project.activeScene.toString()];
           if (existingSceneAction) {
-            return equals(
-              ControllerMapping_SceneActionSchema,
-              newSceneAction,
-              existingSceneAction,
-            );
-          } else {
-            continue;
+            if (
+              equals(
+                ControllerMapping_SceneActionSchema,
+                newSceneAction,
+                existingSceneAction,
+              )
+            ) {
+              return true;
+            }
           }
         }
       }
@@ -191,11 +199,14 @@ export function outputValues(
   );
   for (const [channel, action] of actions) {
     let value = 0;
+    const beatMetadata = project.liveBeat!;
+    const beatT = Number(t - beatMetadata.offsetMs);
     switch (action.action.case) {
       case 'beatMatch':
-        const beatMetadata = project.liveBeat!;
-        const beatT = Number(t - beatMetadata.offsetMs);
         value = 1 - Math.round((beatT / beatMetadata.lengthMs) % 1);
+        break;
+      case 'firstBeat':
+        value = 1 - Math.round(((beatT / beatMetadata.lengthMs) % 4) / 4);
         break;
       case 'sceneMapping':
         const sceneAction =
@@ -218,7 +229,7 @@ export function outputValues(
       default:
         throw Error('Unknown action type!');
     }
-    output(channel, value);
+    output(channel, Math.max(Math.min(value, 1), 0));
   }
 }
 
