@@ -1,0 +1,11 @@
+version: v2
+modules:
+  - path: .
+    includes:
+      - proto
+lint:
+  use:
+    - BASIC
+breaking:
+  use:
+    - FILE

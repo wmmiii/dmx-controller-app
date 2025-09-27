@@ -1,9 +1,6 @@
 import Crunker from 'crunker';
 
-const audioSegments = new Crunker().fetchAudio(
-  '/static/tick.mp3',
-  '/static/tock.mp3',
-);
+const audioSegments = new Crunker().fetchAudio('/tick.mp3', '/tock.mp3');
 
 const blobCache: { [key: string]: Blob } = {};
 

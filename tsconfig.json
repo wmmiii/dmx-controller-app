@@ -17,9 +17,10 @@
     "allowSyntheticDefaultImports": true,
     "allowJs": true,
     "paths": {
+      "@dmx-controller/proto/*": ["./proto/generated/proto/*"],
       "@dmx-controller/*": ["./bazel-bin/*", "./*"]
     },
-    "types": ["./editor/src/types", "jest"]
+    "types": ["./editor/src/types", "jest", "vite/client"]
   },
   "include": [
     "bazel-bin/*",
@@ -27,6 +28,7 @@
     "editor/src/**/*.d.ts",
     "editor/src/**/*.ts",
     "editor/src/**/*.tsx",
-    "editor/src/**/*.test.ts"
+    "editor/src/**/*.test.ts",
+    "proto/generated/proto/**/*.ts"
   ]
 }

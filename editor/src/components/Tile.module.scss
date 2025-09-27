@@ -1,4 +1,4 @@
-@import '../vars';
+@import '../_vars';
 
 $element-size: 100px;
 $border-size: 2px;
@@ -64,8 +64,8 @@ $triangle-diag: 40px;
     width: $triangle-diag;
     height: $triangle-diag;
     position: absolute;
-    right: -$triangle-diag / 2;
-    top: -$triangle-diag / 2;
+    right: math.div(-$triangle-diag, 2);
+    top: math.div(-$triangle-diag, 2);
     transform-origin: 50% 50%;
     transform: rotate(-45deg);
 
@@ -95,7 +95,7 @@ $triangle-diag: 40px;
   }
 
   .wled {
-    background-image: url('/static/wled.svg');
+    background-image: url('/wled.svg');
     background-size: cover;
     bottom: spacing(1);
     left: spacing(1);
