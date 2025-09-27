@@ -31,6 +31,7 @@
     "@bufbuild/protobuf": "2.5.1",
     "@bufbuild/protoc-gen-connect-es": "npm:@connectrpc/protoc-gen-connect-es@1.6.1",
     "@bufbuild/protoc-gen-es": "2.5.1",
+    "@tauri-apps/cli": "2",
     "@trivago/prettier-plugin-sort-imports": "5.2.2",
     "@types/cie-rgb-color-converter": "1.0.0",
     "@types/dom-serial": "1.0.6",
