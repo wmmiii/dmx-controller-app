@@ -6,6 +6,7 @@ export default defineConfig({
   plugins: [react()],
   root: '.',
   publicDir: 'public',
+  base: process.env.NODE_ENV === 'production' ? '/dmx-controller/' : '/',
   build: {
     outDir: 'dist',
     emptyOutDir: true,

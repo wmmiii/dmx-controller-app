@@ -12,7 +12,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build
-        run: bazel build //dev/server
+        run: pnpm build
 
       - name: Test
-        run: npm test
+        run: pnpm test

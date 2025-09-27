@@ -1,5 +1,4 @@
 .terraform/
-bazel*
 dist
 node_modules
 proto/generated

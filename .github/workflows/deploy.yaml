@@ -15,13 +15,23 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Build
-        run: bazel build //editor:static_tar --compilation_mode=opt
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
-      - name: Extract tar
-        run: |
-          mkdir dist
-          tar -xvf bazel-bin/editor/static_tar.tar -C dist
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build
+        env:
+          NODE_ENV: production
+        run: pnpm run build
 
       - name: Upload pages
         uses: actions/upload-pages-artifact@master
