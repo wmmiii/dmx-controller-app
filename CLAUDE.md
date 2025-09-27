@@ -4,18 +4,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Build System & Commands
 
-This project uses **Bazel** as its primary build system. Key commands:
+This project uses **Vite** as its primary build system for the frontend. Key commands:
 
-- `bazel run //dev/server` - Start the development server (serves on https://dev.dmx-controller.app:8080)
-- `bazel build //editor:static_tar` - Build the frontend static assets
-- `bazel build //...` - Build all targets
-- `bazel test //...` - Run all tests
+- `pnpm run dev` - Start the development server (serves on https://localhost:8080)
+- `pnpm run build` - Build the frontend for production
+- `pnpm run preview` - Preview the production build
+- `pnpm run test` - Run all tests
+- `pnpm run type-check` - Run TypeScript type checking
 
 **Development Workflow:**
 
-- Use [bazel-watcher](https://github.com/bazelbuild/bazel-watcher) for auto-rebuilds during development
+- Vite provides fast HMR (Hot Module Replacement) for auto-rebuilds during development
 - The dev server requires accepting a self-signed certificate (type "thisisunsafe" in Chrome if needed)
-- Frontend TypeScript builds via esbuild with CSS modules and SCSS support
+- Frontend TypeScript builds via Vite with CSS modules and SCSS support
 
 ## Architecture Overview
 

@@ -19,16 +19,28 @@ SparkFun Thing Plus - ESP32-S2 WROOM](https://www.sparkfun.com/products/17743) r
 
 ### Prerequisites
 
-The only prerequisite is to have [Bazel](https://bazel.build/) installed on your machine. If you are on Windows may god help you as I have spent a couple of hours cursing Microsoft and haven't yet gotten a working Windows build. All development has been performed on Ubuntu so far.
+You need [Node.js](https://nodejs.org/) (v20+) and [pnpm](https://pnpm.io/) installed on your machine.
 
 ### Running a dev server
 
-Simply run:
+First install dependencies:
 
 ```
-bazel run //dev/server
+pnpm install
 ```
 
-and navigate to https://dev.dmx-controller.app:8080 using your favorite (Chromium) web browser. You may need to add security exceptions to allow the self-signed certificate to work. (Try typing "thisisunsafe" in the browser window if Chrome gives you an TLS warning).
+Then run the development server:
 
-Pro tip: Use [bazel-watcher](https://github.com/bazelbuild/bazel-watcher) to watch the local files and rebuild on changes.
+```
+pnpm run dev
+```
+
+and navigate to https://localhost:8080 using your favorite (Chromium) web browser. You may need to add security exceptions to allow the self-signed certificate to work. (Try typing "thisisunsafe" in the browser window if Chrome gives you an TLS warning).
+
+### Building for production
+
+```
+pnpm run build
+```
+
+The build output will be in the `dist/` directory.

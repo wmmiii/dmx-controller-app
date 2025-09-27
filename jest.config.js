@@ -1,12 +1,12 @@
 module.exports = {
   testEnvironment: 'jsdom',
-  testMatch: ['**/editor/src/**/*.test.js', '**/editor/src/**/*.test.ts'],
+  testMatch: ['**/src/**/*.test.js', '**/src/**/*.test.ts'],
   rootDir: '.',
   reporters: ['default'],
   preset: 'ts-jest',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   moduleNameMapper: {
-    '^@dmx-controller/proto/(.*)$': '<rootDir>/bazel-bin/proto/$1',
+    '^@dmx-controller/proto/(.*)$': '<rootDir>/proto/generated/proto/$1',
   },
   transform: {
     '^.+\\.(ts|tsx)$': [
