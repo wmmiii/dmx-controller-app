@@ -1,6 +1,5 @@
 .terraform/
 bazel*
 dist
-editor/static/audio/
 node_modules
 proto/generated

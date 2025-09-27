@@ -5,18 +5,15 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   plugins: [react()],
   root: '.',
-  publicDir: 'static',
+  publicDir: 'public',
   build: {
-    outDir: '../dist/editor',
+    outDir: 'dist',
     emptyOutDir: true,
     sourcemap: true,
   },
   resolve: {
     alias: {
-      '@dmx-controller/proto': path.resolve(
-        __dirname,
-        '../proto/generated/proto',
-      ),
+      '@dmx-controller/proto': path.resolve(__dirname, 'proto/generated/proto'),
     },
   },
   css: {
@@ -28,8 +25,8 @@ export default defineConfig({
     port: 8080,
     host: '0.0.0.0',
     https: {
-      key: path.resolve(__dirname, '../dev/server/server.key'),
-      cert: path.resolve(__dirname, '../dev/server/server.crt'),
+      key: path.resolve(__dirname, 'dev/server/server.key'),
+      cert: path.resolve(__dirname, 'dev/server/server.crt'),
     },
   },
 });

@@ -2,10 +2,10 @@
   "private": true,
   "scripts": {
     "proto:generate": "buf generate",
-    "dev": "pnpm run proto:generate && cd editor && vite",
-    "build": "pnpm run proto:generate && cd editor && vite build",
-    "preview": "cd editor && vite preview",
-    "type-check": "cd editor && tsc --noEmit",
+    "dev": "pnpm run proto:generate && vite",
+    "build": "pnpm run proto:generate && vite build",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit",
     "test": "jest"
   },
   "dependencies": {

@@ -20,15 +20,15 @@
       "@dmx-controller/proto/*": ["./proto/generated/proto/*"],
       "@dmx-controller/*": ["./bazel-bin/*", "./*"]
     },
-    "types": ["./editor/src/types", "jest", "vite/client"]
+    "types": ["./src/types", "jest", "vite/client"]
   },
   "include": [
     "bazel-bin/*",
     "core/**/*.js",
-    "editor/src/**/*.d.ts",
-    "editor/src/**/*.ts",
-    "editor/src/**/*.tsx",
-    "editor/src/**/*.test.ts",
+    "src/**/*.d.ts",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.test.ts",
     "proto/generated/proto/**/*.ts"
   ]
 }
