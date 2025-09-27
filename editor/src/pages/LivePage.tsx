@@ -221,6 +221,7 @@ export function LivePage(): JSX.Element {
               colorPalettes: scene.colorPalettes,
               activeColorPalette: scene.activeColorPalette,
               lastActiveColorPalette: scene.activeColorPalette,
+              colorPaletteTransitionDurationMs: 3_000,
             });
             project.activeScene = newSceneId;
             save('Add new scene');
