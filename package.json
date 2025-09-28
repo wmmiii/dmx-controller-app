@@ -5,10 +5,14 @@
     "dev": "pnpm run proto:generate && vite",
     "build": "pnpm run proto:generate && vite build",
     "preview": "vite preview",
+    "tauri": "tauri",
     "type-check": "tsc --noEmit",
     "test": "jest"
   },
   "dependencies": {
+    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-fs": "~2",
+    "@tauri-apps/plugin-opener": "^2",
     "@types/jest": "30.0.0",
     "@types/react-router": "5.1.20",
     "@zip.js/zip.js": "2.7.57",

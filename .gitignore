@@ -1,7 +1,6 @@
 .terraform/
+bazel-*
+core
 dist
 node_modules
 proto/generated
-
-# Bazel (legacy - no longer used)
-bazel-*

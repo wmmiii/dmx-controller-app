@@ -5,7 +5,10 @@ specifiers:
   '@bufbuild/protobuf': 2.5.1
   '@bufbuild/protoc-gen-connect-es': npm:@connectrpc/protoc-gen-connect-es@1.6.1
   '@bufbuild/protoc-gen-es': 2.5.1
+  '@tauri-apps/api': ^2
   '@tauri-apps/cli': '2'
+  '@tauri-apps/plugin-fs': ~2
+  '@tauri-apps/plugin-opener': ^2
   '@trivago/prettier-plugin-sort-imports': 5.2.2
   '@types/cie-rgb-color-converter': 1.0.0
   '@types/dom-serial': 1.0.6
@@ -40,6 +43,9 @@ specifiers:
   wavesurfer.js: 7.7.11
 
 dependencies:
+  '@tauri-apps/api': 2.8.0
+  '@tauri-apps/plugin-fs': 2.4.2
+  '@tauri-apps/plugin-opener': 2.5.0
   '@types/jest': 30.0.0
   '@types/react-router': 5.1.20
   '@zip.js/zip.js': 2.7.57
@@ -3806,6 +3812,13 @@ packages:
     dependencies:
       '@sinonjs/commons': 3.0.1
 
+  /@tauri-apps/api/2.8.0:
+    resolution:
+      {
+        integrity: sha512-ga7zdhbS2GXOMTIZRT0mYjKJtR9fivsXzsyq5U3vjDL0s6DTMwYRm0UHNjzTY5dh4+LSC68Sm/7WEiimbQNYlw==,
+      }
+    dev: false
+
   /@tauri-apps/cli-darwin-arm64/2.8.4:
     resolution:
       {
@@ -3958,6 +3971,24 @@ packages:
       '@tauri-apps/cli-win32-ia32-msvc': 2.8.4
       '@tauri-apps/cli-win32-x64-msvc': 2.8.4
     dev: true
+
+  /@tauri-apps/plugin-fs/2.4.2:
+    resolution:
+      {
+        integrity: sha512-YGhmYuTgXGsi6AjoV+5mh2NvicgWBfVJHHheuck6oHD+HC9bVWPaHvCP0/Aw4pHDejwrvT8hE3+zZAaWf+hrig==,
+      }
+    dependencies:
+      '@tauri-apps/api': 2.8.0
+    dev: false
+
+  /@tauri-apps/plugin-opener/2.5.0:
+    resolution:
+      {
+        integrity: sha512-B0LShOYae4CZjN8leiNDbnfjSrTwoZakqKaWpfoH6nXiJwt6Rgj6RnVIffG3DoJiKsffRhMkjmBV9VeilSb4TA==,
+      }
+    dependencies:
+      '@tauri-apps/api': 2.8.0
+    dev: false
 
   /@trivago/prettier-plugin-sort-imports/5.2.2_prettier@3.5.3:
     resolution:

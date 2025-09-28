@@ -16,9 +16,9 @@ import {
   useState,
 } from 'react';
 
+import { getBlob, storeBlob } from '../system_interfaces/storage';
 import { downloadBlob, escapeForFilesystem } from '../util/fileUtils';
 import upgradeProject from '../util/projectUpgrader';
-import { getBlob, storeBlob } from '../util/storageUtil';
 
 import { createNewProject } from '../util/projectUtils';
 import { ShortcutContext } from './ShortcutContext';

@@ -1,7 +1,27 @@
+import {
+  BaseDirectory,
+  exists,
+  readFile,
+  writeFile,
+} from '@tauri-apps/plugin-fs';
+import { isTauri } from './util';
+
 const DB_KEY = 'dmx-controller';
 const BLOBSTORE_KEY = 'blobstore';
 
-export async function getBlob(key: string): Promise<Uint8Array> {
+export const getBlob = isTauri ? tauriGetBlob : webGetBlob;
+
+export const storeBlob = isTauri ? tauriStoreBlob : webStoreBlob;
+
+async function tauriGetBlob(key: string): Promise<Uint8Array | null> {
+  if (!(await exists(key, { baseDir: BaseDirectory.AppData }))) {
+    return null;
+  }
+
+  return await readFile(key, { baseDir: BaseDirectory.AppData });
+}
+
+async function webGetBlob(key: string): Promise<Uint8Array | null> {
   const db = await getDb();
   const transaction = db.transaction([BLOBSTORE_KEY], 'readonly');
   const os = transaction.objectStore(BLOBSTORE_KEY);
@@ -12,7 +32,11 @@ export async function getBlob(key: string): Promise<Uint8Array> {
   });
 }
 
-export async function storeBlob(key: string, value: Uint8Array): Promise<void> {
+async function tauriStoreBlob(key: string, value: Uint8Array): Promise<void> {
+  await writeFile(key, value, { baseDir: BaseDirectory.AppData });
+}
+
+async function webStoreBlob(key: string, value: Uint8Array): Promise<void> {
   const object = {
     key,
     value,
