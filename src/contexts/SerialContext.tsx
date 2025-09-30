@@ -14,13 +14,19 @@ import { Modal } from '../components/Modal';
 import { BiErrorAlt } from 'react-icons/bi';
 import { WritableDmxOutput } from '../engine/context';
 import { getDmxWritableOutput } from '../engine/outputs/dmxOutput';
+import {
+  closePort,
+  listPorts,
+  openPort,
+  outputDmx,
+  serialInit,
+  serialSupported,
+} from '../system_interfaces/serial';
 import { getOutput, getSerialOutputId } from '../util/projectUtils';
 import { DialogContext } from './DialogContext';
 import { ProjectContext } from './ProjectContext';
 import { RenderingContext } from './RenderingContext';
 import { ShortcutContext } from './ShortcutContext';
-
-type SerialPort = any;
 
 export const BLACKOUT_UNIVERSE: WritableDmxOutput = {
   type: 'dmx',
@@ -39,7 +45,7 @@ export const BLACKOUT_UNIVERSE: WritableDmxOutput = {
 const FPS_BUFFER_SIZE = 100;
 
 const EMPTY_CONTEXT = {
-  port: null as SerialPort | null,
+  port: false,
   connect: () => {},
   disconnect: () => {},
   blackout: true,
@@ -57,7 +63,7 @@ export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
     !dialogContext.isDismissed(SERIAL_MISSING_KEY),
   );
 
-  if (!(navigator as any).serial) {
+  if (!serialSupported) {
     return (
       <SerialContext.Provider value={EMPTY_CONTEXT}>
         {children}
@@ -107,47 +113,53 @@ function SerialProviderImpl({
   const { renderFunction } = useContext(RenderingContext);
   const { project, update } = useContext(ProjectContext);
   const { setShortcuts } = useContext(ShortcutContext);
-  const [port, setPort] = useState<SerialPort | null>(null);
+  const [port, setPort] = useState<boolean>(false);
   const frameRef = useRef(0);
   const blackout = useRef(false);
   const [blackoutState, setBlackoutState] = useState(false);
   const fpsBuffer = useRef([0]);
   const fpsSubscribers = useRef<Array<(fps: number) => void>>([]);
+  const [selectPort, setSelectPort] = useState<{
+    ports: string[];
+    callback: (port: string | null) => void;
+  } | null>(null);
 
   const outputId = getSerialOutputId(project);
 
   const connect = useCallback(async () => {
     try {
-      let port: SerialPort;
-      const ports = await (navigator as any).serial.getPorts();
-      if (ports.length === 0 || port != null) {
-        port = await (navigator as any).serial.requestPort();
+      let port: string | null;
+      const ports = await listPorts();
+      if (ports != null) {
+        port = await new Promise((resolve) =>
+          setSelectPort({
+            ports: ports,
+            callback: resolve,
+          }),
+        );
+        setSelectPort(null);
+        if (port) {
+          await openPort(outputId, port);
+          setPort(true);
+        } else {
+          setPort(false);
+        }
       } else {
-        port = ports[0];
+        await openPort(outputId, null);
+        setPort(true);
       }
-      await port.open({
-        baudRate: 192_000,
-        dataBits: 8,
-        flowControl: 'none',
-        parity: 'none',
-        stopBits: 2,
-        bufferSize: 512,
-      });
-
-      setPort(port);
     } catch (e) {
       console.error('Could not open serial port!', e);
     }
   }, [port]);
 
   const disconnect = useCallback(() => {
-    port?.close();
-    setPort(null);
+    closePort(outputId);
+    setPort(false);
   }, [port]);
 
   useEffect(() => {
-    (navigator as any).serial.onconnect = connect;
-    (navigator as any).serial.ondisconnect = disconnect;
+    serialInit(connect, disconnect);
   }, [connect, disconnect]);
 
   useEffect(() => {
@@ -180,8 +192,6 @@ function SerialProviderImpl({
       return () => clearInterval(handle);
     }
 
-    const writer = port.writable.getWriter();
-
     let closed = false;
     let lastFrame = new Date().getTime();
     const latencySamples: number[] = [];
@@ -198,8 +208,7 @@ function SerialProviderImpl({
         }
 
         try {
-          await writer.ready;
-          await writer.write(serialOutput.uint8Array);
+          await outputDmx(outputId, serialOutput.uint8Array);
           latencySamples.push(new Date().getTime() - startMs);
         } catch (e) {
           console.error('Could not write to serial port!', e);
@@ -236,7 +245,6 @@ function SerialProviderImpl({
     return () => {
       closed = true;
       resetFps();
-      writer.releaseLock();
     };
   }, [blackout, disconnect, port, outputId, resetFps, update]);
 
@@ -257,6 +265,18 @@ function SerialProviderImpl({
         ),
       }}
     >
+      {selectPort && (
+        <Modal
+          title="Select Serial Port"
+          onClose={() => selectPort.callback(null)}
+        >
+          <ol>
+            {selectPort.ports.map((port, i) => (
+              <li onClick={() => selectPort.callback(port)}>{port}</li>
+            ))}
+          </ol>
+        </Modal>
+      )}
       {children}
     </SerialContext.Provider>
   );
