@@ -1,3 +1,4 @@
+mod midi;
 mod serial;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -5,6 +6,9 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_fs::init())
         .setup(|app| {
+            // Initialize MIDI event system with app handle
+            midi::init_midi_events(app.handle().clone());
+
             if cfg!(debug_assertions) {
                 app.handle().plugin(
                     tauri_plugin_log::Builder::default()
@@ -15,6 +19,9 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            midi::list_midi_inputs,
+            midi::connect_midi,
+            midi::send_midi_command,
             serial::list_ports,
             serial::open_port,
             serial::close_port,

@@ -272,7 +272,9 @@ function SerialProviderImpl({
         >
           <ol>
             {selectPort.ports.map((port, i) => (
-              <li onClick={() => selectPort.callback(port)}>{port}</li>
+              <li key={i} onClick={() => selectPort.callback(port)}>
+                {port}
+              </li>
             ))}
           </ol>
         </Modal>

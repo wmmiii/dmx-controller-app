@@ -32,6 +32,7 @@ export function performAction(
   const action =
     project.controllerMapping?.controllers[controllerName]?.actions[channel]
       ?.action;
+
   switch (action?.case) {
     case 'beatMatch':
       if (cct === null && value > 0.5) {

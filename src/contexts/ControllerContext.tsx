@@ -20,6 +20,14 @@ import { BeatContext } from './BeatContext';
 import { ProjectContext } from './ProjectContext';
 import { TimeContext } from './TimeContext';
 
+import {
+  MidiPortCandidate,
+  addMidiListener,
+  connectMidi,
+  listMidiInputs,
+  removeMidiListener,
+  sendMidiCommand,
+} from '../system_interfaces/midi';
 import styles from './ControllerContext.module.scss';
 
 export type ControllerChannel = string;
@@ -38,12 +46,6 @@ export const ControllerContext = createContext({
   removeListener: (_listener: Listener) => {},
 });
 
-interface MidiDevice {
-  name: string;
-  input: MIDIInput;
-  output: MIDIOutput;
-}
-
 interface ControllerProviderImplProps {
   children: React.ReactNode;
 }
@@ -61,32 +63,16 @@ export function ControllerProvider({
   const { addListener: addTimeListener, removeListener: removeTimeListener } =
     useContext(TimeContext);
 
-  const [controller, setController] = useState<MidiDevice | null>(null);
-  const [candidateList, setCandidateList] = useState<any[] | null>(null);
+  const [controllerName, setControllerName] = useState<string | undefined>(
+    undefined,
+  );
+  const [candidateList, setCandidateList] = useState<
+    MidiPortCandidate[] | null
+  >(null);
   const inputListeners = useRef<Array<Listener>>([]);
 
   const connect = useCallback(async () => {
-    const access = await navigator.requestMIDIAccess();
-    const inputs: MIDIInput[] = Array.from((access.inputs as any).values());
-    const outputs: MIDIOutput[] = Array.from((access.outputs as any).values());
-    const candidates = inputs
-      .map((i) => {
-        const o = outputs.find((o) => o.name === i.name);
-        if (o != null) {
-          return {
-            name: i.name,
-            device: {
-              name: i.name,
-              input: i,
-              output: o,
-            },
-          };
-        } else {
-          return null;
-        }
-      })
-      .filter((d) => d != null);
-    setCandidateList(candidates);
+    setCandidateList(await listMidiInputs());
   }, []);
 
   useEffect(() => {
@@ -94,37 +80,22 @@ export function ControllerProvider({
       const controllerMapping = project.controllerMapping;
       // Try to reconnect if last controller is known.
       if (controllerMapping?.lastControllerName) {
-        const access = await navigator.requestMIDIAccess();
-        const input = Array.from(
-          (access.inputs as any).values() as Iterable<MIDIInput>,
-        ).find((input) => input.name == controllerMapping.lastControllerName);
-        const output = Array.from(
-          (access.outputs as any).values() as Iterable<MIDIOutput>,
-        ).find((input) => input.name == controllerMapping.lastControllerName);
-        if (input != null && output != null) {
-          setController({
-            name: input.name,
-            input: input,
-            output: output,
-          } as MidiDevice);
+        const candidate = (await listMidiInputs()).find(
+          (candidate) =>
+            candidate.name === controllerMapping.lastControllerName,
+        );
+        if (candidate) {
+          await connectMidi(candidate);
+          setControllerName(candidate.name);
         }
       }
     })();
-  }, [lastLoad, setController]);
+  }, [lastLoad, setControllerName]);
 
   useEffect(() => {
-    if (controller == null) {
-      return () => {};
-    }
-
     let msbBuffer: Map<number, number> = new Map();
     let lsbBuffer: Map<number, number> = new Map();
-    controller.input.onmidimessage = (event) => {
-      const data = (event as any).data;
-      if (data == null) {
-        return;
-      }
-
+    const listener = (data: number[]) => {
       const command = data[0];
 
       let value = data[2];
@@ -169,40 +140,36 @@ export function ControllerProvider({
       );
     };
 
-    return () => (controller.input.onmidimessage = null);
-  }, [controller, inputListeners, projectRef]);
+    addMidiListener(listener);
 
-  const output = useCallback(
-    (c: ControllerChannel, value: number) => {
-      try {
-        const channel = c.split(' ').map((i) => parseInt(i)) as [
-          number,
-          number,
-        ];
-        value *= 127;
-        if (channel[0] < 32) {
-          controller?.output.send([channel[0], channel[1], Math.floor(value)]);
-          const lsb = Math.floor((value % 1) * 127);
-          controller?.output.send([channel[0], channel[1] + 32, lsb]);
-        } else {
-          controller?.output.send([channel[0], channel[1], value]);
-        }
-      } catch (ex) {
-        console.error('Failed to send MIDI output!', ex);
+    return () => removeMidiListener(listener);
+  }, [inputListeners, projectRef]);
+
+  const output = useCallback((c: ControllerChannel, value: number) => {
+    try {
+      const channel = c.split(' ').map((i) => parseInt(i)) as [number, number];
+      value *= 127;
+      if (channel[0] < 32) {
+        sendMidiCommand([channel[0], channel[1], Math.floor(value)]);
+        const lsb = Math.floor((value % 1) * 127);
+        sendMidiCommand([channel[0], channel[1] + 32, lsb]);
+      } else {
+        sendMidiCommand([channel[0], channel[1], value]);
       }
-    },
-    [controller],
-  );
+    } catch (ex) {
+      console.error('Failed to send MIDI output!', ex);
+    }
+  }, []);
 
   useEffect(() => {
-    const name = controller?.name;
-    if (name) {
-      const listener = (t: bigint) => outputValues(project, name, t, output);
+    if (controllerName) {
+      const listener = (t: bigint) =>
+        outputValues(project, controllerName, t, output);
       addTimeListener(listener);
       return () => removeTimeListener(listener);
     }
     return () => {};
-  }, [project, controller, output, addTimeListener, removeTimeListener]);
+  }, [project, controllerName, output, addTimeListener, removeTimeListener]);
 
   const addListener = useCallback((listener: Listener) => {
     inputListeners.current.push(listener);
@@ -214,7 +181,6 @@ export function ControllerProvider({
   useEffect(() => {
     let timeout: any;
     const listener: Listener = (_p, channel, value, cct) => {
-      const controllerName = controller?.name;
       if (controllerName) {
         const modified = performAction(
           project,
@@ -238,7 +204,14 @@ export function ControllerProvider({
     };
     addListener(listener);
     return () => removeListener(listener);
-  }, [project, controller, addBeatSample, update, addListener, removeListener]);
+  }, [
+    project,
+    controllerName,
+    addBeatSample,
+    update,
+    addListener,
+    removeListener,
+  ]);
 
   // Expose output function for debugging purposes.
   useEffect(() => {
@@ -250,7 +223,7 @@ export function ControllerProvider({
     <>
       <ControllerContext.Provider
         value={{
-          controllerName: controller?.name || null,
+          controllerName: controllerName ?? null,
           connect: connect,
           addListener: addListener,
           removeListener: removeListener,
@@ -261,15 +234,16 @@ export function ControllerProvider({
       {candidateList && (
         <ControllerSelectionDialog
           candidateList={candidateList}
-          setController={(controller) => {
-            project.controllerMapping!.lastControllerName =
-              controller?.name || '';
-            if (controller?.name) {
+          setCandidate={async (candidate) => {
+            const name = candidate?.name || '';
+            project.controllerMapping!.lastControllerName = name;
+            if (candidate) {
               save('Enable auto-reconnect for midi controller.');
+              await connectMidi(candidate);
+              setControllerName(name);
             } else {
               save('Disable auto-reconnect for midi controller.');
             }
-            setController(controller);
             setCandidateList(null);
           }}
         />
@@ -279,19 +253,19 @@ export function ControllerProvider({
 }
 
 interface ControllerSelectionDialogProps {
-  candidateList: Array<{ name: string; device: MidiDevice }>;
-  setController: (controller: MidiDevice | null) => void;
+  candidateList: MidiPortCandidate[];
+  setCandidate: (portCandidate: MidiPortCandidate | null) => void;
 }
 
 function ControllerSelectionDialog({
   candidateList,
-  setController,
+  setCandidate,
 }: ControllerSelectionDialogProps) {
   return (
     <Modal
       title="Select Midi device"
       bodyClass={styles.deviceSelect}
-      onClose={() => setController(null)}
+      onClose={() => setCandidate(null)}
     >
       <div>
         Please choose which MIDI device you'd like to attach to. If you want to
@@ -308,7 +282,7 @@ function ControllerSelectionDialog({
         action again to unmap.
       </div>
       {candidateList.map((c, i) => (
-        <Button key={i} onClick={() => setController(c.device)}>
+        <Button key={i} onClick={() => setCandidate(c)}>
           {c.name}
         </Button>
       ))}

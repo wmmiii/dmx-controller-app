@@ -25,9 +25,11 @@ export default defineConfig({
   server: {
     port: 8080,
     host: '0.0.0.0',
-    https: {
-      key: path.resolve(__dirname, 'dev/server/server.key'),
-      cert: path.resolve(__dirname, 'dev/server/server.crt'),
-    },
+    ...(process.env.TAURI_ENV_DEBUG !== 'true' && {
+      https: {
+        key: path.resolve(__dirname, 'dev/server/server.key'),
+        cert: path.resolve(__dirname, 'dev/server/server.crt'),
+      },
+    }),
   },
 });
