@@ -25,5 +25,4 @@ tauri = { version = "2.8.5", features = [] }
 tauri-plugin-log = "2"
 tauri-plugin-fs = "2"
 serialport = "4.7.3"
-dmx = "0.2.1"
-dmx-serial = "0.4.0"
+open_dmx = "1.1.1"
