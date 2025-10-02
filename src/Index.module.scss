@@ -57,7 +57,16 @@ select {
 }
 
 select {
+  -webkit-appearance: none; /* For WebKit-based browsers like Android WebView */
+  -moz-appearance: none; /* For Firefox */
+  appearance: none; /* Standard property */
   cursor: pointer;
+
+  /* Caret */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='white' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .858 1.658l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 0.75rem 0.75rem;
 }
 
 li {
@@ -96,7 +105,11 @@ th {
     gap: vars.spacing(1);
     min-height: 0;
     position: relative;
-    z-index: 0;
+    z-index: vars.$z-index-menu;
+
+    & > * {
+      z-index: 1;
+    }
 
     h1 {
       color: vars.$col-border;
@@ -109,7 +122,8 @@ th {
       top: 0;
       transform: translateX(-50%);
       user-select: none;
-      z-index: -1;
+      text-wrap: nowrap;
+      z-index: 0;
     }
   }
 
