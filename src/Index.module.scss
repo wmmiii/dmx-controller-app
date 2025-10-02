@@ -1,14 +1,15 @@
-@import './_vars';
+@use 'sass:color';
+@use './_vars';
 
 html {
-  --col-text: $col-text;
-  background-color: $col-bg-higher;
-  color: $col-text;
+  --col-text: vars.$col-text;
+  background-color: vars.$col-bg-higher;
+  color: vars.$col-text;
   font-family: 'Roboto', sans-serif;
   font-size: 11pt;
   font-weight: 300;
   overflow-x: hidden;
-  scrollbar-color: $col-scroll-thumb $col-scroll-track;
+  scrollbar-color: vars.$col-scroll-thumb vars.$col-scroll-track;
   scrollbar-width: thin;
 }
 
@@ -24,7 +25,7 @@ hr {
   border-bottom: none;
   border-left: none;
   border-right: none;
-  border-top: 1px solid $col-border;
+  border-top: 1px solid vars.$col-border;
   display: block;
   height: 1px;
   margin: 0;
@@ -32,27 +33,27 @@ hr {
 }
 
 a {
-  color: $col-interactive;
+  color: vars.$col-interactive;
   text-decoration: none;
   font-weight: 600;
 
   &:hover {
-    color: $col-interactive-hover;
+    color: vars.$col-interactive-hover;
   }
 
   &.active {
-    color: $col-text;
+    color: vars.$col-text;
   }
 }
 
 input,
 textarea,
 select {
-  background-color: lighten($col-bg, 5%);
-  border-radius: $dim-border-radius;
-  border: 1px solid $col-interactive;
-  color: $col-text;
-  padding: spacing(1);
+  background-color: color.adjust(vars.$col-bg, $lightness: 5%);
+  border-radius: vars.$dim-border-radius;
+  border: 1px solid vars.$col-interactive;
+  color: vars.$col-text;
+  padding: vars.spacing(1);
 }
 
 select {
@@ -60,19 +61,19 @@ select {
 }
 
 li {
-  margin: spacing(1) 0;
+  margin: vars.spacing(1) 0;
 }
 
 table {
-  background-color: $col-bg;
+  background-color: vars.$col-bg;
   border-collapse: collapse;
 }
 
 th {
-  background-color: $col-bg;
+  background-color: vars.$col-bg;
   font-size: unset;
   font-weight: unset;
-  padding: spacing(1) 0;
+  padding: vars.spacing(1) 0;
   position: sticky;
   text-align: left;
   top: 0;
@@ -80,23 +81,25 @@ th {
 }
 
 .wrapper {
-  @include fill;
+  @include vars.fill;
   display: flex;
   flex-direction: column;
-  gap: spacing(1);
-  padding: spacing(1);
+  gap: vars.spacing(1);
+  padding: vars.spacing(1);
 
   header {
     align-items: center;
+    background-color: vars.$col-bg-higher;
     display: flex;
     flex-direction: row;
     flex-shrink: 0;
-    gap: spacing(1);
+    gap: vars.spacing(1);
     min-height: 0;
     position: relative;
+    z-index: 0;
 
     h1 {
-      color: $col-border;
+      color: vars.$col-border;
       font-family: 'Tomorrow', sans-serif;
       font-size: 28px;
       font-weight: 800;
@@ -111,8 +114,8 @@ th {
   }
 
   main {
-    background-color: $col-bg;
-    border-radius: spacing(1);
+    background-color: vars.$col-bg;
+    border-radius: vars.spacing(1);
     flex: 1;
     overflow-y: auto;
     position: relative;
@@ -132,7 +135,7 @@ th {
   position: relative;
 
   &:hover {
-    color: $col-interactive-hover;
+    color: vars.$col-interactive-hover;
   }
 }
 
@@ -142,13 +145,13 @@ th {
 }
 
 .fps {
-  color: $col-text-dim;
+  color: vars.$col-text-dim;
   flex-shrink: 0;
   font-size: 10pt;
 }
 
 .message {
-  color: $col-text-dim;
+  color: vars.$col-text-dim;
   flex-shrink: 1;
   font-size: 10pt;
   overflow: hidden;
@@ -161,14 +164,14 @@ th {
 }
 
 .warning {
-  color: $col-warning;
+  color: vars.$col-warning;
 }
 
 .button-row {
   align-items: center;
   display: flex;
   flex-direction: row;
-  gap: spacing(2);
+  gap: vars.spacing(2);
   justify-content: space-between;
-  margin: spacing(1) 0;
+  margin: vars.spacing(1) 0;
 }

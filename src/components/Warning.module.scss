@@ -1,7 +1,7 @@
-@import '../_vars';
+@use '../_vars';
 
 .warning {
-  color: $col-warning;
+  color: vars.$col-warning;
   display: inline;
   vertical-align: middle;
 }

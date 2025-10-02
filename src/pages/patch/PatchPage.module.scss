@@ -1,9 +1,9 @@
-@import '../../_vars';
+@use '../../_vars';
 
 $channel-size: 100px;
 
 .wrapper {
-  @include fill;
+  @include vars.fill;
   display: flex;
   flex-direction: column;
 }
@@ -13,7 +13,7 @@ $channel-size: 100px;
   flex-direction: row;
   flex-shrink: 0;
   min-height: 0;
-  padding: spacing(1);
+  padding: vars.spacing(1);
 }
 
 .tabWrapper {
@@ -21,7 +21,7 @@ $channel-size: 100px;
 }
 
 .splitPane {
-  @include fill;
+  @include vars.fill;
 }
 
 .pane {
@@ -29,34 +29,34 @@ $channel-size: 100px;
   box-sizing: border-box;
   max-width: 100%;
   min-height: 100%;
-  padding: spacing(2);
+  padding: vars.spacing(2);
 }
 
 .highlight-drop {
-  border-color: $col-interactive;
+  border-color: vars.$col-interactive;
 }
 
 .editor {
   display: flex;
   flex-direction: column;
-  gap: spacing(2);
+  gap: vars.spacing(2);
   min-width: 40em;
 
   th,
   td {
-    padding: spacing(1);
+    padding: vars.spacing(1);
   }
 }
 
 .dialog-footer {
-  padding-top: spacing(1);
+  padding-top: vars.spacing(1);
 }
 
 .empty-pane {
-  @include fill;
+  @include vars.fill;
 
   align-items: center;
-  color: $col-text-dim;
+  color: vars.$col-text-dim;
   display: flex;
   justify-content: center;
 }
@@ -71,24 +71,24 @@ $channel-size: 100px;
 
   li {
     cursor: pointer;
-    padding: spacing(1);
+    padding: vars.spacing(1);
 
     &.selected {
-      background: linear-gradient(to right, $col-bg-active, transparent);
+      background: linear-gradient(to right, vars.$col-bg-active, transparent);
     }
 
     &:hover {
-      background-color: $col-bg-active;
+      background-color: vars.$col-bg-active;
     }
   }
 
   button {
-    margin: spacing(1);
+    margin: vars.spacing(1);
   }
 }
 
 .group-editor {
-  @include fill;
+  @include vars.fill;
   display: flex;
   flex-direction: column;
 
@@ -98,12 +98,12 @@ $channel-size: 100px;
     flex-shrink: 0;
     justify-content: space-between;
     min-height: 0;
-    margin: spacing(1);
+    margin: vars.spacing(1);
   }
 
   .members {
     flex: 1;
-    margin: spacing(1);
+    margin: vars.spacing(1);
     position: relative;
     display: flex;
     flex-direction: column;
@@ -117,23 +117,23 @@ $channel-size: 100px;
     height: 100%;
     position: absolute;
     top: 0;
-    width: calc(50% - spacing(1));
+    width: calc(50% - vars.spacing(1));
 
     ul,
     ol {
-      border: 1px solid $col-border-lower;
+      border: 1px solid vars.$col-border-lower;
       flex: 1;
       list-style: none;
       margin: 0;
       overflow-y: auto;
-      padding: 0 spacing(1);
+      padding: 0 vars.spacing(1);
     }
 
     li {
       cursor: grab;
 
       &:hover {
-        background-color: $col-bg-active;
+        background-color: vars.$col-bg-active;
       }
     }
   }
@@ -150,12 +150,12 @@ $channel-size: 100px;
 .universe-grid {
   display: grid;
   grid-template-columns: repeat(10, auto);
-  gap: spacing(1);
+  gap: vars.spacing(1);
 
   .channel {
     align-items: center;
-    background-color: $col-bg-higher;
-    border-radius: $dim-border-radius;
+    background-color: vars.$col-bg-higher;
+    border-radius: vars.$dim-border-radius;
     border: 1px solid transparent;
     box-sizing: border-box;
     display: flex;
@@ -169,48 +169,48 @@ $channel-size: 100px;
     width: $channel-size;
 
     &.warning {
-      border-color: $col-warning;
+      border-color: vars.$col-warning;
     }
 
     &.start-channel {
       cursor: grab;
-      border-color: $col-interactive;
+      border-color: vars.$col-interactive;
 
       &:hover {
-        border-color: $col-interactive-hover;
-        background-color: $col-bg-higher-hover;
+        border-color: vars.$col-interactive-hover;
+        background-color: vars.$col-bg-higher-hover;
       }
     }
 
     .channel-number {
-      color: $col-text-dim;
-      left: spacing(0.5);
+      color: vars.$col-text-dim;
+      left: vars.spacing(0.5);
       position: absolute;
-      top: spacing(0.5);
+      top: vars.spacing(0.5);
     }
 
     .fixture-title {
       box-sizing: border-box;
       font-weight: bold;
       max-width: 100%;
-      padding: 0 spacing(1);
+      padding: 0 vars.spacing(1);
     }
 
     .collision-warning {
       align-self: flex-start;
       box-sizing: border-box;
-      color: $col-warning;
-      padding: 0 spacing(1);
+      color: vars.$col-warning;
+      padding: 0 vars.spacing(1);
     }
 
     .channel-description {
       align-self: flex-start;
       box-sizing: border-box;
-      padding: 0 spacing(1);
+      padding: 0 vars.spacing(1);
     }
 
     .fixture-name {
-      color: $col-text-dim;
+      color: vars.$col-text-dim;
       max-width: 100%;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -231,7 +231,7 @@ $channel-size: 100px;
 }
 
 .hint {
-  color: $col-text-dim;
+  color: vars.$col-text-dim;
   font-size: 10pt;
 }
 
@@ -241,22 +241,22 @@ $channel-size: 100px;
 
   li {
     align-items: center;
-    background-color: $col-bg-higher;
-    border-radius: $dim-border-radius;
+    background-color: vars.$col-bg-higher;
+    border-radius: vars.$dim-border-radius;
     display: flex;
     flex-direction: row;
-    gap: spacing(1);
+    gap: vars.spacing(1);
     list-style: none;
-    padding: spacing(1);
+    padding: vars.spacing(1);
     width: fit-content;
     cursor: grab;
 
     &:hover {
-      background-color: $col-bg-higher-hover;
+      background-color: vars.$col-bg-higher-hover;
     }
 
     svg {
-      color: $col-text-dim;
+      color: vars.$col-text-dim;
     }
   }
 }

@@ -1,4 +1,4 @@
-@import '../_vars';
+@use '../_vars';
 
 .horizontalPane {
   display: flex;
@@ -24,7 +24,7 @@
 
 .pane {
   flex: 1;
-  min-width: spacing(4);
+  min-width: vars.spacing(4);
   overflow-x: hidden;
   overflow-y: auto;
   position: relative;
@@ -32,16 +32,16 @@
 
 .separator {
   align-items: center;
-  background-color: $col-bg-higher;
+  background-color: vars.$col-bg-higher;
   cursor: ew-resize;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
   justify-content: center;
-  width: spacing(1);
+  width: vars.spacing(1);
 
   &::after {
-    background-color: $col-bg;
+    background-color: vars.$col-bg;
     content: '';
     flex-direction: column;
     height: 24px;

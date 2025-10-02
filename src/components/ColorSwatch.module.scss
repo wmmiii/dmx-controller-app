@@ -1,4 +1,4 @@
-@import '../_vars';
+@use '../_vars';
 
 .color-swatch {
   border-radius: 100%;
@@ -6,15 +6,15 @@
   min-height: 24px;
   min-width: 24px;
   width: 24px;
-  border: 1px solid $col-interactive;
+  border: 1px solid vars.$col-interactive;
 
   &:hover {
-    border-color: $col-interactive-hover;
+    border-color: vars.$col-interactive-hover;
   }
 }
 
 .non-interactive {
-  border: 1px solid $col-text;
+  border: 1px solid vars.$col-text;
 
   &:hover {
     border-color: unset;

@@ -1,15 +1,15 @@
-@import '../_vars';
+@use '../_vars';
 
 .content {
-  @include drop-shadow;
+  @include vars.drop-shadow;
 
-  background-color: $col-bg-higher;
-  border-radius: $dim-border-radius;
-  color: $col-text;
-  padding: spacing(1);
-  z-index: $z-index-popover;
+  background-color: vars.$col-bg-higher;
+  border-radius: vars.$dim-border-radius;
+  color: vars.$col-text;
+  padding: vars.spacing(1);
+  z-index: vars.$z-index-popover;
 }
 
 .arrow {
-  color: $col-bg-higher;
+  color: vars.$col-bg-higher;
 }

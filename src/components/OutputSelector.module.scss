@@ -1,5 +1,5 @@
-@import '../_vars';
+@use '../_vars';
 
 .warning {
-  border-color: $col-warning;
+  border-color: vars.$col-warning;
 }

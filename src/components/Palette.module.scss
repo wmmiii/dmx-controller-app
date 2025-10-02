@@ -1,16 +1,16 @@
-@import '../_vars';
+@use '../_vars';
 
 .palette-swatch {
   align-items: center;
   cursor: pointer;
   display: flex;
   flex-direction: row;
-  gap: spacing(1);
-  padding: spacing(1);
+  gap: vars.spacing(1);
+  padding: vars.spacing(1);
 }
 
 .active {
-  background: linear-gradient(to left, $col-bg-active, transparent);
+  background: linear-gradient(to left, vars.$col-bg-active, transparent);
 }
 
 .header {
@@ -22,9 +22,9 @@
 .color-selectors {
   display: flex;
   flex-direction: row;
-  gap: spacing(2);
+  gap: vars.spacing(2);
   justify-content: space-around;
-  padding: spacing(2);
+  padding: vars.spacing(2);
 }
 
 .visualizer {

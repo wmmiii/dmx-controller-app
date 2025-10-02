@@ -1,8 +1,8 @@
-@import '../_vars';
+@use '../_vars';
 
 .detailsModal {
   display: flex;
   flex-direction: column;
-  gap: spacing(1);
-  padding: spacing(1);
+  gap: vars.spacing(1);
+  padding: vars.spacing(1);
 }

@@ -1,30 +1,30 @@
-@import '../_vars';
+@use '../_vars';
 
 .dropdown {
-  @include drop-shadow;
-  background-color: $col-bg-higher;
+  @include vars.drop-shadow;
+  background-color: vars.$col-bg-higher;
   position: absolute;
   top: 100%;
   left: 0;
-  z-index: $z-index-menu;
+  z-index: vars.$z-index-menu;
 
   hr {
-    border-color: $col-border-higher;
+    border-color: vars.$col-border-higher;
   }
 }
 
 .item {
   align-items: center;
-  color: $col-interactive;
+  color: vars.$col-interactive;
   cursor: pointer;
   display: flex;
   flex-direction: row;
-  gap: spacing(1);
-  padding: spacing(1) spacing(2);
+  gap: vars.spacing(1);
+  padding: vars.spacing(1) vars.spacing(2);
   text-wrap: nowrap;
 
   &:hover {
-    color: $col-interactive-hover;
+    color: vars.$col-interactive-hover;
   }
 
   .icon {

@@ -1,4 +1,4 @@
-@import '../_vars';
+@use '../_vars';
 
 .wrapper {
   display: flex;
@@ -6,7 +6,7 @@
 }
 
 .header {
-  border-bottom: 1px solid $col-border;
+  border-bottom: 1px solid vars.$col-border;
   display: flex;
   flex-direction: row;
 }
@@ -16,29 +16,29 @@
   flex-direction: row;
   flex-shrink: 0;
   min-height: 0;
-  padding: spacing(1) spacing(1) 0 spacing(1);
+  padding: vars.spacing(1) vars.spacing(1) 0 vars.spacing(1);
 }
 
 .tab {
   align-items: center;
-  border: 1px solid $col-border-lower;
+  border: 1px solid vars.$col-border-lower;
   border-bottom-color: transparent;
-  border-top-left-radius: $dim-border-radius;
-  border-top-right-radius: $dim-border-radius;
+  border-top-left-radius: vars.$dim-border-radius;
+  border-top-right-radius: vars.$dim-border-radius;
   cursor: pointer;
   display: flex;
   flex-direction: row;
   margin-bottom: -1px;
-  padding: spacing(1);
+  padding: vars.spacing(1);
 
   &:hover {
-    border-color: $col-interactive-hover;
+    border-color: vars.$col-interactive-hover;
   }
 }
 
 .selected {
-  border-color: $col-border;
-  border-bottom-color: $col-bg !important;
+  border-color: vars.$col-border;
+  border-bottom-color: vars.$col-bg !important;
 }
 
 .contents {

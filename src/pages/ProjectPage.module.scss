@@ -1,26 +1,26 @@
-@import '../_vars';
+@use '../_vars';
 
 .browser {
-  @include fill;
+  @include vars.fill;
 }
 
 .splitPane {
-  @include fill;
+  @include vars.fill;
 }
 
 .audioFileList {
-  @include fill;
+  @include vars.fill;
   border: 1px solid transparent;
 }
 
 .faint {
-  color: $col-text-dim;
+  color: vars.$col-text-dim;
 }
 
 .highlightDrop {
-  border-color: $col-interactive;
+  border-color: vars.$col-interactive;
 }
 
 .audioDetails {
-  padding: spacing(1);
+  padding: vars.spacing(1);
 }

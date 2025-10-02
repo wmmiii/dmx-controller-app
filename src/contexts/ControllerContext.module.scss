@@ -1,8 +1,8 @@
-@import '../_vars';
+@use '../_vars';
 
 .device-select {
   display: flex;
   flex-direction: column;
-  gap: spacing(1);
+  gap: vars.spacing(1);
   max-width: 32em;
 }

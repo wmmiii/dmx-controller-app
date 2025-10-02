@@ -1,7 +1,7 @@
-@import '../_vars';
+@use '../_vars';
 
 .universe-sequence-editor {
-  @include fill;
+  @include vars.fill;
 
-  background-color: $col-bg;
+  background-color: vars.$col-bg;
 }

@@ -1,8 +1,8 @@
 [package]
-name = "app"
+name = "dmx_controller_app"
 version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
+description = "A lighting controller for DMX and friends."
+authors = ["wmmiii"]
 license = ""
 repository = ""
 edition = "2021"

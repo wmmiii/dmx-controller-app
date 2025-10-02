@@ -1,13 +1,13 @@
-@import '../_vars';
+@use '../_vars';
 
 .base-button {
   align-items: center;
-  border-radius: spacing(1);
+  border-radius: vars.spacing(1);
   border-style: solid;
   border-width: 1px;
   cursor: pointer;
   display: inline-flex;
-  min-height: 24px + spacing(2);
+  min-height: 24px + vars.spacing(2);
   outline: none;
 }
 
@@ -16,9 +16,9 @@
   display: flex;
   flex-direction: row;
   font-size: 18px;
-  gap: spacing(1);
+  gap: vars.spacing(1);
   justify-content: space-evenly;
-  padding: spacing(1) spacing(2);
+  padding: vars.spacing(1) vars.spacing(2);
 
   .icon {
     font-size: 24px;
@@ -29,9 +29,9 @@
 
 .icon-button {
   font-size: 24px;
-  height: 24px + spacing(2);
+  height: 24px + vars.spacing(2);
   justify-content: center;
-  width: 24px + spacing(2);
+  width: 24px + vars.spacing(2);
 }
 
 .borderless {
@@ -41,72 +41,72 @@
 
 .default-variant {
   background-color: transparent;
-  border-color: $col-interactive;
-  color: $col-interactive;
+  border-color: vars.$col-interactive;
+  color: vars.$col-interactive;
 
   &:disabled {
     background-color: transparent !important;
-    border-color: $col-disabled !important;
-    color: $col-disabled !important;
+    border-color: vars.$col-disabled !important;
+    color: vars.$col-disabled !important;
   }
 
   &:active,
   &:hover,
   &:focus {
     background-color: rgba(255, 255, 255, 0.1);
-    border-color: $col-interactive-hover;
-    color: $col-interactive-hover;
+    border-color: vars.$col-interactive-hover;
+    color: vars.$col-interactive-hover;
   }
 }
 
 .primary-variant {
-  background-color: $col-interactive;
-  border-color: $col-interactive;
-  color: $col-bg;
+  background-color: vars.$col-interactive;
+  border-color: vars.$col-interactive;
+  color: vars.$col-bg;
 
   &:disabled {
-    background-color: $col-disabled !important;
-    border-color: $col-disabled !important;
-    color: $col-bg !important;
+    background-color: vars.$col-disabled !important;
+    border-color: vars.$col-disabled !important;
+    color: vars.$col-bg !important;
   }
 
   &:active,
   &:hover,
   &:focus {
-    background-color: $col-interactive-hover;
-    border-color: $col-interactive-hover;
+    background-color: vars.$col-interactive-hover;
+    border-color: vars.$col-interactive-hover;
   }
 }
 
 .warning-variant {
-  background-color: $col-bg;
-  border-color: $col-warning;
-  color: $col-warning;
+  background-color: vars.$col-bg;
+  border-color: vars.$col-warning;
+  color: vars.$col-warning;
 
   &:disabled {
-    background-color: $col-disabled !important;
-    border-color: $col-disabled !important;
-    color: $col-bg !important;
+    background-color: vars.$col-disabled !important;
+    border-color: vars.$col-disabled !important;
+    color: vars.$col-bg !important;
   }
 
   &:active,
   &:hover,
   &:focus {
     background-color: rgba(255, 255, 255, 0.1);
-    border-color: $col-warning-hover;
-    color: $col-warning-hover;
+    border-color: vars.$col-warning-hover;
+    color: vars.$col-warning-hover;
   }
 }
 
 .controller-button {
   align-items: center;
   border: none;
-  color: $col-text;
+  color: vars.$col-text;
   text-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: row;
-  gap: spacing(1);
-  padding: spacing(1);
+  gap: vars.spacing(1);
+  padding: vars.spacing(1);
   justify-content: center;
   margin: 1px;
   position: relative;
@@ -119,25 +119,25 @@
   }
 
   &.inactive {
-    @include gradient-border(
-      linear-gradient(to right, $col-midi, $col-accent),
-      $col-bg-higher,
+    @include vars.gradient-border(
+      linear-gradient(to right, vars.$col-midi, vars.$col-accent),
+      vars.$col-bg-higher,
       1px
     );
   }
 
   &.active {
-    @include gradient-border(
-      linear-gradient(to right, $col-midi, $col-accent),
-      linear-gradient(to right, $col-midi, $col-accent),
+    @include vars.gradient-border(
+      linear-gradient(to right, vars.$col-midi, vars.$col-accent),
+      linear-gradient(to right, vars.$col-midi, vars.$col-accent),
       1px
     );
   }
 
   &.mapping {
-    @include gradient-border(
-      linear-gradient(to right, $col-midi, $col-warning),
-      linear-gradient(to right, $col-midi, $col-warning),
+    @include vars.gradient-border(
+      linear-gradient(to right, vars.$col-midi, vars.$col-warning),
+      linear-gradient(to right, vars.$col-midi, vars.$col-warning),
       1px
     );
   }

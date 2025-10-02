@@ -1,20 +1,20 @@
 @use 'sass:color';
-@import '../_vars';
+@use '../_vars';
 
 $handle-size: 30px;
 
 .effect {
-  background-color: $col-border;
+  background-color: vars.$col-border;
   box-sizing: border-box;
   cursor: grab;
 
   .inner {
-    background-color: color.scale($col-bg, $alpha: -20%);
+    background-color: color.scale(vars.$col-bg, $alpha: -20%);
     bottom: 2px;
     content: '';
     left: 2px;
     overflow: hidden;
-    padding: spacing(1) - 2px;
+    padding: vars.spacing(1) - 2px;
     position: absolute;
     right: 2px;
     top: 2px;
@@ -24,7 +24,7 @@ $handle-size: 30px;
       display: flex;
       flex-direction: column;
       flex-wrap: wrap;
-      gap: spacing(0.5);
+      gap: vars.spacing(0.5);
       height: 100%;
       position: relative;
       width: fit-content;
@@ -41,7 +41,7 @@ $handle-size: 30px;
   &.selected .inner {
     bottom: 8px;
     left: 8px;
-    padding: spacing(1) - 8px;
+    padding: vars.spacing(1) - 8px;
     right: 8px;
     top: 8px;
   }
@@ -50,14 +50,14 @@ $handle-size: 30px;
 .effect-type {
   display: flex;
   flex-direction: row;
-  gap: spacing(1);
+  gap: vars.spacing(1);
 }
 
 .icon {
-  background-color: $col-bg-higher;
+  background-color: vars.$col-bg-higher;
   border-radius: 999px;
   display: flex;
-  padding: spacing(0.5);
+  padding: vars.spacing(0.5);
 }
 
 .drag-mask {
@@ -66,7 +66,7 @@ $handle-size: 30px;
   position: fixed;
   right: 0;
   top: 0;
-  z-index: $z-index-interactive-mask;
+  z-index: vars.$z-index-interactive-mask;
 }
 
 .drag-start {
@@ -100,7 +100,7 @@ $handle-size: 30px;
 .effect-details {
   display: flex;
   flex-direction: column;
-  gap: spacing(1);
+  gap: vars.spacing(1);
 
   & label {
     align-items: center;

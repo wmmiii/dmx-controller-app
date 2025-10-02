@@ -1,13 +1,13 @@
-@import '../_vars';
+@use '../_vars';
 
 $dot-size: 20px;
 
 .wrapper {
-  margin: 0 spacing(1);
+  margin: 0 vars.spacing(1);
   display: flex;
   flex-direction: row;
   justify-content: center;
-  gap: spacing(1);
+  gap: vars.spacing(1);
 }
 
 .visualizer {
@@ -23,7 +23,7 @@ $dot-size: 20px;
   border-radius: calc($dot-size / 4);
   height: $dot-size;
   width: $dot-size;
-  margin: spacing(0.5);
+  margin: vars.spacing(0.5);
 }
 
 .visualizerSegment {
@@ -32,16 +32,16 @@ $dot-size: 20px;
   width: $dot-size;
 
   &:first-child {
-    border-bottom-left-radius: $dim-border-radius;
-    border-top-left-radius: $dim-border-radius;
+    border-bottom-left-radius: vars.$dim-border-radius;
+    border-top-left-radius: vars.$dim-border-radius;
   }
 
   &:last-child {
-    border-bottom-right-radius: $dim-border-radius;
-    border-top-right-radius: $dim-border-radius;
+    border-bottom-right-radius: vars.$dim-border-radius;
+    border-top-right-radius: vars.$dim-border-radius;
   }
 }
 
 .warning {
-  color: $col-warning;
+  color: vars.$col-warning;
 }

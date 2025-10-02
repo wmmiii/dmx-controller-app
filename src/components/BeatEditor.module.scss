@@ -1,20 +1,20 @@
-@import '../_vars';
+@use '../_vars';
 
 .beat-indicator {
   align-items: center;
-  background-color: $col-accent;
-  color: $col-bg;
+  background-color: vars.$col-accent;
+  color: vars.$col-bg;
   display: flex;
   font-size: 24px;
   justify-content: center;
-  padding: spacing(2);
+  padding: vars.spacing(2);
 }
 
 .button-row {
   align-items: center;
   display: flex;
   flex-direction: row;
-  gap: spacing(2);
+  gap: vars.spacing(2);
   justify-content: space-between;
-  margin: spacing(1) 0;
+  margin: vars.spacing(1) 0;
 }

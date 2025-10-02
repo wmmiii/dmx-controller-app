@@ -1,9 +1,9 @@
-@import '../_vars';
+@use '../_vars';
 
 .effect-state {
   align-items: center;
   display: grid;
-  gap: spacing(1);
+  gap: vars.spacing(1);
   grid-template-columns: repeat(1fr);
 }
 
@@ -11,14 +11,14 @@
   align-items: center;
   display: flex;
   flex-direction: row;
-  gap: spacing(1);
+  gap: vars.spacing(1);
   justify-content: space-between;
 
   .input {
     display: flex;
     flex-direction: row;
     flex: 1;
-    gap: spacing(1);
+    gap: vars.spacing(1);
     justify-content: space-between;
 
     input[type='number'] {
@@ -55,7 +55,7 @@
 }
 
 .color-swatch {
-  margin: spacing(1) 0;
+  margin: vars.spacing(1) 0;
 }
 
 .add-button {
@@ -63,5 +63,5 @@
 }
 
 .custom-channels-title {
-  margin-top: spacing(1);
+  margin-top: vars.spacing(1);
 }

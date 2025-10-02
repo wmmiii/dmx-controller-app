@@ -1,11 +1,11 @@
-@import '../_vars';
+@use '../_vars';
 
 $toggle-height: 24px;
 
 .input {
   background-color: transparent;
   border: none;
-  border-bottom: 1px solid $col-interactive;
+  border-bottom: 1px solid vars.$col-interactive;
   border-radius: 0;
   outline: none;
 
@@ -19,11 +19,11 @@ $toggle-height: 24px;
 }
 
 .modified {
-  border-bottom-color: $col-interactive-hover;
+  border-bottom-color: vars.$col-interactive-hover;
 }
 
 .parse-error {
-  border-bottom-color: $col-warning;
+  border-bottom-color: vars.$col-warning;
 }
 
 .toggle-input {
@@ -36,7 +36,7 @@ $toggle-height: 24px;
     flex: 1;
 
     &:first-child {
-      color: $col-interactive;
+      color: vars.$col-interactive;
       justify-content: left;
     }
 
@@ -47,7 +47,7 @@ $toggle-height: 24px;
 
   .toggle-slide {
     flex-shrink: 0;
-    margin: 0 spacing(1);
+    margin: 0 vars.spacing(1);
   }
 
   &.enabled {
@@ -61,14 +61,14 @@ $toggle-height: 24px;
       }
 
       &:last-child {
-        color: $col-interactive;
+        color: vars.$col-interactive;
       }
     }
   }
 }
 
 .toggle-slide {
-  @include inset-shadow;
+  @include vars.inset-shadow;
 
   background-color: #404040;
   border-radius: calc($toggle-height / 2);
@@ -85,9 +85,9 @@ $toggle-height: 24px;
   position: absolute;
   top: 0;
   width: $toggle-height;
-  background-color: $col-interactive;
+  background-color: vars.$col-interactive;
 
   &:hover {
-    background-color: $col-interactive-hover;
+    background-color: vars.$col-interactive-hover;
   }
 }

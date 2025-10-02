@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "DMX Controller App",
+  "productName": "dmx_controller_app",
   "version": "0.1.0",
-  "identifier": "com.tauri.dev",
+  "identifier": "app.dmx-controller",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:8080",
@@ -21,11 +21,11 @@
     "security": {
       "csp": null
     },
-    "withGlobalTauri": false
+    "withGlobalTauri": true
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": ["deb", "msi"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

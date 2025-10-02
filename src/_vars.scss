@@ -1,14 +1,16 @@
+@use 'sass:color';
+
 $col-accent: #11a2ca;
 $col-warning: #b02461;
 $col-midi: #7216c8;
 
 $col-bg: #111;
 $col-bg-higher: #1a1a1a;
-$col-bg-higher-hover: lighten($col-bg-higher, 10%);
-$col-bg-active: darken($col-accent, 18%);
-$col-bg-active-lower: darken($col-accent, 25%);
+$col-bg-higher-hover: color.adjust($col-bg-higher, $lightness: 10%);
+$col-bg-active: color.adjust($col-accent, $lightness: -18%);
+$col-bg-active-lower: color.adjust($col-accent, $lightness: -25%);
 $col-bg-placeholder: $col-bg-higher;
-$col-bg-placeholder-hover: lighten($col-bg-placeholder, 10%);
+$col-bg-placeholder-hover: color.adjust($col-bg-placeholder, $lightness: 10%);
 $col-text: #ffffff;
 $col-text-dim: #8f8f8f;
 $col-border: #333333;
@@ -16,17 +18,14 @@ $col-border-higher: #555555;
 $col-border-lower: #222222;
 $col-scroll-thumb: #666666;
 $col-scroll-track: #333333;
-$col-interactive: lighten($col-accent, 20%);
-$col-interactive-hover: lighten($col-accent, 50%);
-$col-disabled: desaturate($col-interactive, 100%);
-$col-warning-hover: lighten($col-warning, 50%);
+$col-interactive: color.adjust($col-accent, $lightness: 20%);
+$col-interactive-hover: color.adjust($col-accent, $lightness: 50%);
+$col-disabled: color.adjust($col-interactive, $saturation: -100%);
+$col-warning-hover: color.adjust($col-warning, $lightness: 50%);
 
 $dim-border-radius: 8px;
 
 $mask-blur: blur(2px);
-
-$page-break: 600px;
-$page-width: 900px;
 
 $z-index-header: 20;
 $z-index-menu: 40;
