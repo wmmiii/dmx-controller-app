@@ -79,7 +79,7 @@ message DmxFixtureDefinition {
 
 message PhysicalDmxFixture {
   string name = 1;
-  string fixture_definition_id = 5;
+  uint64 fixture_definition_id = 5;
   string fixture_mode = 6;
   uint32 channel_offset = 3;
 

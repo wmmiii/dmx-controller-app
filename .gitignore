@@ -3,6 +3,7 @@ bazel-*
 core
 dist
 node_modules
+pkg/
 proto/generated
-src-engine/target
-src/wasm-engine/target
+src-engine/target/
+src/wasm-engine/target/

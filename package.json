@@ -2,12 +2,13 @@
   "private": true,
   "scripts": {
     "proto:generate": "buf generate",
-    "dev": "pnpm run proto:generate && vite",
-    "build": "pnpm run proto:generate && vite build",
+    "wasm:build": "cd src/wasm-engine && wasm-pack build --target web --out-dir ../../pkg",
+    "dev": "pnpm run proto:generate && pnpm run wasm:build && vite",
+    "build": "pnpm run proto:generate && pnpm run wasm:build && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
     "type-check": "tsc --noEmit",
-    "test": "jest"
+    "test": "jest && cd src-engine && cargo test"
   },
   "dependencies": {
     "@radix-ui/react-select": "^2.2.6",

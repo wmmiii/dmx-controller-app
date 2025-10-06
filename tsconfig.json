@@ -17,7 +17,8 @@
     "allowSyntheticDefaultImports": true,
     "allowJs": true,
     "paths": {
-      "@dmx-controller/proto/*": ["./proto/generated/proto/*"]
+      "@dmx-controller/proto/*": ["./proto/generated/proto/*"],
+      "@dmx-controller/wasm-engine": ["./pkg/wasm_engine.d.ts"]
     },
     "types": ["./src/types", "jest", "vite/client"]
   },
@@ -27,6 +28,7 @@
     "src/**/*.ts",
     "src/**/*.tsx",
     "src/**/*.test.ts",
-    "proto/generated/proto/**/*.ts"
+    "proto/generated/proto/**/*.ts",
+    "pkg/**/*.d.ts"
   ]
 }

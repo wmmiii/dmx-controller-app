@@ -238,7 +238,7 @@ function ColorChannel({ values }: ColorChannelProps) {
                 White:&nbsp;
                 <NumberInput
                   min={0}
-                  max={0}
+                  max={1}
                   type="float"
                   value={s.lightColor.value.white || 0}
                   onChange={(value) => {

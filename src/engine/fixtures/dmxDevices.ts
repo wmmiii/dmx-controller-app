@@ -48,7 +48,7 @@ export function getDmxWritableDevice(
 ): WritableDevice {
   const definition =
     project.fixtureDefinitions?.dmxFixtureDefinitions[
-      physicalFixture.fixtureDefinitionId
+      physicalFixture.fixtureDefinitionId.toString()
     ];
   // Check to ensure this fixture has a definition.
   if (definition == null) {
@@ -261,7 +261,7 @@ export function getDmxFixtureChannels(
   const fixture = output.fixtures[fixtureId.toString()];
   const fixtureDefinition =
     project.fixtureDefinitions?.dmxFixtureDefinitions[
-      fixture.fixtureDefinitionId
+      fixture.fixtureDefinitionId.toString()
     ];
   const mode = fixtureDefinition?.modes[fixture.fixtureMode];
   return Object.values(mode?.channels || []).map((c) => c.type);
@@ -289,7 +289,9 @@ export function universeToUint8Array(
       throw Error('No fixture definitions found in project!');
     }
     const d =
-      project.fixtureDefinitions.dmxFixtureDefinitions[f.fixtureDefinitionId];
+      project.fixtureDefinitions.dmxFixtureDefinitions[
+        f.fixtureDefinitionId.toString()
+      ];
     if (d == null) {
       return;
     }

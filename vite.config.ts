@@ -15,6 +15,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@dmx-controller/proto': path.resolve(__dirname, 'proto/generated/proto'),
+      '@dmx-controller/wasm-engine': path.resolve(__dirname, 'pkg'),
     },
   },
   css: {
