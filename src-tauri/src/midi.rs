@@ -1,7 +1,7 @@
 use midir::{MidiInput, MidiInputConnection, MidiOutput, MidiOutputConnection};
 use serde::{Deserialize, Serialize};
-use std::sync::{LazyLock, Mutex};
-use tauri::{AppHandle, Emitter};
+use std::sync::Mutex;
+use tauri::{AppHandle, Emitter, State};
 
 #[derive(Deserialize, Serialize, Clone)]
 pub struct MidiPortCandidate {
@@ -14,19 +14,20 @@ struct MidiMessage {
     data: Vec<u8>,
 }
 
-// Global storage for active connections
-static MIDI_INPUT_CONNECTION: LazyLock<Mutex<Option<MidiInputConnection<AppHandle>>>> =
-    LazyLock::new(|| Mutex::new(None));
+pub struct MidiState {
+    input_connection: Mutex<Option<MidiInputConnection<AppHandle>>>,
+    output_connection: Mutex<Option<MidiOutputConnection>>,
+    app_handle: Mutex<Option<AppHandle>>,
+}
 
-static MIDI_OUTPUT_CONNECTION: LazyLock<Mutex<Option<MidiOutputConnection>>> =
-    LazyLock::new(|| Mutex::new(None));
-
-// Global app handle for event emission
-static APP_HANDLE: LazyLock<Mutex<Option<AppHandle>>> = LazyLock::new(|| Mutex::new(None));
-
-// Function to initialize the app handle (called from main)
-pub fn init_midi_events(app_handle: AppHandle) {
-    *APP_HANDLE.lock().unwrap() = Some(app_handle);
+impl MidiState {
+    pub fn new(app_handle: AppHandle) -> Self {
+        MidiState {
+            input_connection: Mutex::new(None),
+            output_connection: Mutex::new(None),
+            app_handle: Mutex::new(Some(app_handle)),
+        }
+    }
 }
 
 #[tauri::command]
@@ -46,9 +47,9 @@ pub fn list_midi_inputs() -> Result<Vec<MidiPortCandidate>, String> {
 }
 
 #[tauri::command]
-pub fn connect_midi(candidate: MidiPortCandidate) -> Result<(), String> {
+pub fn connect_midi(state: State<MidiState>, candidate: MidiPortCandidate) -> Result<(), String> {
     // First disconnect any existing connections
-    disconnect_midi()?;
+    disconnect_midi(state.inner())?;
 
     // Create MIDI input and find the port
     let midi_input = MidiInput::new("DMX Controller App MIDI Input").map_err(|e| e.to_string())?;
@@ -66,25 +67,23 @@ pub fn connect_midi(candidate: MidiPortCandidate) -> Result<(), String> {
         .clone();
 
     // Get app handle for event emission
-    let app_handle = APP_HANDLE
+    let app_handle = state
+        .app_handle
         .lock()
-        .unwrap()
+        .map_err(|e| format!("Failed to lock app handle: {}", e))?
         .as_ref()
         .ok_or("App handle not initialized")?
         .clone();
 
-    // Connect to input port (this consumes midi_input)
     let input_connection = midi_input
         .connect(
             &input_port,
             "dmx-controller-input",
             |_timestamp, message, app_handle| {
-                // Create MIDI message and emit event to frontend
                 let midi_msg = MidiMessage {
                     data: message.to_vec(),
                 };
 
-                // Emit event to frontend (non-blocking)
                 if let Err(e) = app_handle.emit("midi-message", &midi_msg) {
                     eprintln!("Failed to emit MIDI event: {}", e);
                 }
@@ -93,8 +92,10 @@ pub fn connect_midi(candidate: MidiPortCandidate) -> Result<(), String> {
         )
         .map_err(|e| e.to_string())?;
 
-    // Store the input connection
-    *MIDI_INPUT_CONNECTION.lock().unwrap() = Some(input_connection);
+    *state
+        .input_connection
+        .lock()
+        .map_err(|e| format!("Failed to lock input connection: {}", e))? = Some(input_connection);
 
     // Try to find and connect to matching output port
     let midi_output =
@@ -109,28 +110,35 @@ pub fn connect_midi(candidate: MidiPortCandidate) -> Result<(), String> {
     }) {
         match midi_output.connect(output_port, "dmx-controller-output") {
             Ok(output_connection) => {
-                *MIDI_OUTPUT_CONNECTION.lock().unwrap() = Some(output_connection);
+                *state
+                    .output_connection
+                    .lock()
+                    .map_err(|e| format!("Failed to lock output connection: {}", e))? =
+                    Some(output_connection);
                 Ok(())
             }
-            Err(_) => {
-                // Input connected but output failed - still success
-                Ok(())
-            }
+            Err(_) => Ok(()),
         }
     } else {
         Ok(())
     }
 }
 
-pub fn disconnect_midi() -> Result<(), String> {
+pub fn disconnect_midi(state: &MidiState) -> Result<(), String> {
     // Disconnect input
-    let mut input_conn = MIDI_INPUT_CONNECTION.lock().unwrap();
+    let mut input_conn = state
+        .input_connection
+        .lock()
+        .map_err(|e| format!("Failed to lock input connection: {}", e))?;
     if input_conn.is_some() {
         *input_conn = None; // Dropping the connection closes it
     }
 
     // Disconnect output
-    let mut output_conn = MIDI_OUTPUT_CONNECTION.lock().unwrap();
+    let mut output_conn = state
+        .output_connection
+        .lock()
+        .map_err(|e| format!("Failed to lock output connection: {}", e))?;
     if output_conn.is_some() {
         *output_conn = None; // Dropping the connection closes it
     }
@@ -139,8 +147,11 @@ pub fn disconnect_midi() -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn send_midi_command(data: Vec<u8>) -> Result<(), String> {
-    let mut output_conn = MIDI_OUTPUT_CONNECTION.lock().unwrap();
+pub fn send_midi_command(state: State<MidiState>, data: Vec<u8>) -> Result<(), String> {
+    let mut output_conn = state
+        .output_connection
+        .lock()
+        .map_err(|e| format!("Failed to lock output connection: {}", e))?;
 
     match output_conn.as_mut() {
         Some(connection) => {

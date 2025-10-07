@@ -1,2 +1,2 @@
-src-tauri/target/debug
-src-tauri/target/release
+src-tauri/target
+src-tauri/gen

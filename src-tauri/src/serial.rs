@@ -1,11 +1,20 @@
 use open_dmx::DMXSerial;
 use serialport::available_ports;
 use std::collections::HashMap;
-use std::sync::{LazyLock, Mutex};
+use std::sync::Mutex;
+use tauri::State;
 
-// Global map to store DMX ports by output identifier
-static DMX_PORTS: LazyLock<Mutex<HashMap<String, DMXSerial>>> =
-    LazyLock::new(|| Mutex::new(HashMap::new()));
+pub struct SerialState {
+    dmx_ports: Mutex<HashMap<String, DMXSerial>>,
+}
+
+impl SerialState {
+    pub fn new() -> Self {
+        SerialState {
+            dmx_ports: Mutex::new(HashMap::new()),
+        }
+    }
+}
 
 #[tauri::command]
 pub fn list_ports() -> Result<Vec<String>, String> {
@@ -19,10 +28,17 @@ pub fn list_ports() -> Result<Vec<String>, String> {
 }
 
 #[tauri::command]
-pub fn open_port(output_id: String, port_name: String) -> Result<(), String> {
+pub fn open_port(
+    state: State<SerialState>,
+    output_id: String,
+    port_name: String,
+) -> Result<(), String> {
     match DMXSerial::open(&port_name) {
         Ok(dmx_port) => {
-            let mut ports = DMX_PORTS.lock().unwrap();
+            let mut ports = state
+                .dmx_ports
+                .lock()
+                .map_err(|e| format!("Failed to lock DMX ports: {}", e))?;
             ports.insert(output_id.clone(), dmx_port);
             Ok(())
         }
@@ -31,8 +47,11 @@ pub fn open_port(output_id: String, port_name: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn close_port(output_id: String) -> Result<(), String> {
-    let mut ports = DMX_PORTS.lock().unwrap();
+pub fn close_port(state: State<SerialState>, output_id: String) -> Result<(), String> {
+    let mut ports = state
+        .dmx_ports
+        .lock()
+        .map_err(|e| format!("Failed to lock DMX ports: {}", e))?;
     match ports.remove(&output_id) {
         Some(_) => Ok(()),
         None => Err(format!("Output '{}' not found", output_id)),
@@ -40,8 +59,15 @@ pub fn close_port(output_id: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn output_dmx(output_id: String, data: Vec<u8>) -> Result<(), String> {
-    let mut ports = DMX_PORTS.lock().unwrap();
+pub fn output_serial_dmx(
+    state: State<SerialState>,
+    output_id: String,
+    data: Vec<u8>,
+) -> Result<(), String> {
+    let mut ports = state
+        .dmx_ports
+        .lock()
+        .map_err(|e| format!("Failed to lock DMX ports: {}", e))?;
     match ports.get_mut(&output_id) {
         Some(port) => {
             let mut dmx_data = [0u8; 512];

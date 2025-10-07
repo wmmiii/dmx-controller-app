@@ -4,3 +4,5 @@ core
 dist
 node_modules
 proto/generated
+src-engine/target
+src/wasm-engine/target

@@ -34,7 +34,11 @@ async function tauriOpenPort(
   outputId: bigint,
   portName: string | null,
 ): Promise<void> {
-  return invoke('open_port', { outputId: outputId.toString(), portName });
+  try {
+    return invoke('open_port', { outputId: outputId.toString(), portName });
+  } catch (e) {
+    console.error(e);
+  }
 }
 
 async function webOpenPort(): Promise<void> {
@@ -68,7 +72,7 @@ async function tauriOutputDmx(
   outputId: bigint,
   data: Uint8Array,
 ): Promise<void> {
-  await invoke('output_dmx', {
+  await invoke('output_serial_dmx', {
     outputId: outputId.toString(),
     data: Array.from(data),
   });

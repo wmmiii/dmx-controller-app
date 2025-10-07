@@ -69,7 +69,6 @@ async function webConnectMidi(candidate: MidiPortCandidate) {
   webMidiOutput = outputs.find((i) => i.name === candidate.name);
 
   if (webMidiInput) {
-    console.log('Attaching Input', webMidiInput);
     webMidiInput.onmidimessage = (event) => {
       const data = (event as any).data;
       if (data == null) {
