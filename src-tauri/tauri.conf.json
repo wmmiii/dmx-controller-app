@@ -15,7 +15,9 @@
         "title": "DMX Controller App",
         "maximized": true,
         "resizable": true,
-        "fullscreen": false
+        "fullscreen": false,
+        "dragDropEnabled": false,
+        "decorations": false
       }
     ],
     "security": {

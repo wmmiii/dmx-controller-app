@@ -10,6 +10,8 @@ import {
 
 import { Modal } from '../components/Modal';
 
+import { exit } from '@tauri-apps/plugin-process';
+import { isTauri } from '../system_interfaces/util';
 import styles from './ShortcutContext.module.scss';
 
 type ShortcutBundle = Array<{
@@ -65,6 +67,15 @@ export function ShortcutProvider({ children }: PropsWithChildren): JSX.Element {
 
   useEffect(() => {
     const defaultBundle: ShortcutBundle = [
+      ...(isTauri
+        ? [
+            {
+              shortcut: { key: 'KeyW', modifiers: ['ctrl'] } as any,
+              action: () => exit(0),
+              description: 'Exits the application',
+            },
+          ]
+        : []),
       {
         shortcut: { key: 'Slash', modifiers: ['ctrl'] },
         action: () => setShowHelp(!showHelp),

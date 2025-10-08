@@ -2,6 +2,7 @@ import { JSX, createRef, useContext, useEffect, useState } from 'react';
 import { Route, Routes, useNavigate } from 'react-router';
 
 import '@radix-ui/themes/styles.css';
+import { exit } from '@tauri-apps/plugin-process';
 import {
   BiBulb,
   BiDownload,
@@ -31,6 +32,7 @@ import { LivePage } from './pages/LivePage';
 import ProjectPage from './pages/ProjectPage';
 import ShowPage from './pages/ShowPage';
 import PatchPage from './pages/patch/PatchPage';
+import { isTauri } from './system_interfaces/util';
 import { getActivePatch } from './util/projectUtils';
 
 export default function Index(): JSX.Element {
@@ -65,7 +67,7 @@ export default function Index(): JSX.Element {
   return (
     <div className={styles.wrapper}>
       <WarningDialog />
-      <header>
+      <header data-tauri-drag-region>
         <h1>DMX Controller App</h1>
         <input ref={uploadButtonRef} type="file" hidden></input>
         <div
@@ -135,6 +137,23 @@ export default function Index(): JSX.Element {
                       '_blank',
                     ),
                 },
+                ...(isTauri
+                  ? [
+                      { type: 'separator' },
+                      {
+                        title: 'Exit',
+                        onSelect: async () => {
+                          console.log('EXIT?');
+                          try {
+                            await exit(0);
+                            console.log('SHOuld have exited');
+                          } catch (e) {
+                            console.error(e);
+                          }
+                        },
+                      },
+                    ]
+                  : []),
               ]}
             </Dropdown>
           )}
