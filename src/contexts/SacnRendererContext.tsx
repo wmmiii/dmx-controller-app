@@ -8,7 +8,7 @@ import {
 
 import { SacnDmxOutput } from '@dmx-controller/proto/output_pb';
 import { getDmxWritableOutput } from '../engine/outputs/dmxOutput';
-import { outputDmxSacn } from '../system_interfaces/sacn';
+import { outputDmxSacn, sacnSupported } from '../system_interfaces/sacn';
 import { getActivePatch, getOutput } from '../util/projectUtils';
 import { ProjectContext } from './ProjectContext';
 import { RenderingContext } from './RenderingContext';
@@ -67,6 +67,10 @@ export function SacnRendererProvider({ children }: PropsWithChildren) {
   };
 
   useEffect(() => {
+    if (!sacnSupported) {
+      return;
+    }
+
     const renderLoops: Array<() => void> = [];
     Object.entries(getActivePatch(project).outputs)
       .filter(([_, output]) => output.output.case === 'sacnDmxOutput')

@@ -15,7 +15,7 @@ export function createNewSacnDmxOutput() {
     output: {
       case: 'sacnDmxOutput',
       value: {
-        ipAddress: "0.0.0.0",
+        ipAddress: '0.0.0.0',
         fixtures: {},
       },
     },
@@ -73,14 +73,17 @@ function applyDefaults(
 ): number[] {
   const nonInterpolatedIndices: number[] = [];
   const output = getOutput(project, outputId);
-  if (output.output.case !== 'serialDmxOutput' && output.output.case !== 'sacnDmxOutput') {
+  if (
+    output.output.case !== 'serialDmxOutput' &&
+    output.output.case !== 'sacnDmxOutput'
+  ) {
     throw Error('Tried to apply DMX defaults to non-DMX output!');
   }
   const fixtures = output.output.value.fixtures;
   for (const fixture of Object.values(fixtures)) {
     const fixtureDefinition =
       project.fixtureDefinitions?.dmxFixtureDefinitions[
-      fixture.fixtureDefinitionId.toString()
+        fixture.fixtureDefinitionId.toString()
       ];
     // Can happen if fixture has not yet set a definition.
     if (!fixtureDefinition) {

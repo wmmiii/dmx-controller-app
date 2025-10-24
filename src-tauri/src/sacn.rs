@@ -54,7 +54,5 @@ pub fn output_sacn_dmx(
 
     result.map_err(|e| format!("Failed to send sACN DMX data: {}", e))?;
 
-    println!("WE DID IT!!!");
-
     Ok(())
 }

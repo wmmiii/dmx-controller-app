@@ -167,7 +167,7 @@ export default function Index(): JSX.Element {
                           console.log('EXIT?');
                           try {
                             await exit(0);
-                            console.log('SHOuld have exited');
+                            console.log('Should have exited');
                           } catch (e) {
                             console.error(e);
                           }

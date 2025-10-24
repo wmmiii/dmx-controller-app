@@ -59,12 +59,12 @@ export interface WritableDevice {
 }
 
 export const NULL_WRITABLE_DEVICE: WritableDevice = {
-  setColor: () => { },
-  setAngle: () => { },
-  setAmount: () => { },
-  setDmxChannel: () => { },
-  setWledEffect: () => { },
-  setWledPalette: () => { },
+  setColor: () => {},
+  setAngle: () => {},
+  setAmount: () => {},
+  setDmxChannel: () => {},
+  setWledEffect: () => {},
+  setWledPalette: () => {},
 };
 
 export class WritableDeviceCache {
