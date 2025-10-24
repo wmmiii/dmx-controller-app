@@ -28,18 +28,6 @@ export function Modal({
 }: ModalProps): JSX.Element {
   const { setShortcuts } = useContext(ShortcutContext);
 
-  useEffect(() => {
-    history.pushState(title, '');
-
-    const listener = (ev: PopStateEvent) => {
-      if (ev.state === title) {
-        onClose();
-      }
-    };
-    window.addEventListener('popstate', listener);
-    return () => window.removeEventListener('popstate', listener);
-  }, [title, onClose]);
-
   useEffect(
     () =>
       setShortcuts([

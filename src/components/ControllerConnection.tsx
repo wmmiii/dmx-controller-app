@@ -72,6 +72,7 @@ export function ControllerConnection({
           save('Add MIDI mapping.');
           setMappingControllerInput(false);
         }
+        removeListener(listener);
       };
       addListener(listener);
       return () => removeListener(listener);

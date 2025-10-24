@@ -1,4 +1,4 @@
-import { create, equals } from '@bufbuild/protobuf';
+import { clone, create, equals } from '@bufbuild/protobuf';
 import {
   ControllerMappingSchema,
   ControllerMapping_ActionSchema,
@@ -76,8 +76,9 @@ export function assignAction(
   project: Project,
   controllerName: string,
   channel: ControllerChannel,
-  action: ControllerMapping_Action,
+  a: ControllerMapping_Action,
 ) {
+  const action = clone(ControllerMapping_ActionSchema, a);
   deleteAction(project, controllerName, action);
   const actionMap = getActionMap(project, controllerName);
   switch (action.action.case) {

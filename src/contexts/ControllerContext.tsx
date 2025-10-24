@@ -148,9 +148,9 @@ export function ControllerProvider({
   const output = useCallback((c: ControllerChannel, value: number) => {
     try {
       const channel = c.split(' ').map((i) => parseInt(i)) as [number, number];
-      value *= 127;
+      value = Math.floor(value * 127);
       if (channel[0] < 32) {
-        sendMidiCommand([channel[0], channel[1], Math.floor(value)]);
+        sendMidiCommand([channel[0], channel[1], value]);
         const lsb = Math.floor((value % 1) * 127);
         sendMidiCommand([channel[0], channel[1] + 32, lsb]);
       } else {
