@@ -61,6 +61,7 @@ export function OutputSelector({
       getActivePatch(project).outputs,
     )) {
       switch (output.output.case) {
+        case 'sacnDmxOutput':
         case 'serialDmxOutput':
           for (const [dmxFixtureId, dmxFixture] of Object.entries(
             output.output.value.fixtures,
@@ -246,6 +247,7 @@ export function getOutputTargetName(
           getActivePatch(project).outputs[fixtureId.output.toString()].output;
         let name: string;
         switch (output.case) {
+          case 'sacnDmxOutput':
           case 'serialDmxOutput':
             name = output.value.fixtures[fixtureId.fixture.toString()].name;
             break;

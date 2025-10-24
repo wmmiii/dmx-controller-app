@@ -182,6 +182,7 @@ export default function Index(): JSX.Element {
         {Object.entries(getActivePatch(project).outputs).map(
           ([outputId, output], i) => {
             switch (output.output.case) {
+              case 'sacnDmxOutput':
               case 'serialDmxOutput':
                 return (
                   <DmxUniverseVisualizer

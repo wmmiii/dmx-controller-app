@@ -9,7 +9,10 @@ import {
   DmxFixtureDefinition_Channel_AmountMapping,
   DmxFixtureDefinition_Channel_ColorWheelMapping,
 } from '@dmx-controller/proto/dmx_pb';
-import { SerialDmxOutput } from '@dmx-controller/proto/output_pb';
+import {
+  SacnDmxOutput,
+  SerialDmxOutput,
+} from '@dmx-controller/proto/output_pb';
 import { RenderingContext } from '../contexts/RenderingContext';
 import { WritableDmxOutput } from '../engine/context';
 import { getOutput } from '../util/projectUtils';
@@ -27,8 +30,9 @@ export function DmxUniverseVisualizer({
   const [universe, setUniverse] = useState<Uint8Array>(new Uint8Array(512));
   const { subscribeToRender } = useContext(RenderingContext);
 
-  const dmxOutput = getOutput(project, dmxOutputId).output
-    .value as SerialDmxOutput;
+  const dmxOutput = getOutput(project, dmxOutputId).output.value as
+    | SerialDmxOutput
+    | SacnDmxOutput;
 
   useEffect(() => {
     subscribeToRender(dmxOutputId, (output) => {
@@ -51,7 +55,7 @@ export function DmxUniverseVisualizer({
 
         const definition =
           project.fixtureDefinitions?.dmxFixtureDefinitions[
-            f.fixtureDefinitionId
+            f.fixtureDefinitionId.toString()
           ];
         // Can happen if the definition is unset.
         if (definition == null) {

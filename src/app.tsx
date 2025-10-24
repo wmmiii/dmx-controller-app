@@ -8,6 +8,7 @@ import { ControllerProvider } from './contexts/ControllerContext';
 import { DialogProvider } from './contexts/DialogContext';
 import { ProjectProvider } from './contexts/ProjectContext';
 import { RenderingProvider } from './contexts/RenderingContext';
+import { SacnRendererProvider } from './contexts/SacnRendererContext';
 import { SerialProvider } from './contexts/SerialContext';
 import { ShortcutProvider } from './contexts/ShortcutContext';
 import { TimeProvider } from './contexts/TimeContext';
@@ -31,9 +32,11 @@ root.render(
                 <SerialProvider>
                   <BeatProvider>
                     <ControllerProvider>
-                      <WledRendererProvider>
-                        <Index />
-                      </WledRendererProvider>
+                      <SacnRendererProvider>
+                        <WledRendererProvider>
+                          <Index />
+                        </WledRendererProvider>
+                      </SacnRendererProvider>
                     </ControllerProvider>
                   </BeatProvider>
                 </SerialProvider>

@@ -59,12 +59,12 @@ export interface WritableDevice {
 }
 
 export const NULL_WRITABLE_DEVICE: WritableDevice = {
-  setColor: () => {},
-  setAngle: () => {},
-  setAmount: () => {},
-  setDmxChannel: () => {},
-  setWledEffect: () => {},
-  setWledPalette: () => {},
+  setColor: () => { },
+  setAngle: () => { },
+  setAmount: () => { },
+  setDmxChannel: () => { },
+  setWledEffect: () => { },
+  setWledPalette: () => { },
 };
 
 export class WritableDeviceCache {
@@ -126,6 +126,7 @@ function getPhysicalWritableDevice(
 ): WritableDevice {
   const output = getOutput(project, fixtureId.output);
   switch (output.output.case) {
+    case 'sacnDmxOutput':
     case 'serialDmxOutput':
       const physicalDmxFixture =
         output.output.value.fixtures[fixtureId.fixture.toString()];

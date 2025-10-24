@@ -1,9 +1,12 @@
 import { JSX, useContext, useState } from 'react';
 
 import { BiPlus, BiTrash } from 'react-icons/bi';
+import { Button } from '../../components/Button';
 import { EditableText, TextInput } from '../../components/Input';
+import { Modal } from '../../components/Modal';
 import { Tabs, TabsType } from '../../components/Tabs';
 import { ProjectContext } from '../../contexts/ProjectContext';
+import { createNewSacnDmxOutput } from '../../engine/outputs/dmxOutput';
 import { deleteOutput } from '../../engine/outputs/outputs';
 import { createNewWledOutput } from '../../engine/outputs/wledOutput';
 import { randomUint64 } from '../../util/numberUtils';
@@ -11,6 +14,7 @@ import { createNewPatch, getActivePatch } from '../../util/projectUtils';
 import { DmxEditor } from './DmxEditor';
 import { GroupEditor } from './GroupEditor';
 import styles from './PatchPage.module.scss';
+import { SacnEditor } from './SacnEditor';
 import { WledEditor } from './WledEditor';
 
 const GROUP_KEY = 'group';
@@ -19,6 +23,7 @@ const NEW_OUTPUT_KEY = 'new';
 export default function PatchPage(): JSX.Element {
   const { project, save } = useContext(ProjectContext);
   const [tabKey, setTabKey] = useState(GROUP_KEY);
+  const [showNewOutputDialog, setShowNewOutputDialog] = useState(false);
 
   const tabs: TabsType = {
     [GROUP_KEY]: {
@@ -32,6 +37,22 @@ export default function PatchPage(): JSX.Element {
   )) {
     const outputId = BigInt(outputIdString);
     switch (output.output.case) {
+      case 'sacnDmxOutput':
+        tabs[outputId.toString()] = {
+          name: (
+            <>
+              <EditableText
+                value={output.name}
+                onChange={(name) => {
+                  output.name = name;
+                  save(`Change name of output to ${name}.`);
+                }}
+              />
+            </>
+          ),
+          contents: <SacnEditor outputId={outputId} />,
+        };
+        break;
       case 'serialDmxOutput':
         tabs[outputId.toString()] = {
           name: (
@@ -89,10 +110,7 @@ export default function PatchPage(): JSX.Element {
 
   const setTab = (key: string) => {
     if (key === NEW_OUTPUT_KEY) {
-      const id = randomUint64();
-      getActivePatch(project).outputs[id.toString()] = createNewWledOutput();
-      save('Add WLED device.');
-      setTabKey(id.toString());
+      setShowNewOutputDialog(true);
     } else {
       setTabKey(key);
     }
@@ -140,6 +158,37 @@ export default function PatchPage(): JSX.Element {
           </div>
         }
       />
+      {showNewOutputDialog && (
+        <Modal
+          title="Create new output"
+          onClose={() => setShowNewOutputDialog(false)}
+        >
+          <Button
+            onClick={() => {
+              const id = randomUint64();
+              getActivePatch(project).outputs[id.toString()] =
+                createNewSacnDmxOutput();
+              save('Create SACN DMX output.');
+              setTabKey(id.toString());
+              setShowNewOutputDialog(false);
+            }}
+          >
+            SACN Output
+          </Button>
+          <Button
+            onClick={() => {
+              const id = randomUint64();
+              getActivePatch(project).outputs[id.toString()] =
+                createNewWledOutput();
+              save('Create WLED output.');
+              setTabKey(id.toString());
+              setShowNewOutputDialog(false);
+            }}
+          >
+            WLED Output
+          </Button>
+        </Modal>
+      )}
     </div>
   );
 }

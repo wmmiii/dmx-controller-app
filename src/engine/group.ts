@@ -133,6 +133,7 @@ export function getApplicableMembers(
     getActivePatch(project).outputs,
   )) {
     switch (output.output.case) {
+      case 'sacnDmxOutput':
       case 'serialDmxOutput':
         {
           const dmxOutput = output.output.value;
@@ -232,6 +233,7 @@ export function getAllFixtures(
       getActivePatch(project).outputs,
     )) {
       switch (output.output.case) {
+        case 'sacnDmxOutput':
         case 'serialDmxOutput':
           for (const fixtureId of Object.keys(output.output.value.fixtures)) {
             fixtureIds.add(

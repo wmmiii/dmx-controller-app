@@ -123,7 +123,10 @@ export function DmxFixtureList({
                     onDragStart={() => {
                       const newFixtureId = randomUint64();
                       const output = getOutput(project, outputId);
-                      if (output.output.case !== 'serialDmxOutput') {
+                      if (
+                        output.output.case !== 'serialDmxOutput' &&
+                        output.output.case !== 'sacnDmxOutput'
+                      ) {
                         throw Error('Tried to edit non DMX output!');
                       }
                       output.output.value.fixtures[newFixtureId.toString()] =
@@ -132,7 +135,7 @@ export function DmxFixtureList({
                           // -1 is transient.
                           // This should always be set before saving.
                           channelOffset: -1,
-                          fixtureDefinitionId: id,
+                          fixtureDefinitionId: BigInt(id),
                           fixtureMode: e[0],
                         });
                       setDragFixtureId(newFixtureId);
@@ -141,7 +144,10 @@ export function DmxFixtureList({
                     onDragEnd={() => {
                       if (dragFixtureId != null) {
                         const output = getOutput(project, outputId);
-                        if (output.output.case !== 'serialDmxOutput') {
+                        if (
+                          output.output.case !== 'serialDmxOutput' &&
+                          output.output.case !== 'sacnDmxOutput'
+                        ) {
                           throw Error('Tried to edit non DMX output!');
                         }
                         const fixture =

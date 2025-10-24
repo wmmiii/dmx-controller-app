@@ -28,8 +28,8 @@ impl SacnState {
 pub fn output_sacn_dmx(
     state: State<SacnState>,
     universe: u16,
-    data: Vec<u8>,
     ip_address: String,
+    data: Vec<u8>,
 ) -> Result<(), String> {
     // Prepend DMX start code (0x00) to the data
     let mut dmx_data = Vec::with_capacity(513);
@@ -53,6 +53,8 @@ pub fn output_sacn_dmx(
     let result = source.send(&[universe], &dmx_data, Some(100), Some(socket_addr), None);
 
     result.map_err(|e| format!("Failed to send sACN DMX data: {}", e))?;
+
+    println!("WE DID IT!!!");
 
     Ok(())
 }

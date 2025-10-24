@@ -20,6 +20,24 @@ $channel-size: 100px;
   flex: 1;
 }
 
+.body {
+  @include vars.fill;
+
+  display: flex;
+  flex-direction: column;
+
+  & label {
+    flex-shrink: 0;
+    margin: 0 vars.spacing(2);
+    min-height: 0;
+  }
+
+  & > div {
+    flex: 1;
+    position: relative;
+  }
+}
+
 .splitPane {
   @include vars.fill;
 }

@@ -8,7 +8,21 @@ import { mapDegrees } from '../fixtures/fixture';
 
 export type DmxUniverse = number[];
 
-export function createNewDmxOutput() {
+export function createNewSacnDmxOutput() {
+  return create(OutputSchema, {
+    name: 'DMX SACN Output',
+    latencyMs: 0,
+    output: {
+      case: 'sacnDmxOutput',
+      value: {
+        ipAddress: "0.0.0.0",
+        fixtures: {},
+      },
+    },
+  });
+}
+
+export function createNewSerialDmxOutput() {
   return create(OutputSchema, {
     name: 'DMX Serial Output',
     latencyMs: 0,
@@ -59,14 +73,14 @@ function applyDefaults(
 ): number[] {
   const nonInterpolatedIndices: number[] = [];
   const output = getOutput(project, outputId);
-  if (output.output.case !== 'serialDmxOutput') {
+  if (output.output.case !== 'serialDmxOutput' && output.output.case !== 'sacnDmxOutput') {
     throw Error('Tried to apply DMX defaults to non-DMX output!');
   }
   const fixtures = output.output.value.fixtures;
   for (const fixture of Object.values(fixtures)) {
     const fixtureDefinition =
       project.fixtureDefinitions?.dmxFixtureDefinitions[
-        fixture.fixtureDefinitionId
+      fixture.fixtureDefinitionId.toString()
       ];
     // Can happen if fixture has not yet set a definition.
     if (!fixtureDefinition) {

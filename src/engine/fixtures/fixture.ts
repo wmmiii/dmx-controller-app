@@ -50,6 +50,7 @@ export function getAvailableChannels(
   for (const fixtureId of fixtureIds) {
     const output = getOutput(project, fixtureId.output);
     switch (output.output.case) {
+      case 'sacnDmxOutput':
       case 'serialDmxOutput':
         getDmxFixtureChannels(
           project,
@@ -83,6 +84,7 @@ export function deleteFixture(project: Project, fixtureId: QualifiedFixtureId) {
 
   const output = getOutput(project, fixtureId.output).output;
   switch (output.case) {
+    case 'sacnDmxOutput':
     case 'serialDmxOutput':
       delete output.value.fixtures[fixtureId.fixture.toString()];
       break;

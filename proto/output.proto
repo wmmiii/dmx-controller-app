@@ -32,11 +32,18 @@ message SerialDmxOutput {
   map<uint64, PhysicalDmxFixture> fixtures = 1;
 }
 
+message SacnDmxOutput {
+  uint32 universe = 1;
+  string ip_address = 2;
+  map<uint64, PhysicalDmxFixture> fixtures = 3;
+}
+
 message Output {
   string name = 1;
   uint32 latency_ms = 2;
 
   oneof output {
+    SacnDmxOutput sacnDmxOutput = 5;
     SerialDmxOutput serialDmxOutput = 3;
     WledOutput wledOutput = 4;
   }

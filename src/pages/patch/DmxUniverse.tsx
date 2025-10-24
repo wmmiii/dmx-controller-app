@@ -3,6 +3,7 @@ import { JSX, useContext, useMemo, useState } from 'react';
 
 import {
   QualifiedFixtureIdSchema,
+  SacnDmxOutput,
   SerialDmxOutput,
 } from '@dmx-controller/proto/output_pb';
 import { Button } from '../../components/Button';
@@ -12,13 +13,15 @@ import { Warning } from '../../components/Warning';
 import { ProjectContext } from '../../contexts/ProjectContext';
 import { ANGLE_CHANNELS } from '../../engine/channel';
 import { deleteFixture } from '../../engine/fixtures/fixture';
-import { getActivePatch, getOutput } from '../../util/projectUtils';
+import { getOutput } from '../../util/projectUtils';
 
 import {
   DmxFixtureDefinition,
   PhysicalDmxFixture,
 } from '@dmx-controller/proto/dmx_pb';
 import styles from './PatchPage.module.scss';
+
+type DmxOutput = SacnDmxOutput | SerialDmxOutput;
 
 interface DmxUniverse {
   outputId: bigint;
@@ -36,12 +39,11 @@ export function DmxUniverse({
     null,
   );
 
-  getOutput(project, outputId);
   const selectedFixture = useMemo(() => {
     if (!selectedFixtureId) {
       return undefined;
     }
-    const output = getOutput(project, outputId).output.value as SerialDmxOutput;
+    const output = getOutput(project, outputId).output.value as DmxOutput;
     return output.fixtures[selectedFixtureId?.toString()];
   }, [project, selectedFixtureId]);
 
@@ -58,8 +60,7 @@ export function DmxUniverse({
     }
 
     // Map all fixtures to their channels.
-    const output = getActivePatch(project).outputs[outputId.toString()].output
-      .value as SerialDmxOutput;
+    const output = getOutput(project, outputId).output.value as DmxOutput;
     for (const f of Object.entries(output.fixtures)) {
       const id = f[0];
       const fixture = f[1];
@@ -70,7 +71,7 @@ export function DmxUniverse({
 
       const definition =
         project.fixtureDefinitions!.dmxFixtureDefinitions[
-          fixture.fixtureDefinitionId
+          fixture.fixtureDefinitionId.toString()
         ];
 
       const mode = definition?.modes[fixture.fixtureMode];
@@ -155,8 +156,8 @@ export function DmxUniverse({
               </div>
             );
           } else {
-            const output = getActivePatch(project).outputs[outputId.toString()]
-              .output.value as SerialDmxOutput;
+            const output = getOutput(project, outputId).output
+              .value as DmxOutput;
             return (
               <div
                 key={i}
@@ -194,7 +195,7 @@ export function DmxUniverse({
               throw new Error('SelectedFixture ID was not set!');
             }
             const output = getOutput(project, outputId).output
-              .value as SerialDmxOutput;
+              .value as DmxOutput;
             const name = output.fixtures[selectedFixtureId.toString()].name;
             deleteFixture(
               project,
@@ -228,7 +229,7 @@ function EditFixtureDialog({
   const definition: DmxFixtureDefinition | undefined = useMemo(
     () =>
       project.fixtureDefinitions!.dmxFixtureDefinitions[
-        fixture.fixtureDefinitionId
+        fixture.fixtureDefinitionId.toString()
       ],
     [project, fixture],
   );
@@ -264,19 +265,19 @@ function EditFixtureDialog({
       <label>
         <span>Profile</span>
         <select
-          value={fixture.fixtureDefinitionId}
+          value={fixture.fixtureDefinitionId.toString()}
           onChange={(e) => {
-            fixture.fixtureDefinitionId = e.target.value;
+            fixture.fixtureDefinitionId = BigInt(e.target.value);
             fixture.fixtureMode = Object.keys(
               project.fixtureDefinitions!.dmxFixtureDefinitions[
-                fixture.fixtureDefinitionId
+                fixture.fixtureDefinitionId.toString()
               ].modes,
             )[0];
             let definitionName = '<unset>';
-            if (fixture.fixtureDefinitionId !== '') {
+            if (fixture.fixtureDefinitionId.toString() !== '') {
               definitionName =
                 project.fixtureDefinitions!.dmxFixtureDefinitions[
-                  fixture.fixtureDefinitionId
+                  fixture.fixtureDefinitionId.toString()
                 ].name;
             }
             save(
@@ -303,7 +304,7 @@ function EditFixtureDialog({
             if (fixture.fixtureMode !== '') {
               modeName =
                 project.fixtureDefinitions!.dmxFixtureDefinitions[
-                  fixture.fixtureDefinitionId
+                  fixture.fixtureDefinitionId.toString()
                 ].modes[fixture.fixtureMode].name;
             }
             save(`Change fixture profile for ${fixture.name} to ${modeName}`);
@@ -314,7 +315,7 @@ function EditFixtureDialog({
           </option>
           {Object.entries(
             project.fixtureDefinitions!.dmxFixtureDefinitions[
-              fixture.fixtureDefinitionId
+              fixture.fixtureDefinitionId.toString()
             ]?.modes || {},
           )
             .sort((a, b) => a[1].name.localeCompare(b[1].name))
@@ -324,7 +325,8 @@ function EditFixtureDialog({
               </option>
             ))}
         </select>
-        {(fixture.fixtureDefinitionId == '' || fixture.fixtureMode == '') && (
+        {(fixture.fixtureDefinitionId.toString() == '' ||
+          fixture.fixtureMode == '') && (
           <Warning title="Fixture does not have profile set!" />
         )}
       </label>
