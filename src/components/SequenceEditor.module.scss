@@ -1,6 +1,6 @@
 @use '../_vars';
 
-.universe-sequence-editor {
+.sequence-editor {
   @include vars.fill;
 
   background-color: vars.$col-bg;

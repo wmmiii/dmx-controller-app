@@ -12,11 +12,11 @@ import {
   type Effect,
   type Effect_RampEffect,
 } from '@dmx-controller/proto/effect_pb';
-import { type LightLayer } from '@dmx-controller/proto/light_layer_pb';
+import { type Layer } from '@dmx-controller/proto/light_layer_pb';
 import { type Project } from '@dmx-controller/proto/project_pb';
 import { type Scene_Tile_SequenceTile } from '@dmx-controller/proto/scene_pb';
 
-import { SEQUENCE_BEAT_RESOLUTION } from '../components/UniverseSequenceEditor';
+import { SEQUENCE_BEAT_RESOLUTION } from '../components/SequenceEditor';
 import { hsvToColor, interpolatePalettes } from '../util/colorUtil';
 import { getTileDurationMs } from '../util/tile';
 
@@ -294,7 +294,7 @@ export function renderScene(
           }
         }
 
-        renderUniverseSequence(
+        renderSequence(
           sequenceT,
           frame,
           sequence,
@@ -338,15 +338,15 @@ export function renderGroupDebug(
   }
 }
 
-function renderUniverseSequence(
+function renderSequence(
   t: number,
   frame: number,
-  universeSequence: Scene_Tile_SequenceTile,
+  Sequence: Scene_Tile_SequenceTile,
   project: Project,
   colorPalette: ColorPalette,
   output: WritableOutput,
 ) {
-  if (universeSequence) {
+  if (Sequence) {
     const writableDeviceCache = new WritableDeviceCache(
       project,
       output.outputId,
@@ -360,7 +360,7 @@ function renderUniverseSequence(
       writableDeviceCache: writableDeviceCache,
     };
 
-    for (const track of universeSequence.lightTracks) {
+    for (const track of Sequence.lightTracks) {
       if (track.outputTarget == null) {
         continue;
       }
@@ -386,7 +386,7 @@ function renderUniverseSequence(
 
 function renderLayers(
   t: number,
-  layers: LightLayer[],
+  layers: Layer[],
   context: RenderContext,
   beatMetadata: BeatMetadata,
   frame: number,

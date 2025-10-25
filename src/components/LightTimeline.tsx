@@ -1,6 +1,4 @@
 import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
-import { Effect as EffectProto } from '@dmx-controller/proto/effect_pb';
-import { LightTrack as LightTrackProto } from '@dmx-controller/proto/light_track_pb';
 import {
   JSX,
   useCallback,
@@ -14,129 +12,80 @@ import {
 import { EffectRenderingContext } from '../contexts/EffectRenderingContext';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { ShortcutContext } from '../contexts/ShortcutContext';
-import { getAvailableChannels } from '../engine/fixtures/fixture';
 
+import { OutputTarget } from '@dmx-controller/proto/output_pb';
+import { Effect, Show_Output } from '@dmx-controller/proto/timecoded_pb';
 import { BiPlus, BiZoomIn, BiZoomOut } from 'react-icons/bi';
+import { getAvailableChannels } from '../engine/fixtures/fixture';
 import { AudioController, AudioTrackVisualizer } from './AudioTrackVisualizer';
 import { Button } from './Button';
-import { EffectAddress, EffectDetails, EffectSelectContext } from './Effect';
 import { NumberInput } from './Input';
 import styles from './LightTimeline.module.scss';
 import { LightTrack, MappingFunctions } from './LightTrack';
 import { getOutputTargetName } from './OutputSelector';
 import { Spacer } from './Spacer';
 import { HorizontalSplitPane } from './SplitPane';
+import { EffectDetails } from './TimecodeEffect';
 
 export const LEFT_WIDTH = 180;
 
 export default function LightTimeline(props: TracksProps): JSX.Element {
-  const { setShortcuts } = useContext(ShortcutContext);
-  const { project, save } = useContext(ProjectContext);
-  const [selectedAddress, setSelectedAddress] = useState<EffectAddress | null>(
-    null,
-  );
-  const [copyEffect, setCopyEffect] = useState<EffectProto | null>(null);
+  const { project } = useContext(ProjectContext);
 
-  const [selectedEffect, availableChannels] = useMemo(() => {
-    if (selectedAddress == null) {
-      return [null, []];
-    }
-    const s = selectedAddress;
-    return [
-      props.lightTracks[s.track]?.layers[s.layer]?.effects[s.effect] || null,
-      getAvailableChannels(props.lightTracks[s.track]?.outputTarget, project),
-    ];
-  }, [props.lightTracks, selectedAddress]);
-
-  const outputType = useMemo(() => {
-    if (selectedAddress == null) {
-      return null;
-    }
-    return props.lightTracks[selectedAddress.track].outputTarget?.output.case;
-  }, [props.lightTracks, selectedAddress]);
-
-  const deleteSelected = useCallback(() => {
-    if (selectedAddress == null) {
-      return;
-    }
-    const s = selectedAddress;
-    props.lightTracks[s.track].layers[s.layer].effects.splice(s.effect, 1);
-    save('Delete effect.');
-    setSelectedAddress(null);
-  }, [selectedAddress, props.lightTracks]);
-
-  useEffect(
+  const availableChannels = useMemo(
     () =>
-      setShortcuts([
-        {
-          shortcut: { key: 'Escape' },
-          action: () => setSelectedAddress(null),
-          description: 'Deselect the currently selected effect.',
-        },
-        {
-          shortcut: { key: 'Delete' },
-          action: deleteSelected,
-          description: 'Delete the currently selected effect.',
-        },
-        {
-          shortcut: { key: 'KeyC', modifiers: ['ctrl'] },
-          action: () => setCopyEffect(selectedEffect),
-          description: 'Copy currently selected effect to clipboard.',
-        },
-      ]),
-    [
-      setSelectedAddress,
-      selectedAddress,
-      deleteSelected,
-      setCopyEffect,
-      selectedEffect,
-    ],
+      getAvailableChannels(
+        props.selectedEffect?.outputTarget || undefined,
+        project,
+      ),
+    [props.selectedEffect, project],
   );
 
   return (
-    <EffectSelectContext.Provider
-      value={{
-        selectedEffect: selectedEffect,
-        deleteSelectedEffect: deleteSelected,
-        selectEffect: (address) => setSelectedAddress(address),
-        copyEffect: copyEffect,
-      }}
-    >
-      <HorizontalSplitPane
-        className={styles.wrapper}
-        defaultAmount={0.8}
-        left={<Tracks {...props} />}
-        right={
-          selectedEffect ? (
-            <EffectDetails
-              className={styles.effectDetails}
-              effect={selectedEffect}
-              showPhase={outputType === 'group'}
-              availableChannels={availableChannels}
-            />
-          ) : (
-            <div className={styles.effectDetailsPlaceholder}>
-              Select an effect to view details.
-            </div>
-          )
-        }
-      />
-    </EffectSelectContext.Provider>
+    <HorizontalSplitPane
+      className={styles.wrapper}
+      defaultAmount={0.8}
+      left={<Tracks {...props} />}
+      right={
+        props.selectedEffect ? (
+          <EffectDetails
+            className={styles.effectDetails}
+            effect={props.selectedEffect.effect.effect!}
+            showPhase={
+              props.selectedEffect.outputTarget?.output.case == null ||
+              props.selectedEffect.outputTarget?.output.case === 'group'
+            }
+            availableChannels={availableChannels}
+          />
+        ) : (
+          <div className={styles.effectDetailsPlaceholder}>
+            Select an effect to view details.
+          </div>
+        )
+      }
+    />
   );
+}
+
+export interface LightTimelineEffect {
+  effect: Effect;
+  outputTarget: OutputTarget | null;
 }
 
 interface TracksProps {
   audioBlob: Blob | undefined;
   audioDuration: number;
   setAudioDuration: (duration: number) => void;
-  loop?: boolean;
+  selectedEffect: LightTimelineEffect | null;
+  setSelectedEffect: (e: LightTimelineEffect | null) => void;
+  copyEffect: Effect | null;
   beatMetadata: BeatMetadata | undefined;
   beatSubdivisions: number;
   setBeatSubdivisions: (subdivisions: number) => void;
   headerOptions: JSX.Element;
   headerControls?: JSX.Element;
   leftOptions: JSX.Element;
-  lightTracks: LightTrackProto[];
+  outputs: Show_Output[];
   swap?: (a: number, b: number) => void;
   addLayer?: () => void;
   audioToTrack?: (t: number) => number;
@@ -147,14 +96,16 @@ function Tracks({
   audioBlob,
   audioDuration,
   setAudioDuration,
-  loop,
+  selectedEffect,
+  setSelectedEffect,
+  copyEffect,
   beatMetadata,
   beatSubdivisions,
   setBeatSubdivisions,
   headerOptions,
   headerControls,
   leftOptions,
-  lightTracks,
+  outputs,
   swap,
   addLayer,
   audioToTrack,
@@ -345,7 +296,6 @@ function Tracks({
           minPxPerSec={minPxPerSec}
           beatSubdivisions={beatSubdivisions}
           onProgress={setT}
-          loop={loop}
         />
       </div>
       <div className={styles.lightTracks}>
@@ -362,19 +312,30 @@ function Tracks({
           }}
         >
           <div className={styles.tracks}>
-            {lightTracks.map((t: LightTrackProto, i) => (
+            {outputs.map((o, i) => (
               <LightTrack
                 key={i}
-                trackIndex={i}
-                track={t}
+                output={o}
+                selectedEffect={selectedEffect?.effect || null}
+                setSelectedEffect={(effect) => {
+                  if (!effect) {
+                    setSelectedEffect(null);
+                  } else {
+                    setSelectedEffect({
+                      effect: effect,
+                      outputTarget: o.outputTarget || null,
+                    });
+                  }
+                }}
+                copyEffect={copyEffect}
                 maxMs={
                   audioToTrack ? audioToTrack(audioDuration) : audioDuration
                 }
                 leftWidth={LEFT_WIDTH}
                 mappingFunctions={mappingFunctions}
                 deleteTrack={() => {
-                  const name = getOutputTargetName(project, t.outputTarget);
-                  lightTracks.splice(i, 1);
+                  const name = getOutputTargetName(project, o.outputTarget);
+                  outputs.splice(i, 1);
                   save(`Delete track for ${name}.`);
                 }}
                 swapUp={

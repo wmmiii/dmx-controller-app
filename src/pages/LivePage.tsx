@@ -8,18 +8,15 @@ import {
   Scene_TileSchema,
   Scene_Tile_EffectGroupTileSchema,
   Scene_Tile_EffectGroupTile_EffectChannelSchema,
-  Scene_Tile_SequenceTileSchema,
   type Scene,
   type Scene_Tile,
   type Scene_TileMap,
   type Scene_Tile_EffectGroupTile,
-  type Scene_Tile_SequenceTile,
 } from '@dmx-controller/proto/scene_pb';
 import { JSX, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Button, IconButton } from '../components/Button';
 import { ControllerConnection } from '../components/ControllerConnection';
-import { EffectDetails } from '../components/Effect';
 import {
   EditableText,
   NumberInput,
@@ -33,9 +30,10 @@ import {
   getOutputTargetName,
 } from '../components/OutputSelector';
 import { PaletteSwatch } from '../components/Palette';
+import { SequenceEditor } from '../components/SequenceEditor';
 import { HorizontalSplitPane } from '../components/SplitPane';
 import { TileGrid } from '../components/TileGrid';
-import { UniverseSequenceEditor } from '../components/UniverseSequenceEditor';
+import { EffectDetails } from '../components/TimecodeEffect';
 import { ControllerContext } from '../contexts/ControllerContext';
 import { PaletteContext } from '../contexts/PaletteContext';
 import { ProjectContext } from '../contexts/ProjectContext';
@@ -46,6 +44,7 @@ import {
 } from '../engine/render';
 
 import { BeatMetadataSchema } from '@dmx-controller/proto/beat_pb';
+import { SequenceSchema } from '@dmx-controller/proto/timecoded_pb';
 import { BiPlus, BiTrash } from 'react-icons/bi';
 import { Spacer } from '../components/Spacer';
 import { Tabs, TabsType } from '../components/Tabs';
@@ -452,8 +451,8 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
                 name={tile.name}
               />
             )}
-            {tile.description.case === 'sequence' && (
-              <SequenceEditor sequence={tile.description.value} />
+            {tile.description.case === 'sequenceId' && (
+              <SequenceEditor sequenceId={tile.description.value} />
             )}
           </>
         }
@@ -544,7 +543,7 @@ interface AddNewDialogProps {
 }
 
 function AddNewDialog({ scene, x, y, onSelect, onClose }: AddNewDialogProps) {
-  const { save } = useContext(ProjectContext);
+  const { project, save } = useContext(ProjectContext);
 
   const addTile = (
     description: Scene_Tile['description'],
@@ -555,8 +554,8 @@ function AddNewDialog({ scene, x, y, onSelect, onClose }: AddNewDialogProps) {
       name: 'New Tile',
       description: description,
       duration: {
-        case: 'durationMs',
-        value: 1000,
+        case: 'durationBeat',
+        value: 1,
       },
       transition: {
         case: 'startFadeInMs',
@@ -618,12 +617,20 @@ function AddNewDialog({ scene, x, y, onSelect, onClose }: AddNewDialogProps) {
       <Button
         icon={<BiPlus />}
         onClick={() => {
+          const id = randomUint64();
+          project.sequences[id.toString()] = create(SequenceSchema, {
+            nativeBeats: 1,
+            layers: [
+              {
+                effects: [],
+              },
+            ],
+          });
+
           const tile = addTile(
             {
-              case: 'sequence',
-              value: create(Scene_Tile_SequenceTileSchema, {
-                nativeBeats: 1,
-              }),
+              case: 'sequenceId',
+              value: id,
             },
             x,
             y,
@@ -639,21 +646,6 @@ function AddNewDialog({ scene, x, y, onSelect, onClose }: AddNewDialogProps) {
   );
 }
 
-interface SequenceEditorProps {
-  sequence: Scene_Tile_SequenceTile;
-}
-
-function SequenceEditor({ sequence }: SequenceEditorProps) {
-  return (
-    <div className={styles.detailsPane}>
-      <UniverseSequenceEditor
-        className={styles.detailsPane}
-        sequence={sequence}
-      />
-    </div>
-  );
-}
-
 function createEffectChannel() {
   return create(Scene_Tile_EffectGroupTile_EffectChannelSchema, {
     effect: {
@@ -663,8 +655,6 @@ function createEffectChannel() {
           state: {},
         },
       },
-      startMs: 0,
-      endMs: 4_294_967_295,
     },
     outputTarget: {
       output: {

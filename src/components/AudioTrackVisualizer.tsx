@@ -36,7 +36,6 @@ interface AudioTrackVisualizerProps {
   setTotalDuration?: (ms: number) => void;
   minPxPerSec: number;
   beatSubdivisions?: number;
-  loop?: boolean;
   className?: string;
 }
 
@@ -50,7 +49,6 @@ export function AudioTrackVisualizer({
   setTotalDuration,
   minPxPerSec,
   beatSubdivisions,
-  loop,
   className,
 }: AudioTrackVisualizerProps): JSX.Element {
   const { setShortcuts } = useContext(ShortcutContext);
@@ -127,20 +125,6 @@ export function AudioTrackVisualizer({
       () => ws.un('scroll', callback);
     }
   }, [ws, setVisible]);
-
-  // Add loop callback.
-  useEffect(() => {
-    if (ws && loop) {
-      const callback = (t: number) => {
-        if (ws.getDuration() - t < 0.14) {
-          ws.setTime(0);
-        }
-      };
-      ws.on('timeupdate', callback);
-
-      () => ws.un('timeupdate', callback);
-    }
-  }, [ws, loop]);
 
   // Set zoom level.
   useEffect(() => {

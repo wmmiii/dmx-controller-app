@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-package dmx_controller;
-
-import "proto/effect.proto";
-
-message LightLayer { repeated Effect effects = 1; }

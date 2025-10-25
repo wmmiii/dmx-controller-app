@@ -1,40 +1,55 @@
 import { create } from '@bufbuild/protobuf';
-import { LightTrackSchema } from '@dmx-controller/proto/light_track_pb';
-import {
-  ShowSchema,
-  Show_AudioTrackSchema,
-  type Show,
-} from '@dmx-controller/proto/show_pb';
 import { JSX, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Button } from '../components/Button';
 import { TextInput } from '../components/Input';
-import LightTimeline from '../components/LightTimeline';
+import LightTimeline, {
+  LightTimelineEffect,
+} from '../components/LightTimeline';
 import { Modal } from '../components/Modal';
 import { PaletteContext } from '../contexts/PaletteContext';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { DEFAULT_COLOR_PALETTE, renderShow } from '../engine/render';
-import { UNSET_INDEX, idMapToArray } from '../util/mapUtils';
+import { idMapToArray, UNSET_INDEX } from '../util/mapUtils';
 
+import { Project } from '@dmx-controller/proto/project_pb';
+import {
+  Effect,
+  Show_AudioTrackSchema,
+  Show_OutputSchema,
+  ShowSchema,
+} from '@dmx-controller/proto/timecoded_pb';
 import { RenderingContext } from '../contexts/RenderingContext';
+import { ShortcutContext } from '../contexts/ShortcutContext';
 import { WritableOutput } from '../engine/context';
+import { randomUint64 } from '../util/numberUtils';
 import styles from './ShowPage.module.scss';
 
-const DEFAULT_SHOW = create(ShowSchema, {
-  name: 'Untitled Show',
-  audioTrack: {
-    audioFileId: UNSET_INDEX + 1,
-  },
-  lightTracks: [
-    {
-      collapsed: false,
-      layers: [],
+function createShow(project: Project) {
+  const audioFiles = Object.keys(project.assets?.audioFiles || {});
+  if (audioFiles.length == 0) {
+    throw new Error('Tried to create show without audio file!');
+  }
+
+  const id = randomUint64();
+  project.shows[id.toString()] = create(ShowSchema, {
+    name: 'Untitled Show',
+    audioTrack: {
+      audioFileId: BigInt(audioFiles[0]),
     },
-  ],
-});
+    outputs: [
+      {
+        collapsed: false,
+        layers: [],
+      },
+    ],
+  });
+  return id;
+}
 
 export default function ShowPage(): JSX.Element {
   const { project, save } = useContext(ProjectContext);
+  const { setShortcuts } = useContext(ShortcutContext);
   const { setRenderFunction, clearRenderFunction } =
     useContext(RenderingContext);
 
@@ -44,8 +59,12 @@ export default function ShowPage(): JSX.Element {
 
   const [showDetailsModal, setShowDetailsModal] = useState(false);
 
+  const [selectedEffect, setSelectedEffect] =
+    useState<LightTimelineEffect | null>(null);
+  const [copyEffect, setCopyEffect] = useState<Effect | null>(null);
+
   const show = useMemo(
-    () => project?.shows[project.selectedShow || 0],
+    () => project?.shows[project.selectedShow.toString()],
     [project],
   );
 
@@ -57,13 +76,33 @@ export default function ShowPage(): JSX.Element {
     return () => clearRenderFunction(render);
   }, [project, t]);
 
+  useEffect(
+    () =>
+      setShortcuts([
+        {
+          shortcut: { key: 'Escape' },
+          action: () => setSelectedEffect(null),
+          description: 'Deselect the currently selected effect.',
+        },
+        {
+          shortcut: { key: 'KeyC', modifiers: ['ctrl'] },
+          action: () => setCopyEffect(selectedEffect?.effect || null),
+          description: 'Copy currently selected effect to clipboard.',
+        },
+      ]),
+    [setSelectedEffect, setCopyEffect, selectedEffect],
+  );
+
   const audioFile = useMemo(() => {
     if (show?.audioTrack?.audioFileId != null) {
-      return project?.assets?.audioFiles[show?.audioTrack.audioFileId];
+      return project?.assets?.audioFiles[
+        show?.audioTrack.audioFileId.toString()
+      ];
     } else {
       return undefined;
     }
   }, [show?.audioTrack?.audioFileId, project]);
+
   const audioBlob = useMemo(() => {
     if (!audioFile) {
       return undefined;
@@ -75,7 +114,7 @@ export default function ShowPage(): JSX.Element {
 
   const beatMetadata = audioFile?.beatMetadata;
 
-  if (project?.shows == null || (project.shows?.length || 0) === 0) {
+  if (project?.shows == null || Object.entries(project.shows).length === 0) {
     if (Object.keys(project?.assets || {}).length === 0) {
       return (
         <p>
@@ -88,7 +127,7 @@ export default function ShowPage(): JSX.Element {
         <>
           <Button
             onClick={() => {
-              project.shows = [DEFAULT_SHOW];
+              project.selectedShow = createShow(project);
               save('Create default show.');
             }}
           >
@@ -113,6 +152,9 @@ export default function ShowPage(): JSX.Element {
         audioBlob={audioBlob}
         audioDuration={audioDuration}
         setAudioDuration={setAudioDuration}
+        selectedEffect={selectedEffect}
+        setSelectedEffect={setSelectedEffect}
+        copyEffect={copyEffect}
         beatMetadata={beatMetadata}
         beatSubdivisions={beatSubdivisions}
         setBeatSubdivisions={setBeatSubdivisions}
@@ -123,19 +165,18 @@ export default function ShowPage(): JSX.Element {
             <select
               onChange={(e) => {
                 if (e.target.value === '-1') {
-                  project.shows.push(DEFAULT_SHOW);
-                  project.selectedShow = project.shows.length - 1;
+                  createShow(project);
                 } else {
-                  project.selectedShow = parseInt(e.target.value);
+                  project.selectedShow = BigInt(e.target.value);
                 }
                 save(
-                  `Set selected show to ${project.shows[project.selectedShow].name}.`,
+                  `Set selected show to ${project.shows[project.selectedShow.toString()].name}.`,
                 );
               }}
-              value={project?.selectedShow || 0}
+              value={project.selectedShow.toString() || '0'}
             >
-              {project?.shows.map((s: Show, i: number) => (
-                <option key={i} value={i}>
+              {Object.entries(project?.shows || {}).map(([id, s]) => (
+                <option key={id} value={id}>
                   {s.name}
                 </option>
               ))}
@@ -153,11 +194,11 @@ export default function ShowPage(): JSX.Element {
             <select
               onChange={(e) => {
                 show.audioTrack = create(Show_AudioTrackSchema, {
-                  audioFileId: parseInt(e.target.value),
+                  audioFileId: BigInt(e.target.value),
                 });
                 save(`Set audio track for show ${show.name}.`);
               }}
-              value={show?.audioTrack?.audioFileId}
+              value={show?.audioTrack?.audioFileId.toString()}
             >
               <option value={UNSET_INDEX}>&lt;Unset&gt;</option>
               {idMapToArray(project?.assets?.audioFiles).map(([id, f]) => (
@@ -168,14 +209,14 @@ export default function ShowPage(): JSX.Element {
             </select>
           </>
         }
-        lightTracks={show.lightTracks}
+        outputs={show.outputs}
         swap={(a, b) => {
-          const temp = show.lightTracks[a];
-          show.lightTracks[a] = show.lightTracks[b];
-          show.lightTracks[b] = temp;
+          const temp = show.outputs[a];
+          show.outputs[a] = show.outputs[b];
+          show.outputs[b] = temp;
         }}
         addLayer={() => {
-          show?.lightTracks.push(create(LightTrackSchema, {}));
+          show.outputs.push(create(Show_OutputSchema, {}));
           save(`Add layer to show ${show.name}.`);
         }}
         t={t}
@@ -200,8 +241,8 @@ export default function ShowPage(): JSX.Element {
               <Button
                 variant="warning"
                 onClick={() => {
-                  project.shows.splice(project.selectedShow, 1);
-                  project.selectedShow = 0;
+                  delete project.shows[project.selectedShow.toString()];
+                  project.selectedShow = BigInt(Object.keys(project.shows)[0]);
                   save(`Delete show ${show.name}.`);
                   setShowDetailsModal(false);
                 }}

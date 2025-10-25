@@ -118,8 +118,6 @@ message Effect {
     }
   }
 
-  uint32 start_ms = 1;
-  uint32 end_ms = 2;
   reserved 3 to 10;
 
   reserved 19 to 100;
@@ -130,7 +128,10 @@ message Effect {
     StrobeEffect strobe_effect = 103;
     RandomEffect random_effect = 104;
   }
+
   // Deprecated
+  reserved 1; // uint32 start_ms = 1;
+  reserved 2; // uint32 end_ms = 2;
   reserved 11; // EffectTiming timing_mode = 11 [deprecated = true];
   reserved 12; // Deprecated offset_ms
   reserved 13; // double timing_multiplier = 13 [deprecated = true];

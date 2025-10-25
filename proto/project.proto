@@ -8,11 +8,11 @@ import "proto/controller.proto";
 import "proto/fixture_definitions.proto";
 import "proto/output.proto";
 import "proto/scene.proto";
-import "proto/show.proto";
+import "proto/timecoded.proto";
 
 message Project {
   message Assets {
-    map<uint32, AudioFile> audio_files = 2;
+    map<uint64, AudioFile> audio_files = 2;
 
     reserved 1; // repeated AudioFile deprecated_audio_files = 1 [ deprecated = true ];
   }
@@ -29,11 +29,11 @@ message Project {
 
   Assets assets = 21;
 
-  repeated Show shows = 31;
-  int32 selected_show = 32;
+  map<uint64, timecoded.Show> shows = 31;
+  uint64 selected_show = 32;
 
   // Fixture sequence 0 is reserved for the "unset" sequence.
-  reserved 42; // universe_sequences
+  map<uint64, timecoded.Sequence> sequences = 33;
 
   // Scene 0 is reserved for the "unset" scene.
   map<uint64, Scene> scenes = 56;

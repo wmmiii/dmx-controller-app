@@ -5,7 +5,7 @@ import {
   type ColorPalette,
 } from '@dmx-controller/proto/color_pb';
 import {
-  EffectSchema,
+  Effect,
   EffectTiming,
   Effect_RampEffectSchema,
   Effect_RampEffect_EasingFunction,
@@ -13,7 +13,6 @@ import {
   Effect_StaticEffectSchema,
   Effect_StrobeEffectSchema,
   FixtureStateSchema,
-  type Effect as EffectProto,
   type Effect_RampEffect,
   type Effect_RandomEffect,
   type Effect_StaticEffect,
@@ -22,13 +21,10 @@ import {
   type FixtureState as FixtureStateProto,
 } from '@dmx-controller/proto/effect_pb';
 import {
-  CSSProperties,
-  JSX,
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-} from 'react';
+  Effect as TimecodeEffectProto,
+  EffectSchema as TimecodeEffectSchema,
+} from '@dmx-controller/proto/timecoded_pb';
+import { CSSProperties, JSX, useContext, useEffect, useState } from 'react';
 import {
   BiDice6,
   BiLineChart,
@@ -54,47 +50,36 @@ import {
 import IconPanTilt from '../icons/IconPanTilt';
 import IconRgb from '../icons/IconRgb';
 import { Button, IconButton } from './Button';
-import styles from './Effect.module.scss';
 import { EffectState } from './EffectState';
 import { NumberInput, ToggleInput } from './Input';
 import { Spacer } from './Spacer';
+import styles from './TimecodeEffect.module.scss';
 
-export interface EffectAddress {
-  track: number;
-  layer: number;
-  effect: number;
-}
-
-export const EffectSelectContext = createContext({
-  selectedEffect: null as EffectProto | null,
-  deleteSelectedEffect: () => {},
-  selectEffect: (_selected: EffectAddress) => {},
-  copyEffect: null as EffectProto | null,
-});
-
-interface EffectProps {
+interface TimecodeEffectProps {
   className: string;
   style: CSSProperties;
-  address: EffectAddress;
-  effect: EffectProto;
+  timecodeEffect: TimecodeEffectProto;
+  selectedEffect: TimecodeEffectProto | null;
+  setSelectedEffect: (e: TimecodeEffectProto) => void;
+  copyEffect: TimecodeEffectProto | null;
   minMs: number;
   maxMs: number;
   pxToMs: (px: number) => number;
   snapToBeat: (t: number) => number;
 }
 
-export function Effect({
+export function TimecodeEffect({
   className,
   style: originalStyle,
-  address,
-  effect,
+  timecodeEffect,
+  selectedEffect,
+  setSelectedEffect,
+  copyEffect,
   minMs,
   maxMs,
   pxToMs,
   snapToBeat,
-}: EffectProps): JSX.Element {
-  const { copyEffect, selectedEffect, selectEffect } =
-    useContext(EffectSelectContext);
+}: TimecodeEffectProps): JSX.Element {
   const { palette } = useContext(PaletteContext);
   const { save, update } = useContext(ProjectContext);
   const { beatWidthPx, msWidthToPxWidth } = useContext(EffectRenderingContext);
@@ -108,15 +93,19 @@ export function Effect({
   const [changed, setChanged] = useState(false);
 
   useEffect(() => {
-    if (copyEffect && effect === selectedEffect) {
+    if (copyEffect && timecodeEffect === selectedEffect) {
       return setShortcuts([
         {
           shortcut: { key: 'KeyV', modifiers: ['ctrl'] },
           action: () => {
-            Object.assign(effect, clone(EffectSchema, copyEffect), {
-              endMs: effect.endMs,
-              startMs: effect.startMs,
-            });
+            Object.assign(
+              timecodeEffect,
+              clone(TimecodeEffectSchema, copyEffect),
+              {
+                endMs: timecodeEffect.endMs,
+                startMs: timecodeEffect.startMs,
+              },
+            );
             save('Paste effect.');
           },
           description: 'Paste effect from clipboard onto selected effect.',
@@ -124,56 +113,62 @@ export function Effect({
       ]);
     }
     return undefined;
-  }, [copyEffect, effect, selectedEffect, save]);
+  }, [copyEffect, timecodeEffect, selectedEffect, save]);
+
+  if (!timecodeEffect.effect?.effect) {
+    throw new Error('Timecode effect does not have effect!');
+  }
+  const effect = timecodeEffect.effect.effect;
 
   // React makes the original style immutable so we clone it to modify it.
   const style = Object.assign({}, originalStyle);
   const icons: Set<(props: any) => React.ReactNode> = new Set();
-  if (effect.effect.case === 'staticEffect') {
-    if (effect.effect.value.state) {
-      style.background = effectColor(effect.effect.value.state, palette);
-      effectIcons(effect.effect.value.state).forEach((i) => icons.add(i));
-    }
-  } else if (effect.effect.case === 'rampEffect') {
-    const rampEffect = effect.effect.value;
-    if (rampEffect.stateStart != null && rampEffect.stateEnd) {
-      const start = effectColor(rampEffect.stateStart, palette);
-      const end = effectColor(rampEffect.stateEnd, palette, true);
-      let width: number;
-      if (rampEffect.timingMode === EffectTiming.BEAT) {
-        width = beatWidthPx / (rampEffect.timingMultiplier || 1);
-      } else {
-        width =
-          msWidthToPxWidth(effect.endMs - effect.startMs) /
-          (rampEffect.timingMultiplier || 1);
+  switch (effect.case) {
+    case 'staticEffect':
+      if (effect.value.state) {
+        style.background = effectColor(effect.value.state, palette);
+        effectIcons(effect.value.state).forEach((i) => icons.add(i));
       }
-      if (rampEffect.mirrored) {
-        style.background = `repeating-linear-gradient(90deg, ${end} 0, ${start} ${width}px, ${end} ${width * 2}px)`;
-      } else {
-        style.background = `repeating-linear-gradient(90deg, ${start} 0, ${end} ${width}px)`;
+      break;
+    case 'rampEffect':
+      const rampEffect = effect.value;
+      if (rampEffect.stateStart != null && rampEffect.stateEnd) {
+        const start = effectColor(rampEffect.stateStart, palette);
+        const end = effectColor(rampEffect.stateEnd, palette, true);
+        let width: number;
+        if (rampEffect.timingMode === EffectTiming.BEAT) {
+          width = beatWidthPx / (rampEffect.timingMultiplier || 1);
+        } else {
+          width =
+            msWidthToPxWidth(timecodeEffect.endMs - timecodeEffect.startMs) /
+            (rampEffect.timingMultiplier || 1);
+        }
+        if (rampEffect.mirrored) {
+          style.background = `repeating-linear-gradient(90deg, ${end} 0, ${start} ${width}px, ${end} ${width * 2}px)`;
+        } else {
+          style.background = `repeating-linear-gradient(90deg, ${start} 0, ${end} ${width}px)`;
+        }
+
+        effectIcons(rampEffect.stateStart).forEach((i) => icons.add(i));
+        effectIcons(rampEffect.stateEnd).forEach((i) => icons.add(i));
       }
+      break;
+    case 'strobeEffect':
+      if (effect.value.stateA != null && effect.value.stateB != null) {
+        const start = effectColor(effect.value.stateA, palette);
+        const end = effectColor(effect.value.stateB, palette, true);
+        const aWidth = effect.value.stateAFames * 2;
+        const bWidth = effect.value.stateBFames * 2;
+        style.background = `repeating-linear-gradient(-45deg, ${start} 0, ${start} ${aWidth}px, ${end} ${aWidth}px, ${end} ${aWidth + bWidth}px)`;
 
-      effectIcons(rampEffect.stateStart).forEach((i) => icons.add(i));
-      effectIcons(rampEffect.stateEnd).forEach((i) => icons.add(i));
-    }
-  } else if (effect.effect.case === 'strobeEffect') {
-    if (
-      effect.effect.value.stateA != null &&
-      effect.effect.value.stateB != null
-    ) {
-      const start = effectColor(effect.effect.value.stateA, palette);
-      const end = effectColor(effect.effect.value.stateB, palette, true);
-      const aWidth = effect.effect.value.stateAFames * 2;
-      const bWidth = effect.effect.value.stateBFames * 2;
-      style.background = `repeating-linear-gradient(-45deg, ${start} 0, ${start} ${aWidth}px, ${end} ${aWidth}px, ${end} ${aWidth + bWidth}px)`;
-
-      effectIcons(effect.effect.value.stateA).forEach((i) => icons.add(i));
-      effectIcons(effect.effect.value.stateB).forEach((i) => icons.add(i));
-    }
+        effectIcons(effect.value.stateA).forEach((i) => icons.add(i));
+        effectIcons(effect.value.stateB).forEach((i) => icons.add(i));
+        break;
+      }
   }
 
   const containerClasses = [styles.effect, className];
-  if (effect === selectedEffect) {
+  if (timecodeEffect === selectedEffect) {
     containerClasses.push(styles.selected);
   }
 
@@ -185,10 +180,10 @@ export function Effect({
       style={style}
       onMouseDown={(e) => {
         setChanged(false);
-        selectEffect(address);
+        setSelectedEffect(timecodeEffect);
         setDrag({
-          offsetMs: pxToMs(e.clientX) - effect.startMs,
-          widthMs: effect.endMs - effect.startMs,
+          offsetMs: pxToMs(e.clientX) - timecodeEffect.startMs,
+          widthMs: timecodeEffect.endMs - timecodeEffect.startMs,
         });
         e.preventDefault();
         e.stopPropagation();
@@ -201,27 +196,27 @@ export function Effect({
           onMouseMove={(e) => {
             const ms = pxToMs(e.clientX);
             if (dragStart) {
-              effect.startMs = Math.min(
+              timecodeEffect.startMs = Math.min(
                 Math.max(snapToBeat(ms), minMs),
-                effect.endMs - 1,
+                timecodeEffect.endMs - 1,
               );
             } else if (dragEnd) {
-              effect.endMs = Math.max(
+              timecodeEffect.endMs = Math.max(
                 Math.min(snapToBeat(ms), maxMs),
-                effect.startMs + 1,
+                timecodeEffect.startMs + 1,
               );
             } else if (drag != null) {
               const startMs = snapToBeat(ms - drag.offsetMs);
               const endMs = startMs + drag.widthMs;
               if (startMs < minMs) {
-                effect.startMs = minMs;
-                effect.endMs = minMs + drag.widthMs;
+                timecodeEffect.startMs = minMs;
+                timecodeEffect.endMs = minMs + drag.widthMs;
               } else if (endMs > maxMs) {
-                effect.endMs = maxMs;
-                effect.startMs = maxMs - drag.widthMs;
+                timecodeEffect.endMs = maxMs;
+                timecodeEffect.startMs = maxMs - drag.widthMs;
               } else {
-                effect.startMs = startMs;
-                effect.endMs = endMs;
+                timecodeEffect.startMs = startMs;
+                timecodeEffect.endMs = endMs;
               }
             }
             setChanged(true);
@@ -287,7 +282,7 @@ export function EffectDetails({
   availableChannels,
   showTiming,
   showPhase,
-}: EffectDetailsBaseProps<EffectProto>): JSX.Element {
+}: EffectDetailsBaseProps<Effect>): JSX.Element {
   const { save } = useContext(ProjectContext);
 
   const classes = [styles.effectDetails, className];
@@ -655,12 +650,12 @@ function RandomEffectDetails({
       return {
         case: stripped.substring(0, 1).toLowerCase() + stripped.substring(1),
         value: effect.value,
-      } as EffectProto['effect'];
+      } as Effect['effect'];
     }
     return {
       case: undefined,
       value: undefined,
-    } as EffectProto['effect'];
+    } as Effect['effect'];
   };
 
   return (
@@ -806,8 +801,8 @@ function RandomEffectDetails({
 }
 
 interface EffectSelectorProps {
-  effect: EffectProto['effect'];
-  setEffect: (effect: EffectProto['effect'], description: string) => void;
+  effect: Effect['effect'];
+  setEffect: (effect: Effect['effect'], description: string) => void;
   showRandom?: boolean;
 }
 

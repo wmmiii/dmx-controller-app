@@ -1,12 +1,9 @@
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
-use crate::proto::color_palette::ColorDescription;
 use crate::proto::dmx_fixture_definition::Mode;
 use crate::proto::fixture_state::LightColor;
-use crate::proto::{
-    color_palette, Color, ColorPalette, DmxFixtureDefinition, PaletteColor, SerialDmxOutput,
-};
+use crate::proto::{Color, ColorPalette, DmxFixtureDefinition, SerialDmxOutput};
 use crate::render::RenderTarget;
 
 macro_rules! apply_channel_updates {

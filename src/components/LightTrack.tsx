@@ -1,15 +1,16 @@
 import { create } from '@bufbuild/protobuf';
-import { LightLayerSchema } from '@dmx-controller/proto/light_layer_pb';
-import { type LightTrack as LightTrackProto } from '@dmx-controller/proto/light_track_pb';
 import { JSX, createRef, useContext } from 'react';
-
-import { LightLayer } from '../components/LightLayer';
 import {
   OutputSelector,
   getOutputTargetName,
 } from '../components/OutputSelector';
 import { ProjectContext } from '../contexts/ProjectContext';
 
+import {
+  Effect,
+  LayerSchema,
+  Show_Output,
+} from '@dmx-controller/proto/timecoded_pb';
 import {
   BiBrushAlt,
   BiChevronDown,
@@ -18,6 +19,7 @@ import {
   BiTrash,
 } from 'react-icons/bi';
 import { Button, IconButton } from './Button';
+import { Layer } from './Layer';
 import styles from './LightTrack.module.scss';
 
 export interface MappingFunctions {
@@ -28,8 +30,10 @@ export interface MappingFunctions {
 }
 
 interface LightTrackProps {
-  trackIndex: number;
-  track: LightTrackProto;
+  output: Show_Output;
+  selectedEffect: Effect | null;
+  setSelectedEffect: (e: Effect | null) => void;
+  copyEffect: Effect | null;
   maxMs: number;
   leftWidth: number;
   mappingFunctions: MappingFunctions;
@@ -39,8 +43,10 @@ interface LightTrackProps {
 }
 
 export function LightTrack({
-  trackIndex,
-  track,
+  output,
+  selectedEffect,
+  setSelectedEffect,
+  copyEffect,
   maxMs,
   leftWidth,
   mappingFunctions,
@@ -56,9 +62,9 @@ export function LightTrack({
       <div className={styles.left} style={{ width: leftWidth }}>
         <div className={styles.header}>
           <OutputSelector
-            value={track.outputTarget}
+            value={output.outputTarget}
             setValue={(o) => {
-              track.outputTarget = o;
+              output.outputTarget = o;
               const name = getOutputTargetName(project, o);
               if (name === '<Unset>') {
                 save(`Unset track output.`);
@@ -68,28 +74,28 @@ export function LightTrack({
             }}
           />
           <IconButton
-            title={track.collapsed ? 'Expand' : 'Collapse'}
+            title={output.collapsed ? 'Expand' : 'Collapse'}
             onClick={() => {
-              track.collapsed = !track.collapsed;
+              output.collapsed = !output.collapsed;
               save(
-                `${track.collapsed ? 'Collapse' : 'Expand'} track ${getOutputTargetName(project, track.outputTarget)}.`,
+                `${output.collapsed ? 'Collapse' : 'Expand'} track ${getOutputTargetName(project, output.outputTarget)}.`,
               );
             }}
           >
-            {track.collapsed ? <BiChevronDown /> : <BiChevronUp />}
+            {output.collapsed ? <BiChevronDown /> : <BiChevronUp />}
           </IconButton>
         </div>
-        {!track.collapsed && (
+        {!output.collapsed && (
           <>
             <div className={styles.buttons}>
               <IconButton
                 title="Cleanup Empty Layers"
                 onClick={() => {
-                  track.layers = track.layers.filter(
+                  output.layers = output.layers.filter(
                     (l) => l.effects.length > 0,
                   );
                   save(
-                    `Cleanup empty layers for track ${getOutputTargetName(project, track.outputTarget)}`,
+                    `Cleanup empty layers for track ${getOutputTargetName(project, output.outputTarget)}`,
                   );
                 }}
               >
@@ -116,32 +122,33 @@ export function LightTrack({
         ref={trackRef}
         className={styles.right}
         onClick={() => {
-          track.collapsed = false;
+          output.collapsed = false;
           save(
-            `Expand track ${getOutputTargetName(project, track.outputTarget)}`,
+            `Expand track ${getOutputTargetName(project, output.outputTarget)}`,
           );
         }}
       >
-        {track.layers.map((l, i) => (
-          <LightLayer
-            className={track.collapsed ? styles.collapsedLayer : undefined}
+        {output.layers.map((l, i) => (
+          <Layer
+            className={output.collapsed ? styles.collapsedLayer : undefined}
             key={i}
-            trackIndex={trackIndex}
-            layerIndex={i}
             layer={l}
+            selectedEffect={selectedEffect}
+            setSelectedEffect={setSelectedEffect}
+            copyEffect={copyEffect}
             maxMs={maxMs}
             msToPx={mappingFunctions.msToPx}
             pxToMs={mappingFunctions.pxToMs}
             snapToBeat={mappingFunctions.snapToBeat}
           />
         ))}
-        {!track.collapsed && (
+        {!output.collapsed && (
           <div className={styles.newLayer}>
             <Button
               icon={<BiPlus />}
               onClick={() => {
-                track.layers.push(create(LightLayerSchema, {}));
-                save('Create new track.');
+                output.layers.push(create(LayerSchema, {}));
+                save('Create new output.');
               }}
             >
               New Layer

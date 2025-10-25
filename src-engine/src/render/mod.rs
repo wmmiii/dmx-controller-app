@@ -45,4 +45,4 @@ pub fn render_live_dmx(project: &Project, output_id: u64) -> Result<[u8; 512], S
     return Ok(render_target.get_universe());
 }
 
-fn render_scene<T: RenderTarget<T>>(scene: &Scene, render_target: &mut T) {}
+fn render_scene<T: RenderTarget<T>>(_scene: &Scene, _render_target: &mut T) {}

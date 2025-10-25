@@ -4,8 +4,8 @@ package dmx_controller;
 
 import "proto/color.proto";
 import "proto/effect.proto";
-import "proto/light_track.proto";
 import "proto/output.proto";
+import "proto/timecoded.proto";
 
 // A scene is a part of a live show that composes tiles together to form
 // the final output of the universe.
@@ -30,19 +30,10 @@ message Scene {
       reserved 4; // OutputId output_id = 4 [deprecated = true];
     }
 
-    message SequenceTile {
-      string name = 1;
-      uint32 native_beats = 2;
-
-      reserved 3 to 10;
-
-      repeated LightTrack light_tracks = 11;
-    }
-
     string name = 1;
     reserved 2; // universe_sequence_id
     oneof description {
-      SequenceTile sequence = 13;
+      uint64 sequence_id = 13;
       EffectGroupTile effect_group = 14;
     }
     bool one_shot = 15;
