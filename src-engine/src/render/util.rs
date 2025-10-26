@@ -1,27 +1,71 @@
 use crate::{
     proto::{
-        effect::Effect, output_target::Output, ColorPalette, FixtureState, OutputTarget, Project,
+        effect::Effect,
+        effect_timing::{Absolute, Beat, EasingFunction, Timing},
+        output_target::Output,
+        ColorPalette, EffectTiming, FixtureState, OutputTarget, Project,
     },
-    render::render_target::RenderTarget,
+    render::{
+        project::get_all_output_targets, ramp_effect::apply_ramp_effect,
+        random_effect::apply_random_effect, render_target::RenderTarget,
+        strobe_effect::apply_strobe_effect,
+    },
 };
+use std::f64::consts::PI;
 
 pub fn apply_effect<T: RenderTarget<T>>(
     project: &Project,
     render_target: &mut T,
     output_target: &OutputTarget,
-    _beat_number: &u64,
-    _beat_t: &f64,
+    system_t: &u64,
+    // Number of milliseconds since the start of the effect.
+    ms_since_start: &u64,
+    effect_duration_ms: &u64,
+    beat_t: &f64,
+    frame: &u32,
+    seed: &u64,
     effect: &Effect,
     color_palette: &ColorPalette,
 ) {
     match effect {
-        Effect::RampEffect(_ramp_effect) => todo!(),
-        Effect::RandomEffect(_random_effect) => todo!(),
-        Effect::StaticEffect(static_effect) => match &static_effect.state {
-            Some(s) => apply_state(project, render_target, output_target, &s, color_palette),
-            None => return,
-        },
-        Effect::StrobeEffect(_strobe_effect) => todo!("Implement strobe"),
+        Effect::RampEffect(ramp_effect) => apply_ramp_effect(
+            project,
+            render_target,
+            output_target,
+            ms_since_start,
+            effect_duration_ms,
+            beat_t,
+            ramp_effect,
+            color_palette,
+        ),
+        Effect::RandomEffect(random_effect) => apply_random_effect(
+            project,
+            render_target,
+            output_target,
+            system_t,
+            frame,
+            seed,
+            ms_since_start,
+            effect_duration_ms,
+            beat_t,
+            random_effect,
+            color_palette,
+        ),
+        Effect::StaticEffect(static_effect) => apply_state(
+            project,
+            render_target,
+            output_target,
+            static_effect.state.as_ref().unwrap(),
+            color_palette,
+        ),
+        Effect::StrobeEffect(strobe_effect) => apply_strobe_effect(
+            project,
+            render_target,
+            output_target,
+            frame,
+            strobe_effect,
+            color_palette,
+        ),
         Effect::SequenceEffect(_sequence_effect) => todo!("Implement sequence"),
     }
 }
@@ -35,7 +79,7 @@ pub fn apply_state<T: RenderTarget<T>>(
 ) {
     let output = match &output_target.output {
         Some(o) => o,
-        None => return,
+        None => panic!("No output on output target to apply state!"),
     };
 
     match output {
@@ -49,6 +93,11 @@ pub fn apply_state<T: RenderTarget<T>>(
                 None => return,
             }
         }
+        Output::Group(0) => {
+            for target in get_all_output_targets(project) {
+                apply_state(project, render_target, &target, state, color_palette);
+            }
+        }
         Output::Group(id) => match project.groups.get(id) {
             Some(g) => {
                 for target in &g.targets {
@@ -58,6 +107,38 @@ pub fn apply_state<T: RenderTarget<T>>(
             None => return,
         },
     };
+}
+
+pub fn calculate_timing(
+    effect_timing: &EffectTiming,
+    ms_since_start: &u64,
+    event_duration_ms: &u64,
+    beat_t: &f64,
+) -> f64 {
+    let mut t = match effect_timing.timing {
+        Some(Timing::Absolute(Absolute { duration })) => {
+            (*ms_since_start as f64 / duration as f64).fract()
+        }
+        Some(Timing::Beat(Beat { multiplier })) => (beat_t / multiplier as f64).fract(),
+        Some(Timing::OneShot(_)) => (*ms_since_start as f64 / *event_duration_ms as f64).fract(),
+        _ => panic!("Timing type not specified when trying to calculate timing!"),
+    };
+    if effect_timing.mirrored && t < 0.5 {
+        t *= 2.0;
+    } else if effect_timing.mirrored {
+        t = (1.0 - t) * 2.0;
+    }
+
+    let eased_t = match EasingFunction::try_from(effect_timing.easing) {
+        Ok(EasingFunction::Linear) => t,
+        Ok(EasingFunction::EaseIn) => t * t * t,
+        Ok(EasingFunction::EaseOut) => 1.0 - (1.0 - t).powf(3.0),
+        Ok(EasingFunction::EaseInOut) => t * t * (3.0 - 2.0 * t),
+        Ok(EasingFunction::Sine) => (-(PI * t).cos() - 1.0) / 2.0,
+        _ => panic!("Unknown easing type!"),
+    };
+
+    return eased_t;
 }
 
 pub fn interpolate_palettes(a: ColorPalette, b: ColorPalette, t: f64) -> ColorPalette {

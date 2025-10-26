@@ -93,7 +93,7 @@ export function BeatEditor({ file, onCancel }: BeatEditorProps): JSX.Element {
   const firstBeat = firstMarker % beatDuration;
 
   const fileBlob = useMemo(() => {
-    return new Blob([file.contents], {
+    return new Blob([new Uint8Array(file.contents)], {
       type: file.mime,
     });
   }, [file]);

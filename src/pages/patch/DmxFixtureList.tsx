@@ -22,7 +22,6 @@ import { ColorSwatch } from '../../components/ColorSwatch';
 import { NumberInput, TextInput } from '../../components/Input';
 import { Modal } from '../../components/Modal';
 import RangeInput from '../../components/RangeInput';
-import { RenderingContext } from '../../contexts/RenderingContext';
 import {
   AMOUNT_CHANNELS,
   ANGLE_CHANNELS,
@@ -31,8 +30,8 @@ import {
   isAmountChannel,
   isAngleChannel,
 } from '../../engine/channel';
-import { WritableOutput } from '../../engine/context';
 import { deleteFixture } from '../../engine/fixtures/fixture';
+import { setRenderFunctions } from '../../engine/renderRouter';
 import { extractGdtf } from '../../util/gdtf';
 import { randomUint64 } from '../../util/numberUtils';
 import { getOutput } from '../../util/projectUtils';
@@ -258,8 +257,6 @@ function EditDefinitionDialog({
   deleteDefinition,
 }: EditDefinitionDialogProps): JSX.Element {
   const { save } = useContext(ProjectContext);
-  const { setRenderFunction, clearRenderFunction } =
-    useContext(RenderingContext);
   const [modeId, setModeId] = useState<string>(
     Object.keys(definition.modes)[0],
   );
@@ -276,24 +273,22 @@ function EditDefinitionDialog({
     setTestValues(testValues);
   }, [setTestValues]);
 
-  useEffect(() => {
-    const render = (_frame: number, output: WritableOutput) => {
-      if (output.type === 'dmx') {
-        for (let i = 0; i < mode.numChannels; ++i) {
-          output.universe[i + testIndex] = testValues[i] || 0;
-        }
-      }
-    };
-
-    setRenderFunction(render);
-    return () => clearRenderFunction(render);
-  }, [
-    definition,
-    testIndex,
-    testValues,
-    setRenderFunction,
-    clearRenderFunction,
-  ]);
+  useEffect(
+    () =>
+      setRenderFunctions({
+        renderDmx: async (_output) => {
+          const renderOutput = new Uint8Array(512);
+          for (let i = 0; i < mode.numChannels; ++i) {
+            renderOutput[i + testIndex] = testValues[i] || 0;
+          }
+          return renderOutput;
+        },
+        renderWled: async () => {
+          return { segments: [] };
+        },
+      }),
+    [testIndex, testValues],
+  );
 
   const mode = definition.modes[modeId];
 

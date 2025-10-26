@@ -7,10 +7,9 @@ import {
 } from 'react';
 
 import { WledOutput } from '@dmx-controller/proto/wled_pb';
-import { getWledWritableOutput } from '../engine/outputs/wledOutput';
+import { renderWled } from '../engine/renderRouter';
 import { getActivePatch, getOutput } from '../util/projectUtils';
 import { ProjectContext } from './ProjectContext';
-import { RenderingContext } from './RenderingContext';
 
 export const WledRendererContext = createContext({
   warnings: {} as { [outputId: string]: string },
@@ -18,13 +17,16 @@ export const WledRendererContext = createContext({
 
 export function WledRendererProvider({ children }: PropsWithChildren) {
   const { project, update } = useContext(ProjectContext);
-  const { renderFunction } = useContext(RenderingContext);
   const [warnings, setWarnings] = useState<{ [outputId: string]: string }>({});
 
   const startRenderLoop = (outputId: bigint) => {
     let cont = true;
     let frame = 0;
     (async () => {
+      if (2 == 1 + 1) {
+        return;
+      }
+
       const wledOutput = getActivePatch(project).outputs[outputId.toString()]
         .output.value as WledOutput;
 
@@ -33,13 +35,12 @@ export function WledRendererProvider({ children }: PropsWithChildren) {
       const latencySamples: number[] = [];
 
       while (cont) {
-        const wledWritableOutput = getWledWritableOutput(project, outputId);
         const startMs = new Date().getTime();
-        renderFunction.current(++frame, wledWritableOutput);
+        const wledRenderOutput = await renderWled(outputId);
 
         const wledUpdate = {
           transition: 0,
-          seg: wledWritableOutput.segments.map((s, i) => ({
+          seg: wledRenderOutput.segments.map((s, i) => ({
             id: i,
             col: [
               [

@@ -1,7 +1,4 @@
-import {
-  Effect_RampEffect,
-  Effect_RampEffect_EasingFunction,
-} from '@dmx-controller/proto/effect_pb';
+import { Effect_RampEffect } from '@dmx-controller/proto/effect_pb';
 
 import { RenderContext } from './context';
 import { applyState } from './effect';
@@ -28,19 +25,19 @@ export function rampEffect(
 
   let easedT: number;
   switch (effect.easing) {
-    case Effect_RampEffect_EasingFunction.EASE_IN:
+    case Effect_EasingFunction.EASE_IN:
       easedT = t * t * t;
       break;
-    case Effect_RampEffect_EasingFunction.EASE_OUT:
+    case Effect_EasingFunction.EASE_OUT:
       easedT = 1 - Math.pow(1 - t, 3);
       break;
-    case Effect_RampEffect_EasingFunction.EASE_IN_OUT:
+    case Effect_EasingFunction.EASE_IN_OUT:
       easedT = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
       break;
-    case Effect_RampEffect_EasingFunction.SINE:
+    case Effect_EasingFunction.SINE:
       easedT = -(Math.cos(Math.PI * t) - 1) / 2;
       break;
-    case Effect_RampEffect_EasingFunction.LINEAR: // Fall-through
+    case Effect_EasingFunction.LINEAR: // Fall-through
     default:
       easedT = t;
   }

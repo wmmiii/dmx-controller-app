@@ -13,10 +13,9 @@ import {
   SacnDmxOutput,
   SerialDmxOutput,
 } from '@dmx-controller/proto/output_pb';
-import { RenderingContext } from '../contexts/RenderingContext';
-import { WritableDmxOutput } from '../engine/context';
 import { getOutput } from '../util/projectUtils';
 
+import { subscribeToDmxRender } from '../engine/renderRouter';
 import styles from './Visualizer.module.scss';
 
 interface DmxUniverseVisualizerProps {
@@ -28,18 +27,14 @@ export function DmxUniverseVisualizer({
 }: DmxUniverseVisualizerProps) {
   const { project } = useContext(ProjectContext);
   const [universe, setUniverse] = useState<Uint8Array>(new Uint8Array(512));
-  const { subscribeToRender } = useContext(RenderingContext);
 
   const dmxOutput = getOutput(project, dmxOutputId).output.value as
     | SerialDmxOutput
     | SacnDmxOutput;
 
   useEffect(() => {
-    subscribeToRender(dmxOutputId, (output) => {
-      const dmxOutput = output as WritableDmxOutput;
-      setUniverse(dmxOutput.uint8Array);
-    });
-  }, [subscribeToRender, setUniverse]);
+    subscribeToDmxRender(dmxOutputId, setUniverse);
+  }, [setUniverse]);
 
   const fixtureMapping = useMemo(() => {
     if (dmxOutput.fixtures == null) {

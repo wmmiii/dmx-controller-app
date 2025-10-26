@@ -6,12 +6,9 @@ import {
   SceneSchema,
   Scene_TileMapSchema,
   Scene_TileSchema,
-  Scene_Tile_EffectGroupTileSchema,
-  Scene_Tile_EffectGroupTile_EffectChannelSchema,
-  type Scene,
-  type Scene_Tile,
+  Scene_Tile_EffectChannel,
+  Scene_Tile_EffectChannelSchema,
   type Scene_TileMap,
-  type Scene_Tile_EffectGroupTile,
 } from '@dmx-controller/proto/scene_pb';
 import { JSX, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -30,7 +27,6 @@ import {
   getOutputTargetName,
 } from '../components/OutputSelector';
 import { PaletteSwatch } from '../components/Palette';
-import { SequenceEditor } from '../components/SequenceEditor';
 import { HorizontalSplitPane } from '../components/SplitPane';
 import { TileGrid } from '../components/TileGrid';
 import { EffectDetails } from '../components/TimecodeEffect';
@@ -38,18 +34,14 @@ import { ControllerContext } from '../contexts/ControllerContext';
 import { PaletteContext } from '../contexts/PaletteContext';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { getAvailableChannels } from '../engine/fixtures/fixture';
-import {
-  DEFAULT_COLOR_PALETTE,
-  renderScene as renderActiveScene,
-} from '../engine/render';
 
 import { BeatMetadataSchema } from '@dmx-controller/proto/beat_pb';
-import { SequenceSchema } from '@dmx-controller/proto/timecoded_pb';
 import { BiPlus, BiTrash } from 'react-icons/bi';
 import { Spacer } from '../components/Spacer';
 import { Tabs, TabsType } from '../components/Tabs';
-import { RenderingContext } from '../contexts/RenderingContext';
-import { WritableOutput } from '../engine/context';
+import { setRenderFunctions } from '../engine/renderRouter';
+import { renderDmxScene } from '../system_interfaces/engine';
+import { DEFAULT_COLOR_PALETTE } from '../util/colorUtil';
 import { randomUint64 } from '../util/numberUtils';
 import { getActiveScene } from '../util/sceneUtils';
 import styles from './LivePage.module.scss';
@@ -59,12 +51,6 @@ const NEW_SCENE_KEY = 'new';
 export function LivePage(): JSX.Element {
   const { project, save } = useContext(ProjectContext);
   const projectRef = useRef<Project>(project);
-  const [addTileIndex, setAddTileIndex] = useState<{
-    x: number;
-    y: number;
-  } | null>(null);
-  const { setRenderFunction, clearRenderFunction } =
-    useContext(RenderingContext);
 
   const [selected, setSelected] = useState<Scene_TileMap | null>(null);
 
@@ -75,21 +61,19 @@ export function LivePage(): JSX.Element {
   }, [project]);
 
   useEffect(() => {
-    const render = (frame: number, output: WritableOutput) => {
-      const project = projectRef.current;
-      if (project != null) {
-        renderActiveScene(
-          new Date().getTime(),
-          project.liveBeat!,
-          frame,
+    let frame = 0;
+    return setRenderFunctions({
+      renderDmx: (outputId) =>
+        renderDmxScene(
           project,
-          output,
-        );
-      }
-    };
-    setRenderFunction(render);
-
-    return () => clearRenderFunction(render);
+          outputId,
+          BigInt(new Date().getTime()),
+          frame++,
+        ),
+      renderWled: () => {
+        throw new Error('renderDmx not implemented!');
+      },
+    });
   }, [toJsonString(BeatMetadataSchema, project.liveBeat!), projectRef]);
 
   const body = (
@@ -99,7 +83,28 @@ export function LivePage(): JSX.Element {
           className={styles.sceneEditor}
           sceneId={project.activeScene}
           onSelect={setSelected}
-          setAddTileIndex={setAddTileIndex}
+          setAddTileIndex={({ x, y }) => {
+            const tile = create(Scene_TileSchema, {
+              name: 'New Tile',
+
+              duration: {
+                case: 'durationBeat',
+                value: 1,
+              },
+              transition: {
+                case: 'startFadeInMs',
+                value: 0n,
+              },
+            });
+            const tileMap = create(Scene_TileMapSchema, {
+              id: randomUint64(),
+              tile: tile,
+              x: x,
+              y: y,
+            });
+            scene.tileMap.push(tileMap);
+            save('Add new effect to group.');
+          }}
           maxX={
             scene.tileMap.map((c) => c.x).reduce((a, b) => (a > b ? a : b), 0) +
             2
@@ -238,15 +243,6 @@ export function LivePage(): JSX.Element {
           </>
         }
       />
-      {addTileIndex != null && (
-        <AddNewDialog
-          scene={getActiveScene(project)}
-          x={addTileIndex.x}
-          y={addTileIndex.y}
-          onSelect={setSelected}
-          onClose={() => setAddTileIndex(null)}
-        />
-      )}
       {selected && (
         <TileEditor tileMap={selected} onClose={() => setSelected(null)} />
       )}
@@ -443,19 +439,7 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
             </div>
           </div>
         }
-        right={
-          <>
-            {tile.description.case === 'effectGroup' && (
-              <EffectGroupEditor
-                effect={tile.description.value}
-                name={tile.name}
-              />
-            )}
-            {tile.description.case === 'sequenceId' && (
-              <SequenceEditor sequenceId={tile.description.value} />
-            )}
-          </>
-        }
+        right={<EffectGroupEditor channels={tile.channels} name={tile.name} />}
       />
       {existingTile && (
         <Modal
@@ -470,16 +454,16 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
 }
 
 interface EffectGroupEditorProps {
-  effect: Scene_Tile_EffectGroupTile;
+  channels: Scene_Tile_EffectChannel[];
   name: string;
 }
 
-function EffectGroupEditor({ effect, name }: EffectGroupEditorProps) {
+function EffectGroupEditor({ channels, name }: EffectGroupEditorProps) {
   const { project, save } = useContext(ProjectContext);
 
   return (
     <div className={`${styles.detailsPane} ${styles.effectGroup}`}>
-      {effect.channels.map((c, i) => {
+      {channels.map((c, i) => {
         if (c.effect == null) {
           throw new Error('Channel effect is not defined!');
         }
@@ -491,7 +475,7 @@ function EffectGroupEditor({ effect, name }: EffectGroupEditorProps) {
                 title="Delete Channel"
                 variant="warning"
                 onClick={() => {
-                  effect.channels.splice(i, 1);
+                  channels.splice(i, 1);
                   save(`Delete channel from ${name}`);
                 }}
               >
@@ -523,7 +507,7 @@ function EffectGroupEditor({ effect, name }: EffectGroupEditorProps) {
         <IconButton
           title="Add Effect"
           onClick={() => {
-            effect.channels.push(createEffectChannel());
+            channels.push(createEffectChannel());
             save('Add channel to effect.');
           }}
         >
@@ -534,120 +518,8 @@ function EffectGroupEditor({ effect, name }: EffectGroupEditorProps) {
   );
 }
 
-interface AddNewDialogProps {
-  scene: Scene;
-  x: number;
-  y: number;
-  onSelect: (tileMap: Scene_TileMap) => void;
-  onClose: () => void;
-}
-
-function AddNewDialog({ scene, x, y, onSelect, onClose }: AddNewDialogProps) {
-  const { project, save } = useContext(ProjectContext);
-
-  const addTile = (
-    description: Scene_Tile['description'],
-    x: number,
-    y: number,
-  ) => {
-    const tile = create(Scene_TileSchema, {
-      name: 'New Tile',
-      description: description,
-      duration: {
-        case: 'durationBeat',
-        value: 1,
-      },
-      transition: {
-        case: 'startFadeInMs',
-        value: 0n,
-      },
-    });
-    const tileMap = create(Scene_TileMapSchema, {
-      id: randomUint64(),
-      tile: tile,
-      x: x,
-      y: y,
-    });
-    scene.tileMap.push(tileMap);
-    return tileMap;
-  };
-  return (
-    <Modal bodyClass={styles.addTile} title={`Add new tile`} onClose={onClose}>
-      <p>
-        Both effect types can be timed to fire once, or loop over a fixed period
-        or to the beat. The intensity of both effects can be controlled directly
-        by MIDI.
-      </p>
-      <hr />
-      <div className={styles.addTileDescription}>
-        An effect group defines a series of states that are all applied with the
-        same timing. This is useful for defining simple static effects which can
-        be enabled/disabled or more complex loops that transition between two
-        states.
-      </div>
-      <Button
-        icon={<BiPlus />}
-        onClick={() => {
-          const tileMap = addTile(
-            {
-              case: 'effectGroup',
-              value: create(Scene_Tile_EffectGroupTileSchema, {
-                channels: [createEffectChannel()],
-              }),
-            },
-            x,
-            y,
-          );
-          save(`Add new effect tile.`);
-          onClose();
-          onSelect(tileMap);
-        }}
-      >
-        Add Effect Group
-      </Button>
-      <hr />
-      <div className={styles.addTileDescription}>
-        A sequence defines a complex series of state changes over time. This is
-        useful for defining more intricate sequences between states (such as
-        transitioning between states A &gt; B &gt; C &gt; A).
-        <br />
-        <br />
-        From the lighting world this is most similar to a "chaser".
-      </div>
-      <Button
-        icon={<BiPlus />}
-        onClick={() => {
-          const id = randomUint64();
-          project.sequences[id.toString()] = create(SequenceSchema, {
-            nativeBeats: 1,
-            layers: [
-              {
-                effects: [],
-              },
-            ],
-          });
-
-          const tile = addTile(
-            {
-              case: 'sequenceId',
-              value: id,
-            },
-            x,
-            y,
-          );
-          save(`Add new sequence tile.`);
-          onClose();
-          onSelect(tile);
-        }}
-      >
-        Add Sequence
-      </Button>
-    </Modal>
-  );
-}
-
 function createEffectChannel() {
-  return create(Scene_Tile_EffectGroupTile_EffectChannelSchema, {
+  return create(Scene_Tile_EffectChannelSchema, {
     effect: {
       effect: {
         case: 'staticEffect',

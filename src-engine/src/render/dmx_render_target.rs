@@ -3,7 +3,7 @@ use std::sync::OnceLock;
 
 use crate::proto::dmx_fixture_definition::Mode;
 use crate::proto::fixture_state::LightColor;
-use crate::proto::{Color, ColorPalette, DmxFixtureDefinition, SerialDmxOutput};
+use crate::proto::{Color, ColorPalette, DmxFixtureDefinition, PhysicalDmxFixture};
 use crate::render::render_target::RenderTarget;
 
 macro_rules! apply_channel_updates {
@@ -23,22 +23,36 @@ macro_rules! apply_channel_updates {
     };
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct DmxRenderTarget<'a> {
     universe: [f64; 512],
-    output: &'a SerialDmxOutput,
+    fixtures: &'a HashMap<u64, PhysicalDmxFixture>,
     fixture_definitions: &'a HashMap<u64, DmxFixtureDefinition>,
     non_interpolated_indices: OnceLock<Vec<u16>>,
 }
 
 impl<'a> DmxRenderTarget<'a> {
     pub fn new(
-        output: &'a SerialDmxOutput,
+        fixtures: &'a HashMap<u64, PhysicalDmxFixture>,
         fixture_definitions: &'a HashMap<u64, DmxFixtureDefinition>,
     ) -> Self {
+        let mut universe = [0.0; 512];
+
+        for (_, fixture) in fixtures {
+            let definition = fixture_definitions
+                .get(&fixture.fixture_definition_id)
+                .unwrap();
+            let mode = definition.modes.get(fixture.fixture_mode.as_str()).unwrap();
+
+            for (channel_index, channel) in &mode.channels {
+                universe[(channel_index + fixture.channel_offset - 1) as usize] =
+                    channel.default_value as f64 / 255.0;
+            }
+        }
+
         DmxRenderTarget {
-            universe: [0.0; 512],
-            output,
+            universe,
+            fixtures,
             fixture_definitions,
             non_interpolated_indices: OnceLock::new(),
         }
@@ -49,7 +63,7 @@ impl<'a> DmxRenderTarget<'a> {
     }
 
     fn get_fixture_mode(&self, fixture_id: &u64) -> Option<&Mode> {
-        self.output.fixtures.get(fixture_id).and_then(|f| {
+        self.fixtures.get(fixture_id).and_then(|f| {
             self.fixture_definitions
                 .get(&f.fixture_definition_id)
                 .and_then(|d| d.modes.get(&f.fixture_mode))
@@ -59,7 +73,7 @@ impl<'a> DmxRenderTarget<'a> {
     fn get_non_interpolated_indices(&self) -> Vec<u16> {
         self.non_interpolated_indices.get_or_init(|| {
             let mut indices: Vec<u16> = Vec::new();
-            for (fixture_id, fixture) in &self.output.fixtures {
+            for (fixture_id, fixture) in self.fixtures {
                 let mode = match self.get_fixture_mode(&fixture_id) {
                     Some(m) => m,
                     None => continue,
@@ -171,11 +185,6 @@ impl<'a> DmxRenderTarget<'a> {
 
                 let mapped_value: f64 = (degrees - min) / (max - min);
 
-                println!(
-                    "min {} max {} degrees {} value {}",
-                    min, max, degrees, mapped_value
-                );
-
                 Some((channel_index, mapped_value))
             })
             .collect()
@@ -183,7 +192,7 @@ impl<'a> DmxRenderTarget<'a> {
 
     fn apply_updates(&mut self, updates: Vec<(usize, f64)>) {
         for (channel_index, val) in updates {
-            self.universe[channel_index] = val;
+            self.universe[channel_index - 1] = val;
         }
     }
 }
@@ -195,7 +204,7 @@ impl<'a> RenderTarget<DmxRenderTarget<'a>> for DmxRenderTarget<'a> {
         state: &crate::proto::FixtureState,
         color_palette: &ColorPalette,
     ) {
-        let fixture = match self.output.fixtures.get(&qualified_fixture_id.fixture) {
+        let fixture = match self.fixtures.get(&qualified_fixture_id.fixture) {
             Some(f) => f,
             None => return,
         };
@@ -299,7 +308,7 @@ mod tests {
     use super::*;
     use crate::proto::dmx_fixture_definition::channel::Mapping;
     use crate::proto::dmx_fixture_definition::Channel;
-    use crate::proto::{FixtureState, PhysicalDmxFixture, QualifiedFixtureId};
+    use crate::proto::{FixtureState, PhysicalDmxFixture, QualifiedFixtureId, SerialDmxOutput};
     use std::collections::HashMap;
 
     #[test]
@@ -322,7 +331,7 @@ mod tests {
                 max_value: 255,
             },
         ));
-        mode.channels.insert(0, dimmer_channel);
+        mode.channels.insert(1, dimmer_channel);
 
         fixture_def.modes.insert("test-mode".to_string(), mode);
 
@@ -342,7 +351,7 @@ mod tests {
         output.fixtures.insert(100u64, physical_fixture);
 
         // Create render target
-        let mut render_target = DmxRenderTarget::new(&output, &fixture_definitions);
+        let mut render_target = DmxRenderTarget::new(&output.fixtures, &fixture_definitions);
 
         // Create a fixture state with dimmer at 50%
         let mut state = FixtureState::default();
@@ -396,7 +405,7 @@ mod tests {
                 max_degrees: 540,
             },
         ));
-        mode.channels.insert(0, pan_channel);
+        mode.channels.insert(1, pan_channel);
 
         // Add tilt channel at index 1 (0-270 degrees)
         let mut tilt_channel = Channel::default();
@@ -407,7 +416,7 @@ mod tests {
                 max_degrees: 270,
             },
         ));
-        mode.channels.insert(1, tilt_channel);
+        mode.channels.insert(2, tilt_channel);
 
         fixture_def.modes.insert("test-mode".to_string(), mode);
 
@@ -427,7 +436,7 @@ mod tests {
         output.fixtures.insert(100u64, physical_fixture);
 
         // Create render target
-        let mut render_target = DmxRenderTarget::new(&output, &fixture_definitions);
+        let mut render_target = DmxRenderTarget::new(&output.fixtures, &fixture_definitions);
 
         // Create a fixture state with pan at 270 degrees and tilt at 135 degrees
         let mut state = FixtureState::default();

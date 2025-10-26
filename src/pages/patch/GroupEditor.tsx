@@ -12,14 +12,12 @@ import { TextInput } from '../../components/Input';
 import { getOutputTargetName } from '../../components/OutputSelector';
 import { HorizontalSplitPane } from '../../components/SplitPane';
 import { ProjectContext } from '../../contexts/ProjectContext';
-import { RenderingContext } from '../../contexts/RenderingContext';
-import { WritableOutput } from '../../engine/context';
 import {
   addToGroup,
   deleteTargetGroup,
   getApplicableMembers,
 } from '../../engine/group';
-import { renderGroupDebug } from '../../engine/render';
+import { setRenderFunctions } from '../../engine/renderRouter';
 import { randomUint64 } from '../../util/numberUtils';
 import styles from './PatchPage.module.scss';
 
@@ -93,23 +91,23 @@ function GroupEditorPane({
   setSelectedGroupId,
 }: GroupEditorPaneProps) {
   const { project, save, update } = useContext(ProjectContext);
-  const { setRenderFunction, clearRenderFunction } =
-    useContext(RenderingContext);
 
   const [draggingMember, setDraggingMember] = useState<OutputTarget | null>(
     null,
   );
 
-  useEffect(() => {
-    const render = (_frame: number, output: WritableOutput) => {
-      if (project != null && selectedGroupId != null) {
-        renderGroupDebug(project, selectedGroupId, output);
-      }
-    };
-
-    setRenderFunction(render);
-    return () => clearRenderFunction(render);
-  }, [project, selectedGroupId]);
+  useEffect(
+    () =>
+      setRenderFunctions({
+        renderDmx: () => {
+          throw new Error('renderDmx not implemented!');
+        },
+        renderWled: () => {
+          throw new Error('renderDmx not implemented!');
+        },
+      }),
+    [project, selectedGroupId],
+  );
 
   const group = useMemo(() => {
     if (selectedGroupId == null) {

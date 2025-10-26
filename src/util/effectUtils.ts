@@ -1,5 +1,6 @@
 import { create } from '@bufbuild/protobuf';
 import {
+  Effect_SequenceEffect,
   FixtureStateSchema,
   type Effect_RampEffect,
   type Effect_RandomEffect,
@@ -14,6 +15,7 @@ export function getStates(
     | Effect_RampEffect
     | Effect_StrobeEffect
     | Effect_RandomEffect
+    | Effect_SequenceEffect
     | undefined,
 ) {
   if (!effect) {

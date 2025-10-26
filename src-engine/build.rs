@@ -22,7 +22,6 @@ fn main() {
 
     // Compile all proto files with include path set to project root
     prost_build::Config::new()
-        .extern_path(".dmx_controller.timecoded", "crate::proto::timecoded")
         .compile_protos(&proto_path_refs, &[project_root.to_str().unwrap()])
         .expect("Failed to compile protos");
 }

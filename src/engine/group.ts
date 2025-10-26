@@ -313,26 +313,22 @@ export function deleteTargetGroup(project: Project, groupId: bigint) {
   // Remove group from scenes.
   for (const scene of Object.values(project.scenes)) {
     for (const tile of scene.tileMap) {
-      switch (tile.tile?.description.case) {
-        case 'effectGroup':
-          for (const channel of tile.tile.description.value.channels) {
-            deleteFromOutputTarget(channel);
-            if (
-              channel.outputTarget?.output.case === 'group' &&
-              channel.outputTarget.output.value === groupId
-            ) {
-              delete channel.outputTarget;
-            }
-          }
-          break;
+      for (const channel of tile.tile!.channels) {
+        deleteFromOutputTarget(channel);
+        if (
+          channel.outputTarget?.output.case === 'group' &&
+          channel.outputTarget.output.value === groupId
+        ) {
+          delete channel.outputTarget;
+        }
       }
     }
   }
 
   // Remove group from shows.
-  for (const show of project.shows) {
-    for (const lightTracks of show.lightTracks) {
-      deleteFromOutputTarget(lightTracks);
+  for (const show of Object.values(project.shows)) {
+    for (const output of show.outputs) {
+      deleteFromOutputTarget(output);
     }
   }
 

@@ -6,13 +6,18 @@ import {
 } from '@dmx-controller/proto/color_pb';
 import {
   Effect,
-  EffectTiming,
+  EffectSchema,
+  EffectTiming_AbsoluteSchema,
+  EffectTiming_BeatSchema,
+  EffectTiming_EasingFunction,
+  EffectTiming_OneShotSchema,
   Effect_RampEffectSchema,
-  Effect_RampEffect_EasingFunction,
   Effect_RandomEffectSchema,
   Effect_StaticEffectSchema,
   Effect_StrobeEffectSchema,
   FixtureStateSchema,
+  TimecodedEffect as TimecodeEffectProto,
+  TimecodedEffectSchema,
   type Effect_RampEffect,
   type Effect_RandomEffect,
   type Effect_StaticEffect,
@@ -20,10 +25,6 @@ import {
   type FixtureState,
   type FixtureState as FixtureStateProto,
 } from '@dmx-controller/proto/effect_pb';
-import {
-  Effect as TimecodeEffectProto,
-  EffectSchema as TimecodeEffectSchema,
-} from '@dmx-controller/proto/timecoded_pb';
 import { CSSProperties, JSX, useContext, useEffect, useState } from 'react';
 import {
   BiDice6,
@@ -100,7 +101,7 @@ export function TimecodeEffect({
           action: () => {
             Object.assign(
               timecodeEffect,
-              clone(TimecodeEffectSchema, copyEffect),
+              clone(TimecodedEffectSchema, copyEffect),
               {
                 endMs: timecodeEffect.endMs,
                 startMs: timecodeEffect.startMs,
@@ -136,14 +137,17 @@ export function TimecodeEffect({
         const start = effectColor(rampEffect.stateStart, palette);
         const end = effectColor(rampEffect.stateEnd, palette, true);
         let width: number;
-        if (rampEffect.timingMode === EffectTiming.BEAT) {
-          width = beatWidthPx / (rampEffect.timingMultiplier || 1);
-        } else {
+        if (rampEffect.timingMode?.timing.case === 'beat') {
           width =
-            msWidthToPxWidth(timecodeEffect.endMs - timecodeEffect.startMs) /
-            (rampEffect.timingMultiplier || 1);
+            beatWidthPx / (rampEffect.timingMode.timing.value.multiplier || 1);
+        } else if (rampEffect.timingMode?.timing.case === 'absolute') {
+          width = msWidthToPxWidth(rampEffect.timingMode.timing.value.duration);
+        } else {
+          width = msWidthToPxWidth(
+            timecodeEffect.endMs - timecodeEffect.startMs,
+          );
         }
-        if (rampEffect.mirrored) {
+        if (rampEffect.timingMode?.mirrored) {
           style.background = `repeating-linear-gradient(90deg, ${end} 0, ${start} ${width}px, ${end} ${width * 2}px)`;
         } else {
           style.background = `repeating-linear-gradient(90deg, ${start} 0, ${end} ${width}px)`;
@@ -486,66 +490,115 @@ function RampEffectDetails({
       <label>
         <span>Easing</span>
         <select
-          value={effect.easing}
+          value={effect.timingMode?.easing}
           onChange={(e) => {
-            effect.easing = parseInt(e.target.value);
+            effect.timingMode!.easing = parseInt(e.target.value);
             save('Change effect easing type.');
           }}
         >
-          <option value={Effect_RampEffect_EasingFunction.LINEAR}>
-            Linear
-          </option>
-          <option value={Effect_RampEffect_EasingFunction.EASE_IN}>
-            Ease in
-          </option>
-          <option value={Effect_RampEffect_EasingFunction.EASE_OUT}>
-            Ease out
-          </option>
-          <option value={Effect_RampEffect_EasingFunction.EASE_IN_OUT}>
+          <option value={EffectTiming_EasingFunction.LINEAR}>Linear</option>
+          <option value={EffectTiming_EasingFunction.EASE_IN}>Ease in</option>
+          <option value={EffectTiming_EasingFunction.EASE_OUT}>Ease out</option>
+          <option value={EffectTiming_EasingFunction.EASE_IN_OUT}>
             Ease in/out
           </option>
-          <option value={Effect_RampEffect_EasingFunction.SINE}>Sine</option>
+          <option value={EffectTiming_EasingFunction.SINE}>Sine</option>
         </select>
       </label>
       {showTiming === undefined && (
         <label>
           <span>Timing mode</span>
           <select
-            value={effect.timingMode}
+            value={effect.timingMode?.timing.case}
             onChange={(e) => {
-              effect.timingMode = parseInt(e.target.value);
-              save(
-                `Change effect timing to ${effect.timingMode === EffectTiming.ONE_SHOT ? 'one shot' : 'beat'}.`,
-              );
+              const currentCase = effect.timingMode?.timing.case;
+              const newTiming = e.target.value;
+              if (currentCase === newTiming) {
+                return;
+              }
+
+              switch (newTiming) {
+                case 'absolute':
+                  effect.timingMode!.timing = {
+                    case: 'absolute',
+                    value: create(EffectTiming_AbsoluteSchema, {
+                      duration: 1000,
+                    }),
+                  };
+                  break;
+                case 'beat':
+                  effect.timingMode!.timing = {
+                    case: 'beat',
+                    value: create(EffectTiming_BeatSchema, {
+                      multiplier: 1,
+                    }),
+                  };
+                  break;
+                case 'oneShot':
+                  effect.timingMode!.timing = {
+                    case: 'oneShot',
+                    value: create(EffectTiming_OneShotSchema, {}),
+                  };
+                  break;
+              }
+
+              save(`Change effect timing to ${newTiming}.`);
             }}
           >
-            <option value={EffectTiming.ONE_SHOT}>One Shot</option>
-            <option value={EffectTiming.BEAT}>Beat</option>
+            <option value={'absolute'}>Absolute</option>
+            <option value={'beat'}>Beat</option>
+            <option value={'oneShot'}>One Shot</option>
           </select>
         </label>
       )}
 
-      <label>
-        <span>Timing multiplier</span>
-        <NumberInput
-          type="float"
-          max={128}
-          min={0}
-          value={effect.timingMultiplier || 1}
-          onChange={(v) => {
-            effect.timingMultiplier = v;
-            save(`Change effect timing multiplier to ${v}.`);
-          }}
-        />
-      </label>
+      {effect.timingMode?.timing.case === 'absolute' && (
+        <label>
+          <span>Duration (seconds)</span>
+          <NumberInput
+            type="float"
+            max={300}
+            min={0}
+            value={effect.timingMode.timing.value.duration / 1_000}
+            onChange={(v) => {
+              if (effect.timingMode?.timing.case !== 'absolute') {
+                throw new Error('Expected absolute timing mode!');
+              }
+              effect.timingMode.timing.value.duration = Math.floor(v * 1_000);
+              save(`Change effect duration to ${v} seconds.`);
+            }}
+          />
+        </label>
+      )}
+
+      {effect.timingMode?.timing.case === 'beat' && (
+        <label>
+          <span>Beats</span>
+          <NumberInput
+            type="float"
+            max={64}
+            min={0}
+            value={effect.timingMode.timing.value.multiplier}
+            onChange={(v) => {
+              if (effect.timingMode?.timing.case !== 'beat') {
+                throw new Error('Expected absolute timing mode!');
+              }
+              effect.timingMode.timing.value.multiplier = v;
+              save(`Change effect duration to ${v} beats.`);
+            }}
+          />
+        </label>
+      )}
 
       <label>
         <span>Mirrored</span>
         <Button
-          variant={effect.mirrored ? 'primary' : 'default'}
+          variant={effect.timingMode?.mirrored ? 'primary' : 'default'}
           onClick={() => {
-            effect.mirrored = !effect.mirrored;
-            save(`Changed effect mirrored status to ${effect.mirrored}.`);
+            effect.timingMode!.mirrored = !effect.timingMode!.mirrored;
+            save(
+              `Changed effect mirrored status to ${effect.timingMode!.mirrored}.`,
+            );
           }}
         >
           Mirrored
@@ -559,9 +612,9 @@ function RampEffectDetails({
             type="float"
             max={256}
             min={-256}
-            value={effect.phase || 0}
+            value={effect.timingMode!.phase || 0}
             onChange={(v) => {
-              effect.phase = v;
+              effect.timingMode!.phase = v;
               save(`Change effect phase to ${v}.`);
             }}
           />
@@ -640,23 +693,6 @@ function RandomEffectDetails({
   availableChannels,
 }: EffectDetailsBaseProps<Effect_RandomEffect>): JSX.Element {
   const { save } = useContext(ProjectContext);
-
-  const mapToStandardEffect = (
-    effect: Effect_RandomEffect['effectA'] | Effect_RandomEffect['effectB'],
-  ) => {
-    if (effect.case) {
-      const stripped = effect.case?.substring(1);
-
-      return {
-        case: stripped.substring(0, 1).toLowerCase() + stripped.substring(1),
-        value: effect.value,
-      } as Effect['effect'];
-    }
-    return {
-      case: undefined,
-      value: undefined,
-    } as Effect['effect'];
-  };
 
   return (
     <>
@@ -756,15 +792,9 @@ function RandomEffectDetails({
         <span>Effect type</span>
         <Spacer />
         <EffectSelector
-          effect={mapToStandardEffect(effect.effectA)}
+          effect={effect.effectA!.effect}
           setEffect={(e, description) => {
-            effect.effectA = {
-              case:
-                'a' +
-                e.case?.substring(0, 1).toUpperCase() +
-                e.case?.substring(1),
-              value: e.value,
-            } as Effect_RandomEffect['effectA'];
+            effect.effectA = create(EffectSchema, { effect: e });
             save(description);
           }}
         />
@@ -779,15 +809,9 @@ function RandomEffectDetails({
         <span>Effect B type</span>
         <Spacer />
         <EffectSelector
-          effect={mapToStandardEffect(effect.effectB)}
+          effect={effect.effectB!.effect}
           setEffect={(e, description) => {
-            effect.effectB = {
-              case:
-                'b' +
-                e.case?.substring(0, 1).toUpperCase() +
-                e.case?.substring(1),
-              value: e.value,
-            } as Effect_RandomEffect['effectB'];
+            effect.effectB = create(EffectSchema, { effect: e });
             save(description);
           }}
         />
@@ -851,6 +875,17 @@ function EffectSelector({
                   getStates(effect.value).a,
                 ),
                 stateEnd: clone(FixtureStateSchema, getStates(effect.value).b),
+                timingMode: {
+                  timing: {
+                    case: 'beat',
+                    value: {
+                      multiplier: 1,
+                    },
+                  },
+                  easing: EffectTiming_EasingFunction.LINEAR,
+                  mirrored: false,
+                  phase: 0,
+                },
               }),
             },
             'Change effect type to ramp.',
@@ -903,22 +938,27 @@ function EffectSelector({
                   effectBVariation: 1000,
 
                   effectA: {
-                    case: 'aStaticEffect',
-                    value: create(Effect_StaticEffectSchema, {
-                      state: clone(
-                        FixtureStateSchema,
-                        getStates(effect.value).a,
-                      ),
-                    }),
+                    effect: {
+                      case: 'staticEffect',
+                      value: create(Effect_StaticEffectSchema, {
+                        state: clone(
+                          FixtureStateSchema,
+                          getStates(effect.value).a,
+                        ),
+                      }),
+                    },
                   },
+
                   effectB: {
-                    case: 'bStaticEffect',
-                    value: create(Effect_StaticEffectSchema, {
-                      state: clone(
-                        FixtureStateSchema,
-                        getStates(effect.value).b,
-                      ),
-                    }),
+                    effect: {
+                      case: 'staticEffect',
+                      value: create(Effect_StaticEffectSchema, {
+                        state: clone(
+                          FixtureStateSchema,
+                          getStates(effect.value).a,
+                        ),
+                      }),
+                    },
                   },
                 }),
               },
@@ -942,30 +982,27 @@ function RandomEffectSubDetails({
   effect,
   availableChannels,
 }: RandomEffectSubDetailsProps) {
-  switch (effect.case) {
-    case 'aStaticEffect':
-    case 'bStaticEffect':
+  switch (effect?.effect.case) {
+    case 'staticEffect':
       return (
         <StaticEffectDetails
-          effect={effect.value}
+          effect={effect.effect.value}
           availableChannels={availableChannels}
           showPhase={false}
         />
       );
-    case 'aRampEffect':
-    case 'bRampEffect':
+    case 'rampEffect':
       return (
         <RampEffectDetails
-          effect={effect.value}
+          effect={effect.effect.value}
           availableChannels={availableChannels}
           showPhase={false}
         />
       );
-    case 'aStrobeEffect':
-    case 'bStrobeEffect':
+    case 'strobeEffect':
       return (
         <StrobeEffectDetails
-          effect={effect.value}
+          effect={effect.effect.value}
           availableChannels={availableChannels}
           showPhase={false}
         />

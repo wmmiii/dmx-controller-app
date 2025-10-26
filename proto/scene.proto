@@ -26,23 +26,23 @@ message Scene {
     bool one_shot = 15;
 
     oneof duration {
-      int32 duration_ms = 5;
+      uint32 duration_ms = 5;
       double duration_beat = 6;
     }
 
     oneof fade_in_duration {
-      int32 fade_in_ms = 7;
-      int32 fade_in_beat = 8;
+      uint32 fade_in_ms = 7;
+      uint32 fade_in_beat = 8;
     }
 
     oneof fade_out_duration {
-      int32 fade_out_ms = 9;
-      int32 fade_out_beat = 10;
+      uint32 fade_out_ms = 9;
+      uint32 fade_out_beat = 10;
     }
 
     oneof transition {
-      int64 start_fade_in_ms = 11;
-      int64 start_fade_out_ms = 12;
+      uint64 start_fade_in_ms = 11;
+      uint64 start_fade_out_ms = 12;
       float absolute_strength = 17;
     }
 

@@ -10,11 +10,7 @@ export function getTileDurationMs(
       if (!beat) {
         return 0;
       }
-      if (tile.description.case === 'sequence') {
-        return tile.description.value.nativeBeats * beat.lengthMs;
-      } else {
-        return beat.lengthMs;
-      }
+      return beat.lengthMs;
     case 'durationMs':
       return tile.duration.value;
     default:

@@ -1,13 +1,6 @@
 import { JSX, createRef, useContext, useEffect, useState } from 'react';
 import { Route, Routes, useNavigate } from 'react-router';
 
-import { toBinary } from '@bufbuild/protobuf';
-import { ProjectSchema } from '@dmx-controller/proto/project_pb';
-import init, {
-  hello_from_rust,
-  init_engine,
-  process_project,
-} from '@dmx-controller/wasm-engine';
 import '@radix-ui/themes/styles.css';
 import { exit } from '@tauri-apps/plugin-process';
 import {
@@ -53,20 +46,6 @@ export default function Index(): JSX.Element {
 
   const [showMenu, setShowMenu] = useState(false);
   const uploadButtonRef = createRef<HTMLInputElement>();
-
-  // Initialize WASM engine
-  useEffect(() => {
-    init().then(() => {
-      init_engine();
-      const message = hello_from_rust('Frontend');
-      console.log(message);
-
-      // Test process_project with current project
-      const projectBytes = toBinary(ProjectSchema, project);
-      const result = process_project(projectBytes);
-      console.log('Process project result:', result);
-    });
-  }, []);
 
   useEffect(() => {
     if (uploadButtonRef.current) {

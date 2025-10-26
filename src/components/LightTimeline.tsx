@@ -13,8 +13,9 @@ import { EffectRenderingContext } from '../contexts/EffectRenderingContext';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { ShortcutContext } from '../contexts/ShortcutContext';
 
+import { TimecodedEffect } from '@dmx-controller/proto/effect_pb';
 import { OutputTarget } from '@dmx-controller/proto/output_pb';
-import { Effect, Show_Output } from '@dmx-controller/proto/timecoded_pb';
+import { Show_Output } from '@dmx-controller/proto/show_pb';
 import { BiPlus, BiZoomIn, BiZoomOut } from 'react-icons/bi';
 import { getAvailableChannels } from '../engine/fixtures/fixture';
 import { AudioController, AudioTrackVisualizer } from './AudioTrackVisualizer';
@@ -68,7 +69,7 @@ export default function LightTimeline(props: TracksProps): JSX.Element {
 }
 
 export interface LightTimelineEffect {
-  effect: Effect;
+  effect: TimecodedEffect;
   outputTarget: OutputTarget | null;
 }
 
@@ -78,7 +79,7 @@ interface TracksProps {
   setAudioDuration: (duration: number) => void;
   selectedEffect: LightTimelineEffect | null;
   setSelectedEffect: (e: LightTimelineEffect | null) => void;
-  copyEffect: Effect | null;
+  copyEffect: TimecodedEffect | null;
   beatMetadata: BeatMetadata | undefined;
   beatSubdivisions: number;
   setBeatSubdivisions: (subdivisions: number) => void;
