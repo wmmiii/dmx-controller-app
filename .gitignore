@@ -1,8 +1,9 @@
+.git/
 .terraform/
 bazel-*
 core
 dist
-node_modules
+node_modules/
 pkg/
 proto/generated
 src-engine/target/
