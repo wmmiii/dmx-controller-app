@@ -4,7 +4,7 @@ use std::sync::OnceLock;
 use crate::proto::dmx_fixture_definition::Mode;
 use crate::proto::fixture_state::LightColor;
 use crate::proto::{Color, ColorPalette, DmxFixtureDefinition, SerialDmxOutput};
-use crate::render::RenderTarget;
+use crate::render::render_target::RenderTarget;
 
 macro_rules! apply_channel_updates {
     ($updates:expr, $fixture_offset:expr, $mode:expr, $state:expr, [

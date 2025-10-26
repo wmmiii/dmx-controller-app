@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package dmx_controller;
+
+import "proto/color.proto";
+import "proto/effect.proto";
+import "proto/output.proto";
+
+message Show {
+  message AudioTrack {
+    uint64 audio_file_id = 1;
+  }
+
+  message Output {
+    bool collapsed = 1;
+
+    dmx_controller.OutputTarget output_target = 2;
+
+    repeated Layer layers = 3;
+  }
+
+  string name = 1;
+  dmx_controller.ColorPalette color_palette = 2;
+  AudioTrack audio_track = 3;
+  repeated Output outputs = 4;
+}

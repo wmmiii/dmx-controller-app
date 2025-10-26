@@ -4,19 +4,6 @@ package dmx_controller;
 
 import "proto/color.proto";
 
-message RGB {
-  double red = 1;
-  double green = 2;
-  double blue = 3;
-}
-
-message RGBW {
-  double red = 1;
-  double green = 2;
-  double blue = 3;
-  double white = 4;
-}
-
 message FixtureState {
   enum StrobeSpeed {
     NONE = 0;
@@ -60,7 +47,33 @@ enum EffectTiming {
   reserved 2; // ABSOLUTE
 }
 
+
+message TimecodedEffect {
+  Effect effect = 1;
+  
+  uint32 start_ms = 2;
+  uint32 end_ms = 3;
+}
+
+message Layer { repeated TimecodedEffect effects = 1; }
+
+
+message Sequence {
+  string name = 1;
+  uint32 native_beats = 2;
+
+  repeated Layer layers = 3;
+}
+
 message Effect {
+
+  enum EasingFunction {
+    LINEAR = 0;
+    EASE_IN = 1;
+    EASE_OUT = 2;
+    EASE_IN_OUT = 3;
+    SINE = 4;
+  }
 
   message StaticEffect {
     FixtureState state = 1;
@@ -69,13 +82,6 @@ message Effect {
   }
 
   message RampEffect {
-    enum EasingFunction {
-      LINEAR = 0;
-      EASE_IN = 1;
-      EASE_OUT = 2;
-      EASE_IN_OUT = 3;
-      SINE = 4;
-    }
 
     FixtureState state_start = 2;
     FixtureState state_end = 3;
@@ -118,6 +124,19 @@ message Effect {
     }
   }
 
+  message SequenceEffect {
+    oneof sequence {
+      uint64 sequence_id = 1;
+      Sequence sequence_impl = 2;
+    }
+
+    EasingFunction easing = 3;
+    EffectTiming timing_mode = 4;
+    double timing_multiplier = 5;
+    bool mirrored = 6;
+    double phase = 7;
+  }
+
   reserved 3 to 10;
 
   reserved 19 to 100;
@@ -127,6 +146,7 @@ message Effect {
     RampEffect ramp_effect = 102;
     StrobeEffect strobe_effect = 103;
     RandomEffect random_effect = 104;
+    SequenceEffect sequence_effect = 105;
   }
 
   // Deprecated
