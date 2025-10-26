@@ -5,7 +5,6 @@ package dmx_controller;
 import "proto/color.proto";
 import "proto/effect.proto";
 import "proto/output.proto";
-import "proto/timecoded.proto";
 
 // A scene is a part of a live show that composes tiles together to form
 // the final output of the universe.
@@ -14,28 +13,16 @@ message Scene {
   // A tile is a part of a scene that can be enabled or disabled and
   // applies state to the universe.
   message Tile {
-    message EffectGroupTile {
-      message EffectChannel {
-        Effect effect = 1;
+    message EffectChannel {
+      Effect effect = 1;
 
-        OutputTarget output_target = 2;
-      }
-
-      repeated EffectChannel channels = 5;
-      
-      reserved 1; // Effect effect = 1 [deprecated = true];
-
-      reserved 2; // uint32 physical_fixture_id = 2 [deprecated = true];
-      reserved 3; // uint32 physical_fixture_group_id = 3 [deprecated = true];
-      reserved 4; // OutputId output_id = 4 [deprecated = true];
+      OutputTarget output_target = 2;
     }
 
     string name = 1;
     reserved 2; // universe_sequence_id
-    oneof description {
-      uint64 sequence_id = 13;
-      EffectGroupTile effect_group = 14;
-    }
+
+    repeated EffectChannel channels = 18;
     bool one_shot = 15;
 
     oneof duration {
@@ -62,11 +49,8 @@ message Scene {
     reserved 3; // active
     reserved 4; // string shortcut = 4 [deprecated = true];
     reserved 16; // map<string, string> controller_channel = 16 [deprecated = true];
-  }
-
-  message ComponentRow {
-    option deprecated = true;
-    repeated Tile components = 11;
+    reserved 13; // uint64 sequence_id = 13;
+    reserved 14; // EffectGroupTile effect_group = 14;
   }
 
   message TileMap {

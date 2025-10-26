@@ -5,10 +5,11 @@ package dmx_controller;
 import "proto/audio.proto";
 import "proto/beat.proto";
 import "proto/controller.proto";
+import "proto/effect.proto";
 import "proto/fixture_definitions.proto";
 import "proto/output.proto";
 import "proto/scene.proto";
-import "proto/timecoded.proto";
+import "proto/show.proto";
 
 message Project {
   message Assets {
@@ -29,11 +30,11 @@ message Project {
 
   Assets assets = 21;
 
-  map<uint64, timecoded.Show> shows = 31;
+  map<uint64, Show> shows = 31;
   uint64 selected_show = 32;
 
   // Fixture sequence 0 is reserved for the "unset" sequence.
-  map<uint64, timecoded.Sequence> sequences = 33;
+  map<uint64, Sequence> sequences = 33;
 
   // Scene 0 is reserved for the "unset" scene.
   map<uint64, Scene> scenes = 56;
