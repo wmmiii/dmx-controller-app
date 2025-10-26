@@ -4,10 +4,10 @@ import { JSX, useContext, useEffect, useState } from 'react';
 import { ProjectContext } from '../contexts/ProjectContext';
 
 import {
-  Effect,
-  EffectSchema,
   Layer as LayerProto,
-} from '@dmx-controller/proto/timecoded_pb';
+  TimecodedEffect,
+  TimecodedEffectSchema,
+} from '@dmx-controller/proto/effect_pb';
 import { ShortcutContext } from '../contexts/ShortcutContext';
 import styles from './Layer.module.scss';
 import { TimecodeEffect as EffectComponent } from './TimecodeEffect';
@@ -23,9 +23,9 @@ interface NewEffect {
 interface LayerProps {
   className?: string;
   layer: LayerProto;
-  selectedEffect: Effect | null;
-  setSelectedEffect: (e: Effect | null) => void;
-  copyEffect: Effect | null;
+  selectedEffect: TimecodedEffect | null;
+  setSelectedEffect: (e: TimecodedEffect | null) => void;
+  copyEffect: TimecodedEffect | null;
   maxMs: number;
   msToPx: (ms: number) => number;
   pxToMs: (px: number) => number;
@@ -118,7 +118,7 @@ export function Layer({
                 return;
               }
 
-              const e = create(EffectSchema, {
+              const e = create(TimecodedEffectSchema, {
                 startMs: Math.min(newEffect.firstMs, newEffect.secondMs),
                 endMs: Math.max(newEffect.firstMs, newEffect.secondMs),
                 effect: {

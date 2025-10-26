@@ -11,9 +11,9 @@ import {
 import { ProjectContext } from '../contexts/ProjectContext';
 
 import {
-  Effect,
   Layer as LayerProto,
-} from '@dmx-controller/proto/timecoded_pb';
+  TimecodedEffect,
+} from '@dmx-controller/proto/effect_pb';
 import { ShortcutContext } from '../contexts/ShortcutContext';
 import { ALL_CHANNELS } from '../engine/channel';
 import { NumberInput } from './Input';
@@ -37,8 +37,10 @@ export function SequenceEditor({
   const { project } = useContext(ProjectContext);
   const { setShortcuts } = useContext(ShortcutContext);
   const panelRef = useRef<HTMLDivElement>(null);
-  const [selectedEffect, setSelectedEffect] = useState<Effect | null>(null);
-  const [copyEffect, setCopyEffect] = useState<Effect | null>(null);
+  const [selectedEffect, setSelectedEffect] = useState<TimecodedEffect | null>(
+    null,
+  );
+  const [copyEffect, setCopyEffect] = useState<TimecodedEffect | null>(null);
   const [beatSubdivisions, setBeatSubdivisions] = useState(4);
 
   const sequence = useMemo(
@@ -158,9 +160,9 @@ export function SequenceEditor({
 
 interface LayersProps {
   layers: LayerProto[];
-  selectedEffect: Effect | null;
-  setSelectedEffect: (e: Effect | null) => void;
-  copyEffect: Effect | null;
+  selectedEffect: TimecodedEffect | null;
+  setSelectedEffect: (e: TimecodedEffect | null) => void;
+  copyEffect: TimecodedEffect | null;
   msToPx: (ms: number) => number;
   pxToMs: (px: number) => number;
   snapToBeat: (t: number) => number;

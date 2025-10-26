@@ -37,14 +37,39 @@ message FixtureState {
   reserved 3; // RGBW rgbw = 3 [deprecated = true];
 }
 
-enum EffectTiming {
-  // The `t` value passed in corresponds to the [0, 1] value of where we are in
-  // the effect itself.
-  ONE_SHOT = 0;
-  // The `t` value passed in corresponds to the relative timing of the beat
-  // between [0, 1].
-  BEAT = 1;
-  reserved 2; // ABSOLUTE
+// Defines how time is mapped for cyclic effects.
+message EffectTiming {
+  enum EasingFunction {
+    LINEAR = 0;
+    EASE_IN = 1;
+    EASE_OUT = 2;
+    EASE_IN_OUT = 3;
+    SINE = 4;
+  }
+
+  // Cycle is defined by an absolute duration.
+  message Absolute {
+    uint32 duration = 1;
+  }
+
+  // Cycle is defined by the beat.
+  message Beat {
+    float multiplier = 1;
+  }
+
+  // Cycle is defined externally. (used only during sequences)
+  message OneShot {
+
+  }
+
+  oneof timing {
+    Absolute absolute = 1;
+    Beat beat = 2;
+    OneShot one_shot = 3;
+  }
+  EasingFunction easing = 4;
+  bool mirrored = 5;
+  double phase = 6;
 }
 
 
@@ -66,15 +91,6 @@ message Sequence {
 }
 
 message Effect {
-
-  enum EasingFunction {
-    LINEAR = 0;
-    EASE_IN = 1;
-    EASE_OUT = 2;
-    EASE_IN_OUT = 3;
-    SINE = 4;
-  }
-
   message StaticEffect {
     FixtureState state = 1;
 
@@ -82,22 +98,22 @@ message Effect {
   }
 
   message RampEffect {
-
     FixtureState state_start = 2;
     FixtureState state_end = 3;
 
-    EasingFunction easing = 1;
-    EffectTiming timing_mode = 6;
-    double timing_multiplier = 7;
-    bool mirrored = 8;
-    double phase = 9;
+    EffectTiming timing_mode = 10;
 
     reserved 4 to 5; // Deprecated fixture_sequence_mapping
+    reserved 1; // EasingFunction easing = 1;
+    reserved 6; // EffectTiming timing_mode = 6;
+    reserved 7; // double timing_multiplier = 7;
+    reserved 8; // bool mirrored = 8;
+    reserved 9; // double phase = 9;
   }
 
   message StrobeEffect {
-    int32 state_a_fames = 1;
-    int32 state_b_fames = 4;
+    uint32 state_a_fames = 1;
+    uint32 state_b_fames = 4;
 
     FixtureState state_a = 2;
     FixtureState state_b = 3;
@@ -111,17 +127,8 @@ message Effect {
     uint32 effect_b_variation = 5;
     bool treat_fixtures_individually = 6;
 
-    oneof effect_a {
-      StaticEffect a_static_effect = 11;
-      RampEffect a_ramp_effect = 12;
-      StrobeEffect a_strobe_effect = 13;
-    }
-
-    oneof effect_b {
-      StaticEffect b_static_effect = 21;
-      RampEffect b_ramp_effect = 22;
-      StrobeEffect b_strobe_effect = 23;
-    }
+    Effect effect_a = 7;
+    Effect effect_b = 8;
   }
 
   message SequenceEffect {
@@ -130,11 +137,7 @@ message Effect {
       Sequence sequence_impl = 2;
     }
 
-    EasingFunction easing = 3;
     EffectTiming timing_mode = 4;
-    double timing_multiplier = 5;
-    bool mirrored = 6;
-    double phase = 7;
   }
 
   reserved 3 to 10;

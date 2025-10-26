@@ -1,6 +1,13 @@
 import { create } from '@bufbuild/protobuf';
 import { JSX, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
+import { TimecodedEffect } from '@dmx-controller/proto/effect_pb';
+import { Project } from '@dmx-controller/proto/project_pb';
+import {
+  ShowSchema,
+  Show_AudioTrackSchema,
+  Show_OutputSchema,
+} from '@dmx-controller/proto/show_pb';
 import { Button } from '../components/Button';
 import { TextInput } from '../components/Input';
 import LightTimeline, {
@@ -9,19 +16,10 @@ import LightTimeline, {
 import { Modal } from '../components/Modal';
 import { PaletteContext } from '../contexts/PaletteContext';
 import { ProjectContext } from '../contexts/ProjectContext';
-import { DEFAULT_COLOR_PALETTE, renderShow } from '../engine/render';
-import { idMapToArray, UNSET_INDEX } from '../util/mapUtils';
-
-import { Project } from '@dmx-controller/proto/project_pb';
-import {
-  Effect,
-  Show_AudioTrackSchema,
-  Show_OutputSchema,
-  ShowSchema,
-} from '@dmx-controller/proto/timecoded_pb';
-import { RenderingContext } from '../contexts/RenderingContext';
 import { ShortcutContext } from '../contexts/ShortcutContext';
-import { WritableOutput } from '../engine/context';
+import { setRenderFunctions } from '../engine/renderRouter';
+import { DEFAULT_COLOR_PALETTE } from '../util/colorUtil';
+import { UNSET_INDEX, idMapToArray } from '../util/mapUtils';
 import { randomUint64 } from '../util/numberUtils';
 import styles from './ShowPage.module.scss';
 
@@ -50,8 +48,6 @@ function createShow(project: Project) {
 export default function ShowPage(): JSX.Element {
   const { project, save } = useContext(ProjectContext);
   const { setShortcuts } = useContext(ShortcutContext);
-  const { setRenderFunction, clearRenderFunction } =
-    useContext(RenderingContext);
 
   let t = useRef<number>(0);
   const [audioDuration, setAudioDuration] = useState(1);
@@ -61,20 +57,25 @@ export default function ShowPage(): JSX.Element {
 
   const [selectedEffect, setSelectedEffect] =
     useState<LightTimelineEffect | null>(null);
-  const [copyEffect, setCopyEffect] = useState<Effect | null>(null);
+  const [copyEffect, setCopyEffect] = useState<TimecodedEffect | null>(null);
 
   const show = useMemo(
     () => project?.shows[project.selectedShow.toString()],
     [project],
   );
 
-  useEffect(() => {
-    const render = (frame: number, output: WritableOutput) =>
-      renderShow(t.current, frame, project, output);
-
-    setRenderFunction(render);
-    return () => clearRenderFunction(render);
-  }, [project, t]);
+  useEffect(
+    () =>
+      setRenderFunctions({
+        renderDmx: () => {
+          throw new Error('renderDmx not implemented!');
+        },
+        renderWled: () => {
+          throw new Error('renderDmx not implemented!');
+        },
+      }),
+    [project, t],
+  );
 
   useEffect(
     () =>

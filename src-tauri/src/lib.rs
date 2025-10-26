@@ -1,4 +1,5 @@
 mod midi;
+mod render;
 mod sacn;
 mod serial;
 
@@ -32,14 +33,15 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            midi::list_midi_inputs,
             midi::connect_midi,
+            midi::list_midi_inputs,
             midi::send_midi_command,
+            render::render_dmx_scene,
+            sacn::output_sacn_dmx,
+            serial::close_port,
             serial::list_ports,
             serial::open_port,
-            serial::close_port,
             serial::output_serial_dmx,
-            sacn::output_sacn_dmx
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

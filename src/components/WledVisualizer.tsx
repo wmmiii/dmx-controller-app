@@ -2,15 +2,17 @@ import { useContext, useEffect, useState } from 'react';
 
 import { ProjectContext } from '../contexts/ProjectContext';
 
-import { RenderingContext } from '../contexts/RenderingContext';
-import { WritableWledOutput } from '../engine/context';
 import { getOutput } from '../util/projectUtils';
 
-import { WledOutput } from '@dmx-controller/proto/wled_pb';
 import { WledRendererContext } from '../contexts/WledRendererContext';
 import styles from './Visualizer.module.scss';
 
+import { WledOutput } from '@dmx-controller/proto/wled_pb';
 import { CiWarning } from 'react-icons/ci';
+import {
+  subscribeToWledRender,
+  WledRenderOutput,
+} from '../engine/renderRouter';
 
 interface WledVisualizerProps {
   wledOutputId: bigint;
@@ -18,27 +20,24 @@ interface WledVisualizerProps {
 
 export function WledVisualizer({ wledOutputId }: WledVisualizerProps) {
   const { project } = useContext(ProjectContext);
-  const { subscribeToRender } = useContext(RenderingContext);
   const { warnings } = useContext(WledRendererContext);
 
-  const [writableWledOutput, setWritableWledOutput] =
-    useState<WritableWledOutput | null>(null);
+  const [wledRenderOutput, setWledRenderOutput] =
+    useState<WledRenderOutput | null>(null);
 
   const wledOutput = getOutput(project, wledOutputId).output
     .value as WledOutput;
   const warning = warnings[wledOutputId.toString()];
 
   useEffect(() => {
-    subscribeToRender(wledOutputId, (output) => {
-      setWritableWledOutput(output as WritableWledOutput);
-    });
-  }, [subscribeToRender, setWritableWledOutput]);
+    subscribeToWledRender(wledOutputId, setWledRenderOutput);
+  }, [setWledRenderOutput]);
 
   return (
     <div className={styles.wrapper}>
       {warning && <CiWarning className={styles.warning} title={warning} />}
       <ol className={styles.visualizer}>
-        {writableWledOutput?.segments.map((s, i) => {
+        {wledRenderOutput?.segments.map((s, i) => {
           let red = s.primaryColor.red;
           let green = s.primaryColor.green;
           let blue = s.primaryColor.blue;

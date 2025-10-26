@@ -13,7 +13,7 @@ import { Modal } from '../components/Modal';
 
 import { BiErrorAlt } from 'react-icons/bi';
 import { WritableDmxOutput } from '../engine/context';
-import { getDmxWritableOutput } from '../engine/outputs/dmxOutput';
+import { DmxRenderOutput, renderDmx } from '../engine/renderRouter';
 import {
   closePort,
   listPorts,
@@ -25,7 +25,6 @@ import {
 import { getOutput, getSerialOutputId } from '../util/projectUtils';
 import { DialogContext } from './DialogContext';
 import { ProjectContext } from './ProjectContext';
-import { RenderingContext } from './RenderingContext';
 import { ShortcutContext } from './ShortcutContext';
 
 export const BLACKOUT_UNIVERSE: WritableDmxOutput = {
@@ -110,7 +109,6 @@ interface SerialProviderImplProps {
 function SerialProviderImpl({
   children,
 }: SerialProviderImplProps): JSX.Element {
-  const { renderFunction } = useContext(RenderingContext);
   const { project, update } = useContext(ProjectContext);
   const { setShortcuts } = useContext(ShortcutContext);
   const [port, setPort] = useState<boolean>(false);
@@ -186,8 +184,7 @@ function SerialProviderImpl({
     if (!port) {
       const handle = setInterval(() => {
         frameRef.current += 1;
-        const output = getDmxWritableOutput(project, outputId);
-        renderFunction.current(frameRef.current, output);
+        renderDmx(outputId, frameRef.current++);
       }, 30);
       return () => clearInterval(handle);
     }
@@ -198,17 +195,15 @@ function SerialProviderImpl({
     (async () => {
       while (!closed) {
         const startMs = new Date().getTime();
-        let serialOutput: WritableDmxOutput;
+        let dmxOutput: DmxRenderOutput;
         if (blackout.current) {
-          serialOutput = BLACKOUT_UNIVERSE;
+          dmxOutput = new Uint8Array(512);
         } else {
-          serialOutput = getDmxWritableOutput(project, outputId);
-          frameRef.current += 1;
-          renderFunction.current(frameRef.current, serialOutput);
+          dmxOutput = await renderDmx(outputId, frameRef.current++);
         }
 
         try {
-          await outputDmx(outputId, serialOutput.uint8Array);
+          await outputDmx(outputId, dmxOutput);
           latencySamples.push(new Date().getTime() - startMs);
         } catch (e) {
           console.error('Could not write to serial port!', e);
