@@ -6,11 +6,8 @@ import {
 } from '../components/OutputSelector';
 import { ProjectContext } from '../contexts/ProjectContext';
 
-import {
-  Effect,
-  LayerSchema,
-  Show_Output,
-} from '@dmx-controller/proto/timecoded_pb';
+import { LayerSchema, TimecodedEffect } from '@dmx-controller/proto/effect_pb';
+import { Show_Output } from '@dmx-controller/proto/show_pb';
 import {
   BiBrushAlt,
   BiChevronDown,
@@ -31,9 +28,9 @@ export interface MappingFunctions {
 
 interface LightTrackProps {
   output: Show_Output;
-  selectedEffect: Effect | null;
-  setSelectedEffect: (e: Effect | null) => void;
-  copyEffect: Effect | null;
+  selectedEffect: TimecodedEffect | null;
+  setSelectedEffect: (e: TimecodedEffect | null) => void;
+  copyEffect: TimecodedEffect | null;
   maxMs: number;
   leftWidth: number;
   mappingFunctions: MappingFunctions;

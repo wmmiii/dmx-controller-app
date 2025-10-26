@@ -29,3 +29,5 @@ open_dmx = "1.1.1"
 midir = "0.10.2"
 sacn = "0.10.0"
 tauri-plugin-process = "2"
+dmx-engine = { path = "../src-engine" }
+prost = "0.14.1"

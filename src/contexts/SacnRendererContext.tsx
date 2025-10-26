@@ -7,11 +7,10 @@ import {
 } from 'react';
 
 import { SacnDmxOutput } from '@dmx-controller/proto/output_pb';
-import { getDmxWritableOutput } from '../engine/outputs/dmxOutput';
+import { renderDmx } from '../engine/renderRouter';
 import { outputDmxSacn, sacnSupported } from '../system_interfaces/sacn';
 import { getActivePatch, getOutput } from '../util/projectUtils';
 import { ProjectContext } from './ProjectContext';
-import { RenderingContext } from './RenderingContext';
 
 export const SacnRendererContext = createContext({
   warnings: {} as { [outputId: string]: string },
@@ -19,7 +18,6 @@ export const SacnRendererContext = createContext({
 
 export function SacnRendererProvider({ children }: PropsWithChildren) {
   const { project, update } = useContext(ProjectContext);
-  const { renderFunction } = useContext(RenderingContext);
   const [warnings, setWarnings] = useState<{ [outputId: string]: string }>({});
 
   const startRenderLoop = (outputId: bigint) => {
@@ -32,15 +30,14 @@ export function SacnRendererProvider({ children }: PropsWithChildren) {
       const latencySamples: number[] = [];
 
       while (cont) {
-        const sacnWritableOutput = getDmxWritableOutput(project, outputId);
         const startMs = new Date().getTime();
-        renderFunction.current(++frame, sacnWritableOutput);
+        const dmxOutput = await renderDmx(outputId, frame++);
 
         try {
           await outputDmxSacn(
             sacnOutput.universe,
             sacnOutput.ipAddress,
-            sacnWritableOutput.uint8Array,
+            dmxOutput,
           );
           latencySamples.push(new Date().getTime() - startMs);
         } catch (e) {

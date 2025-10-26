@@ -1,6 +1,5 @@
 import { create } from '@bufbuild/protobuf';
 import { Effect, FixtureState } from '@dmx-controller/proto/effect_pb';
-import { LightTrack } from '@dmx-controller/proto/light_track_pb';
 import {
   OutputTarget,
   PatchSchema,
@@ -8,6 +7,7 @@ import {
 } from '@dmx-controller/proto/output_pb';
 import { Project, ProjectSchema } from '@dmx-controller/proto/project_pb';
 import { Scene_Tile } from '@dmx-controller/proto/scene_pb';
+import { Show_Output } from '@dmx-controller/proto/show_pb';
 import { isWledChannel } from '../engine/channel';
 import { randomUint64 } from './numberUtils';
 
@@ -54,26 +54,20 @@ export function deleteFromOutputTargets(
     );
   }
 
-  const deleteFromLightTrack = (t: LightTrack) => {
-    deleteFromOutputTarget(t.outputTarget);
-  };
+  const deleteFromShowOutput = (o: Show_Output) =>
+    deleteFromOutputTarget(o.outputTarget);
 
   // Delete from shows.
-  project.shows.flatMap((s) => s.lightTracks).forEach(deleteFromLightTrack);
+  Object.values(project.shows)
+    .flatMap((s) => s.outputs)
+    .forEach(deleteFromShowOutput);
 
   // Delete from scenes.
   Object.values(project.scenes)
     .flatMap((s) => s.tileMap)
     .map((r) => r.tile!)
-    .forEach((t) => {
-      const description = t.description;
-      if (description.case === 'effectGroup') {
-        description.value.channels.forEach((c) =>
-          deleteFromOutputTarget(c.outputTarget),
-        );
-      } else if (description.case === 'sequence') {
-        description.value.lightTracks.forEach(deleteFromLightTrack);
-      }
+    .forEach((o) => {
+      o.channels.forEach((c) => deleteFromOutputTarget(c.outputTarget));
     });
 }
 
@@ -208,20 +202,10 @@ export function tileTileDetails(tile: Scene_Tile) {
     }
   };
 
-  if (tile.description.case === 'sequence') {
-    const sequence = tile.description.value;
-    sequence.lightTracks
-      .flatMap((t) => t.layers)
-      .flatMap((t) => t.effects)
-      .filter((e) => e != null)
-      .forEach(collect);
-  } else if (tile.description.case === 'effectGroup') {
-    const group = tile.description.value;
-    group.channels
-      .map((t) => t.effect!)
-      .filter((e) => e != null)
-      .forEach(collect);
-  }
+  tile.channels
+    .map((t) => t.effect!)
+    .filter((e) => e != null)
+    .forEach(collect);
 
   return {
     colors: colors,

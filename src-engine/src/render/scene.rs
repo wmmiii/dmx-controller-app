@@ -7,7 +7,7 @@ use crate::{
             tile::{EffectChannel, FadeInDuration, Transition},
             TileMap,
         },
-        Effect, Project, Scene, SerialDmxOutput,
+        Effect, Project, Scene,
     },
     render::{
         dmx_render_target::DmxRenderTarget,
@@ -44,19 +44,20 @@ impl Ord for TileMap {
     }
 }
 
-pub fn render_live_dmx(
+pub fn render_scene_dmx(
     project: &Project,
     output_id: u64,
     system_t: u64,
-    beat_metadata: &crate::proto::BeatMetadata,
+    frame: u32,
 ) -> Result<[u8; 512], String> {
-    let output: &SerialDmxOutput = match project
+    let fixtures = match project
         .patches
         .get(&project.active_patch)
         .and_then(|p| p.outputs.get(&output_id))
         .and_then(|o| o.output.as_ref())
     {
-        Some(Output::SerialDmxOutput(serial)) => serial,
+        Some(Output::SerialDmxOutput(serial)) => &serial.fixtures,
+        Some(Output::SacnDmxOutput(sacn)) => &sacn.fixtures,
         Some(_) => return Err("Output specified not DMX!".to_string()),
         None => {
             return Err(format!(
@@ -80,9 +81,20 @@ pub fn render_live_dmx(
         None => return Err(format!("Could not find scene {}", project.active_scene)),
     };
 
-    let mut render_target = DmxRenderTarget::new(output, fixture_definitions);
+    let mut render_target = DmxRenderTarget::new(&fixtures, fixture_definitions);
 
-    render_scene(scene, &mut render_target, system_t, beat_metadata, project);
+    let Some(beat_metadata) = project.live_beat else {
+        return Err("Live beat not set!".to_string());
+    };
+
+    render_scene(
+        scene,
+        &mut render_target,
+        system_t,
+        frame,
+        &beat_metadata,
+        project,
+    );
 
     return Ok(render_target.get_universe());
 }
@@ -91,13 +103,11 @@ fn render_scene<T: RenderTarget<T>>(
     scene: &Scene,
     render_target: &mut T,
     t: u64,
+    frame: u32,
     beat_metadata: &crate::proto::BeatMetadata,
     project: &Project,
 ) {
-    let beat_number =
-        ((t - beat_metadata.offset_ms) as f64 / beat_metadata.length_ms).floor() as u64;
-    let beat_t =
-        (t as f64 - (beat_number as f64 * beat_metadata.length_ms)) / beat_metadata.length_ms;
+    let beat_t = (t - beat_metadata.offset_ms) as f64 / beat_metadata.length_ms;
 
     // Interpolate color palette
     let color_palette_t = {
@@ -183,6 +193,17 @@ fn render_scene<T: RenderTarget<T>>(
             None => 0.0,
         };
 
+        // Calculate since start of effect
+        let ms_since_start = match tile.transition {
+            Some(Transition::StartFadeInMs(transition))
+            | Some(Transition::StartFadeOutMs(transition))
+                if tile.one_shot =>
+            {
+                transition
+            }
+            _ => t,
+        };
+
         let before = render_target.clone();
         let mut after = render_target.clone();
 
@@ -200,8 +221,12 @@ fn render_scene<T: RenderTarget<T>>(
                     project,
                     &mut after,
                     &output_target,
-                    &beat_number,
+                    &t,
+                    &ms_since_start,
+                    &1000,
                     &beat_t,
+                    &frame,
+                    &0,
                     effect,
                     &color_palette,
                 ),
