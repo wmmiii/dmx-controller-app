@@ -10,3 +10,22 @@ message WledOutput {
 message PhysicalWledSegment {
   string name = 1;
 }
+
+message WledRenderTarget {
+  message Color {
+    float red = 1;
+    float green = 2;
+    float blue = 3;
+  }
+
+  message Segment {
+    uint32 effect = 1;
+    uint32 palette = 2;
+    Color primary_color = 3;
+    float speed = 4;
+    float brightness = 5;
+  }
+
+  uint64 id = 1;
+  repeated Segment segments = 2;
+}

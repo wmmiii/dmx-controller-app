@@ -8,6 +8,7 @@ import {
 
 import { WledOutput } from '@dmx-controller/proto/wled_pb';
 import { renderWled } from '../engine/renderRouter';
+import { sendWled } from '../system_interfaces/wled';
 import { getActivePatch, getOutput } from '../util/projectUtils';
 import { ProjectContext } from './ProjectContext';
 
@@ -23,69 +24,18 @@ export function WledRendererProvider({ children }: PropsWithChildren) {
     let cont = true;
     let frame = 0;
     (async () => {
-      if (2 == 1 + 1) {
-        return;
-      }
-
       const wledOutput = getActivePatch(project).outputs[outputId.toString()]
         .output.value as WledOutput;
-
-      let lastUpdate;
 
       const latencySamples: number[] = [];
 
       while (cont) {
         const startMs = new Date().getTime();
-        const wledRenderOutput = await renderWled(outputId);
-
-        const wledUpdate = {
-          transition: 0,
-          seg: wledRenderOutput.segments.map((s, i) => ({
-            id: i,
-            col: [
-              [
-                Math.min(Math.floor(s.primaryColor.red * 255), 255),
-                Math.min(Math.floor(s.primaryColor.green * 255), 255),
-                Math.min(Math.floor(s.primaryColor.blue * 255), 255),
-              ],
-            ],
-            fx: s.effect,
-            sx: Math.floor(s.speed * 255),
-            pal: s.palette,
-            bri: Math.floor(s.brightness * 255),
-          })),
-        };
-
-        if (JSON.stringify(lastUpdate) === JSON.stringify(wledUpdate)) {
-          await new Promise((resolve) => setTimeout(resolve, 10));
-          continue;
-        }
-
-        lastUpdate = wledUpdate;
+        const renderTarget = await renderWled(outputId, frame++);
 
         try {
-          const response = await fetch(
-            `http://${wledOutput.ipAddress}/json/state`,
-            {
-              method: 'POST',
-              body: JSON.stringify(wledUpdate),
-            },
-          );
+          await sendWled(wledOutput.ipAddress, renderTarget);
           latencySamples.push(new Date().getTime() - startMs);
-          if (!response.ok) {
-            console.error(await response.text());
-            const output = getOutput(project, outputId);
-            setWarnings(
-              Object.assign({}, warnings, {
-                [outputId.toString()]: `Error response from WLED device ${output.name}!`,
-              }),
-            );
-          } else {
-            setWarnings((warnings) => {
-              delete warnings[outputId.toString()];
-              return Object.assign({}, warnings);
-            });
-          }
         } catch (e) {
           console.error(e);
           const output = getOutput(project, outputId);

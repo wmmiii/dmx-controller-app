@@ -1,26 +1,19 @@
+import { create } from '@bufbuild/protobuf';
+import {
+  WledRenderTarget,
+  WledRenderTargetSchema,
+} from '@dmx-controller/proto/wled_pb';
+
 export type DmxRenderOutput = Uint8Array;
-export type WledRenderOutput = {
-  segments: Array<{
-    effect: number;
-    palette: number;
-    primaryColor: {
-      red: number;
-      green: number;
-      blue: number;
-    };
-    speed: number;
-    brightness: number;
-  }>;
-};
 
 interface RenderFunctions {
   renderDmx: (outputId: bigint, frame: number) => Promise<DmxRenderOutput>;
-  renderWled: (outputId: bigint, frame: number) => Promise<WledRenderOutput>;
+  renderWled: (outputId: bigint, frame: number) => Promise<WledRenderTarget>;
 }
 
 const EMPTY_RENDER_FUNCTIONS: RenderFunctions = {
   renderDmx: async () => new Uint8Array(512),
-  renderWled: async () => ({ segments: [] }),
+  renderWled: async () => create(WledRenderTargetSchema, {}),
 };
 
 let renderFunctions = EMPTY_RENDER_FUNCTIONS;
@@ -30,7 +23,7 @@ const dmxSubscriptions: Map<
 > = new Map();
 const wledSubscriptions: Map<
   bigint,
-  Array<(o: WledRenderOutput) => void>
+  Array<(o: WledRenderTarget) => void>
 > = new Map();
 
 export function setRenderFunctions(f: RenderFunctions) {
@@ -54,7 +47,7 @@ export function subscribeToDmxRender(
 
 export function subscribeToWledRender(
   outputId: bigint,
-  listener: (o: WledRenderOutput) => void,
+  listener: (o: WledRenderTarget) => void,
 ) {
   const subscribers = wledSubscriptions.get(outputId);
   if (subscribers) {

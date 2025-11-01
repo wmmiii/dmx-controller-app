@@ -8,3 +8,4 @@ pkg/
 proto/generated
 src-engine/target/
 src/wasm-engine/target/
+target

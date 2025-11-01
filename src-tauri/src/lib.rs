@@ -2,6 +2,7 @@ mod midi;
 mod render;
 mod sacn;
 mod serial;
+mod wled;
 
 use tauri::Manager;
 
@@ -23,6 +24,12 @@ pub fn run() {
             let serial_state = serial::SerialState::new();
             app.manage(serial_state);
 
+            let wled_state = wled::WledState::new().map_err(|e| {
+                Box::new(std::io::Error::new(std::io::ErrorKind::Other, e))
+                    as Box<dyn std::error::Error>
+            })?;
+            app.manage(wled_state);
+
             if cfg!(debug_assertions) {
                 app.handle().plugin(
                     tauri_plugin_log::Builder::default()
@@ -36,12 +43,14 @@ pub fn run() {
             midi::connect_midi,
             midi::list_midi_inputs,
             midi::send_midi_command,
-            render::render_dmx_scene,
+            render::render_scene_dmx,
+            render::render_scene_wled,
             sacn::output_sacn_dmx,
             serial::close_port,
             serial::list_ports,
             serial::open_port,
             serial::output_serial_dmx,
+            wled::output_wled,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

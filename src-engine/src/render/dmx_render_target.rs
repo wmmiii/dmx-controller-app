@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::sync::OnceLock;
 
 use crate::proto::dmx_fixture_definition::Mode;
-use crate::proto::fixture_state::LightColor;
 use crate::proto::{Color, ColorPalette, DmxFixtureDefinition, PhysicalDmxFixture};
 use crate::render::render_target::RenderTarget;
 
@@ -216,44 +215,7 @@ impl<'a> RenderTarget<DmxRenderTarget<'a>> for DmxRenderTarget<'a> {
 
         let mut all_updates = Vec::new();
 
-        if let Some(light_color) = state.light_color {
-            let color = match light_color {
-                LightColor::Color(c) => c,
-                LightColor::PaletteColor(0) => Color {
-                    red: 0.0,
-                    green: 0.0,
-                    blue: 0.0,
-                    white: Some(0.0),
-                },
-                LightColor::PaletteColor(1) => Color {
-                    red: 0.0,
-                    green: 0.0,
-                    blue: 0.0,
-                    white: Some(1.0),
-                },
-                LightColor::PaletteColor(2) => match &color_palette.primary {
-                    Some(desc) => match &desc.color {
-                        Some(c) => c.clone(),
-                        None => return,
-                    },
-                    None => return,
-                },
-                LightColor::PaletteColor(3) => match &color_palette.secondary {
-                    Some(desc) => match &desc.color {
-                        Some(c) => c.clone(),
-                        None => return,
-                    },
-                    None => return,
-                },
-                LightColor::PaletteColor(4) => match &color_palette.tertiary {
-                    Some(desc) => match &desc.color {
-                        Some(c) => c.clone(),
-                        None => return,
-                    },
-                    None => return,
-                },
-                _ => return,
-            };
+        if let Some(color) = state.get_color(color_palette) {
             all_updates.extend(Self::compute_color_channel_updates(
                 fixture.channel_offset,
                 mode,
@@ -298,8 +260,6 @@ impl<'a> RenderTarget<DmxRenderTarget<'a>> for DmxRenderTarget<'a> {
                 self.universe[i as usize] = a_val + t * diff;
             }
         }
-
-        // Next, recover any indices that should not be interpolated
     }
 }
 

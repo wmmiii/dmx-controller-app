@@ -7,12 +7,9 @@ import { getOutput } from '../util/projectUtils';
 import { WledRendererContext } from '../contexts/WledRendererContext';
 import styles from './Visualizer.module.scss';
 
-import { WledOutput } from '@dmx-controller/proto/wled_pb';
+import { WledOutput, WledRenderTarget } from '@dmx-controller/proto/wled_pb';
 import { CiWarning } from 'react-icons/ci';
-import {
-  subscribeToWledRender,
-  WledRenderOutput,
-} from '../engine/renderRouter';
+import { subscribeToWledRender } from '../engine/renderRouter';
 
 interface WledVisualizerProps {
   wledOutputId: bigint;
@@ -23,7 +20,7 @@ export function WledVisualizer({ wledOutputId }: WledVisualizerProps) {
   const { warnings } = useContext(WledRendererContext);
 
   const [wledRenderOutput, setWledRenderOutput] =
-    useState<WledRenderOutput | null>(null);
+    useState<WledRenderTarget | null>(null);
 
   const wledOutput = getOutput(project, wledOutputId).output
     .value as WledOutput;
@@ -38,9 +35,9 @@ export function WledVisualizer({ wledOutputId }: WledVisualizerProps) {
       {warning && <CiWarning className={styles.warning} title={warning} />}
       <ol className={styles.visualizer}>
         {wledRenderOutput?.segments.map((s, i) => {
-          let red = s.primaryColor.red;
-          let green = s.primaryColor.green;
-          let blue = s.primaryColor.blue;
+          let red = s.primaryColor!.red;
+          let green = s.primaryColor!.green;
+          let blue = s.primaryColor!.blue;
 
           red *= s.brightness;
           green *= s.brightness;

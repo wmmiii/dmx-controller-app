@@ -17,6 +17,7 @@
     "blobstore",
     "bufbuild",
     "gdtf",
+    "lerp",
     "sacn",
     "Tauri",
     "wavesurfer",
