@@ -7,3 +7,4 @@ mod render_target;
 pub mod scene;
 mod strobe_effect;
 mod util;
+pub mod wled_render_target;

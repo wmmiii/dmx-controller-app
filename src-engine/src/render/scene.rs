@@ -7,7 +7,8 @@ use crate::{
             tile::{EffectChannel, FadeInDuration, Transition},
             TileMap,
         },
-        Effect, Project, Scene,
+        wled_render_target::{Color, Segment},
+        Effect, Project, Scene, WledRenderTarget,
     },
     render::{
         dmx_render_target::DmxRenderTarget,
@@ -97,6 +98,68 @@ pub fn render_scene_dmx(
     );
 
     return Ok(render_target.get_universe());
+}
+
+pub fn render_scene_wled(
+    project: &Project,
+    output_id: u64,
+    system_t: u64,
+    frame: u32,
+) -> Result<WledRenderTarget, String> {
+    let wled_output = match project
+        .patches
+        .get(&project.active_patch)
+        .and_then(|p| p.outputs.get(&output_id))
+        .and_then(|o| o.output.as_ref())
+    {
+        Some(Output::WledOutput(output)) => output,
+        Some(_) => return Err("Output specified not WLED!".to_string()),
+        None => {
+            return Err(format!(
+                "Could not find output {} for patch {}",
+                output_id, project.active_patch
+            ))
+        }
+    };
+
+    let mut render_target = WledRenderTarget {
+        id: output_id,
+        segments: wled_output
+            .segments
+            .iter()
+            .map(|_| Segment {
+                effect: 0,
+                palette: 0,
+                primary_color: Some(Color {
+                    red: 0.0,
+                    green: 0.0,
+                    blue: 0.0,
+                }),
+                speed: 1.0,
+                brightness: 1.0,
+            })
+            .collect(),
+    };
+
+    let scene = match project.scenes.get(&project.active_scene) {
+        Some(scene) => scene,
+        None => return Err(format!("Could not find scene {}", project.active_scene)),
+    };
+
+    let Some(beat_metadata) = project.live_beat else {
+        return Err("Live beat not set!".to_string());
+    };
+
+    render_scene(
+        scene,
+        &mut render_target,
+        system_t,
+        frame,
+        &beat_metadata,
+        project,
+    );
+
+    return Ok(render_target);
 }
 
 fn render_scene<T: RenderTarget<T>>(

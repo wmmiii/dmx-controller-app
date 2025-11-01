@@ -36,7 +36,7 @@ export function WledRendererProvider({ children }: PropsWithChildren) {
 
       while (cont) {
         const startMs = new Date().getTime();
-        const wledRenderOutput = await renderWled(outputId);
+        const wledRenderOutput = await renderWled(outputId, frame++);
 
         const wledUpdate = {
           transition: 0,
@@ -44,9 +44,9 @@ export function WledRendererProvider({ children }: PropsWithChildren) {
             id: i,
             col: [
               [
-                Math.min(Math.floor(s.primaryColor.red * 255), 255),
-                Math.min(Math.floor(s.primaryColor.green * 255), 255),
-                Math.min(Math.floor(s.primaryColor.blue * 255), 255),
+                Math.min(Math.floor(s.primaryColor!.red * 255), 255),
+                Math.min(Math.floor(s.primaryColor!.green * 255), 255),
+                Math.min(Math.floor(s.primaryColor!.blue * 255), 255),
               ],
             ],
             fx: s.effect,

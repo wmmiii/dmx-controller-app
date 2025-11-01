@@ -40,7 +40,7 @@ import { BiPlus, BiTrash } from 'react-icons/bi';
 import { Spacer } from '../components/Spacer';
 import { Tabs, TabsType } from '../components/Tabs';
 import { setRenderFunctions } from '../engine/renderRouter';
-import { renderDmxScene } from '../system_interfaces/engine';
+import { renderDmxScene, renderSceneWled } from '../system_interfaces/engine';
 import { DEFAULT_COLOR_PALETTE } from '../util/colorUtil';
 import { randomUint64 } from '../util/numberUtils';
 import { getActiveScene } from '../util/sceneUtils';
@@ -70,7 +70,13 @@ export function LivePage(): JSX.Element {
           BigInt(new Date().getTime()),
           frame++,
         ),
-      renderWled: () => {
+      renderWled: (outputId) => {
+        renderSceneWled(
+          project,
+          outputId,
+          BigInt(new Date().getTime()),
+          frame++,
+        );
         throw new Error('renderDmx not implemented!');
       },
     });
