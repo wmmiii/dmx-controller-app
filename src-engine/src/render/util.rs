@@ -79,7 +79,7 @@ pub fn apply_state<T: RenderTarget<T>>(
 ) {
     let output = match &output_target.output {
         Some(o) => o,
-        None => panic!("No output on output target to apply state!"),
+        None => return,
     };
 
     match output {

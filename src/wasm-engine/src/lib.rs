@@ -34,3 +34,19 @@ pub fn render_scene_dmx(
         .map_err(|e| JsValue::from_str(&e))?;
     Ok(universe.to_vec())
 }
+
+#[wasm_bindgen]
+pub fn render_scene_wled(
+    project_bytes: &[u8],
+    output_id: u64,
+    system_t: u64,
+    frame: u32,
+) -> Result<Vec<u8>, JsValue> {
+    let project = dmx_engine::proto::Project::decode(project_bytes)
+        .map_err(|e| JsValue::from_str(&format!("Failed to decode project: {}", e)))?;
+
+    let wled_render_target = scene::render_scene_wled(&project, output_id, system_t, frame)
+        .map_err(|e| JsValue::from_str(&e))?;
+
+    Ok(wled_render_target.encode_to_vec())
+}
