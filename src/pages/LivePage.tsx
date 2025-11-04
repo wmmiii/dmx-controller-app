@@ -1,4 +1,4 @@
-import { clone, create, toJsonString } from '@bufbuild/protobuf';
+import { clone, create } from '@bufbuild/protobuf';
 import { ColorPaletteSchema } from '@dmx-controller/proto/color_pb';
 import { ControllerMapping_ActionSchema } from '@dmx-controller/proto/controller_pb';
 import { type Project } from '@dmx-controller/proto/project_pb';
@@ -35,7 +35,6 @@ import { PaletteContext } from '../contexts/PaletteContext';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { getAvailableChannels } from '../engine/fixtures/fixture';
 
-import { BeatMetadataSchema } from '@dmx-controller/proto/beat_pb';
 import { BiPlus, BiTrash } from 'react-icons/bi';
 import { Spacer } from '../components/Spacer';
 import { Tabs, TabsType } from '../components/Tabs';
@@ -63,11 +62,11 @@ export function LivePage(): JSX.Element {
   useEffect(() => {
     return setRenderFunctions({
       renderDmx: (outputId, frame) =>
-        renderDmxScene(project, outputId, BigInt(new Date().getTime()), frame),
+        renderDmxScene(outputId, BigInt(new Date().getTime()), frame),
       renderWled: (outputId, frame) =>
-        renderSceneWled(project, outputId, BigInt(new Date().getTime()), frame),
+        renderSceneWled(outputId, BigInt(new Date().getTime()), frame),
     });
-  }, [toJsonString(BeatMetadataSchema, project.liveBeat!), projectRef]);
+  }, []);
 
   const body = (
     <div className={styles.body}>

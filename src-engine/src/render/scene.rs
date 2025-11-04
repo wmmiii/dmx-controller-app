@@ -1,6 +1,7 @@
 use std::cmp::Ordering;
 
 use crate::{
+    project::PROJECT_REF,
     proto::{
         output::Output,
         scene::{
@@ -45,12 +46,11 @@ impl Ord for TileMap {
     }
 }
 
-pub fn render_scene_dmx(
-    project: &Project,
-    output_id: u64,
-    system_t: u64,
-    frame: u32,
-) -> Result<[u8; 512], String> {
+pub fn render_scene_dmx(output_id: u64, system_t: u64, frame: u32) -> Result<[u8; 512], String> {
+    let project = PROJECT_REF
+        .lock()
+        .map_err(|e| format!("Failed to lock project: {}", e))?;
+
     let fixtures = match project
         .patches
         .get(&project.active_patch)
@@ -94,18 +94,21 @@ pub fn render_scene_dmx(
         system_t,
         frame,
         &beat_metadata,
-        project,
+        &project,
     );
 
     return Ok(render_target.get_universe());
 }
 
 pub fn render_scene_wled(
-    project: &Project,
     output_id: u64,
     system_t: u64,
     frame: u32,
 ) -> Result<WledRenderTarget, String> {
+    let project = PROJECT_REF
+        .lock()
+        .map_err(|e| format!("Failed to lock project: {}", e))?;
+
     let wled_output = match project
         .patches
         .get(&project.active_patch)
@@ -156,7 +159,7 @@ pub fn render_scene_wled(
         system_t,
         frame,
         &beat_metadata,
-        project,
+        &project,
     );
 
     return Ok(render_target);

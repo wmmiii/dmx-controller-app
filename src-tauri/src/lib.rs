@@ -1,4 +1,5 @@
 mod midi;
+mod project;
 mod render;
 mod sacn;
 mod serial;
@@ -43,6 +44,7 @@ pub fn run() {
             midi::connect_midi,
             midi::list_midi_inputs,
             midi::send_midi_command,
+            project::update_project,
             render::render_scene_dmx,
             render::render_scene_wled,
             sacn::output_sacn_dmx,

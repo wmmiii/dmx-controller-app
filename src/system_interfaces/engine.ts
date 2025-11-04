@@ -8,10 +8,13 @@ import init, {
   init_engine,
   render_scene_dmx,
   render_scene_wled,
+  update_project,
 } from '@dmx-controller/wasm-engine';
 import { invoke } from '@tauri-apps/api/core';
+import { randomUint64 } from '../util/numberUtils';
 import { isTauri } from './util';
 
+export const updateProject = isTauri ? tauriUpdateProject : webUpdateProject;
 export const renderDmxScene = isTauri ? tauriRenderDmxScene : webRenderDmxScene;
 export const renderSceneWled = isTauri
   ? tauriRenderSceneWled
@@ -22,25 +25,33 @@ if (!isTauri) {
   await init_engine();
 }
 
+async function webUpdateProject(project: Project) {
+  const projectBytes = toBinary(ProjectSchema, project);
+  return await update_project(projectBytes);
+}
+
+async function tauriUpdateProject(project: Project) {
+  const projectBinary = toBinary(ProjectSchema, project);
+  await invoke<number[]>('update_project', {
+    projectBinary: Array.from(projectBinary),
+  });
+}
+
 async function webRenderDmxScene(
-  project: Project,
   outputId: bigint,
   systemT: bigint,
   frame: number,
 ) {
-  const projectBytes = toBinary(ProjectSchema, project);
-  return await render_scene_dmx(projectBytes, outputId, systemT, frame);
+  return await render_scene_dmx(outputId, systemT, frame);
 }
 
 async function tauriRenderDmxScene(
-  project: Project,
   outputId: bigint,
   systemT: bigint,
   frame: number,
 ): Promise<Uint8Array> {
-  const projectBinary = toBinary(ProjectSchema, project);
+  const id = randomUint64();
   const result = await invoke<number[]>('render_scene_dmx', {
-    projectBinary: Array.from(projectBinary),
     outputId: outputId.toString(),
     systemT: Number(systemT),
     frame,
@@ -49,30 +60,20 @@ async function tauriRenderDmxScene(
 }
 
 async function webRenderSceneWled(
-  project: Project,
   outputId: bigint,
   systemT: bigint,
   frame: number,
 ): Promise<WledRenderTarget> {
-  const projectBytes = toBinary(ProjectSchema, project);
-  const renderTargetBin = await render_scene_wled(
-    projectBytes,
-    outputId,
-    systemT,
-    frame,
-  );
+  const renderTargetBin = await render_scene_wled(outputId, systemT, frame);
   return fromBinary(WledRenderTargetSchema, renderTargetBin);
 }
 
 async function tauriRenderSceneWled(
-  project: Project,
   outputId: bigint,
   systemT: bigint,
   frame: number,
 ): Promise<WledRenderTarget> {
-  const projectBinary = toBinary(ProjectSchema, project);
   const renderTargetBin = await invoke<number[]>('render_scene_wled', {
-    projectBinary: Array.from(projectBinary),
     outputId: outputId.toString(),
     systemT: Number(systemT),
     frame,

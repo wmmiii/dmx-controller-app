@@ -1,3 +1,4 @@
+pub mod project;
 pub mod proto;
 pub mod render;
 
