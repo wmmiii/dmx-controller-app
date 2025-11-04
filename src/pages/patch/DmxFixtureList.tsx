@@ -16,6 +16,7 @@ import {
   PhysicalDmxFixtureSchema,
 } from '@dmx-controller/proto/dmx_pb';
 import { QualifiedFixtureIdSchema } from '@dmx-controller/proto/output_pb';
+import { WledRenderTargetSchema } from '@dmx-controller/proto/wled_pb';
 import { BiCopyAlt, BiGridVertical, BiPlus, BiTrash } from 'react-icons/bi';
 import { Button, IconButton } from '../../components/Button';
 import { ColorSwatch } from '../../components/ColorSwatch';
@@ -283,9 +284,8 @@ function EditDefinitionDialog({
           }
           return renderOutput;
         },
-        renderWled: async () => {
-          return { segments: [] };
-        },
+        renderWled: async () =>
+          create(WledRenderTargetSchema, { segments: [] }),
       }),
     [testIndex, testValues],
   );

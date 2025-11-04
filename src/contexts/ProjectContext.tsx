@@ -20,6 +20,7 @@ import { getBlob, storeBlob } from '../system_interfaces/storage';
 import { downloadBlob, escapeForFilesystem } from '../util/fileUtils';
 import upgradeProject from '../util/projectUpgrader';
 
+import { updateProject } from '../system_interfaces/engine';
 import { createNewProject } from '../util/projectUtils';
 import { ShortcutContext } from './ShortcutContext';
 
@@ -61,6 +62,12 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
   useEffect(() => {
     const global = (window || globalThis) as any;
     global['project'] = project;
+  }, [project]);
+
+  useEffect(() => {
+    if (project) {
+      updateProject(project);
+    }
   }, [project]);
 
   useEffect(() => {
