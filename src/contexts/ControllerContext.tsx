@@ -18,7 +18,6 @@ import {
 
 import { BeatContext } from './BeatContext';
 import { ProjectContext } from './ProjectContext';
-import { TimeContext } from './TimeContext';
 
 import {
   MidiPortCandidate,
@@ -28,6 +27,7 @@ import {
   removeMidiListener,
   sendMidiCommand,
 } from '../system_interfaces/midi';
+import { listenToTick } from '../util/time';
 import styles from './ControllerContext.module.scss';
 
 export type ControllerChannel = string;
@@ -60,8 +60,6 @@ export function ControllerProvider({
   }, [project]);
 
   const { addBeatSample, setFirstBeat } = useContext(BeatContext);
-  const { addListener: addTimeListener, removeListener: removeTimeListener } =
-    useContext(TimeContext);
 
   const [controllerName, setControllerName] = useState<string | undefined>(
     undefined,
@@ -162,14 +160,14 @@ export function ControllerProvider({
   }, []);
 
   useEffect(() => {
-    if (controllerName) {
-      const listener = (t: bigint) =>
-        outputValues(project, controllerName, t, output);
-      addTimeListener(listener);
-      return () => removeTimeListener(listener);
+    if (!controllerName) {
+      return;
     }
-    return () => {};
-  }, [project, controllerName, output, addTimeListener, removeTimeListener]);
+
+    return listenToTick((t) =>
+      outputValues(project, controllerName, t, output),
+    );
+  }, [project, controllerName, output]);
 
   const addListener = useCallback((listener: Listener) => {
     inputListeners.current.push(listener);

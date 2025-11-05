@@ -10,13 +10,12 @@ import {
   Scene_TileSchema,
   type Scene_Tile,
 } from '@dmx-controller/proto/scene_pb';
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createRef, useCallback, useContext, useEffect, useMemo } from 'react';
 import { SiMidi } from 'react-icons/si';
 
 import { ControllerContext } from '../contexts/ControllerContext';
 import { PaletteContext } from '../contexts/PaletteContext';
 import { ProjectContext } from '../contexts/ProjectContext';
-import { TimeContext } from '../contexts/TimeContext';
 import { tileTileDetails } from '../util/projectUtils';
 import { tileActiveAmount, toggleTile } from '../util/tile';
 
@@ -24,6 +23,7 @@ import { BeatMetadataSchema } from '@dmx-controller/proto/beat_pb';
 import { ControllerMapping_ActionSchema } from '@dmx-controller/proto/controller_pb';
 import { hasAction } from '../external_controller/externalController';
 import { rgbwToHex } from '../util/colorUtil';
+import { listenToTick } from '../util/time';
 import styles from './Tile.module.scss';
 
 interface TileProps {
@@ -50,15 +50,18 @@ export function Tile({
   const { project, save } = useContext(ProjectContext);
   const { controllerName } = useContext(ControllerContext);
   const { palette } = useContext(PaletteContext);
-  const { addListener, removeListener } = useContext(TimeContext);
-
-  const [t, setT] = useState(0n);
+  const tileRef = createRef<HTMLDivElement>();
 
   useEffect(() => {
-    const listener = (t: bigint) => setT(t);
-    addListener(listener);
-    return () => removeListener(listener);
-  }, [setT, addListener, removeListener]);
+    return listenToTick((t) => {
+      if (!tileRef.current) {
+        return;
+      }
+      const opacity = tileActiveAmount(tile, project.liveBeat, t);
+
+      tileRef.current.style.opacity = String(opacity);
+    });
+  }, [tile, project, tileRef]);
 
   const details = useMemo(
     () => tileTileDetails(tile),
@@ -120,8 +123,6 @@ export function Tile({
     }
   }, [tile, toJsonString(BeatMetadataSchema, project.liveBeat!), save]);
 
-  const activeAmount = tileActiveAmount(tile, project.liveBeat, t);
-
   const classes = [styles.tile];
 
   return (
@@ -167,7 +168,7 @@ export function Tile({
           </div>
         )}
       </div>
-      <div className={styles.border} style={{ opacity: activeAmount }}></div>
+      <div ref={tileRef} className={styles.border}></div>
     </div>
   );
 }

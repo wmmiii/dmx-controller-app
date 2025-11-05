@@ -23,6 +23,7 @@ import {
   serialSupported,
 } from '../system_interfaces/serial';
 import { getOutput, getSerialOutputId } from '../util/projectUtils';
+import { listenToTick } from '../util/time';
 import { DialogContext } from './DialogContext';
 import { ProjectContext } from './ProjectContext';
 import { ShortcutContext } from './ShortcutContext';
@@ -182,11 +183,10 @@ function SerialProviderImpl({
 
   useEffect(() => {
     if (!port) {
-      const handle = setInterval(() => {
+      return listenToTick(() => {
         frameRef.current += 1;
         renderDmx(outputId, frameRef.current++);
-      }, 30);
-      return () => clearInterval(handle);
+      });
     }
 
     let closed = false;

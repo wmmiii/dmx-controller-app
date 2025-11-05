@@ -37,12 +37,17 @@ export function subscribeToDmxRender(
   outputId: bigint,
   listener: (o: DmxRenderOutput) => void,
 ) {
-  const subscribers = dmxSubscriptions.get(outputId);
-  if (subscribers) {
-    subscribers.push(listener);
-  } else {
-    dmxSubscriptions.set(outputId, [listener]);
+  let subscribers = dmxSubscriptions.get(outputId);
+  if (!subscribers) {
+    subscribers = [];
+    dmxSubscriptions.set(outputId, subscribers);
   }
+  subscribers.push(listener);
+
+  return () => {
+    const index = subscribers.indexOf(listener);
+    subscribers.splice(index, 1);
+  };
 }
 
 export function subscribeToWledRender(
