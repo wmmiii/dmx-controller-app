@@ -1,12 +1,13 @@
 import { create } from '@bufbuild/protobuf';
 import { ControllerMapping_ActionSchema } from '@dmx-controller/proto/controller_pb';
-import { JSX, useContext, useEffect, useMemo, useState } from 'react';
+import { createRef, JSX, useContext, useEffect, useMemo } from 'react';
 
 import { BeatContext } from '../contexts/BeatContext';
 import { ShortcutContext } from '../contexts/ShortcutContext';
 
 import { BiPulse } from 'react-icons/bi';
 import { ProjectContext } from '../contexts/ProjectContext';
+import { listenToTick } from '../util/time';
 import { ControllerConnection } from './ControllerConnection';
 import { NumberInput } from './Input';
 import styles from './LiveBeat.module.scss';
@@ -19,26 +20,20 @@ export function LiveBeat({ className }: LiveBeatProps): JSX.Element {
   const { project } = useContext(ProjectContext);
   const { setBeat, addBeatSample, sampling } = useContext(BeatContext);
   const { setShortcuts } = useContext(ShortcutContext);
-
-  const [amount, setAmount] = useState(0);
+  const indicatorRef = createRef<HTMLDivElement>();
 
   useEffect(() => {
-    let cont = true;
-    (async () => {
-      while (cont) {
-        setAmount(
-          ((new Date().getTime() - Number(project.liveBeat!.offsetMs)) %
-            project.liveBeat!.lengthMs) /
-            project.liveBeat!.lengthMs,
-        );
-        await new Promise((resolve) => setTimeout(() => resolve(null), 10));
+    return listenToTick((t) => {
+      if (!indicatorRef.current) {
+        return;
       }
-    })();
-
-    return () => {
-      cont = false;
-    };
-  }, [project, setAmount]);
+      const amount =
+        1 -
+        (Number(t - project.liveBeat!.offsetMs) % project.liveBeat!.lengthMs) /
+          project.liveBeat!.lengthMs;
+      indicatorRef.current.style.opacity = String(amount);
+    });
+  }, [indicatorRef, project]);
 
   useEffect(
     () =>
@@ -88,10 +83,7 @@ export function LiveBeat({ className }: LiveBeatProps): JSX.Element {
 
   return (
     <div className={classes.join(' ')}>
-      <div
-        className={indicatorClasses.join(' ')}
-        style={{ opacity: 1 - amount }}
-      >
+      <div ref={indicatorRef} className={indicatorClasses.join(' ')}>
         <BiPulse size={24} />
       </div>
       <NumberInput

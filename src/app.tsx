@@ -10,32 +10,29 @@ import { ProjectProvider } from './contexts/ProjectContext';
 import { SacnRendererProvider } from './contexts/SacnRendererContext';
 import { SerialProvider } from './contexts/SerialContext';
 import { ShortcutProvider } from './contexts/ShortcutContext';
-import { TimeProvider } from './contexts/TimeContext';
 import { WledRendererProvider } from './contexts/WledRendererContext';
 
 const root = createRoot(document.getElementById('root')!);
 root.render(
   <StrictMode>
     <BrowserRouter basename="/">
-      <TimeProvider>
-        <DialogProvider>
-          <ShortcutProvider>
-            <ProjectProvider>
-              <SerialProvider>
-                <BeatProvider>
-                  <ControllerProvider>
-                    <SacnRendererProvider>
-                      <WledRendererProvider>
-                        <Index />
-                      </WledRendererProvider>
-                    </SacnRendererProvider>
-                  </ControllerProvider>
-                </BeatProvider>
-              </SerialProvider>
-            </ProjectProvider>
-          </ShortcutProvider>
-        </DialogProvider>
-      </TimeProvider>
+      <DialogProvider>
+        <ShortcutProvider>
+          <ProjectProvider>
+            <SerialProvider>
+              <BeatProvider>
+                <ControllerProvider>
+                  <SacnRendererProvider>
+                    <WledRendererProvider>
+                      <Index />
+                    </WledRendererProvider>
+                  </SacnRendererProvider>
+                </ControllerProvider>
+              </BeatProvider>
+            </SerialProvider>
+          </ProjectProvider>
+        </ShortcutProvider>
+      </DialogProvider>
     </BrowserRouter>
   </StrictMode>,
 );
