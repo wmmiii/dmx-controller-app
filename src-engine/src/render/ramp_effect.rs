@@ -2,7 +2,7 @@ use crate::{
     proto::{effect::RampEffect, ColorPalette, OutputTarget, Project},
     render::{
         render_target::RenderTarget,
-        util::{apply_state, calculate_timing},
+        util::{apply_state, calculate_timing, get_fixtures},
     },
 };
 
@@ -16,31 +16,42 @@ pub fn apply_ramp_effect<T: RenderTarget<T>>(
     ramp_effect: &RampEffect,
     color_palette: &ColorPalette,
 ) {
-    let t = calculate_timing(
-        &ramp_effect.timing_mode.unwrap(),
-        ms_since_start,
-        effect_duration_ms,
-        beat_t,
-    );
+    let fixtures = get_fixtures(project, output_target);
 
-    let mut start = render_target.clone();
-    let mut end = render_target.clone();
+    for (i, fixture) in fixtures.iter().enumerate() {
+        let t = calculate_timing(
+            &ramp_effect.timing_mode.unwrap(),
+            ms_since_start,
+            effect_duration_ms,
+            beat_t,
+            i as f64 / fixtures.len() as f64,
+        );
 
-    apply_state(
-        project,
-        &mut start,
-        output_target,
-        &ramp_effect.state_start.clone().unwrap(),
-        color_palette,
-    );
+        let mut start = render_target.clone();
+        let mut end = render_target.clone();
 
-    apply_state(
-        project,
-        &mut end,
-        output_target,
-        &ramp_effect.state_end.clone().unwrap(),
-        color_palette,
-    );
+        apply_state(
+            project,
+            &mut start,
+            &OutputTarget {
+                output: Some(crate::proto::output_target::Output::Fixtures(
+                    crate::proto::output_target::FixtureMapping {
+                        fixture_ids: vec![*fixture],
+                    },
+                )),
+            },
+            &ramp_effect.state_start.clone().unwrap(),
+            color_palette,
+        );
 
-    render_target.interpolate(&start, &end, t);
+        apply_state(
+            project,
+            &mut end,
+            output_target,
+            &ramp_effect.state_end.clone().unwrap(),
+            color_palette,
+        );
+
+        render_target.interpolate(&start, &end, t);
+    }
 }

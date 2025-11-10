@@ -2,8 +2,10 @@ use crate::{
     proto::{
         effect::Effect,
         effect_timing::{Absolute, Beat, EasingFunction, Timing},
+        output,
         output_target::Output,
-        ColorPalette, EffectTiming, FixtureState, OutputTarget, Project,
+        ColorPalette, EffectTiming, FixtureState, OutputTarget, Project, QualifiedFixtureId,
+        SacnDmxOutput, SerialDmxOutput, WledOutput,
     },
     render::{
         project::get_all_output_targets, ramp_effect::apply_ramp_effect,
@@ -109,26 +111,110 @@ pub fn apply_state<T: RenderTarget<T>>(
     };
 }
 
+pub fn get_fixtures(project: &Project, output_target: &OutputTarget) -> Vec<QualifiedFixtureId> {
+    let output = match &output_target.output {
+        Some(o) => o,
+        None => return vec![],
+    };
+
+    match output {
+        Output::Fixtures(f) => {
+            match f
+                .fixture_ids
+                .iter()
+                .find(|id| id.patch == project.active_patch)
+            {
+                Some(qid) => vec![*qid],
+                None => vec![],
+            }
+        }
+
+        Output::Group(0) => project
+            .patches
+            .get(&project.active_patch)
+            .unwrap()
+            .outputs
+            .iter()
+            .flat_map(|(output_id, o)| {
+                o.output
+                    .as_ref()
+                    .map(|out| match out {
+                        output::Output::SacnDmxOutput(SacnDmxOutput { fixtures, .. })
+                        | output::Output::SerialDmxOutput(SerialDmxOutput { fixtures, .. }) => {
+                            fixtures
+                                .iter()
+                                .map(|(fixture_id, _)| QualifiedFixtureId {
+                                    patch: project.active_patch,
+                                    output: *output_id,
+                                    fixture: *fixture_id,
+                                })
+                                .collect::<Vec<_>>()
+                        }
+                        output::Output::WledOutput(WledOutput { segments, .. }) => segments
+                            .iter()
+                            .map(|(segment_id, _)| QualifiedFixtureId {
+                                patch: project.active_patch,
+                                output: *output_id,
+                                fixture: *segment_id as u64,
+                            })
+                            .collect::<Vec<_>>(),
+                    })
+                    .into_iter()
+                    .flatten()
+            })
+            .collect(),
+
+        Output::Group(id) => {
+            let mut ids: Vec<QualifiedFixtureId> = Vec::new();
+
+            let mut groups = vec![id];
+            while let Some(gid) = groups.pop() {
+                for target in project.groups[gid].targets.iter() {
+                    match &target.output {
+                        Some(Output::Group(id)) => groups.push(&id),
+                        Some(Output::Fixtures(fixtures)) => {
+                            fixtures
+                                .fixture_ids
+                                .iter()
+                                .filter(|id| id.patch == project.active_patch)
+                                .for_each(|id| ids.push(*id));
+                        }
+                        _ => (),
+                    }
+                }
+            }
+
+            ids
+        }
+    }
+}
+
 pub fn calculate_timing(
     effect_timing: &EffectTiming,
     ms_since_start: &u64,
     event_duration_ms: &u64,
     beat_t: &f64,
+    phase_index: f64,
 ) -> f64 {
+    // Calculate based on timing mode.
     let mut t = match effect_timing.timing {
-        Some(Timing::Absolute(Absolute { duration })) => {
-            (*ms_since_start as f64 / duration as f64).fract()
-        }
-        Some(Timing::Beat(Beat { multiplier })) => (beat_t / multiplier as f64).fract(),
-        Some(Timing::OneShot(_)) => (*ms_since_start as f64 / *event_duration_ms as f64).fract(),
+        Some(Timing::Absolute(Absolute { duration })) => *ms_since_start as f64 / duration as f64,
+        Some(Timing::Beat(Beat { multiplier })) => beat_t / multiplier as f64,
+        Some(Timing::OneShot(_)) => *ms_since_start as f64 / *event_duration_ms as f64,
         _ => panic!("Timing type not specified when trying to calculate timing!"),
     };
+
+    // Modify with phase offset.
+    t = (t + effect_timing.phase * phase_index).fract();
+
+    // Mirror if necessary.
     if effect_timing.mirrored && t < 0.5 {
         t *= 2.0;
     } else if effect_timing.mirrored {
         t = (1.0 - t) * 2.0;
     }
 
+    // Ease.
     let eased_t = match EasingFunction::try_from(effect_timing.easing) {
         Ok(EasingFunction::Linear) => t,
         Ok(EasingFunction::EaseIn) => t * t * t,
