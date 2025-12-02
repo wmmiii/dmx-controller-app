@@ -143,10 +143,8 @@ export default function Index(): JSX.Element {
                       {
                         title: 'Exit',
                         onSelect: async () => {
-                          console.log('EXIT?');
                           try {
                             await exit(0);
-                            console.log('Should have exited');
                           } catch (e) {
                             console.error(e);
                           }

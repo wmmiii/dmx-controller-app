@@ -9,7 +9,7 @@ import styles from './Tile.module.scss';
 interface TileGridProps {
   className?: string;
   sceneId: bigint;
-  onSelect: (tile: Scene_TileMap) => void;
+  onSelectId: (id: bigint) => void;
   setAddTileIndex: (index: { x: number; y: number }) => void;
   maxX: number;
   maxY: number;
@@ -18,7 +18,7 @@ interface TileGridProps {
 export function TileGrid({
   className,
   sceneId,
-  onSelect,
+  onSelectId,
   setAddTileIndex,
   maxX,
   maxY,
@@ -66,7 +66,7 @@ export function TileGrid({
                   }
                   setDraggingTile(null);
                 }}
-                onSelect={() => onSelect(mapping)}
+                onSelect={() => onSelectId(mapping.id)}
                 x={x}
                 y={y}
                 priority={mapping.priority}

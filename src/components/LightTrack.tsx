@@ -29,7 +29,9 @@ export interface MappingFunctions {
 interface LightTrackProps {
   output: Show_Output;
   selectedEffect: TimecodedEffect | null;
-  setSelectedEffect: (e: TimecodedEffect | null) => void;
+  setSelectedEffectAddress: (
+    address: { layer: number; index: number } | null,
+  ) => void;
   copyEffect: TimecodedEffect | null;
   maxMs: number;
   leftWidth: number;
@@ -42,7 +44,7 @@ interface LightTrackProps {
 export function LightTrack({
   output,
   selectedEffect,
-  setSelectedEffect,
+  setSelectedEffectAddress,
   copyEffect,
   maxMs,
   leftWidth,
@@ -131,7 +133,13 @@ export function LightTrack({
             key={i}
             layer={l}
             selectedEffect={selectedEffect}
-            setSelectedEffect={setSelectedEffect}
+            setSelectedEffectAddress={(address) => {
+              if (address == null) {
+                setSelectedEffectAddress(null);
+              } else {
+                setSelectedEffectAddress({ layer: i, index: address });
+              }
+            }}
             copyEffect={copyEffect}
             maxMs={maxMs}
             msToPx={mappingFunctions.msToPx}

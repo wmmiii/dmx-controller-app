@@ -4,13 +4,13 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from 'react';
 
 import { ProjectContext } from '../contexts/ProjectContext';
 
 import {
+  Effect_SequenceEffect,
   Layer as LayerProto,
   TimecodedEffect,
 } from '@dmx-controller/proto/effect_pb';
@@ -27,37 +27,57 @@ export const SEQUENCE_BEAT_RESOLUTION = 7200;
 
 interface SequenceEditorProps {
   className?: string;
-  sequenceId: bigint;
+  sequenceRef: Effect_SequenceEffect['sequence'];
 }
 
 export function SequenceEditor({
   className,
-  sequenceId,
+  sequenceRef,
 }: SequenceEditorProps): JSX.Element {
   const { project } = useContext(ProjectContext);
   const { setShortcuts } = useContext(ShortcutContext);
-  const panelRef = useRef<HTMLDivElement>(null);
-  const [selectedEffect, setSelectedEffect] = useState<TimecodedEffect | null>(
-    null,
-  );
+  const [panelElement, setPanelElement] = useState<HTMLDivElement | null>(null);
+  const [selectedEffectAddress, setSelectedEffectAddress] = useState<{
+    layer: number;
+    index: number;
+  } | null>(null);
   const [copyEffect, setCopyEffect] = useState<TimecodedEffect | null>(null);
   const [beatSubdivisions, setBeatSubdivisions] = useState(4);
 
-  const sequence = useMemo(
-    () => project.sequences[sequenceId.toString()],
-    [project, sequenceId],
-  );
+  const sequence = useMemo(() => {
+    switch (sequenceRef.case) {
+      case 'sequenceId':
+        return project.sequences[sequenceRef.value.toString()];
+      case 'sequenceImpl':
+        return sequenceRef.value;
+      default:
+        throw Error('Unknown sequence ref type!');
+    }
+  }, [project, sequenceRef]);
 
   if (!sequence) {
-    throw new Error(`Could ont find sequence with ID ${sequenceId}!`);
+    throw new Error(
+      `Could ont find sequence with reference ${JSON.stringify(sequenceRef)}!`,
+    );
   }
+
+  const selectedEffect = useMemo(() => {
+    const address = selectedEffectAddress;
+    if (!address) {
+      return null;
+    }
+
+    return sequence.layers[selectedEffectAddress.layer].effects[
+      selectedEffectAddress.index
+    ];
+  }, [selectedEffectAddress, project]);
 
   useEffect(
     () =>
       setShortcuts([
         {
           shortcut: { key: 'Escape' },
-          action: () => setSelectedEffect(null),
+          action: () => setSelectedEffectAddress(null),
           description: 'Deselect the currently selected effect.',
         },
         {
@@ -66,60 +86,64 @@ export function SequenceEditor({
           description: 'Copy currently selected effect to clipboard.',
         },
       ]),
-    [setSelectedEffect, setCopyEffect, selectedEffect],
+    [setSelectedEffectAddress, setCopyEffect, selectedEffect],
   );
 
   const msToPx = useCallback(
     (ms: number) => {
-      if (!panelRef.current) {
+      if (!panelElement) {
         return 0;
       }
-      const width = panelRef.current.getBoundingClientRect().width;
+      const width = panelElement.getBoundingClientRect().width;
       return (ms * width) / SEQUENCE_BEAT_RESOLUTION;
     },
-    [panelRef],
+    [panelElement],
   );
 
   const pxToMs = useCallback(
     (px: number) => {
-      if (!panelRef.current) {
+      if (!panelElement) {
         return 0;
       }
-      const width = panelRef.current.getBoundingClientRect().width;
-      return Math.floor(px / width) * SEQUENCE_BEAT_RESOLUTION;
+      const width = panelElement.getBoundingClientRect().width;
+      return Math.floor((px * SEQUENCE_BEAT_RESOLUTION) / width);
     },
-    [panelRef],
+    [panelElement],
   );
 
-  const snapToBeat = useCallback((t: number) => {
-    if (!panelRef.current) {
-      return t;
-    }
-    const width = panelRef.current.getBoundingClientRect().width;
+  const snapToBeat = useCallback(
+    (t: number) => {
+      if (!panelElement) {
+        return t;
+      }
+      const width = panelElement.getBoundingClientRect().width;
 
-    const beatSnapRangeMs = Math.floor(
-      (10 * SEQUENCE_BEAT_RESOLUTION) / 10 / width,
-    );
+      const beatSnapRangeMs = Math.floor(
+        (10 * SEQUENCE_BEAT_RESOLUTION) / 10 / width,
+      );
 
-    const lengthMs =
-      SEQUENCE_BEAT_RESOLUTION / sequence.nativeBeats / beatSubdivisions;
-    const beatNumber = Math.round(t / lengthMs);
-    const beatT = Math.floor(beatNumber * lengthMs);
+      const lengthMs =
+        SEQUENCE_BEAT_RESOLUTION / sequence.nativeBeats / beatSubdivisions;
+      const beatNumber = Math.round(t / lengthMs);
+      const beatT = Math.floor(beatNumber * lengthMs);
 
-    if (Math.abs(beatT - t) < beatSnapRangeMs) {
-      return beatT;
-    } else {
-      return t;
-    }
-  }, []);
+      if (Math.abs(beatT - t) < beatSnapRangeMs) {
+        return beatT;
+      } else {
+        return t;
+      }
+    },
+    [panelElement],
+  );
 
   const classes = [styles.SequenceEditor, className];
 
   return (
     <HorizontalSplitPane
       className={classes.join(' ')}
+      defaultAmount={0.8}
       left={
-        <div className={styles.sequenceEditor} ref={panelRef}>
+        <div className={styles.sequenceEditor} ref={setPanelElement}>
           <label>
             Subdivide beat
             <NumberInput
@@ -129,10 +153,11 @@ export function SequenceEditor({
               max={16}
             />
           </label>
+          <br />
           <Layers
             layers={sequence.layers}
             selectedEffect={selectedEffect}
-            setSelectedEffect={setSelectedEffect}
+            setSelectedEffectAddress={setSelectedEffectAddress}
             copyEffect={copyEffect}
             msToPx={msToPx}
             pxToMs={pxToMs}
@@ -161,7 +186,9 @@ export function SequenceEditor({
 interface LayersProps {
   layers: LayerProto[];
   selectedEffect: TimecodedEffect | null;
-  setSelectedEffect: (e: TimecodedEffect | null) => void;
+  setSelectedEffectAddress: (
+    address: { layer: number; index: number } | null,
+  ) => void;
   copyEffect: TimecodedEffect | null;
   msToPx: (ms: number) => number;
   pxToMs: (px: number) => number;
@@ -171,7 +198,7 @@ interface LayersProps {
 export function Layers({
   layers,
   selectedEffect,
-  setSelectedEffect,
+  setSelectedEffectAddress,
   copyEffect,
   msToPx,
   pxToMs,
@@ -184,7 +211,16 @@ export function Layers({
           key={i}
           layer={l}
           selectedEffect={selectedEffect}
-          setSelectedEffect={setSelectedEffect}
+          setSelectedEffectAddress={(address) => {
+            if (address == null) {
+              setSelectedEffectAddress(null);
+            } else {
+              setSelectedEffectAddress({
+                layer: i,
+                index: address,
+              });
+            }
+          }}
           copyEffect={copyEffect}
           maxMs={SEQUENCE_BEAT_RESOLUTION}
           msToPx={msToPx}

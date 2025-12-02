@@ -2,6 +2,8 @@
 
 .sequence-editor {
   @include vars.fill;
+}
 
-  background-color: vars.$col-bg;
+.effect-details {
+  margin: vars.spacing(1);
 }

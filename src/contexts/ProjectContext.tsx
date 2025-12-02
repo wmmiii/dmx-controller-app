@@ -1,4 +1,4 @@
-import { create, fromBinary, toBinary } from '@bufbuild/protobuf';
+import { clone, create, fromBinary, toBinary } from '@bufbuild/protobuf';
 import {
   ProjectSchema,
   Project_Assets,
@@ -131,7 +131,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
     if (projectRef.current == null) {
       throw new Error('Tried to update without project loaded!');
     }
-    setProject(create(ProjectSchema, Object.assign({}, projectRef.current)));
+    setProject(clone(ProjectSchema, projectRef.current));
   }, [projectRef, setProject]);
 
   const save = useCallback(
@@ -166,7 +166,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
         setOperationIndex(operationStack.current.length - 1);
       }
 
-      setProject(create(ProjectSchema, Object.assign({}, projectRef.current)));
+      setProject(clone(ProjectSchema, projectRef.current));
       setLastOperation(changeDescription);
     },
     [projectRef, operationStack, operationIndex, setProject, setOperationIndex],

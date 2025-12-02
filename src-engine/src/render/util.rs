@@ -68,7 +68,7 @@ pub fn apply_effect<T: RenderTarget<T>>(
             strobe_effect,
             color_palette,
         ),
-        Effect::SequenceEffect(_sequence_effect) => todo!("Implement sequence"),
+        Effect::SequenceEffect(_sequence_effect) => {}
     }
 }
 

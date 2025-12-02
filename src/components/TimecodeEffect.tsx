@@ -13,6 +13,8 @@ import {
   EffectTiming_OneShotSchema,
   Effect_RampEffectSchema,
   Effect_RandomEffectSchema,
+  Effect_SequenceEffect,
+  Effect_SequenceEffectSchema,
   Effect_StaticEffectSchema,
   Effect_StrobeEffectSchema,
   FixtureStateSchema,
@@ -36,6 +38,7 @@ import {
   BiSolidBolt,
   BiSun,
 } from 'react-icons/bi';
+import { LuChartBarStacked } from 'react-icons/lu';
 
 import { EffectRenderingContext } from '../contexts/EffectRenderingContext';
 import { PaletteContext } from '../contexts/PaletteContext';
@@ -53,6 +56,8 @@ import IconRgb from '../icons/IconRgb';
 import { Button, IconButton } from './Button';
 import { EffectState } from './EffectState';
 import { NumberInput, ToggleInput } from './Input';
+import { Modal } from './Modal';
+import { SequenceEditor } from './SequenceEditor';
 import { Spacer } from './Spacer';
 import styles from './TimecodeEffect.module.scss';
 
@@ -61,7 +66,7 @@ interface TimecodeEffectProps {
   style: CSSProperties;
   timecodeEffect: TimecodeEffectProto;
   selectedEffect: TimecodeEffectProto | null;
-  setSelectedEffect: (e: TimecodeEffectProto) => void;
+  setSelectedEffect: () => void;
   copyEffect: TimecodeEffectProto | null;
   minMs: number;
   maxMs: number;
@@ -184,7 +189,7 @@ export function TimecodeEffect({
       style={style}
       onMouseDown={(e) => {
         setChanged(false);
-        setSelectedEffect(timecodeEffect);
+        setSelectedEffect();
         setDrag({
           offsetMs: pxToMs(e.clientX) - timecodeEffect.startMs,
           widthMs: timecodeEffect.endMs - timecodeEffect.startMs,
@@ -328,6 +333,16 @@ export function EffectDetails({
           effect={effect.effect.value}
           availableChannels={availableChannels}
           showPhase={false}
+        />
+      );
+      break;
+    case 'sequenceEffect':
+      details = (
+        <SequenceEffectDetails
+          effect={effect.effect.value}
+          availableChannels={availableChannels}
+          showTiming={showTiming}
+          showPhase={showPhase}
         />
       );
       break;
@@ -480,146 +495,17 @@ function RampEffectDetails({
   showTiming,
   showPhase,
 }: EffectDetailsBaseProps<Effect_RampEffect>): JSX.Element {
-  const { save } = useContext(ProjectContext);
   if (effect.stateStart == null || effect.stateEnd == null) {
     throw new Error('Ramp effect does not have a state!');
   }
 
   return (
     <>
-      <label>
-        <span>Easing</span>
-        <select
-          value={effect.timingMode?.easing}
-          onChange={(e) => {
-            effect.timingMode!.easing = parseInt(e.target.value);
-            save('Change effect easing type.');
-          }}
-        >
-          <option value={EffectTiming_EasingFunction.LINEAR}>Linear</option>
-          <option value={EffectTiming_EasingFunction.EASE_IN}>Ease in</option>
-          <option value={EffectTiming_EasingFunction.EASE_OUT}>Ease out</option>
-          <option value={EffectTiming_EasingFunction.EASE_IN_OUT}>
-            Ease in/out
-          </option>
-          <option value={EffectTiming_EasingFunction.SINE}>Sine</option>
-        </select>
-      </label>
-      {showTiming === undefined && (
-        <label>
-          <span>Timing mode</span>
-          <select
-            value={effect.timingMode?.timing.case}
-            onChange={(e) => {
-              const currentCase = effect.timingMode?.timing.case;
-              const newTiming = e.target.value;
-              if (currentCase === newTiming) {
-                return;
-              }
-
-              switch (newTiming) {
-                case 'absolute':
-                  effect.timingMode!.timing = {
-                    case: 'absolute',
-                    value: create(EffectTiming_AbsoluteSchema, {
-                      duration: 1000,
-                    }),
-                  };
-                  break;
-                case 'beat':
-                  effect.timingMode!.timing = {
-                    case: 'beat',
-                    value: create(EffectTiming_BeatSchema, {
-                      multiplier: 1,
-                    }),
-                  };
-                  break;
-                case 'oneShot':
-                  effect.timingMode!.timing = {
-                    case: 'oneShot',
-                    value: create(EffectTiming_OneShotSchema, {}),
-                  };
-                  break;
-              }
-
-              save(`Change effect timing to ${newTiming}.`);
-            }}
-          >
-            <option value={'absolute'}>Absolute</option>
-            <option value={'beat'}>Beat</option>
-            <option value={'oneShot'}>One Shot</option>
-          </select>
-        </label>
-      )}
-
-      {effect.timingMode?.timing.case === 'absolute' && (
-        <label>
-          <span>Duration (seconds)</span>
-          <NumberInput
-            type="float"
-            max={300}
-            min={0}
-            value={effect.timingMode.timing.value.duration / 1_000}
-            onChange={(v) => {
-              if (effect.timingMode?.timing.case !== 'absolute') {
-                throw new Error('Expected absolute timing mode!');
-              }
-              effect.timingMode.timing.value.duration = Math.floor(v * 1_000);
-              save(`Change effect duration to ${v} seconds.`);
-            }}
-          />
-        </label>
-      )}
-
-      {effect.timingMode?.timing.case === 'beat' && (
-        <label>
-          <span>Beats</span>
-          <NumberInput
-            type="float"
-            max={64}
-            min={0}
-            value={effect.timingMode.timing.value.multiplier}
-            onChange={(v) => {
-              if (effect.timingMode?.timing.case !== 'beat') {
-                throw new Error('Expected absolute timing mode!');
-              }
-              effect.timingMode.timing.value.multiplier = v;
-              save(`Change effect duration to ${v} beats.`);
-            }}
-          />
-        </label>
-      )}
-
-      <label>
-        <span>Mirrored</span>
-        <Button
-          variant={effect.timingMode?.mirrored ? 'primary' : 'default'}
-          onClick={() => {
-            effect.timingMode!.mirrored = !effect.timingMode!.mirrored;
-            save(
-              `Changed effect mirrored status to ${effect.timingMode!.mirrored}.`,
-            );
-          }}
-        >
-          Mirrored
-        </Button>
-      </label>
-
-      {showPhase && (
-        <label>
-          <span>Phase</span>
-          <NumberInput
-            type="float"
-            max={256}
-            min={-256}
-            value={effect.timingMode!.phase || 0}
-            onChange={(v) => {
-              effect.timingMode!.phase = v;
-              save(`Change effect phase to ${v}.`);
-            }}
-          />
-        </label>
-      )}
+      <EffectTimingDetails
+        effect={effect}
+        showTiming={Boolean(showTiming)}
+        showPhase={showPhase}
+      />
 
       <hr />
       <EffectState
@@ -824,6 +710,38 @@ function RandomEffectDetails({
   );
 }
 
+function SequenceEffectDetails({
+  effect,
+  showTiming,
+  showPhase,
+}: EffectDetailsBaseProps<Effect_SequenceEffect>): JSX.Element {
+  const [editorOpen, setEditorOpen] = useState(false);
+
+  return (
+    <>
+      <EffectTimingDetails
+        effect={effect}
+        showTiming={Boolean(showTiming)}
+        showPhase={showPhase}
+      />
+      <hr />
+      <Button onClick={() => setEditorOpen(true)}>Edit Sequence</Button>
+      {editorOpen && (
+        <Modal
+          title="Edit Sequence"
+          onClose={() => setEditorOpen(false)}
+          fullScreen={true}
+        >
+          <SequenceEditor
+            className={styles.sequenceEditor}
+            sequenceRef={effect.sequence}
+          />
+        </Modal>
+      )}
+    </>
+  );
+}
+
 interface EffectSelectorProps {
   effect: Effect['effect'];
   setEffect: (effect: Effect['effect'], description: string) => void;
@@ -968,6 +886,197 @@ function EffectSelector({
         >
           <BiDice6 />
         </IconButton>
+      )}
+      <IconButton
+        title="Sequence Effect"
+        variant={effect.case === 'sequenceEffect' ? 'primary' : 'default'}
+        onClick={() => {
+          if (effect.case === 'sequenceEffect') {
+            return;
+          }
+
+          setEffect(
+            {
+              case: 'sequenceEffect',
+              value: create(Effect_SequenceEffectSchema, {
+                sequence: {
+                  case: 'sequenceImpl',
+                  value: {
+                    name: 'Tile effect',
+                    nativeBeats: 1,
+                    layers: [{ effects: [] }],
+                  },
+                },
+                timingMode: {
+                  timing: {
+                    case: 'beat',
+                    value: {
+                      multiplier: 1,
+                    },
+                  },
+                  easing: EffectTiming_EasingFunction.LINEAR,
+                  mirrored: false,
+                  phase: 0,
+                },
+              }),
+            },
+            'Change effect type to sequence.',
+          );
+        }}
+      >
+        <LuChartBarStacked />
+      </IconButton>
+    </>
+  );
+}
+
+interface EffectTimingDetailsProps {
+  effect: Effect_RampEffect | Effect_SequenceEffect;
+  showTiming: boolean;
+  showPhase: boolean;
+}
+
+function EffectTimingDetails({
+  effect,
+  showTiming,
+  showPhase,
+}: EffectTimingDetailsProps) {
+  const { save } = useContext(ProjectContext);
+
+  return (
+    <>
+      <label>
+        <span>Easing</span>
+        <select
+          value={effect.timingMode?.easing}
+          onChange={(e) => {
+            effect.timingMode!.easing = parseInt(e.target.value);
+            save('Change effect easing type.');
+          }}
+        >
+          <option value={EffectTiming_EasingFunction.LINEAR}>Linear</option>
+          <option value={EffectTiming_EasingFunction.EASE_IN}>Ease in</option>
+          <option value={EffectTiming_EasingFunction.EASE_OUT}>Ease out</option>
+          <option value={EffectTiming_EasingFunction.EASE_IN_OUT}>
+            Ease in/out
+          </option>
+          <option value={EffectTiming_EasingFunction.SINE}>Sine</option>
+        </select>
+      </label>
+      {showTiming === undefined && (
+        <label>
+          <span>Timing mode</span>
+          <select
+            value={effect.timingMode?.timing.case}
+            onChange={(e) => {
+              const currentCase = effect.timingMode?.timing.case;
+              const newTiming = e.target.value;
+              if (currentCase === newTiming) {
+                return;
+              }
+
+              switch (newTiming) {
+                case 'absolute':
+                  effect.timingMode!.timing = {
+                    case: 'absolute',
+                    value: create(EffectTiming_AbsoluteSchema, {
+                      duration: 1000,
+                    }),
+                  };
+                  break;
+                case 'beat':
+                  effect.timingMode!.timing = {
+                    case: 'beat',
+                    value: create(EffectTiming_BeatSchema, {
+                      multiplier: 1,
+                    }),
+                  };
+                  break;
+                case 'oneShot':
+                  effect.timingMode!.timing = {
+                    case: 'oneShot',
+                    value: create(EffectTiming_OneShotSchema, {}),
+                  };
+                  break;
+              }
+
+              save(`Change effect timing to ${newTiming}.`);
+            }}
+          >
+            <option value={'absolute'}>Absolute</option>
+            <option value={'beat'}>Beat</option>
+            <option value={'oneShot'}>One Shot</option>
+          </select>
+        </label>
+      )}
+
+      {effect.timingMode?.timing.case === 'absolute' && (
+        <label>
+          <span>Duration (seconds)</span>
+          <NumberInput
+            type="float"
+            max={300}
+            min={0}
+            value={effect.timingMode.timing.value.duration / 1_000}
+            onChange={(v) => {
+              if (effect.timingMode?.timing.case !== 'absolute') {
+                throw new Error('Expected absolute timing mode!');
+              }
+              effect.timingMode.timing.value.duration = Math.floor(v * 1_000);
+              save(`Change effect duration to ${v} seconds.`);
+            }}
+          />
+        </label>
+      )}
+
+      {effect.timingMode?.timing.case === 'beat' && (
+        <label>
+          <span>Beats</span>
+          <NumberInput
+            type="float"
+            max={64}
+            min={0}
+            value={effect.timingMode.timing.value.multiplier}
+            onChange={(v) => {
+              if (effect.timingMode?.timing.case !== 'beat') {
+                throw new Error('Expected absolute timing mode!');
+              }
+              effect.timingMode.timing.value.multiplier = v;
+              save(`Change effect duration to ${v} beats.`);
+            }}
+          />
+        </label>
+      )}
+
+      <label>
+        <span>Mirrored</span>
+        <Button
+          variant={effect.timingMode?.mirrored ? 'primary' : 'default'}
+          onClick={() => {
+            effect.timingMode!.mirrored = !effect.timingMode!.mirrored;
+            save(
+              `Changed effect mirrored status to ${effect.timingMode!.mirrored}.`,
+            );
+          }}
+        >
+          Mirrored
+        </Button>
+      </label>
+
+      {showPhase && (
+        <label>
+          <span>Phase</span>
+          <NumberInput
+            type="float"
+            max={256}
+            min={-256}
+            value={effect.timingMode!.phase || 0}
+            onChange={(v) => {
+              effect.timingMode!.phase = v;
+              save(`Change effect phase to ${v}.`);
+            }}
+          />
+        </label>
       )}
     </>
   );

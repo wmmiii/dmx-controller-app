@@ -51,9 +51,10 @@ export function LivePage(): JSX.Element {
   const { project, save } = useContext(ProjectContext);
   const projectRef = useRef<Project>(project);
 
-  const [selected, setSelected] = useState<Scene_TileMap | null>(null);
+  const [selectedId, setSelectedId] = useState<bigint>(0n);
 
   const scene = project?.scenes[project.activeScene.toString()];
+  const selected = scene.tileMap.find((t) => t.id === selectedId);
 
   useEffect(() => {
     projectRef.current = project;
@@ -74,7 +75,7 @@ export function LivePage(): JSX.Element {
         <TileGrid
           className={styles.sceneEditor}
           sceneId={project.activeScene}
-          onSelect={setSelected}
+          onSelectId={setSelectedId}
           setAddTileIndex={({ x, y }) => {
             const tile = create(Scene_TileSchema, {
               name: 'New Tile',
@@ -236,7 +237,7 @@ export function LivePage(): JSX.Element {
         }
       />
       {selected && (
-        <TileEditor tileMap={selected} onClose={() => setSelected(null)} />
+        <TileEditor tileMap={selected} onClose={() => setSelectedId(0n)} />
       )}
     </PaletteContext.Provider>
   );

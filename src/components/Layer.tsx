@@ -21,10 +21,9 @@ interface NewEffect {
 }
 
 interface LayerProps {
-  className?: string;
   layer: LayerProto;
   selectedEffect: TimecodedEffect | null;
-  setSelectedEffect: (e: TimecodedEffect | null) => void;
+  setSelectedEffectAddress: (address: number | null) => void;
   copyEffect: TimecodedEffect | null;
   maxMs: number;
   msToPx: (ms: number) => number;
@@ -33,10 +32,9 @@ interface LayerProps {
 }
 
 export function Layer({
-  className,
   layer,
   selectedEffect,
-  setSelectedEffect,
+  setSelectedEffectAddress,
   copyEffect,
   maxMs,
   msToPx,
@@ -58,17 +56,17 @@ export function Layer({
         shortcut: { key: 'Delete' },
         action: () => {
           layer.effects.splice(index, 1);
-          setSelectedEffect(null);
+          setSelectedEffectAddress(null);
           save('Delete effect.');
         },
         description: 'Delete the currently selected effect.',
       },
     ]);
-  }, [layer, selectedEffect, setSelectedEffect, save]);
+  }, [layer, selectedEffect, setSelectedEffectAddress, save]);
 
   return (
     <div
-      className={className || styles.layer}
+      className={styles.layer}
       onMouseDown={(e) => {
         const ms = pxToMs(e.clientX);
         let index = layer.effects.findIndex((e) => e.startMs > ms);
@@ -126,6 +124,12 @@ export function Layer({
                     value: {
                       stateStart: {},
                       stateEnd: {},
+                      timingMode: {
+                        timing: {
+                          case: 'oneShot',
+                          value: {},
+                        },
+                      },
                     },
                     case: 'rampEffect',
                   },
@@ -134,7 +138,7 @@ export function Layer({
               layer.effects.splice(newEffect.effectIndex, 0, e);
               save('Add new effect.');
               setNewEffect(null);
-              setSelectedEffect(e);
+              setSelectedEffectAddress(newEffect.effectIndex);
             }}
           ></div>
         </>
@@ -149,7 +153,7 @@ export function Layer({
           }}
           timecodeEffect={e}
           selectedEffect={selectedEffect}
-          setSelectedEffect={setSelectedEffect}
+          setSelectedEffect={() => setSelectedEffectAddress(i)}
           copyEffect={copyEffect}
           minMs={layer.effects[i - 1]?.endMs || 0}
           maxMs={layer.effects[i + 1]?.startMs || maxMs}

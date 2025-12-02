@@ -33,14 +33,19 @@ export const LEFT_WIDTH = 180;
 export default function LightTimeline(props: TracksProps): JSX.Element {
   const { project } = useContext(ProjectContext);
 
-  const availableChannels = useMemo(
-    () =>
-      getAvailableChannels(
-        props.selectedEffect?.outputTarget || undefined,
-        project,
-      ),
-    [props.selectedEffect, project],
-  );
+  const [selectedEffect, outputTarget, availableChannels] = useMemo(() => {
+    const address = props.selectedEffectAddress;
+    if (!address) {
+      return [undefined, undefined, []];
+    }
+
+    const output = props.outputs[address.output];
+    return [
+      output.layers[address.layer].effects[address.index],
+      output.outputTarget,
+      getAvailableChannels(output.outputTarget, project),
+    ];
+  }, [props.selectedEffectAddress, props.outputs, project]);
 
   return (
     <HorizontalSplitPane
@@ -48,13 +53,13 @@ export default function LightTimeline(props: TracksProps): JSX.Element {
       defaultAmount={0.8}
       left={<Tracks {...props} />}
       right={
-        props.selectedEffect ? (
+        selectedEffect ? (
           <EffectDetails
             className={styles.effectDetails}
-            effect={props.selectedEffect.effect.effect!}
+            effect={selectedEffect.effect!}
             showPhase={
-              props.selectedEffect.outputTarget?.output.case == null ||
-              props.selectedEffect.outputTarget?.output.case === 'group'
+              outputTarget?.output.case == null ||
+              outputTarget?.output.case === 'group'
             }
             availableChannels={availableChannels}
           />
@@ -73,12 +78,19 @@ export interface LightTimelineEffect {
   outputTarget: OutputTarget | null;
 }
 
+interface EffectAddress {
+  output: number;
+  layer: number;
+  index: number;
+}
+
 interface TracksProps {
   audioBlob: Blob | undefined;
   audioDuration: number;
   setAudioDuration: (duration: number) => void;
-  selectedEffect: LightTimelineEffect | null;
-  setSelectedEffect: (e: LightTimelineEffect | null) => void;
+  selectedEffect: TimecodedEffect;
+  selectedEffectAddress: EffectAddress | null;
+  setSelectedEffectAddress: (a: EffectAddress | null) => void;
   copyEffect: TimecodedEffect | null;
   beatMetadata: BeatMetadata | undefined;
   beatSubdivisions: number;
@@ -98,7 +110,7 @@ function Tracks({
   audioDuration,
   setAudioDuration,
   selectedEffect,
-  setSelectedEffect,
+  setSelectedEffectAddress,
   copyEffect,
   beatMetadata,
   beatSubdivisions,
@@ -317,14 +329,15 @@ function Tracks({
               <LightTrack
                 key={i}
                 output={o}
-                selectedEffect={selectedEffect?.effect || null}
-                setSelectedEffect={(effect) => {
-                  if (!effect) {
-                    setSelectedEffect(null);
+                selectedEffect={selectedEffect || null}
+                setSelectedEffectAddress={(address) => {
+                  if (!address) {
+                    setSelectedEffectAddress(null);
                   } else {
-                    setSelectedEffect({
-                      effect: effect,
-                      outputTarget: o.outputTarget || null,
+                    setSelectedEffectAddress({
+                      output: i,
+                      layer: address.layer,
+                      index: address.index,
                     });
                   }
                 }}
