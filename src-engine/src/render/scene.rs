@@ -296,7 +296,7 @@ fn render_scene<T: RenderTarget<T>>(
                     effect,
                     &color_palette,
                 ),
-                _ => return,
+                _ => continue,
             }
         }
 

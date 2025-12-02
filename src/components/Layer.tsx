@@ -102,6 +102,7 @@ export function Layer({
             className={styles.createMask}
             onMouseMove={(e) => {
               const ms = pxToMs(e.clientX);
+              console.log(ms);
               setNewEffect(
                 Object.assign({}, newEffect, {
                   secondMs: Math.min(

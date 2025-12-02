@@ -11,6 +11,7 @@ import {
 import { ProjectContext } from '../contexts/ProjectContext';
 
 import {
+  Effect_SequenceEffect,
   Layer as LayerProto,
   TimecodedEffect,
 } from '@dmx-controller/proto/effect_pb';
@@ -27,12 +28,12 @@ export const SEQUENCE_BEAT_RESOLUTION = 7200;
 
 interface SequenceEditorProps {
   className?: string;
-  sequenceId: bigint;
+  sequenceRef: Effect_SequenceEffect['sequence'];
 }
 
 export function SequenceEditor({
   className,
-  sequenceId,
+  sequenceRef,
 }: SequenceEditorProps): JSX.Element {
   const { project } = useContext(ProjectContext);
   const { setShortcuts } = useContext(ShortcutContext);
@@ -43,13 +44,21 @@ export function SequenceEditor({
   const [copyEffect, setCopyEffect] = useState<TimecodedEffect | null>(null);
   const [beatSubdivisions, setBeatSubdivisions] = useState(4);
 
-  const sequence = useMemo(
-    () => project.sequences[sequenceId.toString()],
-    [project, sequenceId],
-  );
+  const sequence = useMemo(() => {
+    switch (sequenceRef.case) {
+      case 'sequenceId':
+        return project.sequences[sequenceRef.value.toString()];
+      case 'sequenceImpl':
+        return sequenceRef.value;
+      default:
+        throw Error('Unknown sequence ref type!');
+    }
+  }, [project, sequenceRef]);
 
   if (!sequence) {
-    throw new Error(`Could ont find sequence with ID ${sequenceId}!`);
+    throw new Error(
+      `Could ont find sequence with reference ${JSON.stringify(sequenceRef)}!`,
+    );
   }
 
   useEffect(
@@ -83,10 +92,12 @@ export function SequenceEditor({
   const pxToMs = useCallback(
     (px: number) => {
       if (!panelRef.current) {
+        console.log('No panel ref!!');
         return 0;
       }
       const width = panelRef.current.getBoundingClientRect().width;
-      return Math.floor(px / width) * SEQUENCE_BEAT_RESOLUTION;
+      console.log('width', width);
+      return Math.floor((px * SEQUENCE_BEAT_RESOLUTION) / width);
     },
     [panelRef],
   );

@@ -79,7 +79,6 @@ export function WledRendererProvider({ children }: PropsWithChildren) {
   );
 
   useEffect(() => {
-    console.log('New loops');
     const renderLoops: Array<() => void> = [];
     Object.entries(getActivePatch(project).outputs)
       .filter(([_, output]) => output.output.case === 'wledOutput')
