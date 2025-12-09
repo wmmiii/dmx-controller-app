@@ -8,22 +8,17 @@ on:
   workflow_dispatch:
 
 jobs:
-  setup:
-    name: Setup
+  build:
+    name: Build
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
-      - uses: ./.github/setup
+      - name: Setup
+        uses: ./.github/setup
 
-  build:
-    name: Build
-    needs: setup
-    runs-on: ubuntu-latest
-
-    steps:
       - name: Build
         env:
           NODE_ENV: production
