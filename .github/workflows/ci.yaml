@@ -3,14 +3,22 @@ name: CI
 on: [pull_request, workflow_dispatch]
 
 jobs:
-  build:
-    name: Build
+  setup:
+    name: Setup
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      - uses: ./.github/setup
+
+  build:
+    name: Build
+    needs: setup
+    runs-on: ubuntu-latest
+
+    steps:
       - name: Build
         run: pnpm build
 
