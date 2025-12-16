@@ -28,6 +28,7 @@ message FixtureState {
   optional double width = 10;
   optional double height = 11;
   optional double zoom = 7;
+  optional double speed = 16;
   optional double strobe = 9;
   optional uint32 wled_effect = 14;
   optional uint32 wled_palette = 15;

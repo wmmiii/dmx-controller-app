@@ -115,6 +115,10 @@ export function applyState(state: FixtureState, context: RenderContext): void {
     device.setAmount(context.output, 'zoom', state.zoom);
   }
 
+  if (state.speed != null) {
+    device.setAmount(context.output, 'speed', state.speed);
+  }
+
   for (const channel of state.channels) {
     device.setDmxChannel(context.output, channel.index, channel.value);
   }

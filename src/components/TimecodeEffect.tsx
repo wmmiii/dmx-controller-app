@@ -39,6 +39,7 @@ import {
   BiSun,
 } from 'react-icons/bi';
 import { LuChartBarStacked } from 'react-icons/lu';
+import { MdSpeed } from 'react-icons/md';
 
 import { EffectRenderingContext } from '../contexts/EffectRenderingContext';
 import { PaletteContext } from '../contexts/PaletteContext';
@@ -459,6 +460,9 @@ function effectIcons(
   }
   if (effect?.zoom != null) {
     icons.push(BiSolidBinoculars);
+  }
+  if (effect?.speed != null) {
+    icons.push(MdSpeed);
   }
   if (effect?.strobe) {
     icons.push(BiSolidBolt);

@@ -236,6 +236,7 @@ impl<'a> RenderTarget<DmxRenderTarget<'a>> for DmxRenderTarget<'a> {
                 (width, "width", compute_amount_channel_updates),
                 (height, "height", compute_amount_channel_updates),
                 (zoom, "zoom", compute_amount_channel_updates),
+                (speed, "speed", compute_amount_channel_updates),
             ]
         );
 

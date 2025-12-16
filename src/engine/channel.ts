@@ -74,9 +74,12 @@ AMOUNT_CHANNEL_DESCRIPTION.set('width', {
 AMOUNT_CHANNEL_DESCRIPTION.set('zoom', {
   description: 'How zoomed in or out a light fixture is.',
 });
+AMOUNT_CHANNEL_DESCRIPTION.set('speed', {
+  description: 'How quickly the fixture moves.',
+});
 export const AMOUNT_CHANNELS = Array.from(
   AMOUNT_CHANNEL_DESCRIPTION.keys(),
-) as Array<keyof FixtureState | 'speed'>;
+) as Array<keyof FixtureState>;
 export type AmountChannel = (typeof AMOUNT_CHANNELS)[number];
 export function isAmountChannel(type: string): type is AmountChannel {
   return AMOUNT_CHANNELS.includes(type as AmountChannel);
