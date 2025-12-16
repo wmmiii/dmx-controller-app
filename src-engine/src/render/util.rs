@@ -2,13 +2,11 @@ use crate::{
     proto::{
         effect::Effect,
         effect_timing::{Absolute, Beat, EasingFunction, Timing},
-        output,
-        output_target::Output,
+        output_target::{FixtureMapping, Output},
         ColorPalette, EffectTiming, FixtureState, OutputTarget, Project, QualifiedFixtureId,
-        SacnDmxOutput, SerialDmxOutput, WledOutput,
     },
     render::{
-        project::get_all_output_targets, ramp_effect::apply_ramp_effect,
+        project::get_all_qualified_ids, ramp_effect::apply_ramp_effect,
         random_effect::apply_random_effect, render_target::RenderTarget,
         strobe_effect::apply_strobe_effect,
     },
@@ -96,8 +94,18 @@ pub fn apply_state<T: RenderTarget<T>>(
             }
         }
         Output::Group(0) => {
-            for target in get_all_output_targets(project) {
-                apply_state(project, render_target, &target, state, color_palette);
+            for fixture_id in get_all_qualified_ids(project) {
+                apply_state(
+                    project,
+                    render_target,
+                    &OutputTarget {
+                        output: Some(Output::Fixtures(FixtureMapping {
+                            fixture_ids: [fixture_id].to_vec(),
+                        })),
+                    },
+                    state,
+                    color_palette,
+                );
             }
         }
         Output::Group(id) => match project.groups.get(id) {
@@ -129,40 +137,7 @@ pub fn get_fixtures(project: &Project, output_target: &OutputTarget) -> Vec<Qual
             }
         }
 
-        Output::Group(0) => project
-            .patches
-            .get(&project.active_patch)
-            .unwrap()
-            .outputs
-            .iter()
-            .flat_map(|(output_id, o)| {
-                o.output
-                    .as_ref()
-                    .map(|out| match out {
-                        output::Output::SacnDmxOutput(SacnDmxOutput { fixtures, .. })
-                        | output::Output::SerialDmxOutput(SerialDmxOutput { fixtures, .. }) => {
-                            fixtures
-                                .iter()
-                                .map(|(fixture_id, _)| QualifiedFixtureId {
-                                    patch: project.active_patch,
-                                    output: *output_id,
-                                    fixture: *fixture_id,
-                                })
-                                .collect::<Vec<_>>()
-                        }
-                        output::Output::WledOutput(WledOutput { segments, .. }) => segments
-                            .iter()
-                            .map(|(segment_id, _)| QualifiedFixtureId {
-                                patch: project.active_patch,
-                                output: *output_id,
-                                fixture: *segment_id as u64,
-                            })
-                            .collect::<Vec<_>>(),
-                    })
-                    .into_iter()
-                    .flatten()
-            })
-            .collect(),
+        Output::Group(0) => get_all_qualified_ids(project),
 
         Output::Group(id) => {
             let mut ids: Vec<QualifiedFixtureId> = Vec::new();
@@ -220,7 +195,7 @@ pub fn calculate_timing(
         Ok(EasingFunction::EaseIn) => t * t * t,
         Ok(EasingFunction::EaseOut) => 1.0 - (1.0 - t).powf(3.0),
         Ok(EasingFunction::EaseInOut) => t * t * (3.0 - 2.0 * t),
-        Ok(EasingFunction::Sine) => (-(PI * t).cos() - 1.0) / 2.0,
+        Ok(EasingFunction::Sine) => (-(PI * t).cos() + 1.0) / 2.0,
         _ => panic!("Unknown easing type!"),
     };
 

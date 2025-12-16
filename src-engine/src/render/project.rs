@@ -1,9 +1,8 @@
 use crate::proto::{
-    output::Output, output_target::FixtureMapping, OutputTarget, Project, QualifiedFixtureId,
-    SacnDmxOutput, SerialDmxOutput, WledOutput,
+    output::Output, Project, QualifiedFixtureId, SacnDmxOutput, SerialDmxOutput, WledOutput,
 };
 
-pub fn get_all_output_targets(project: &Project) -> Vec<OutputTarget> {
+pub fn get_all_qualified_ids(project: &Project) -> Vec<QualifiedFixtureId> {
     project
         .patches
         .get(&project.active_patch)
@@ -17,30 +16,18 @@ pub fn get_all_output_targets(project: &Project) -> Vec<OutputTarget> {
                     Output::SacnDmxOutput(SacnDmxOutput { fixtures, .. })
                     | Output::SerialDmxOutput(SerialDmxOutput { fixtures, .. }) => fixtures
                         .iter()
-                        .map(|(fixture_id, _)| OutputTarget {
-                            output: Some(crate::proto::output_target::Output::Fixtures(
-                                FixtureMapping {
-                                    fixture_ids: vec![QualifiedFixtureId {
-                                        patch: project.active_patch,
-                                        output: *output_id,
-                                        fixture: *fixture_id,
-                                    }],
-                                },
-                            )),
+                        .map(|(fixture_id, _)| QualifiedFixtureId {
+                            patch: project.active_patch,
+                            output: *output_id,
+                            fixture: *fixture_id,
                         })
                         .collect::<Vec<_>>(),
                     Output::WledOutput(WledOutput { segments, .. }) => segments
                         .iter()
-                        .map(|(segment_id, _)| OutputTarget {
-                            output: Some(crate::proto::output_target::Output::Fixtures(
-                                FixtureMapping {
-                                    fixture_ids: vec![QualifiedFixtureId {
-                                        patch: project.active_patch,
-                                        output: *output_id,
-                                        fixture: *segment_id as u64,
-                                    }],
-                                },
-                            )),
+                        .map(|(segment_id, _)| QualifiedFixtureId {
+                            patch: project.active_patch,
+                            output: *output_id,
+                            fixture: *segment_id as u64,
                         })
                         .collect::<Vec<_>>(),
                 })

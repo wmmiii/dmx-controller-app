@@ -30,16 +30,18 @@ pub fn apply_ramp_effect<T: RenderTarget<T>>(
         let mut start = render_target.clone();
         let mut end = render_target.clone();
 
+        let single_target = &OutputTarget {
+            output: Some(crate::proto::output_target::Output::Fixtures(
+                crate::proto::output_target::FixtureMapping {
+                    fixture_ids: vec![*fixture],
+                },
+            )),
+        };
+
         apply_state(
             project,
             &mut start,
-            &OutputTarget {
-                output: Some(crate::proto::output_target::Output::Fixtures(
-                    crate::proto::output_target::FixtureMapping {
-                        fixture_ids: vec![*fixture],
-                    },
-                )),
-            },
+            single_target,
             &ramp_effect.state_start.clone().unwrap(),
             color_palette,
         );
@@ -47,7 +49,7 @@ pub fn apply_ramp_effect<T: RenderTarget<T>>(
         apply_state(
             project,
             &mut end,
-            output_target,
+            single_target,
             &ramp_effect.state_end.clone().unwrap(),
             color_palette,
         );

@@ -57,6 +57,11 @@ export function SacnRendererProvider({ children }: PropsWithChildren) {
           latencySamples.length = 0;
           update();
         }
+
+        const durationMs = new Date().getTime() - startMs;
+        if (durationMs < 25) {
+          await new Promise((resolve) => setTimeout(resolve, 16 - durationMs));
+        }
       }
     })();
 

@@ -11,7 +11,6 @@ import init, {
   update_project,
 } from '@dmx-controller/wasm-engine';
 import { invoke } from '@tauri-apps/api/core';
-import { randomUint64 } from '../util/numberUtils';
 import { isTauri } from './util';
 
 export const updateProject = isTauri ? tauriUpdateProject : webUpdateProject;
@@ -50,7 +49,6 @@ async function tauriRenderDmxScene(
   systemT: bigint,
   frame: number,
 ): Promise<Uint8Array> {
-  const id = randomUint64();
   const result = await invoke<number[]>('render_scene_dmx', {
     outputId: outputId.toString(),
     systemT: Number(systemT),
