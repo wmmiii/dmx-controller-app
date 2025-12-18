@@ -58,6 +58,7 @@ export function ControllerProvider({
   useEffect(() => {
     projectRef.current = project;
   }, [project]);
+  const saveTimeout = useRef<any>(null);
 
   const { addBeatSample, setFirstBeat } = useContext(BeatContext);
 
@@ -115,14 +116,14 @@ export function ControllerProvider({
         // https://nickfever.com/music/midi-cc-list
         if (data[1] < 32) {
           msbBuffer.set(data[1], data[2]);
-          value = data[2] + (lsbBuffer.get(data[1] + 32) || 0) / 128;
+          value = data[2] + (lsbBuffer.get(data[1] + 32) || 0) / 127;
           controlCommandType = 'msb';
         } else if (data[1] > 31 && data[1] < 64) {
           lsbBuffer.set(data[1], data[2]);
-          value = (msbBuffer.get(data[1] - 32) || 0) + data[2] / 128;
+          value = (msbBuffer.get(data[1] - 32) || 0) + data[2] / 127;
           controlCommandType = 'lsb';
         }
-        value /= 128;
+        value /= 127;
       } else {
         console.error('Unrecognized MIDI command!', command);
         return;
@@ -177,7 +178,6 @@ export function ControllerProvider({
   }, []);
 
   useEffect(() => {
-    let timeout: any;
     const listener: Listener = (_p, channel, value, cct) => {
       if (controllerName) {
         const modified = performAction(
@@ -193,8 +193,8 @@ export function ControllerProvider({
         if (modified) {
           update();
           // Debounce midi input.
-          clearTimeout(timeout);
-          timeout = setTimeout(() => {
+          clearTimeout(saveTimeout.current);
+          saveTimeout.current = setTimeout(() => {
             save('Update via controller input.');
           }, 500);
         }
@@ -205,6 +205,7 @@ export function ControllerProvider({
   }, [
     project,
     controllerName,
+    saveTimeout,
     addBeatSample,
     update,
     addListener,
