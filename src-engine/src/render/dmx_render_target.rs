@@ -58,7 +58,37 @@ impl<'a> DmxRenderTarget<'a> {
     }
 
     pub fn get_universe(&self) -> [u8; 512] {
-        self.universe.map(|v| (v * 255.0).clamp(0.0, 255.0) as u8)
+        let mut universe = self.universe.clone();
+        let mut output = false;
+
+        for (_, fixture) in self.fixtures {
+            let mode = self
+                .fixture_definitions
+                .get(&fixture.fixture_definition_id)
+                .unwrap()
+                .modes
+                .get(&fixture.fixture_mode)
+                .unwrap();
+
+            for (index, channel) in &mode.channels {
+                let t = &channel.r#type;
+                if t.ends_with("-fine") {
+                    let fine_index = (index + fixture.channel_offset - 1) as usize;
+                    let coarse_type = t.strip_suffix("-fine").unwrap();
+                    let coarse_entry = mode.channels.iter().find(|(_, c)| c.r#type == coarse_type);
+                    if coarse_entry.is_none() {
+                        continue;
+                    }
+                    let coarse_index =
+                        (coarse_entry.unwrap().0 + fixture.channel_offset - 1) as usize;
+                    let coarse_value = universe[coarse_index];
+                    let fine_value = (coarse_value * 255.0).fract();
+                    universe[fine_index] = fine_value;
+                }
+            }
+        }
+
+        universe.map(|v| (v * 255.0).clamp(0.0, 255.0) as u8)
     }
 
     fn get_fixture_mode(&self, fixture_id: &u64) -> Option<&Mode> {

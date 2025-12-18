@@ -59,7 +59,7 @@ export function SacnRendererProvider({ children }: PropsWithChildren) {
         }
 
         const durationMs = new Date().getTime() - startMs;
-        if (durationMs < 25) {
+        if (durationMs < 16) {
           await new Promise((resolve) => setTimeout(resolve, 16 - durationMs));
         }
       }
