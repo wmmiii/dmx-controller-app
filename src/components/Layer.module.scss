@@ -7,9 +7,21 @@
   overflow: hidden;
   position: relative;
 
-  &:last-child {
+  &:nth-last-child(2) {
     border-bottom: none;
   }
+
+  &:hover .delete-button {
+    display: block;
+  }
+}
+
+.delete-button {
+  display: none;
+  left: vars.spacing(0.5);
+  position: absolute;
+  top: vars.spacing(0.5);
+  z-index: 1;
 }
 
 .effect,
@@ -17,6 +29,7 @@
   bottom: 0;
   position: absolute;
   top: 0;
+  z-index: 0;
 }
 
 .newEffect {

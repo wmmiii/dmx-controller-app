@@ -9,13 +9,17 @@ import {
 
 import { ProjectContext } from '../contexts/ProjectContext';
 
+import { create } from '@bufbuild/protobuf';
 import {
   Effect_SequenceEffect,
   Layer as LayerProto,
+  LayerSchema,
   TimecodedEffect,
 } from '@dmx-controller/proto/effect_pb';
+import { BiPlus } from 'react-icons/bi';
 import { ShortcutContext } from '../contexts/ShortcutContext';
 import { ALL_CHANNELS } from '../engine/channel';
+import { IconButton } from './Button';
 import { NumberInput } from './Input';
 import { Layer } from './Layer';
 import styles from './SequenceEditor.module.scss';
@@ -204,6 +208,7 @@ export function Layers({
   pxToMs,
   snapToBeat,
 }: LayersProps) {
+  const { save } = useContext(ProjectContext);
   return (
     <>
       {layers.map((l, i) => (
@@ -222,12 +227,28 @@ export function Layers({
             }
           }}
           copyEffect={copyEffect}
+          onDelete={() => {
+            setSelectedEffectAddress(null);
+            layers.splice(i, 1);
+            save('Delete layer from sequence');
+          }}
           maxMs={SEQUENCE_BEAT_RESOLUTION}
           msToPx={msToPx}
           pxToMs={pxToMs}
           snapToBeat={snapToBeat}
         />
       ))}
+      <div className={styles.newLayerRow}>
+        <IconButton
+          title="Add new layer"
+          onClick={() => {
+            layers.push(create(LayerSchema, { effects: [] }));
+            save('Add layer to sequence');
+          }}
+        >
+          <BiPlus />
+        </IconButton>
+      </div>
     </>
   );
 }

@@ -7,3 +7,10 @@
 .effect-details {
   margin: vars.spacing(1);
 }
+
+.new-layer-row {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  padding: vars.spacing(1);
+}

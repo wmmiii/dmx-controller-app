@@ -1,5 +1,5 @@
 import { create } from '@bufbuild/protobuf';
-import { JSX, useContext, useEffect, useState } from 'react';
+import { createRef, JSX, useContext, useEffect, useState } from 'react';
 
 import { ProjectContext } from '../contexts/ProjectContext';
 
@@ -8,7 +8,9 @@ import {
   TimecodedEffect,
   TimecodedEffectSchema,
 } from '@dmx-controller/proto/effect_pb';
+import { BiTrash } from 'react-icons/bi';
 import { ShortcutContext } from '../contexts/ShortcutContext';
+import { IconButton } from './Button';
 import styles from './Layer.module.scss';
 import { TimecodeEffect as EffectComponent } from './TimecodeEffect';
 
@@ -25,6 +27,7 @@ interface LayerProps {
   selectedEffect: TimecodedEffect | null;
   setSelectedEffectAddress: (address: number | null) => void;
   copyEffect: TimecodedEffect | null;
+  onDelete: () => void;
   maxMs: number;
   msToPx: (ms: number) => number;
   pxToMs: (px: number) => number;
@@ -36,6 +39,7 @@ export function Layer({
   selectedEffect,
   setSelectedEffectAddress,
   copyEffect,
+  onDelete,
   maxMs,
   msToPx,
   pxToMs,
@@ -44,6 +48,7 @@ export function Layer({
   const { save } = useContext(ProjectContext);
   const { setShortcuts } = useContext(ShortcutContext);
   const [newEffect, setNewEffect] = useState<NewEffect | null>(null);
+  const layerRef = createRef<HTMLDivElement>();
 
   useEffect(() => {
     const index = selectedEffect ? layer.effects.indexOf(selectedEffect) : -1;
@@ -66,6 +71,7 @@ export function Layer({
 
   return (
     <div
+      ref={layerRef}
       className={styles.layer}
       onMouseDown={(e) => {
         const ms = pxToMs(e.clientX);
@@ -85,6 +91,14 @@ export function Layer({
         });
       }}
     >
+      <IconButton
+        className={styles.deleteButton}
+        title="Delete layer"
+        variant="warning"
+        onClick={onDelete}
+      >
+        <BiTrash />
+      </IconButton>
       {newEffect && (
         <>
           <div
@@ -157,7 +171,9 @@ export function Layer({
           copyEffect={copyEffect}
           minMs={layer.effects[i - 1]?.endMs || 0}
           maxMs={layer.effects[i + 1]?.startMs || maxMs}
-          pxToMs={pxToMs}
+          pxToMs={(px: number) =>
+            pxToMs(px - (layerRef.current?.getBoundingClientRect().left ?? 0))
+          }
           snapToBeat={snapToBeat}
         />
       ))}
