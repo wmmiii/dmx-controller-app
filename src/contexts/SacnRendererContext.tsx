@@ -50,13 +50,13 @@ export function SacnRendererProvider({ children }: PropsWithChildren) {
           );
         }
 
-        if (latencySamples.length >= 40) {
-          const total = latencySamples.reduce((a, b) => a + b);
-          const latency = Math.floor(total / latencySamples.length / 2);
-          getOutput(project, outputId).latencyMs = latency;
-          latencySamples.length = 0;
-          update();
-        }
+        // if (latencySamples.length >= 40) {
+        //   const total = latencySamples.reduce((a, b) => a + b);
+        //   const latency = Math.floor(total / latencySamples.length / 2);
+        //   getOutput(project, outputId).latencyMs = latency;
+        //   latencySamples.length = 0;
+        //   update();
+        // }
 
         const durationMs = new Date().getTime() - startMs;
         if (durationMs < 16) {

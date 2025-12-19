@@ -4,6 +4,35 @@
   @include vars.fill;
 }
 
+.layer-container {
+  position: relative;
+}
+
+.verticalRules {
+  @include vars.fill;
+
+  display: flex;
+  flex-direction: row;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.rule,
+.ruleFaint {
+  align-self: stretch;
+  border-right: 1px solid vars.$col-border;
+  flex: 1;
+  min-width: 0;
+
+  &:last-child {
+    border-right: none;
+  }
+}
+
+.ruleFaint {
+  border-right-style: dashed;
+}
+
 .effect-details {
   margin: vars.spacing(1);
 }

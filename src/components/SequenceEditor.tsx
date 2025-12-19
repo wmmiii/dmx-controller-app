@@ -1,4 +1,4 @@
-import {
+import React, {
   JSX,
   useCallback,
   useContext,
@@ -38,7 +38,7 @@ export function SequenceEditor({
   className,
   sequenceRef,
 }: SequenceEditorProps): JSX.Element {
-  const { project } = useContext(ProjectContext);
+  const { project, save } = useContext(ProjectContext);
   const { setShortcuts } = useContext(ShortcutContext);
   const [panelElement, setPanelElement] = useState<HTMLDivElement | null>(null);
   const [selectedEffectAddress, setSelectedEffectAddress] = useState<{
@@ -122,9 +122,7 @@ export function SequenceEditor({
       }
       const width = panelElement.getBoundingClientRect().width;
 
-      const beatSnapRangeMs = Math.floor(
-        (10 * SEQUENCE_BEAT_RESOLUTION) / 10 / width,
-      );
+      const beatSnapRangeMs = Math.floor(width / 32);
 
       const lengthMs =
         SEQUENCE_BEAT_RESOLUTION / sequence.nativeBeats / beatSubdivisions;
@@ -149,6 +147,18 @@ export function SequenceEditor({
       left={
         <div className={styles.sequenceEditor} ref={setPanelElement}>
           <label>
+            Sequence length in beats
+            <NumberInput
+              value={sequence.nativeBeats}
+              onChange={(i) => {
+                sequence.nativeBeats = i;
+                save(`Set number of beats in sequence to ${i}.`);
+              }}
+              min={1}
+              max={16}
+            />
+          </label>
+          <label>
             Subdivide beat
             <NumberInput
               value={beatSubdivisions}
@@ -160,6 +170,8 @@ export function SequenceEditor({
           <br />
           <Layers
             layers={sequence.layers}
+            nativeBeats={sequence.nativeBeats}
+            beatSubdivisions={beatSubdivisions}
             selectedEffect={selectedEffect}
             setSelectedEffectAddress={setSelectedEffectAddress}
             copyEffect={copyEffect}
@@ -189,6 +201,8 @@ export function SequenceEditor({
 
 interface LayersProps {
   layers: LayerProto[];
+  nativeBeats: number;
+  beatSubdivisions: number;
   selectedEffect: TimecodedEffect | null;
   setSelectedEffectAddress: (
     address: { layer: number; index: number } | null,
@@ -201,6 +215,8 @@ interface LayersProps {
 
 export function Layers({
   layers,
+  nativeBeats,
+  beatSubdivisions,
   selectedEffect,
   setSelectedEffectAddress,
   copyEffect,
@@ -211,33 +227,45 @@ export function Layers({
   const { save } = useContext(ProjectContext);
   return (
     <>
-      {layers.map((l, i) => (
-        <Layer
-          key={i}
-          layer={l}
-          selectedEffect={selectedEffect}
-          setSelectedEffectAddress={(address) => {
-            if (address == null) {
+      <div className={styles.layerContainer}>
+        {layers.map((l, i) => (
+          <Layer
+            key={i}
+            layer={l}
+            selectedEffect={selectedEffect}
+            setSelectedEffectAddress={(address) => {
+              if (address == null) {
+                setSelectedEffectAddress(null);
+              } else {
+                setSelectedEffectAddress({
+                  layer: i,
+                  index: address,
+                });
+              }
+            }}
+            copyEffect={copyEffect}
+            onDelete={() => {
               setSelectedEffectAddress(null);
-            } else {
-              setSelectedEffectAddress({
-                layer: i,
-                index: address,
-              });
-            }
-          }}
-          copyEffect={copyEffect}
-          onDelete={() => {
-            setSelectedEffectAddress(null);
-            layers.splice(i, 1);
-            save('Delete layer from sequence');
-          }}
-          maxMs={SEQUENCE_BEAT_RESOLUTION}
-          msToPx={msToPx}
-          pxToMs={pxToMs}
-          snapToBeat={snapToBeat}
-        />
-      ))}
+              layers.splice(i, 1);
+              save('Delete layer from sequence');
+            }}
+            maxMs={SEQUENCE_BEAT_RESOLUTION}
+            msToPx={msToPx}
+            pxToMs={pxToMs}
+            snapToBeat={snapToBeat}
+          />
+        ))}
+        <div className={styles.verticalRules}>
+          {new Array(nativeBeats).fill(0).map((_, i) => (
+            <React.Fragment key={i}>
+              {new Array(beatSubdivisions - 1).fill(0).map((_, i) => (
+                <div key={i} className={styles.ruleFaint}></div>
+              ))}
+              <div key={i} className={styles.rule}></div>
+            </React.Fragment>
+          ))}
+        </div>
+      </div>
       <div className={styles.newLayerRow}>
         <IconButton
           title="Add new layer"
