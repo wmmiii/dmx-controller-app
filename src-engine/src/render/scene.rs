@@ -28,9 +28,9 @@ impl PartialOrd for TileMap {
 
 impl Ord for TileMap {
     fn cmp(&self, other: &Self) -> Ordering {
-        if self.priority < other.priority {
+        if self.priority > other.priority {
             return Ordering::Less;
-        } else if self.priority > other.priority {
+        } else if self.priority < other.priority {
             return Ordering::Greater;
         } else if self.x < other.x {
             return Ordering::Less;
