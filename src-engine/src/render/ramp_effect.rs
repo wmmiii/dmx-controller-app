@@ -27,8 +27,6 @@ pub fn apply_ramp_effect<T: RenderTarget<T>>(
             i as f64 / fixtures.len() as f64,
         );
 
-        println!("rt: {}", t);
-
         let mut start = render_target.clone();
         let mut end = render_target.clone();
 
