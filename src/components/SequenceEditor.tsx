@@ -11,7 +11,6 @@ import { ProjectContext } from '../contexts/ProjectContext';
 
 import { create } from '@bufbuild/protobuf';
 import {
-  Effect_SequenceEffect,
   Layer as LayerProto,
   LayerSchema,
   TimecodedEffect,
@@ -20,7 +19,7 @@ import { BiPlus } from 'react-icons/bi';
 import { ShortcutContext } from '../contexts/ShortcutContext';
 import { ALL_CHANNELS } from '../engine/channel';
 import { IconButton } from './Button';
-import { NumberInput } from './Input';
+import { NumberInput, TextInput } from './Input';
 import { Layer } from './Layer';
 import styles from './SequenceEditor.module.scss';
 import { HorizontalSplitPane } from './SplitPane';
@@ -31,12 +30,12 @@ export const SEQUENCE_BEAT_RESOLUTION = 7200;
 
 interface SequenceEditorProps {
   className?: string;
-  sequenceRef: Effect_SequenceEffect['sequence'];
+  sequenceId: bigint;
 }
 
 export function SequenceEditor({
   className,
-  sequenceRef,
+  sequenceId,
 }: SequenceEditorProps): JSX.Element {
   const { project, save } = useContext(ProjectContext);
   const { setShortcuts } = useContext(ShortcutContext);
@@ -48,21 +47,10 @@ export function SequenceEditor({
   const [copyEffect, setCopyEffect] = useState<TimecodedEffect | null>(null);
   const [beatSubdivisions, setBeatSubdivisions] = useState(4);
 
-  const sequence = useMemo(() => {
-    switch (sequenceRef.case) {
-      case 'sequenceId':
-        return project.sequences[sequenceRef.value.toString()];
-      case 'sequenceImpl':
-        return sequenceRef.value;
-      default:
-        throw Error('Unknown sequence ref type!');
-    }
-  }, [project, sequenceRef]);
+  const sequence = project.sequences[String(sequenceId)];
 
   if (!sequence) {
-    throw new Error(
-      `Could ont find sequence with reference ${JSON.stringify(sequenceRef)}!`,
-    );
+    throw new Error(`Could ont find sequence with id ${sequenceId}!`);
   }
 
   const selectedEffect = useMemo(() => {
@@ -148,6 +136,16 @@ export function SequenceEditor({
       defaultAmount={0.8}
       left={
         <div className={styles.sequenceEditor} ref={setPanelElement}>
+          <label>
+            Name
+            <TextInput
+              value={sequence.name}
+              onChange={(n) => {
+                sequence.name = n;
+                save(`Set sequence name to ${n}.`);
+              }}
+            />
+          </label>
           <label>
             Sequence length in beats
             <NumberInput

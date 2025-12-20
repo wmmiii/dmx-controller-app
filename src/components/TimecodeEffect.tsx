@@ -18,6 +18,7 @@ import {
   Effect_StaticEffectSchema,
   Effect_StrobeEffectSchema,
   FixtureStateSchema,
+  SequenceSchema,
   TimecodedEffect as TimecodeEffectProto,
   TimecodedEffectSchema,
   type Effect_RampEffect,
@@ -54,6 +55,7 @@ import {
 
 import IconPanTilt from '../icons/IconPanTilt';
 import IconRgb from '../icons/IconRgb';
+import { randomUint64 } from '../util/numberUtils';
 import { Button, IconButton } from './Button';
 import { EffectState } from './EffectState';
 import { NumberInput, ToggleInput } from './Input';
@@ -719,6 +721,7 @@ function SequenceEffectDetails({
   showTiming,
   showPhase,
 }: EffectDetailsBaseProps<Effect_SequenceEffect>): JSX.Element {
+  const { project, save } = useContext(ProjectContext);
   const [editorOpen, setEditorOpen] = useState(false);
 
   return (
@@ -729,16 +732,56 @@ function SequenceEffectDetails({
         showPhase={showPhase}
       />
       <hr />
-      <Button onClick={() => setEditorOpen(true)}>Edit Sequence</Button>
+      <select
+        value={String(effect.sequenceId)}
+        onChange={(e) => {
+          if (e.target.value === 'new') {
+            const id = randomUint64();
+            project.sequences[String(id)] = create(SequenceSchema, {
+              name: 'New sequence',
+              nativeBeats: 1,
+              layers: [
+                {
+                  effects: [],
+                },
+              ],
+            });
+            effect.sequenceId = id;
+            save('Create new sequence.');
+            setEditorOpen(true);
+            return;
+          }
+          const sequenceId = BigInt(e.target.value);
+          effect.sequenceId = sequenceId;
+          const sequence = project.sequences[String(sequenceId)];
+          save(`Set tile effect sequence to ${sequence.name}.`);
+        }}
+      >
+        <option value="0">&lt;unset&gt;</option>
+        {Object.entries(project.sequences)
+          .sort(([_a, a], [_b, b]) => a.name.localeCompare(b.name))
+          .map(([id, { name }]) => (
+            <option key={id} value={id}>
+              {name}
+            </option>
+          ))}
+        <option value="new">+ New sequence</option>
+      </select>
+      <Button
+        onClick={() => setEditorOpen(true)}
+        disabled={effect.sequenceId === 0n}
+      >
+        Edit Sequence
+      </Button>
       {editorOpen && (
         <Modal
-          title="Edit Sequence"
+          title={`Edit Sequence '${project.sequences[String(effect.sequenceId)].name}'`}
           onClose={() => setEditorOpen(false)}
           fullScreen={true}
         >
           <SequenceEditor
             className={styles.sequenceEditor}
-            sequenceRef={effect.sequence}
+            sequenceId={effect.sequenceId}
           />
         </Modal>
       )}
@@ -903,14 +946,7 @@ function EffectSelector({
             {
               case: 'sequenceEffect',
               value: create(Effect_SequenceEffectSchema, {
-                sequence: {
-                  case: 'sequenceImpl',
-                  value: {
-                    name: 'Tile effect',
-                    nativeBeats: 1,
-                    layers: [{ effects: [] }],
-                  },
-                },
+                sequenceId: 0n,
                 timingMode: {
                   timing: {
                     case: 'beat',

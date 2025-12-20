@@ -1,8 +1,5 @@
 use crate::{
-    proto::{
-        effect::{sequence_effect::Sequence, SequenceEffect},
-        ColorPalette, OutputTarget, Project,
-    },
+    proto::{effect::SequenceEffect, ColorPalette, OutputTarget, Project},
     render::{
         render_target::RenderTarget,
         util::{apply_effect, calculate_timing, get_fixtures},
@@ -23,13 +20,16 @@ pub fn apply_sequence_effect<T: RenderTarget<T>>(
     sequence_effect: &SequenceEffect,
     color_palette: &ColorPalette,
 ) {
-    let fixtures = get_fixtures(project, output_target);
+    if sequence_effect.sequence_id == 0 {
+        return;
+    }
 
-    let sequence = match &sequence_effect.sequence {
-        Some(Sequence::SequenceImpl(s)) => &s,
-        Some(Sequence::SequenceId(id)) => project.sequences.get(&id).unwrap(),
-        None => panic!("Sequence reference not found!"),
-    };
+    let sequence = project
+        .sequences
+        .get(&sequence_effect.sequence_id)
+        .expect("Could not find sequence!");
+
+    let fixtures = get_fixtures(project, output_target);
 
     for (fixture_index, fixture) in fixtures.iter().enumerate() {
         let t = calculate_timing(

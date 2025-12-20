@@ -133,12 +133,10 @@ message Effect {
   }
 
   message SequenceEffect {
-    oneof sequence {
-      uint64 sequence_id = 1;
-      Sequence sequence_impl = 2;
-    }
+    uint64 sequence_id = 1;
 
     EffectTiming timing_mode = 4;
+    reserved 2; //Sequence sequence_impl = 2;
   }
 
   reserved 3 to 10;
