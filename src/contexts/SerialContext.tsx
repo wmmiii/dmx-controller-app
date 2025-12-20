@@ -168,10 +168,18 @@ function SerialProviderImpl({
 
   useEffect(() => {
     if (!port) {
-      return listenToTick(() => {
-        frameRef.current += 1;
-        renderDmx(outputId, frameRef.current++);
-      });
+      const output = getOutput(project, outputId).output;
+      if (
+        output.case === 'serialDmxOutput' &&
+        Object.values(output.value.fixtures).length === 0
+      ) {
+        return () => {};
+      } else {
+        return listenToTick(() => {
+          frameRef.current += 1;
+          renderDmx(outputId, frameRef.current++);
+        });
+      }
     }
 
     let closed = false;

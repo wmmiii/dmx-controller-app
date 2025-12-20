@@ -12,6 +12,8 @@ export function listenToTick(listener: TickListener) {
 }
 
 setInterval(() => {
-  const t = BigInt(new Date().getTime());
-  tickListeners.forEach((l) => l(t));
-}, 30);
+  requestAnimationFrame(() => {
+    const t = BigInt(new Date().getTime());
+    tickListeners.forEach((l) => l(t));
+  });
+}, 33);

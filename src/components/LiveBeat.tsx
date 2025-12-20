@@ -23,14 +23,19 @@ export function LiveBeat({ className }: LiveBeatProps): JSX.Element {
   const indicatorRef = createRef<HTMLDivElement>();
 
   useEffect(() => {
+    const liveBeat = project.liveBeat;
+    if (!liveBeat) {
+      return () => {};
+    }
+
+    const offset = liveBeat.offsetMs;
+    const reciprocal = 1 / liveBeat.lengthMs;
     return listenToTick((t) => {
       if (!indicatorRef.current) {
         return;
       }
-      const amount =
-        1 -
-        (Number(t - project.liveBeat!.offsetMs) % project.liveBeat!.lengthMs) /
-          project.liveBeat!.lengthMs;
+
+      const amount = 1 - ((Number(t - offset) * reciprocal) % 1);
       indicatorRef.current.style.opacity = String(amount);
     });
   }, [indicatorRef, project]);
