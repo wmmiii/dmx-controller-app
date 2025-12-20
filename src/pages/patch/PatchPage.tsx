@@ -1,16 +1,19 @@
 import { JSX, useContext, useState } from 'react';
 
+import { create } from '@bufbuild/protobuf';
+import { OutputSchema } from '@dmx-controller/proto/output_pb';
 import { BiPlus, BiTrash } from 'react-icons/bi';
 import { Button } from '../../components/Button';
 import { EditableText, TextInput } from '../../components/Input';
 import { Modal } from '../../components/Modal';
 import { Tabs, TabsType } from '../../components/Tabs';
 import { ProjectContext } from '../../contexts/ProjectContext';
-import { createNewSacnDmxOutput } from '../../engine/outputs/dmxOutput';
-import { deleteOutput } from '../../engine/outputs/outputs';
-import { createNewWledOutput } from '../../engine/outputs/wledOutput';
 import { randomUint64 } from '../../util/numberUtils';
-import { createNewPatch, getActivePatch } from '../../util/projectUtils';
+import {
+  createNewPatch,
+  deleteFromOutputTargets,
+  getActivePatch,
+} from '../../util/projectUtils';
 import { DmxEditor } from './DmxEditor';
 import { GroupEditor } from './GroupEditor';
 import styles from './PatchPage.module.scss';
@@ -86,7 +89,15 @@ export default function PatchPage(): JSX.Element {
                   <BiTrash
                     size="1em"
                     onClick={(ev) => {
-                      deleteOutput(project, outputId);
+                      deleteFromOutputTargets(
+                        project,
+                        (id) => id.output === outputId,
+                      );
+
+                      delete getActivePatch(project).outputs[
+                        outputId.toString()
+                      ];
+
                       setTabKey(GROUP_KEY);
                       save(`Delete output ${output.name}.`);
                       ev.stopPropagation();
@@ -166,8 +177,20 @@ export default function PatchPage(): JSX.Element {
           <Button
             onClick={() => {
               const id = randomUint64();
-              getActivePatch(project).outputs[id.toString()] =
-                createNewSacnDmxOutput();
+              getActivePatch(project).outputs[id.toString()] = create(
+                OutputSchema,
+                {
+                  name: 'DMX SACN Output',
+                  latencyMs: 0,
+                  output: {
+                    case: 'sacnDmxOutput',
+                    value: {
+                      ipAddress: '0.0.0.0',
+                      fixtures: {},
+                    },
+                  },
+                },
+              );
               save('Create SACN DMX output.');
               setTabKey(id.toString());
               setShowNewOutputDialog(false);
@@ -178,8 +201,19 @@ export default function PatchPage(): JSX.Element {
           <Button
             onClick={() => {
               const id = randomUint64();
-              getActivePatch(project).outputs[id.toString()] =
-                createNewWledOutput();
+              getActivePatch(project).outputs[id.toString()] = create(
+                OutputSchema,
+                {
+                  name: 'WLED Output',
+                  latencyMs: 0,
+                  output: {
+                    case: 'wledOutput',
+                    value: {
+                      segments: {},
+                    },
+                  },
+                },
+              );
               save('Create WLED output.');
               setTabKey(id.toString());
               setShowNewOutputDialog(false);

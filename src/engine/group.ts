@@ -15,12 +15,6 @@ import {
 import { getActivePatch } from '../util/projectUtils';
 import { GROUP_ALL_ID } from './fixtures/writableDevice';
 
-/**
- *
- * @param project
- * @param groupId
- * @returns
- */
 export function addToGroup(
   project: Project,
   groupId: bigint,

@@ -12,7 +12,6 @@ import {
 import { Modal } from '../components/Modal';
 
 import { BiErrorAlt } from 'react-icons/bi';
-import { WritableDmxOutput } from '../engine/context';
 import { DmxRenderOutput, renderDmx } from '../engine/renderRouter';
 import {
   closePort,
@@ -28,20 +27,6 @@ import { DialogContext } from './DialogContext';
 import { ProjectContext } from './ProjectContext';
 import { ShortcutContext } from './ShortcutContext';
 
-export const BLACKOUT_UNIVERSE: WritableDmxOutput = {
-  type: 'dmx',
-  latencyMs: 0,
-  universe: new Array(512).fill(0),
-  nonInterpolatedIndices: [],
-  outputId: BigInt(0),
-  uint8Array: new Uint8Array(512),
-  clone: () => {
-    throw Error('Cannot clone blackout universe!');
-  },
-  interpolate: () => {
-    throw Error('Cannot interpolate blackout universe!');
-  },
-};
 const FPS_BUFFER_SIZE = 100;
 
 const EMPTY_CONTEXT = {

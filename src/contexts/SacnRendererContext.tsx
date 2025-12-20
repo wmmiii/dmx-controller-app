@@ -17,7 +17,7 @@ export const SacnRendererContext = createContext({
 });
 
 export function SacnRendererProvider({ children }: PropsWithChildren) {
-  const { project, update } = useContext(ProjectContext);
+  const { project } = useContext(ProjectContext);
   const [warnings, setWarnings] = useState<{ [outputId: string]: string }>({});
 
   const startRenderLoop = (outputId: bigint) => {

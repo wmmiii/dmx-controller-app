@@ -92,14 +92,3 @@ export function deleteFixture(project: Project, fixtureId: QualifiedFixtureId) {
       throw Error(`Unknown output type in deleteFixture! ${output.case}`);
   }
 }
-
-export function mapDegrees(
-  value: number,
-  minDegrees: number,
-  maxDegrees: number,
-): number {
-  return Math.max(
-    Math.min((255 * (value - minDegrees)) / (maxDegrees - minDegrees), 255),
-    0,
-  );
-}
