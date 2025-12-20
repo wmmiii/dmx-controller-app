@@ -259,6 +259,10 @@ fn render_scene<T: RenderTarget<T>>(
             None => 0.0,
         };
 
+        if amount == 0.0 {
+            continue;
+        }
+
         // Calculate since start of effect
         let ms_since_start = match tile.transition {
             Some(Transition::StartFadeInMs(transition))

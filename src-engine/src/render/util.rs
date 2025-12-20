@@ -8,7 +8,7 @@ use crate::{
     render::{
         project::get_all_qualified_ids, ramp_effect::apply_ramp_effect,
         random_effect::apply_random_effect, render_target::RenderTarget,
-        strobe_effect::apply_strobe_effect,
+        sequence_effect::apply_sequence_effect, strobe_effect::apply_strobe_effect,
     },
 };
 use std::f64::consts::PI;
@@ -66,7 +66,18 @@ pub fn apply_effect<T: RenderTarget<T>>(
             strobe_effect,
             color_palette,
         ),
-        Effect::SequenceEffect(_sequence_effect) => {}
+        Effect::SequenceEffect(sequence_effect) => apply_sequence_effect(
+            project,
+            render_target,
+            output_target,
+            ms_since_start,
+            effect_duration_ms,
+            beat_t,
+            frame,
+            seed,
+            sequence_effect,
+            color_palette,
+        ),
     }
 }
 

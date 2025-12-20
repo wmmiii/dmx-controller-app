@@ -5,6 +5,7 @@ mod ramp_effect;
 mod random_effect;
 mod render_target;
 pub mod scene;
+mod sequence_effect;
 mod strobe_effect;
 mod util;
 pub mod wled_render_target;

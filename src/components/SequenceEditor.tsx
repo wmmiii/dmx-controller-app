@@ -99,7 +99,7 @@ export function SequenceEditor({
         return 0;
       }
       const width = panelElement.getBoundingClientRect().width;
-      return (ms * width) / SEQUENCE_BEAT_RESOLUTION;
+      return (ms * width) / SEQUENCE_BEAT_RESOLUTION / sequence.nativeBeats;
     },
     [panelElement],
   );
@@ -110,7 +110,9 @@ export function SequenceEditor({
         return 0;
       }
       const width = panelElement.getBoundingClientRect().width;
-      return Math.floor((px * SEQUENCE_BEAT_RESOLUTION) / width);
+      return Math.floor(
+        (px * SEQUENCE_BEAT_RESOLUTION * sequence.nativeBeats) / width,
+      );
     },
     [panelElement],
   );
@@ -249,7 +251,7 @@ export function Layers({
               layers.splice(i, 1);
               save('Delete layer from sequence');
             }}
-            maxMs={SEQUENCE_BEAT_RESOLUTION}
+            maxMs={SEQUENCE_BEAT_RESOLUTION * nativeBeats}
             msToPx={msToPx}
             pxToMs={pxToMs}
             snapToBeat={snapToBeat}

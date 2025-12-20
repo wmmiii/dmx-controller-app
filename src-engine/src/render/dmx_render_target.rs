@@ -59,8 +59,6 @@ impl<'a> DmxRenderTarget<'a> {
 
     pub fn get_universe(&self) -> [u8; 512] {
         let mut universe = self.universe.clone();
-        let mut output = false;
-
         for (_, fixture) in self.fixtures {
             let mode = self
                 .fixture_definitions
