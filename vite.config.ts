@@ -38,5 +38,14 @@ export default defineConfig({
         cert: path.resolve(__dirname, 'dev/server/server.crt'),
       },
     }),
+    watch: {
+      ignored: [
+        '**/core/**',
+        '**/dist/**',
+        '**/pkg/**',
+        '**/src-engine/target/**',
+        '**/src-tauri/target/**',
+      ],
+    },
   },
 });

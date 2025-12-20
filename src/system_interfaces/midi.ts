@@ -9,9 +9,9 @@ export interface MidiPortCandidate {
 
 export const listMidiInputs = isTauri ? tauriListMidiInputs : webListMidiInputs;
 export const connectMidi = isTauri ? tauriConnectMidi : webConnectMidi;
-export const sendMidiCommand = isTauri
-  ? tauriSendMidiCommand
-  : webSendMidiCommand;
+export const sendControllerUpdate = isTauri
+  ? () => {}
+  : webSendControllerUpdate;
 
 type MidiListener = (data: number[]) => void;
 
@@ -79,10 +79,26 @@ async function webConnectMidi(candidate: MidiPortCandidate) {
   }
 }
 
-function tauriSendMidiCommand(data: number[]) {
-  invoke('send_midi_command', { data });
-}
-
-function webSendMidiCommand(data: number[]) {
-  webMidiOutput?.send(data);
+function webSendControllerUpdate(calculateValues: () => Map<string, number>) {
+  if (webMidiOutput) {
+    const values = calculateValues();
+    for (let [c, value] of values.entries()) {
+      try {
+        const channel = c.split(' ').map((i) => parseInt(i)) as [
+          number,
+          number,
+        ];
+        value = Math.floor(value * 127);
+        if (channel[0] < 32) {
+          webMidiOutput.send([channel[0], channel[1], value]);
+          const lsb = Math.floor((value % 1) * 127);
+          webMidiOutput.send([channel[0], channel[1] + 32, lsb]);
+        } else {
+          webMidiOutput.send([channel[0], channel[1], value]);
+        }
+      } catch (ex) {
+        console.error('Failed to send MIDI output!', ex);
+      }
+    }
+  }
 }

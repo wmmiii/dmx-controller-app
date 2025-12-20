@@ -1,6 +1,8 @@
+pub mod midi;
 pub mod project;
 pub mod proto;
 pub mod render;
+pub mod tile;
 
 pub fn hello_from_rust(name: &str) -> String {
     format!("Hello from Rust, {}! The DMX engine is running.", name)

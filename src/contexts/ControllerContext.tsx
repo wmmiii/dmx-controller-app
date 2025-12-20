@@ -25,7 +25,7 @@ import {
   connectMidi,
   listMidiInputs,
   removeMidiListener,
-  sendMidiCommand,
+  sendControllerUpdate,
 } from '../system_interfaces/midi';
 import { listenToTick } from '../util/time';
 import styles from './ControllerContext.module.scss';
@@ -144,31 +144,15 @@ export function ControllerProvider({
     return () => removeMidiListener(listener);
   }, [inputListeners, projectRef]);
 
-  const output = useCallback((c: ControllerChannel, value: number) => {
-    try {
-      const channel = c.split(' ').map((i) => parseInt(i)) as [number, number];
-      value = Math.floor(value * 127);
-      if (channel[0] < 32) {
-        sendMidiCommand([channel[0], channel[1], value]);
-        const lsb = Math.floor((value % 1) * 127);
-        sendMidiCommand([channel[0], channel[1] + 32, lsb]);
-      } else {
-        sendMidiCommand([channel[0], channel[1], value]);
-      }
-    } catch (ex) {
-      console.error('Failed to send MIDI output!', ex);
-    }
-  }, []);
-
   useEffect(() => {
     if (!controllerName) {
       return;
     }
 
     return listenToTick((t) =>
-      outputValues(project, controllerName, t, output),
+      sendControllerUpdate(() => outputValues(project, controllerName, t)),
     );
-  }, [project, controllerName, output]);
+  }, [project, controllerName]);
 
   const addListener = useCallback((listener: Listener) => {
     inputListeners.current.push(listener);
@@ -188,7 +172,6 @@ export function ControllerProvider({
           cct,
           addBeatSample,
           setFirstBeat,
-          output,
         );
         if (modified) {
           update();
@@ -211,12 +194,6 @@ export function ControllerProvider({
     addListener,
     removeListener,
   ]);
-
-  // Expose output function for debugging purposes.
-  useEffect(() => {
-    const global = (window || globalThis) as any;
-    global['debugMidiOutput'] = output;
-  }, [output]);
 
   return (
     <>

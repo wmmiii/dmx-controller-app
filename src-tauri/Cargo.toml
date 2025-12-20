@@ -27,7 +27,8 @@ tauri-plugin-fs = "2"
 serialport = "4.7.3"
 open_dmx = "1.1.1"
 midir = "0.10.2"
-sacn = "0.10.0"
+sacn = "0.11.0"
 tauri-plugin-process = "2"
 dmx-engine = { path = "../src-engine" }
 prost = "0.14.1"
+tokio = { version = "1.48.0", features = ["time", "macros", "sync"] }

@@ -27,7 +27,6 @@ export function performAction(
   cct: ControlCommandType,
   addBeatSample: (t: number) => void,
   setFirstBeat: (t: number) => void,
-  output: (channel: ControllerChannel, value: number) => void,
 ): boolean {
   const action =
     project.controllerMapping?.controllers[controllerName]?.actions[channel]
@@ -64,7 +63,6 @@ export function performAction(
         }
       }
     default:
-      output(channel, value);
       return false;
   }
 }
@@ -191,10 +189,10 @@ export function outputValues(
   project: Project,
   controllerName: string,
   t: bigint,
-  output: (channel: ControllerChannel, value: number) => void,
-) {
+): Map<string, number> {
+  const values = new Map<string, number>();
   if (!controllerName) {
-    return;
+    return values;
   }
   const actions = Object.entries(
     project.controllerMapping?.controllers[controllerName]?.actions ?? {},
@@ -231,8 +229,9 @@ export function outputValues(
       default:
         throw Error('Unknown action type!');
     }
-    output(channel, Math.max(Math.min(value, 1), 0));
+    values.set(channel, Math.max(Math.min(value, 1), 0));
   }
+  return values;
 }
 
 /**
