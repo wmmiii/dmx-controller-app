@@ -284,7 +284,6 @@ interface EffectDetailsBaseProps<T> {
   className?: string;
   effect: T;
   availableChannels: ChannelTypes[];
-  showTiming?: false;
   showPhase: boolean;
 }
 
@@ -292,7 +291,6 @@ export function EffectDetails({
   className,
   effect,
   availableChannels,
-  showTiming,
   showPhase,
 }: EffectDetailsBaseProps<Effect>): JSX.Element {
   const { save } = useContext(ProjectContext);
@@ -316,7 +314,6 @@ export function EffectDetails({
         <RampEffectDetails
           effect={effect.effect.value}
           availableChannels={availableChannels}
-          showTiming={showTiming}
           showPhase={showPhase}
         />
       );
@@ -344,7 +341,6 @@ export function EffectDetails({
         <SequenceEffectDetails
           effect={effect.effect.value}
           availableChannels={availableChannels}
-          showTiming={showTiming}
           showPhase={showPhase}
         />
       );
@@ -498,7 +494,6 @@ function StaticEffectDetails({
 function RampEffectDetails({
   effect,
   availableChannels,
-  showTiming,
   showPhase,
 }: EffectDetailsBaseProps<Effect_RampEffect>): JSX.Element {
   if (effect.stateStart == null || effect.stateEnd == null) {
@@ -507,11 +502,7 @@ function RampEffectDetails({
 
   return (
     <>
-      <EffectTimingDetails
-        effect={effect}
-        showTiming={Boolean(showTiming)}
-        showPhase={showPhase}
-      />
+      <EffectTimingDetails effect={effect} showPhase={showPhase} />
 
       <hr />
       <EffectState
@@ -718,7 +709,6 @@ function RandomEffectDetails({
 
 function SequenceEffectDetails({
   effect,
-  showTiming,
   showPhase,
 }: EffectDetailsBaseProps<Effect_SequenceEffect>): JSX.Element {
   const { project, save } = useContext(ProjectContext);
@@ -726,11 +716,7 @@ function SequenceEffectDetails({
 
   return (
     <>
-      <EffectTimingDetails
-        effect={effect}
-        showTiming={Boolean(showTiming)}
-        showPhase={showPhase}
-      />
+      <EffectTimingDetails effect={effect} showPhase={showPhase} />
       <hr />
       <select
         value={String(effect.sequenceId)}
@@ -972,15 +958,10 @@ function EffectSelector({
 
 interface EffectTimingDetailsProps {
   effect: Effect_RampEffect | Effect_SequenceEffect;
-  showTiming: boolean;
   showPhase: boolean;
 }
 
-function EffectTimingDetails({
-  effect,
-  showTiming,
-  showPhase,
-}: EffectTimingDetailsProps) {
+function EffectTimingDetails({ effect, showPhase }: EffectTimingDetailsProps) {
   const { save } = useContext(ProjectContext);
 
   return (
@@ -1003,52 +984,50 @@ function EffectTimingDetails({
           <option value={EffectTiming_EasingFunction.SINE}>Sine</option>
         </select>
       </label>
-      {showTiming === undefined && (
-        <label>
-          <span>Timing mode</span>
-          <select
-            value={effect.timingMode?.timing.case}
-            onChange={(e) => {
-              const currentCase = effect.timingMode?.timing.case;
-              const newTiming = e.target.value;
-              if (currentCase === newTiming) {
-                return;
-              }
+      <label>
+        <span>Timing mode</span>
+        <select
+          value={effect.timingMode?.timing.case}
+          onChange={(e) => {
+            const currentCase = effect.timingMode?.timing.case;
+            const newTiming = e.target.value;
+            if (currentCase === newTiming) {
+              return;
+            }
 
-              switch (newTiming) {
-                case 'absolute':
-                  effect.timingMode!.timing = {
-                    case: 'absolute',
-                    value: create(EffectTiming_AbsoluteSchema, {
-                      duration: 1000,
-                    }),
-                  };
-                  break;
-                case 'beat':
-                  effect.timingMode!.timing = {
-                    case: 'beat',
-                    value: create(EffectTiming_BeatSchema, {
-                      multiplier: 1,
-                    }),
-                  };
-                  break;
-                case 'oneShot':
-                  effect.timingMode!.timing = {
-                    case: 'oneShot',
-                    value: create(EffectTiming_OneShotSchema, {}),
-                  };
-                  break;
-              }
+            switch (newTiming) {
+              case 'absolute':
+                effect.timingMode!.timing = {
+                  case: 'absolute',
+                  value: create(EffectTiming_AbsoluteSchema, {
+                    duration: 1000,
+                  }),
+                };
+                break;
+              case 'beat':
+                effect.timingMode!.timing = {
+                  case: 'beat',
+                  value: create(EffectTiming_BeatSchema, {
+                    multiplier: 1,
+                  }),
+                };
+                break;
+              case 'oneShot':
+                effect.timingMode!.timing = {
+                  case: 'oneShot',
+                  value: create(EffectTiming_OneShotSchema, {}),
+                };
+                break;
+            }
 
-              save(`Change effect timing to ${newTiming}.`);
-            }}
-          >
-            <option value={'absolute'}>Absolute</option>
-            <option value={'beat'}>Beat</option>
-            <option value={'oneShot'}>One Shot</option>
-          </select>
-        </label>
-      )}
+            save(`Change effect timing to ${newTiming}.`);
+          }}
+        >
+          <option value={'absolute'}>Absolute</option>
+          <option value={'beat'}>Beat</option>
+          <option value={'oneShot'}>One Shot</option>
+        </select>
+      </label>
 
       {effect.timingMode?.timing.case === 'absolute' && (
         <label>

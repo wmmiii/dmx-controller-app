@@ -178,7 +178,7 @@ pub fn get_fixtures(project: &Project, output_target: &OutputTarget) -> Vec<Qual
 pub fn calculate_timing(
     effect_timing: &EffectTiming,
     ms_since_start: &u64,
-    event_duration_ms: &u64,
+    effect_duration_ms: &u64,
     beat_t: &f64,
     phase_index: f64,
 ) -> f64 {
@@ -186,9 +186,11 @@ pub fn calculate_timing(
     let mut t = match effect_timing.timing {
         Some(Timing::Absolute(Absolute { duration })) => *ms_since_start as f64 / duration as f64,
         Some(Timing::Beat(Beat { multiplier })) => beat_t / multiplier as f64,
-        Some(Timing::OneShot(_)) => *ms_since_start as f64 / *event_duration_ms as f64,
+        Some(Timing::OneShot(_)) => *ms_since_start as f64 / *effect_duration_ms as f64,
         _ => panic!("Timing type not specified when trying to calculate timing!"),
     };
+
+    print!("ct: {}\tduration: {}\t", t, effect_duration_ms);
 
     // Modify with phase offset.
     t = (t + effect_timing.phase * phase_index).fract();

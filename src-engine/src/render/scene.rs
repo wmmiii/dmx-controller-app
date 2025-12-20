@@ -207,23 +207,30 @@ fn render_scene<T: RenderTarget<T>>(
             None => continue,
         };
 
-        // Skip one-shot tiles that are fading out
-        if tile.one_shot && matches!(&tile.transition, Some(Transition::StartFadeOutMs(_))) {
-            continue;
-        }
-
         // Calculate time since transition
         let since_transition = match &tile.transition {
             Some(Transition::StartFadeInMs(ts)) | Some(Transition::StartFadeOutMs(ts)) => {
-                (t as i64) - (*ts as i64)
+                i64::max((t as i64) - (*ts as i64), 0) as u64
             }
             _ => 0,
         };
-        let since_transition = if since_transition < 0 {
-            0
-        } else {
-            since_transition as u64
+
+        // Calculate effect duration
+        let duration_ms = match &tile.duration {
+            Some(crate::proto::scene::tile::Duration::DurationBeat(beat)) => {
+                (beat * beat_metadata.length_ms) as u64
+            }
+            Some(crate::proto::scene::tile::Duration::DurationMs(ms)) => *ms as u64,
+            None => 0,
         };
+
+        // Skip one-shot tiles that are fading out or that have expired
+        if tile.one_shot
+            && (matches!(&tile.transition, Some(Transition::StartFadeOutMs(_)))
+                || since_transition > duration_ms)
+        {
+            continue;
+        }
 
         // Calculate amount (fade in/out)
         let amount: f64 = match &tile.transition {
@@ -263,17 +270,6 @@ fn render_scene<T: RenderTarget<T>>(
             continue;
         }
 
-        // Calculate since start of effect
-        let ms_since_start = match tile.transition {
-            Some(Transition::StartFadeInMs(transition))
-            | Some(Transition::StartFadeOutMs(transition))
-                if tile.one_shot =>
-            {
-                transition
-            }
-            _ => t,
-        };
-
         let before = render_target.clone();
         let mut after = render_target.clone();
 
@@ -292,8 +288,8 @@ fn render_scene<T: RenderTarget<T>>(
                     &mut after,
                     &output_target,
                     &t,
-                    &ms_since_start,
-                    &1000,
+                    &since_transition,
+                    &duration_ms,
                     &beat_t,
                     &frame,
                     &0,
