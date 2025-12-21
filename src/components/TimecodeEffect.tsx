@@ -1135,6 +1135,14 @@ function RandomEffectSubDetails({
           showPhase={false}
         />
       );
+    case 'sequenceEffect':
+      return (
+        <SequenceEffectDetails
+          effect={effect.effect.value}
+          availableChannels={availableChannels}
+          showPhase={false}
+        />
+      );
     default:
       return 'Not Set';
   }

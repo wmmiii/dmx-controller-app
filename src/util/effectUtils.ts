@@ -29,13 +29,13 @@ export function getStates(
     e.state ??
     e.stateStart ??
     e.stateA ??
-    getStates(e.effectA.value)?.a ??
+    getStates(e.effectA?.value)?.a ??
     create(FixtureStateSchema, {});
   const b: FixtureState =
     e.state ??
     e.stateEnd ??
     e.stateB ??
-    getStates(e.effectB.value)?.a ??
+    getStates(e.effectB?.value)?.a ??
     create(FixtureStateSchema, {});
   return {
     a: a,

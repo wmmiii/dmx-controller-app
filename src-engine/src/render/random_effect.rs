@@ -2,7 +2,10 @@ use once_cell::sync::Lazy;
 
 use crate::{
     proto::{effect::RandomEffect, ColorPalette, OutputTarget, Project},
-    render::{render_target::RenderTarget, util::apply_effect},
+    render::{
+        render_target::RenderTarget,
+        util::{apply_effect, get_fixtures},
+    },
 };
 
 pub fn apply_random_effect<T: RenderTarget<T>>(
@@ -11,9 +14,6 @@ pub fn apply_random_effect<T: RenderTarget<T>>(
     output_target: &OutputTarget,
     system_t: &u64,
     frame: &u32,
-    seed: &u64,
-    ms_since_start: &u64,
-    effect_duration_ms: &u64,
     beat_t: &f64,
     random_effect: &RandomEffect,
     color_palette: &ColorPalette,
@@ -24,11 +24,66 @@ pub fn apply_random_effect<T: RenderTarget<T>>(
         + get_even_sum() * random_effect.effect_b_variation as f64
         + (random_number_half * random_effect.effect_b_min as f64);
 
-    let effect_t = system_t
-        .wrapping_add(random_effect.seed as u64)
-        .wrapping_add(*seed)
-        .wrapping_add(LARGE_PRIME)
-        % window_size as u64;
+    if random_effect.treat_fixtures_individually {
+        let fixtures = get_fixtures(project, output_target);
+
+        for (i, fixture) in fixtures.iter().enumerate() {
+            let single_target = &OutputTarget {
+                output: Some(crate::proto::output_target::Output::Fixtures(
+                    crate::proto::output_target::FixtureMapping {
+                        fixture_ids: vec![*fixture],
+                    },
+                )),
+            };
+
+            apply_random_effect_impl(
+                project,
+                render_target,
+                single_target,
+                system_t,
+                frame,
+                &(i as u64),
+                beat_t,
+                random_effect,
+                color_palette,
+                window_size,
+            );
+        }
+    } else {
+        apply_random_effect_impl(
+            project,
+            render_target,
+            output_target,
+            system_t,
+            frame,
+            &0,
+            beat_t,
+            random_effect,
+            color_palette,
+            window_size,
+        );
+    }
+}
+
+fn apply_random_effect_impl<T: RenderTarget<T>>(
+    project: &Project,
+    render_target: &mut T,
+    output_target: &OutputTarget,
+    system_t: &u64,
+    frame: &u32,
+    seed: &u64,
+    beat_t: &f64,
+    random_effect: &RandomEffect,
+    color_palette: &ColorPalette,
+    window_size: f64,
+) {
+    let effect_t = system_t.wrapping_add(
+        LARGE_PRIME.wrapping_mul(
+            LARGE_PRIME
+                .wrapping_mul(*seed as u64)
+                .wrapping_add(random_effect.seed as u64),
+        ),
+    ) % window_size as u64;
 
     let mut counter = 0.0;
     for (i, number) in get_random_numbers().iter().enumerate() {
@@ -44,47 +99,25 @@ pub fn apply_random_effect<T: RenderTarget<T>>(
         if effect_t < counter as u64 {
             let sub_effect_fract = (effect_t as f64 - prev_counter) / (counter - prev_counter);
             let sub_effect_t = (sub_effect_fract * u32::MAX as f64) as u64;
-            if i % 2 == 0 {
-                apply_effect(
-                    project,
-                    render_target,
-                    output_target,
-                    system_t,
-                    &sub_effect_t,
-                    &(u32::MAX as u64),
-                    beat_t,
-                    frame,
-                    seed,
-                    random_effect
-                        .effect_a
-                        .as_ref()
-                        .unwrap()
-                        .effect
-                        .as_ref()
-                        .unwrap(),
-                    color_palette,
-                );
+
+            let sub_effect = if i % 2 == 0 {
+                random_effect.effect_a.as_ref()
             } else {
-                apply_effect(
-                    project,
-                    render_target,
-                    output_target,
-                    system_t,
-                    ms_since_start,
-                    effect_duration_ms,
-                    beat_t,
-                    frame,
-                    seed,
-                    random_effect
-                        .effect_b
-                        .as_ref()
-                        .unwrap()
-                        .effect
-                        .as_ref()
-                        .unwrap(),
-                    color_palette,
-                );
-            }
+                random_effect.effect_b.as_ref()
+            };
+
+            apply_effect(
+                project,
+                render_target,
+                output_target,
+                system_t,
+                &sub_effect_t,
+                &(u32::MAX as u64),
+                beat_t,
+                frame,
+                sub_effect.unwrap().effect.as_ref().unwrap(),
+                color_palette,
+            );
             return;
         }
     }

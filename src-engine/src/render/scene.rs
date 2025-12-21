@@ -292,7 +292,6 @@ fn render_scene<T: RenderTarget<T>>(
                     &duration_ms,
                     &beat_t,
                     &frame,
-                    &0,
                     effect,
                     &color_palette,
                 ),

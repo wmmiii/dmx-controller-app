@@ -16,7 +16,6 @@ pub fn apply_sequence_effect<T: RenderTarget<T>>(
     effect_duration_ms: &u64,
     beat_t: &f64,
     frame: &u32,
-    seed: &u64,
     sequence_effect: &SequenceEffect,
     color_palette: &ColorPalette,
 ) {
@@ -70,7 +69,6 @@ pub fn apply_sequence_effect<T: RenderTarget<T>>(
                 &((effect.end_ms - effect.start_ms) as u64),
                 beat_t,
                 frame,
-                seed,
                 &effect.effect.as_ref().unwrap().effect.as_ref().unwrap(),
                 color_palette,
             );

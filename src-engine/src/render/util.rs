@@ -23,7 +23,6 @@ pub fn apply_effect<T: RenderTarget<T>>(
     effect_duration_ms: &u64,
     beat_t: &f64,
     frame: &u32,
-    seed: &u64,
     effect: &Effect,
     color_palette: &ColorPalette,
 ) {
@@ -44,9 +43,6 @@ pub fn apply_effect<T: RenderTarget<T>>(
             output_target,
             system_t,
             frame,
-            seed,
-            ms_since_start,
-            effect_duration_ms,
             beat_t,
             random_effect,
             color_palette,
@@ -74,7 +70,6 @@ pub fn apply_effect<T: RenderTarget<T>>(
             effect_duration_ms,
             beat_t,
             frame,
-            seed,
             sequence_effect,
             color_palette,
         ),
@@ -189,8 +184,6 @@ pub fn calculate_timing(
         Some(Timing::OneShot(_)) => *ms_since_start as f64 / *effect_duration_ms as f64,
         _ => panic!("Timing type not specified when trying to calculate timing!"),
     };
-
-    print!("ct: {}\tduration: {}\t", t, effect_duration_ms);
 
     // Modify with phase offset.
     t = (t + effect_timing.phase * phase_index).fract();
