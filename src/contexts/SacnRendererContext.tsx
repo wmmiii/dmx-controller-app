@@ -8,11 +8,7 @@ import {
 
 import { SacnDmxOutput } from '@dmx-controller/proto/output_pb';
 import { renderDmx } from '../engine/renderRouter';
-import {
-  outputLoopSupported,
-  startOutputLoop,
-  stopOutputLoop,
-} from '../system_interfaces/output_loop';
+import { outputLoopSupported } from '../system_interfaces/output_loop';
 import { outputDmxSacn, sacnSupported } from '../system_interfaces/sacn';
 import { getActivePatch, getOutput } from '../util/projectUtils';
 import { ProjectContext } from './ProjectContext';
@@ -82,35 +78,10 @@ export function SacnRendererProvider({ children }: PropsWithChildren) {
       ([_, output]) => output.output.case === 'sacnDmxOutput',
     );
 
-    // If running on Tauri, use the backend output loop
+    // On Tauri, output loops are automatically managed by the backend
+    // when the project is updated, so we don't need to start/stop them here.
     if (outputLoopSupported) {
-      (async () => {
-        for (const [id, output] of sacnOutputs) {
-          const outputId = BigInt(id);
-          const sacnOutput = output.output.value as SacnDmxOutput;
-          try {
-            await startOutputLoop(outputId, 'sacn', {
-              universe: sacnOutput.universe,
-              ipAddress: sacnOutput.ipAddress,
-              targetFps: 60,
-            });
-          } catch (e) {
-            console.error('Failed to start sACN output loop on Tauri:', e);
-          }
-        }
-      })();
-
-      return () => {
-        (async () => {
-          for (const [id, _] of sacnOutputs) {
-            try {
-              await stopOutputLoop(BigInt(id));
-            } catch (e) {
-              console.error('Failed to stop sACN output loop on Tauri:', e);
-            }
-          }
-        })();
-      };
+      return () => {};
     }
 
     // Web fallback: run the loop in JavaScript

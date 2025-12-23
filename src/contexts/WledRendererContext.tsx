@@ -13,11 +13,7 @@ import { PatchSchema } from '@dmx-controller/proto/output_pb';
 import { Project } from '@dmx-controller/proto/project_pb';
 import { WledOutput } from '@dmx-controller/proto/wled_pb';
 import { renderWled } from '../engine/renderRouter';
-import {
-  outputLoopSupported,
-  startOutputLoop,
-  stopOutputLoop,
-} from '../system_interfaces/output_loop';
+import { outputLoopSupported } from '../system_interfaces/output_loop';
 import { sendWled } from '../system_interfaces/wled';
 import { getActivePatch, getOutput } from '../util/projectUtils';
 import { ProjectContext } from './ProjectContext';
@@ -88,34 +84,10 @@ export function WledRendererProvider({ children }: PropsWithChildren) {
       ([_, output]) => output.output.case === 'wledOutput',
     );
 
-    // If running on Tauri, use the backend output loop
+    // On Tauri, output loops are automatically managed by the backend
+    // when the project is updated, so we don't need to start/stop them here.
     if (outputLoopSupported) {
-      (async () => {
-        for (const [id, output] of wledOutputs) {
-          const outputId = BigInt(id);
-          const wledOutput = output.output.value as WledOutput;
-          try {
-            await startOutputLoop(outputId, 'wled', {
-              ipAddress: wledOutput.ipAddress,
-              targetFps: 30,
-            });
-          } catch (e) {
-            console.error('Failed to start WLED output loop on Tauri:', e);
-          }
-        }
-      })();
-
-      return () => {
-        (async () => {
-          for (const [id, _] of wledOutputs) {
-            try {
-              await stopOutputLoop(BigInt(id));
-            } catch (e) {
-              console.error('Failed to stop WLED output loop on Tauri:', e);
-            }
-          }
-        })();
-      };
+      return () => {};
     }
 
     // Web fallback: run the loop in JavaScript
