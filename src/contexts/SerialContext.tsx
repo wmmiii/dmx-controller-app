@@ -14,6 +14,11 @@ import { Modal } from '../components/Modal';
 import { BiErrorAlt } from 'react-icons/bi';
 import { DmxRenderOutput, renderDmx } from '../engine/renderRouter';
 import {
+  outputLoopSupported,
+  startOutputLoop,
+  stopOutputLoop,
+} from '../system_interfaces/output_loop';
+import {
   closePort,
   listPorts,
   openPort,
@@ -182,6 +187,29 @@ function SerialProviderImpl({
       }
     }
 
+    // If running on Tauri, use the backend output loop
+    if (outputLoopSupported) {
+      (async () => {
+        try {
+          await startOutputLoop(outputId, 'serial', { targetFps: 30 });
+        } catch (e) {
+          console.error('Failed to start output loop on Tauri:', e);
+        }
+      })();
+
+      return () => {
+        (async () => {
+          try {
+            await stopOutputLoop(outputId);
+          } catch (e) {
+            console.error('Failed to stop output loop on Tauri:', e);
+          }
+        })();
+        resetFps();
+      };
+    }
+
+    // Web fallback: run the loop in JavaScript
     let closed = false;
     let lastFrame = new Date().getTime();
     const latencySamples: number[] = [];

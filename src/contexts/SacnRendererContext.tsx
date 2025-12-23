@@ -8,6 +8,11 @@ import {
 
 import { SacnDmxOutput } from '@dmx-controller/proto/output_pb';
 import { renderDmx } from '../engine/renderRouter';
+import {
+  outputLoopSupported,
+  startOutputLoop,
+  stopOutputLoop,
+} from '../system_interfaces/output_loop';
 import { outputDmxSacn, sacnSupported } from '../system_interfaces/sacn';
 import { getActivePatch, getOutput } from '../util/projectUtils';
 import { ProjectContext } from './ProjectContext';
@@ -73,10 +78,44 @@ export function SacnRendererProvider({ children }: PropsWithChildren) {
       return;
     }
 
+    const sacnOutputs = Object.entries(getActivePatch(project).outputs).filter(
+      ([_, output]) => output.output.case === 'sacnDmxOutput',
+    );
+
+    // If running on Tauri, use the backend output loop
+    if (outputLoopSupported) {
+      (async () => {
+        for (const [id, output] of sacnOutputs) {
+          const outputId = BigInt(id);
+          const sacnOutput = output.output.value as SacnDmxOutput;
+          try {
+            await startOutputLoop(outputId, 'sacn', {
+              universe: sacnOutput.universe,
+              ipAddress: sacnOutput.ipAddress,
+              targetFps: 60,
+            });
+          } catch (e) {
+            console.error('Failed to start sACN output loop on Tauri:', e);
+          }
+        }
+      })();
+
+      return () => {
+        (async () => {
+          for (const [id, _] of sacnOutputs) {
+            try {
+              await stopOutputLoop(BigInt(id));
+            } catch (e) {
+              console.error('Failed to stop sACN output loop on Tauri:', e);
+            }
+          }
+        })();
+      };
+    }
+
+    // Web fallback: run the loop in JavaScript
     const renderLoops: Array<() => void> = [];
-    Object.entries(getActivePatch(project).outputs)
-      .filter(([_, output]) => output.output.case === 'sacnDmxOutput')
-      .forEach(([id, _]) => renderLoops.push(startRenderLoop(BigInt(id))));
+    sacnOutputs.forEach(([id, _]) => renderLoops.push(startRenderLoop(BigInt(id))));
 
     return () => renderLoops.forEach((f) => f());
   }, [project]);
