@@ -32,7 +32,6 @@ describe('externalController', () => {
         null,
         addBeatSample,
         () => {},
-        () => {},
       );
 
       expect(beatSample).toBeNull();
@@ -64,7 +63,6 @@ describe('externalController', () => {
         1,
         null,
         addBeatSample,
-        () => {},
         () => {},
       );
 
@@ -106,7 +104,6 @@ describe('externalController', () => {
         null,
         () => fail('should not set beat match'),
         () => fail('should not set first beat'),
-        () => fail('should not set beat'),
       );
 
       expect(getActiveScene(project).activeColorPalette).toEqual(newPaletteId);
