@@ -60,7 +60,7 @@ export function ControllerProvider({
   }, [project]);
   const saveTimeout = useRef<any>(null);
 
-  const { addBeatSample, setFirstBeat } = useContext(BeatContext);
+  const { addBeatSample, setBeat, setFirstBeat } = useContext(BeatContext);
 
   const [controllerName, setControllerName] = useState<string | undefined>(
     undefined,
@@ -172,6 +172,7 @@ export function ControllerProvider({
           cct,
           addBeatSample,
           setFirstBeat,
+          setBeat,
         );
         if (modified) {
           update();

@@ -11,6 +11,7 @@ message ControllerMapping {
     oneof action {
       BeatMatch beat_match = 1;
       FirstBeat first_beat = 3;
+      SetTempo set_tempo = 4;
       SceneMapping scene_mapping = 2;
     }
   }
@@ -20,6 +21,10 @@ message ControllerMapping {
   }
 
   message FirstBeat {
+
+  }
+
+  message SetTempo {
 
   }
 

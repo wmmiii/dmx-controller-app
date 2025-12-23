@@ -65,6 +65,17 @@ export function LiveBeat({ className }: LiveBeatProps): JSX.Element {
     [],
   );
 
+  const setTempoAction = useMemo(
+    () =>
+      create(ControllerMapping_ActionSchema, {
+        action: {
+          case: 'setTempo',
+          value: {},
+        },
+      }),
+    [],
+  );
+
   const firstBeatAction = useMemo(
     () =>
       create(ControllerMapping_ActionSchema, {
@@ -91,6 +102,7 @@ export function LiveBeat({ className }: LiveBeatProps): JSX.Element {
       <div ref={indicatorRef} className={indicatorClasses.join(' ')}>
         <BiPulse size={24} />
       </div>
+
       <NumberInput
         type="integer"
         min={0}
@@ -98,16 +110,23 @@ export function LiveBeat({ className }: LiveBeatProps): JSX.Element {
         value={Math.floor(60_000 / (project.liveBeat!.lengthMs || NaN))}
         onChange={(v) => setBeat(60_000 / v)}
       />
+
       <ControllerConnection
-        title="Tap to learn"
+        title="Set BPM"
         iconOnly={false}
-        action={beatMatchAction}
-        requiredType="button"
+        action={setTempoAction}
+        requiredType="slider"
       />
       <ControllerConnection
         title="Set first beat"
         iconOnly={false}
         action={firstBeatAction}
+        requiredType="button"
+      />
+      <ControllerConnection
+        title="Tap to learn"
+        iconOnly={false}
+        action={beatMatchAction}
         requiredType="button"
       />
     </div>

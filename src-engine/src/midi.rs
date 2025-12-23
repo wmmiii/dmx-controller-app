@@ -34,6 +34,9 @@ pub fn calculate_midi_output(
             Some(proto::controller_mapping::action::Action::FirstBeat(_)) => {
                 1.0 - ((beat_t % 4.0) / 4.0).round()
             }
+            Some(proto::controller_mapping::action::Action::SetTempo(_)) => {
+                (60_000.0 / beat_metadata.length_ms - 80.0) / 127.0
+            }
             Some(proto::controller_mapping::action::Action::SceneMapping(scene_mapping)) => {
                 let scene_id = project.active_scene;
                 if let Some(scene_action) = scene_mapping.actions.get(&scene_id) {

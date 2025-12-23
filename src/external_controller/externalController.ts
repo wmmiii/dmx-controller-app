@@ -27,6 +27,7 @@ export function performAction(
   cct: ControlCommandType,
   addBeatSample: (t: number) => void,
   setFirstBeat: (t: number) => void,
+  setBeat: (durationMs: number) => void,
 ): boolean {
   const action =
     project.controllerMapping?.controllers[controllerName]?.actions[channel]
@@ -43,6 +44,11 @@ export function performAction(
         setFirstBeat(new Date().getTime());
       }
       return false;
+    case 'setTempo':
+      const bpm = Math.floor(value * 127 + 80);
+      setBeat(60_000 / bpm);
+      console.log(bpm);
+      return true;
     case 'sceneMapping':
       const sceneAction = action.value.actions[project.activeScene.toString()];
       if (sceneAction) {
@@ -208,6 +214,9 @@ export function outputValues(
       case 'firstBeat':
         value = 1 - Math.round(((beatT / beatMetadata.lengthMs) % 4) / 4);
         break;
+      case 'setTempo':
+        value = Math.floor((60_000 / beatMetadata.lengthMs - 80) / 127);
+        break;
       case 'sceneMapping':
         const sceneAction =
           action.action.value.actions[project.activeScene.toString()]?.action;
@@ -247,6 +256,10 @@ export function getActionDescription(
   switch (actionMapping?.action.case) {
     case 'beatMatch':
       return 'Samples the beat during beat-matching.';
+    case 'firstBeat':
+      return 'Sets the first beat in a bar.';
+    case 'setTempo':
+      return 'Sets the absolute BPM.';
     case 'sceneMapping':
       const sceneMapping = actionMapping.action.value;
       const sceneAction = sceneMapping.actions[sceneId.toString()]?.action;
