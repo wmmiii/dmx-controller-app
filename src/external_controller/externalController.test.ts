@@ -3,7 +3,6 @@ import {
   ControllerMappingSchema,
   ControllerMapping_ActionSchema,
 } from '@dmx-controller/proto/controller_pb';
-import { ControllerChannel } from '../contexts/ControllerContext';
 import { randomUint64 } from '../util/numberUtils';
 import { createNewProject } from '../util/projectUtils';
 import { getActiveScene } from '../util/sceneUtils';
@@ -25,8 +24,7 @@ describe('externalController', () => {
       const project = createNewProject();
       let beatSample: number | null = null;
       const addBeatSample = (t: number) => (beatSample = t);
-      let output: { channel: ControllerChannel; value: number } | null = null;
-      performAction(
+      const result = performAction(
         project,
         'unknown',
         CHANNEL_NAME,
@@ -34,13 +32,10 @@ describe('externalController', () => {
         null,
         addBeatSample,
         () => {},
-        (c, v) => {
-          output = { channel: c, value: v };
-        },
       );
 
       expect(beatSample).toBeNull();
-      expect(output).toEqual({ channel: CHANNEL_NAME, value: 1 });
+      expect(result).toBe(false);
     });
 
     it('should add beat match', () => {
@@ -61,8 +56,7 @@ describe('externalController', () => {
       });
       let beatSample: number | null = null;
       const addBeatSample = (t: number) => (beatSample = t);
-      let output: { channel: ControllerChannel; value: number } | null = null;
-      performAction(
+      const result = performAction(
         project,
         CONTROLLER_NAME,
         CHANNEL_NAME,
@@ -70,13 +64,10 @@ describe('externalController', () => {
         null,
         addBeatSample,
         () => {},
-        (c, v) => {
-          output = { channel: c, value: v };
-        },
       );
 
       expect(beatSample).toEqual(946684800000);
-      expect(output).toBeNull();
+      expect(result).toBe(false);
     });
 
     it('should set color palette', () => {
@@ -105,7 +96,7 @@ describe('externalController', () => {
           },
         },
       });
-      performAction(
+      const result = performAction(
         project,
         CONTROLLER_NAME,
         CHANNEL_NAME,
@@ -113,10 +104,10 @@ describe('externalController', () => {
         null,
         () => fail('should not set beat match'),
         () => fail('should not set first beat'),
-        () => fail('should not set output'),
       );
 
       expect(getActiveScene(project).activeColorPalette).toEqual(newPaletteId);
+      expect(result).toBe(true);
     });
 
     // TODO: Test tile action.
