@@ -237,6 +237,35 @@ impl OutputLoopManager {
         Ok(())
     }
 
+    async fn render_and_emit_dmx(
+        output_id: u64,
+        system_t: u64,
+        frame: u32,
+        app: &AppHandle,
+    ) -> Result<Vec<u8>, String> {
+        match scene::render_scene_dmx(output_id, system_t, frame) {
+            Ok(dmx_data) => {
+                let dmx_vec = dmx_data.to_vec();
+
+                // Emit render event to frontend
+                let event = DmxRenderEvent {
+                    output_id: output_id.to_string(),
+                    frame,
+                    data: dmx_vec.clone(),
+                };
+                if let Err(e) = app.emit("dmx-render", event) {
+                    log::error!("Failed to emit DMX render event: {}", e);
+                }
+
+                Ok(dmx_vec)
+            }
+            Err(e) => {
+                log::error!("Failed to render DMX for output {}: {}", output_id, e);
+                Err(e)
+            }
+        }
+    }
+
     async fn run_output_loop(
         output_id: u64,
         output_type: OutputType,
@@ -274,58 +303,20 @@ impl OutputLoopManager {
 
             match &output_type {
                 OutputType::Serial => {
-                    // Render DMX
-                    match scene::render_scene_dmx(output_id, system_t, frame) {
-                        Ok(dmx_data) => {
-                            let dmx_vec = dmx_data.to_vec();
-
-                            // Output via serial
-                            let serial = serial_state.lock().await;
-                            if let Err(e) = serial.output_dmx_internal(&output_id.to_string(), &dmx_vec) {
-                                log::error!("Failed to output serial DMX: {}", e);
-                            }
-                            drop(serial);
-
-                            // Emit render event to frontend
-                            let event = DmxRenderEvent {
-                                output_id: output_id.to_string(),
-                                frame,
-                                data: dmx_vec,
-                            };
-                            if let Err(e) = app.emit("dmx-render", event) {
-                                log::error!("Failed to emit DMX render event: {}", e);
-                            }
-                        }
-                        Err(e) => {
-                            log::error!("Failed to render DMX for output {}: {}", output_id, e);
+                    if let Ok(dmx_vec) = Self::render_and_emit_dmx(output_id, system_t, frame, &app).await {
+                        // Output via serial
+                        let serial = serial_state.lock().await;
+                        if let Err(e) = serial.output_dmx_internal(&output_id.to_string(), &dmx_vec) {
+                            log::error!("Failed to output serial DMX: {}", e);
                         }
                     }
                 }
                 OutputType::Sacn { universe, ip_address } => {
-                    // Render DMX
-                    match scene::render_scene_dmx(output_id, system_t, frame) {
-                        Ok(dmx_data) => {
-                            let dmx_vec = dmx_data.to_vec();
-
-                            // Output via sACN
-                            let sacn = sacn_state.lock().await;
-                            if let Err(e) = sacn.output_sacn_internal(*universe, ip_address, &dmx_vec) {
-                                log::error!("Failed to output sACN DMX: {}", e);
-                            }
-                            drop(sacn);
-
-                            // Emit render event to frontend
-                            let event = DmxRenderEvent {
-                                output_id: output_id.to_string(),
-                                frame,
-                                data: dmx_vec,
-                            };
-                            if let Err(e) = app.emit("dmx-render", event) {
-                                log::error!("Failed to emit DMX render event: {}", e);
-                            }
-                        }
-                        Err(e) => {
-                            log::error!("Failed to render DMX for output {}: {}", output_id, e);
+                    if let Ok(dmx_vec) = Self::render_and_emit_dmx(output_id, system_t, frame, &app).await {
+                        // Output via sACN
+                        let sacn = sacn_state.lock().await;
+                        if let Err(e) = sacn.output_sacn_internal(*universe, ip_address, &dmx_vec) {
+                            log::error!("Failed to output sACN DMX: {}", e);
                         }
                     }
                 }

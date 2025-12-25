@@ -11,7 +11,25 @@ import init, {
   update_project,
 } from '@dmx-controller/wasm-engine';
 import { invoke } from '@tauri-apps/api/core';
+import { listen, UnlistenFn } from '@tauri-apps/api/event';
+import {
+  triggerDmxSubscriptions,
+  triggerWledSubscriptions,
+} from '../engine/renderRouter';
 import { isTauri } from './util';
+
+// Event payload types from Tauri backend
+interface DmxRenderEvent {
+  output_id: string;
+  frame: number;
+  data: number[];
+}
+
+interface WledRenderEvent {
+  output_id: string;
+  frame: number;
+  data: number[];
+}
 
 export const updateProject = isTauri ? tauriUpdateProject : webUpdateProject;
 export const renderDmxScene = isTauri ? tauriRenderDmxScene : webRenderDmxScene;
@@ -77,4 +95,56 @@ async function tauriRenderSceneWled(
     frame,
   });
   return fromBinary(WledRenderTargetSchema, new Uint8Array(renderTargetBin));
+}
+
+/**
+ * Initialize Tauri render event listeners.
+ * Call this once when the app starts in Tauri mode.
+ * Returns an unregister function to clean up listeners.
+ */
+export async function initRenderListeners(): Promise<(() => void) | null> {
+  if (!isTauri) {
+    return null;
+  }
+
+  const unlisteners: UnlistenFn[] = [];
+
+  // Listen for DMX render events from Tauri backend
+  const unregisterDmxListener = await listen<DmxRenderEvent>(
+    'dmx-render',
+    (event) => {
+      const payload = event.payload;
+      const outputId = BigInt(payload.output_id);
+      const data = new Uint8Array(payload.data);
+
+      // Trigger subscriptions in renderRouter
+      triggerDmxSubscriptions(outputId, data);
+    },
+  );
+  unlisteners.push(unregisterDmxListener);
+
+  // Listen for WLED render events from Tauri backend
+  const unregisterWledListener = await listen<WledRenderEvent>(
+    'wled-render',
+    (event) => {
+      const payload = event.payload;
+      const outputId = BigInt(payload.output_id);
+      const data = fromBinary(
+        WledRenderTargetSchema,
+        new Uint8Array(payload.data),
+      );
+
+      // Trigger subscriptions in renderRouter
+      triggerWledSubscriptions(outputId, data);
+    },
+  );
+  unlisteners.push(unregisterWledListener);
+
+  console.log('Tauri render event listeners initialized');
+
+  // Return cleanup function
+  return () => {
+    unlisteners.forEach((unregister) => unregister());
+    console.log('Tauri render event listeners cleaned up');
+  };
 }

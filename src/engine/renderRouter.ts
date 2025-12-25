@@ -3,11 +3,6 @@ import {
   WledRenderTarget,
   WledRenderTargetSchema,
 } from '@dmx-controller/proto/wled_pb';
-import {
-  initTauriRenderListeners,
-  subscribeToDmxRender as tauriSubscribeToDmxRender,
-  subscribeToWledRender as tauriSubscribeToWledRender,
-} from '../system_interfaces/tauri_render_listener';
 
 export type DmxRenderOutput = Uint8Array;
 
@@ -49,15 +44,11 @@ export function subscribeToDmxRender(
   }
   subscribers.push(listener);
 
-  // Also subscribe to Tauri events if in Tauri mode
-  const tauriUnsubscribe = tauriSubscribeToDmxRender(outputId, listener);
-
   return () => {
     const index = subscribers!.indexOf(listener);
     if (index > -1) {
       subscribers!.splice(index, 1);
     }
-    tauriUnsubscribe();
   };
 }
 
@@ -72,9 +63,6 @@ export function subscribeToWledRender(
     wledSubscriptions.set(outputId, [listener]);
   }
 
-  // Also subscribe to Tauri events if in Tauri mode
-  const tauriUnsubscribe = tauriSubscribeToWledRender(outputId, listener);
-
   return () => {
     const subs = wledSubscriptions.get(outputId);
     if (subs) {
@@ -83,7 +71,6 @@ export function subscribeToWledRender(
         subs.splice(index, 1);
       }
     }
-    tauriUnsubscribe();
   };
 }
 
@@ -100,9 +87,20 @@ export async function renderWled(outputId: bigint, frame: number) {
 }
 
 /**
- * Initialize render router with Tauri event listeners.
- * Call this once when the app starts.
+ * Trigger DMX subscriptions with already-rendered data.
+ * Used by Tauri event listeners to notify subscribers.
  */
-export async function initRenderRouter(): Promise<(() => void) | null> {
-  return await initTauriRenderListeners();
+export function triggerDmxSubscriptions(outputId: bigint, data: Uint8Array) {
+  dmxSubscriptions.get(outputId)?.forEach((f) => f(data));
+}
+
+/**
+ * Trigger WLED subscriptions with already-rendered data.
+ * Used by Tauri event listeners to notify subscribers.
+ */
+export function triggerWledSubscriptions(
+  outputId: bigint,
+  data: WledRenderTarget,
+) {
+  wledSubscriptions.get(outputId)?.forEach((f) => f(data));
 }
