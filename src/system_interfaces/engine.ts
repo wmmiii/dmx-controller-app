@@ -21,13 +21,11 @@ import { isTauri } from './util';
 // Event payload types from Tauri backend
 interface DmxRenderEvent {
   output_id: string;
-  frame: number;
   data: number[];
 }
 
 interface WledRenderEvent {
   output_id: string;
-  frame: number;
   data: number[];
 }
 

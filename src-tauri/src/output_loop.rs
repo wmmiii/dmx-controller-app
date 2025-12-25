@@ -23,14 +23,12 @@ const WLED_FPS: u32 = 30;
 #[derive(Clone, Serialize)]
 struct DmxRenderEvent {
     output_id: String,
-    frame: u32,
     data: Vec<u8>,
 }
 
 #[derive(Clone, Serialize)]
 struct WledRenderEvent {
     output_id: String,
-    frame: u32,
     data: Vec<u8>,
 }
 
@@ -250,7 +248,6 @@ impl OutputLoopManager {
                 // Emit render event to frontend
                 let event = DmxRenderEvent {
                     output_id: output_id.to_string(),
-                    frame,
                     data: dmx_vec.clone(),
                 };
                 if let Err(e) = app.emit("dmx-render", event) {
@@ -334,7 +331,6 @@ impl OutputLoopManager {
                             // Emit render event to frontend (encode to protobuf bytes)
                             let event = WledRenderEvent {
                                 output_id: output_id.to_string(),
-                                frame,
                                 data: wled_data.encode_to_vec(),
                             };
                             if let Err(e) = app.emit("wled-render", event) {
