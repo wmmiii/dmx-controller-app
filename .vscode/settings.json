@@ -18,6 +18,7 @@
     "bufbuild",
     "gdtf",
     "lerp",
+    "prost",
     "sacn",
     "Tauri",
     "wavesurfer",

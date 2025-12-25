@@ -1,9 +1,10 @@
-use std::net::UdpSocket;
+use std::{net::UdpSocket, sync::Arc};
 
 use dmx_engine::proto::WledRenderTarget;
 use prost::Message;
 use serde::{Deserialize, Serialize};
 use tauri::State;
+use tokio::sync::Mutex;
 
 const WLED_UDP_PORT: u32 = 65506;
 
@@ -51,8 +52,7 @@ impl WledState {
                     id: i as u16,
                     col: [[
                         (s.primary_color.as_ref().map_or(0.0, |c| c.red) * 255.0).floor() as u8,
-                        (s.primary_color.as_ref().map_or(0.0, |c| c.green) * 255.0).floor()
-                            as u8,
+                        (s.primary_color.as_ref().map_or(0.0, |c| c.green) * 255.0).floor() as u8,
                         (s.primary_color.as_ref().map_or(0.0, |c| c.blue) * 255.0).floor() as u8,
                     ]],
                     fx: s.effect as u16,
@@ -80,7 +80,7 @@ impl WledState {
 
 #[tauri::command]
 pub async fn output_wled(
-    state: State<'_, Arc<TokioMutex<WledState>>>,
+    state: State<'_, Arc<Mutex<WledState>>>,
     ip_address: String,
     wled_render_target_bin: Vec<u8>,
 ) -> Result<(), String> {

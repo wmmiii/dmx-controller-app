@@ -3,7 +3,7 @@ use sacn::source::SacnSource;
 use std::net::{IpAddr, SocketAddr};
 use std::sync::Arc;
 use tauri::State;
-use tokio::sync::Mutex as TokioMutex;
+use tokio::sync::Mutex;
 
 pub struct SacnState {
     source: std::sync::Mutex<SacnSource>,
@@ -60,7 +60,7 @@ impl SacnState {
 
 #[tauri::command]
 pub async fn output_sacn_dmx(
-    state: State<'_, Arc<TokioMutex<SacnState>>>,
+    state: State<'_, Arc<Mutex<SacnState>>>,
     universe: u16,
     ip_address: String,
     data: Vec<u8>,

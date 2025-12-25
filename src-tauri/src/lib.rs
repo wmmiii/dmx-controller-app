@@ -8,7 +8,7 @@ mod wled;
 
 use std::sync::Arc;
 use tauri::Manager;
-use tokio::sync::Mutex as TokioMutex;
+use tokio::sync::Mutex;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -23,19 +23,19 @@ pub fn run() {
                 Box::new(std::io::Error::new(std::io::ErrorKind::Other, e))
                     as Box<dyn std::error::Error>
             })?;
-            app.manage(Arc::new(TokioMutex::new(sacn_state)));
+            app.manage(Arc::new(Mutex::new(sacn_state)));
 
             let serial_state = serial::SerialState::new();
-            app.manage(Arc::new(TokioMutex::new(serial_state)));
+            app.manage(Arc::new(Mutex::new(serial_state)));
 
             let wled_state = wled::WledState::new().map_err(|e| {
                 Box::new(std::io::Error::new(std::io::ErrorKind::Other, e))
                     as Box<dyn std::error::Error>
             })?;
-            app.manage(Arc::new(TokioMutex::new(wled_state)));
+            app.manage(Arc::new(Mutex::new(wled_state)));
 
             let output_loop_manager = output_loop::OutputLoopManager::new(app.handle().clone());
-            app.manage(Arc::new(TokioMutex::new(output_loop_manager)));
+            app.manage(Arc::new(Mutex::new(output_loop_manager)));
 
             if cfg!(debug_assertions) {
                 app.handle().plugin(

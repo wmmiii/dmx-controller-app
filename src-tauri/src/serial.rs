@@ -3,7 +3,7 @@ use serialport::available_ports;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tauri::State;
-use tokio::sync::Mutex as TokioMutex;
+use tokio::sync::Mutex;
 
 pub struct SerialState {
     dmx_ports: std::sync::Mutex<HashMap<String, DMXSerial>>,
@@ -49,7 +49,7 @@ pub fn list_ports() -> Result<Vec<String>, String> {
 
 #[tauri::command]
 pub async fn open_port(
-    state: State<'_, Arc<TokioMutex<SerialState>>>,
+    state: State<'_, Arc<Mutex<SerialState>>>,
     output_id: String,
     port_name: String,
 ) -> Result<(), String> {
@@ -69,7 +69,7 @@ pub async fn open_port(
 
 #[tauri::command]
 pub async fn close_port(
-    state: State<'_, Arc<TokioMutex<SerialState>>>,
+    state: State<'_, Arc<Mutex<SerialState>>>,
     output_id: String,
 ) -> Result<(), String> {
     let serial_state = state.lock().await;
@@ -85,7 +85,7 @@ pub async fn close_port(
 
 #[tauri::command]
 pub async fn output_serial_dmx(
-    state: State<'_, Arc<TokioMutex<SerialState>>>,
+    state: State<'_, Arc<Mutex<SerialState>>>,
     output_id: String,
     data: Vec<u8>,
 ) -> Result<(), String> {

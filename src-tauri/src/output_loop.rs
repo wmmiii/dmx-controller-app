@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter, State};
-use tokio::sync::Mutex as TokioMutex;
+use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
 
 use crate::sacn::SacnState;
@@ -46,14 +46,14 @@ struct OutputLoopHandle {
 }
 
 pub struct OutputLoopManager {
-    loops: Arc<TokioMutex<HashMap<u64, OutputLoopHandle>>>,
+    loops: Arc<Mutex<HashMap<u64, OutputLoopHandle>>>,
     app: AppHandle,
 }
 
 impl OutputLoopManager {
     pub fn new(app: AppHandle) -> Self {
         OutputLoopManager {
-            loops: Arc::new(TokioMutex::new(HashMap::new())),
+            loops: Arc::new(Mutex::new(HashMap::new())),
             app,
         }
     }
@@ -62,9 +62,9 @@ impl OutputLoopManager {
         &self,
         output_id: u64,
         output_type: OutputType,
-        serial_state: Arc<TokioMutex<SerialState>>,
-        sacn_state: Arc<TokioMutex<SacnState>>,
-        wled_state: Arc<TokioMutex<WledState>>,
+        serial_state: Arc<Mutex<SerialState>>,
+        sacn_state: Arc<Mutex<SacnState>>,
+        wled_state: Arc<Mutex<WledState>>,
     ) -> Result<(), String> {
         // Stop existing loop if running
         self.stop_loop(output_id).await?;
@@ -141,9 +141,9 @@ impl OutputLoopManager {
 
     pub async fn rebuild_all_loops(
         &self,
-        serial_state: Arc<TokioMutex<SerialState>>,
-        sacn_state: Arc<TokioMutex<SacnState>>,
-        wled_state: Arc<TokioMutex<WledState>>,
+        serial_state: Arc<Mutex<SerialState>>,
+        sacn_state: Arc<Mutex<SacnState>>,
+        wled_state: Arc<Mutex<WledState>>,
     ) -> Result<(), String> {
         // Read the current project to determine what outputs should be running
         let project = PROJECT_REF
@@ -266,9 +266,9 @@ impl OutputLoopManager {
     async fn run_output_loop(
         output_id: u64,
         output_type: OutputType,
-        serial_state: Arc<TokioMutex<SerialState>>,
-        sacn_state: Arc<TokioMutex<SacnState>>,
-        wled_state: Arc<TokioMutex<WledState>>,
+        serial_state: Arc<Mutex<SerialState>>,
+        sacn_state: Arc<Mutex<SacnState>>,
+        wled_state: Arc<Mutex<WledState>>,
         app: AppHandle,
         cancel_rx: tokio::sync::watch::Receiver<bool>,
     ) -> Result<(), String> {
@@ -372,10 +372,10 @@ impl OutputLoopManager {
 
 #[tauri::command]
 pub async fn start_output_loop(
-    manager: State<'_, Arc<TokioMutex<OutputLoopManager>>>,
-    serial_state: State<'_, Arc<TokioMutex<SerialState>>>,
-    sacn_state: State<'_, Arc<TokioMutex<SacnState>>>,
-    wled_state: State<'_, Arc<TokioMutex<WledState>>>,
+    manager: State<'_, Arc<Mutex<OutputLoopManager>>>,
+    serial_state: State<'_, Arc<Mutex<SerialState>>>,
+    sacn_state: State<'_, Arc<Mutex<SacnState>>>,
+    wled_state: State<'_, Arc<Mutex<WledState>>>,
     output_id: String,
     output_type: String,
     universe: Option<u16>,
@@ -411,7 +411,7 @@ pub async fn start_output_loop(
 
 #[tauri::command]
 pub async fn stop_output_loop(
-    manager: State<'_, Arc<TokioMutex<OutputLoopManager>>>,
+    manager: State<'_, Arc<Mutex<OutputLoopManager>>>,
     output_id: String,
 ) -> Result<(), String> {
     let output_id_u64 = output_id
@@ -424,10 +424,10 @@ pub async fn stop_output_loop(
 
 #[tauri::command]
 pub async fn rebuild_output_loops(
-    manager: State<'_, Arc<TokioMutex<OutputLoopManager>>>,
-    serial_state: State<'_, Arc<TokioMutex<SerialState>>>,
-    sacn_state: State<'_, Arc<TokioMutex<SacnState>>>,
-    wled_state: State<'_, Arc<TokioMutex<WledState>>>,
+    manager: State<'_, Arc<Mutex<OutputLoopManager>>>,
+    serial_state: State<'_, Arc<Mutex<SerialState>>>,
+    sacn_state: State<'_, Arc<Mutex<SacnState>>>,
+    wled_state: State<'_, Arc<Mutex<WledState>>>,
 ) -> Result<(), String> {
     let manager = manager.lock().await;
     manager
