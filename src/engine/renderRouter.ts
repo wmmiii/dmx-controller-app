@@ -45,8 +45,10 @@ export function subscribeToDmxRender(
   subscribers.push(listener);
 
   return () => {
-    const index = subscribers.indexOf(listener);
-    subscribers.splice(index, 1);
+    const index = subscribers!.indexOf(listener);
+    if (index > -1) {
+      subscribers!.splice(index, 1);
+    }
   };
 }
 
@@ -60,16 +62,45 @@ export function subscribeToWledRender(
   } else {
     wledSubscriptions.set(outputId, [listener]);
   }
+
+  return () => {
+    const subs = wledSubscriptions.get(outputId);
+    if (subs) {
+      const index = subs.indexOf(listener);
+      if (index > -1) {
+        subs.splice(index, 1);
+      }
+    }
+  };
 }
 
 export async function renderDmx(outputId: bigint, frame: number) {
   const output = await renderFunctions.renderDmx(outputId, frame);
-  dmxSubscriptions.get(outputId)?.forEach((f) => f(output));
+  triggerDmxSubscriptions(outputId, output);
   return output;
 }
 
 export async function renderWled(outputId: bigint, frame: number) {
   const output = await renderFunctions.renderWled(outputId, frame);
-  wledSubscriptions.get(outputId)?.forEach((f) => f(output));
+  triggerWledSubscriptions(outputId, output);
   return output;
+}
+
+/**
+ * Trigger DMX subscriptions with already-rendered data.
+ * Used by Tauri event listeners to notify subscribers.
+ */
+export function triggerDmxSubscriptions(outputId: bigint, data: Uint8Array) {
+  dmxSubscriptions.get(outputId)?.forEach((f) => f(data));
+}
+
+/**
+ * Trigger WLED subscriptions with already-rendered data.
+ * Used by Tauri event listeners to notify subscribers.
+ */
+export function triggerWledSubscriptions(
+  outputId: bigint,
+  data: WledRenderTarget,
+) {
+  wledSubscriptions.get(outputId)?.forEach((f) => f(data));
 }

@@ -11,7 +11,23 @@ import init, {
   update_project,
 } from '@dmx-controller/wasm-engine';
 import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
+import {
+  triggerDmxSubscriptions,
+  triggerWledSubscriptions,
+} from '../engine/renderRouter';
 import { isTauri } from './util';
+
+// Event payload types from Tauri backend
+interface DmxRenderEvent {
+  output_id: string;
+  data: number[];
+}
+
+interface WledRenderEvent {
+  output_id: string;
+  data: number[];
+}
 
 export const updateProject = isTauri ? tauriUpdateProject : webUpdateProject;
 export const renderDmxScene = isTauri ? tauriRenderDmxScene : webRenderDmxScene;
@@ -22,6 +38,8 @@ export const renderSceneWled = isTauri
 if (!isTauri) {
   await init();
   await init_engine();
+} else {
+  initRenderListeners();
 }
 
 async function webUpdateProject(project: Project) {
@@ -77,4 +95,37 @@ async function tauriRenderSceneWled(
     frame,
   });
   return fromBinary(WledRenderTargetSchema, new Uint8Array(renderTargetBin));
+}
+
+/**
+ * Initialize Tauri render event listeners.
+ * Listeners exist for the lifetime of the application.
+ */
+async function initRenderListeners(): Promise<void> {
+  if (!isTauri) {
+    return;
+  }
+
+  // Listen for DMX render events from Tauri backend
+  await listen<DmxRenderEvent>('dmx-render', (event) => {
+    const payload = event.payload;
+    const outputId = BigInt(payload.output_id);
+    const data = new Uint8Array(payload.data);
+
+    // Trigger subscriptions in renderRouter
+    triggerDmxSubscriptions(outputId, data);
+  });
+
+  // Listen for WLED render events from Tauri backend
+  await listen<WledRenderEvent>('wled-render', (event) => {
+    const payload = event.payload;
+    const outputId = BigInt(payload.output_id);
+    const data = fromBinary(
+      WledRenderTargetSchema,
+      new Uint8Array(payload.data),
+    );
+
+    // Trigger subscriptions in renderRouter
+    triggerWledSubscriptions(outputId, data);
+  });
 }
