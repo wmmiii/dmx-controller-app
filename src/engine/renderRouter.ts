@@ -112,15 +112,13 @@ export function subscribeToWledRender(
 
 export async function renderDmx(outputId: bigint, frame: number) {
   const output = await renderFunctions.renderDmx(outputId, frame);
-  const fps = calculateSmoothedFps(outputId);
-  triggerDmxSubscriptions(outputId, output, fps);
+  triggerDmxSubscriptions(outputId, output);
   return output;
 }
 
 export async function renderWled(outputId: bigint, frame: number) {
   const output = await renderFunctions.renderWled(outputId, frame);
-  const fps = calculateSmoothedFps(outputId);
-  triggerWledSubscriptions(outputId, output, fps);
+  triggerWledSubscriptions(outputId, output);
   return output;
 }
 
@@ -131,10 +129,9 @@ export async function renderWled(outputId: bigint, frame: number) {
 export function triggerDmxSubscriptions(
   outputId: bigint,
   data: Uint8Array,
-  fps?: number,
 ) {
-  const calculatedFps = fps ?? calculateSmoothedFps(outputId);
-  dmxSubscriptions.get(outputId)?.forEach((f) => f(data, calculatedFps));
+  const fps = calculateSmoothedFps(outputId);
+  dmxSubscriptions.get(outputId)?.forEach((f) => f(data, fps));
 }
 
 /**
@@ -144,8 +141,7 @@ export function triggerDmxSubscriptions(
 export function triggerWledSubscriptions(
   outputId: bigint,
   data: WledRenderTarget,
-  fps?: number,
 ) {
-  const calculatedFps = fps ?? calculateSmoothedFps(outputId);
-  wledSubscriptions.get(outputId)?.forEach((f) => f(data, calculatedFps));
+  const fps = calculateSmoothedFps(outputId);
+  wledSubscriptions.get(outputId)?.forEach((f) => f(data, fps));
 }
