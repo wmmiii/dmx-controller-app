@@ -13,8 +13,9 @@ use tokio::sync::Mutex;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_keepawake::init())
+        .plugin(tauri_plugin_process::init())
         .setup(|app| {
             let midi_state = midi::MidiState::new(app.handle().clone());
             app.manage(midi_state);

@@ -16,7 +16,7 @@ use crate::wled::WledState;
 
 // FPS constants for each output type
 const SERIAL_FPS: u32 = 30;
-const SACN_FPS: u32 = 100;
+const SACN_FPS: u32 = 120;
 const WLED_FPS: u32 = 60;
 
 // Event payloads for rendering results
