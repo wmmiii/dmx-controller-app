@@ -98,7 +98,7 @@ export function DmxUniverseVisualizer({
         const fixtureRef = createRef<HTMLLIElement>();
 
         useEffect(() => {
-          return subscribeToDmxRender(dmxOutputId, (universe) => {
+          return subscribeToDmxRender(dmxOutputId, (universe, _fps) => {
             if (!f || !fixtureRef.current) {
               return;
             }

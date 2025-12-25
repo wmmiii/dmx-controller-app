@@ -27,7 +27,9 @@ export function WledVisualizer({ wledOutputId }: WledVisualizerProps) {
   const warning = warnings[wledOutputId.toString()];
 
   useEffect(() => {
-    subscribeToWledRender(wledOutputId, setWledRenderOutput);
+    subscribeToWledRender(wledOutputId, (output, _fps) =>
+      setWledRenderOutput(output),
+    );
   }, [setWledRenderOutput]);
 
   return (
