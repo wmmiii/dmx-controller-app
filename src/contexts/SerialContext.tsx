@@ -12,7 +12,11 @@ import {
 import { Modal } from '../components/Modal';
 
 import { BiErrorAlt } from 'react-icons/bi';
-import { DmxRenderOutput, renderDmx } from '../engine/renderRouter';
+import {
+  DmxRenderOutput,
+  renderDmx,
+  subscribeToDmxRender,
+} from '../engine/renderRouter';
 import { outputLoopSupported } from '../system_interfaces/output_loop';
 import {
   closePort,
@@ -27,8 +31,6 @@ import { listenToTick } from '../util/time';
 import { DialogContext } from './DialogContext';
 import { ProjectContext } from './ProjectContext';
 import { ShortcutContext } from './ShortcutContext';
-
-const FPS_BUFFER_SIZE = 100;
 
 const EMPTY_CONTEXT = {
   port: false,
@@ -102,7 +104,6 @@ function SerialProviderImpl({
   const frameRef = useRef(0);
   const blackout = useRef(false);
   const [blackoutState, setBlackoutState] = useState(false);
-  const fpsBuffer = useRef([0]);
   const fpsSubscribers = useRef<Array<(fps: number) => void>>([]);
   const [selectPort, setSelectPort] = useState<{
     ports: string[];
@@ -164,22 +165,35 @@ function SerialProviderImpl({
 
   const resetFps = useCallback(() => {
     fpsSubscribers.current.forEach((s) => s(NaN));
-    fpsBuffer.current = [0];
-  }, [fpsBuffer]);
+  }, []);
 
   useEffect(() => {
+    // Subscribe to renderDmx to receive FPS updates
+    const unsubscribeFps = subscribeToDmxRender(
+      outputId,
+      (_output, fps) => {
+        fpsSubscribers.current.forEach((s) => s(fps));
+      },
+    );
+
     if (!port) {
       const output = getOutput(project, outputId).output;
       if (
         output.case === 'serialDmxOutput' &&
         Object.values(output.value.fixtures).length === 0
       ) {
-        return () => {};
+        return () => {
+          unsubscribeFps();
+        };
       } else {
-        return listenToTick(() => {
+        const unsubscribeTick = listenToTick(() => {
           frameRef.current += 1;
           renderDmx(outputId, frameRef.current++);
         });
+        return () => {
+          unsubscribeTick();
+          unsubscribeFps();
+        };
       }
     }
 
@@ -188,12 +202,12 @@ function SerialProviderImpl({
     if (outputLoopSupported) {
       return () => {
         resetFps();
+        unsubscribeFps();
       };
     }
 
     // Web fallback: run the loop in JavaScript
     let closed = false;
-    let lastFrame = new Date().getTime();
     const latencySamples: number[] = [];
     (async () => {
       while (!closed) {
@@ -215,20 +229,6 @@ function SerialProviderImpl({
           disconnect();
         }
 
-        const now = new Date().getTime();
-        fpsBuffer.current.push(now - lastFrame);
-        fpsBuffer.current = fpsBuffer.current.slice(
-          fpsBuffer.current.length - FPS_BUFFER_SIZE,
-          fpsBuffer.current.length,
-        );
-        let average = 0;
-        for (const fps of fpsBuffer.current) {
-          average += fps;
-        }
-        average /= fpsBuffer.current.length;
-        fpsSubscribers.current.forEach((s) => s(Math.floor(1000 / average)));
-        lastFrame = now;
-
         if (latencySamples.length >= 40) {
           const total = latencySamples.reduce((a, b) => a + b);
           // Added latency for decoding and sending the packet down the DMX line.
@@ -243,6 +243,7 @@ function SerialProviderImpl({
     return () => {
       closed = true;
       resetFps();
+      unsubscribeFps();
     };
   }, [blackout, disconnect, port, outputId, resetFps, update]);
 
