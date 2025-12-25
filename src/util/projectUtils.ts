@@ -2,7 +2,6 @@ import { create } from '@bufbuild/protobuf';
 import { Effect, FixtureState } from '@dmx-controller/proto/effect_pb';
 import {
   OutputTarget,
-  PatchSchema,
   QualifiedFixtureId,
 } from '@dmx-controller/proto/output_pb';
 import { Project, ProjectSchema } from '@dmx-controller/proto/project_pb';
@@ -120,30 +119,10 @@ export function createNewProject() {
     },
     activePatch: defaultPatchId,
     patches: {
-      [defaultPatchId.toString()]: createNewPatch('Default Patch'),
+      [defaultPatchId.toString()]: { name: 'Default Patch', outputs: {} },
     },
     fixtureDefinitions: {},
     controllerMapping: {},
-  });
-}
-
-export function createNewPatch(name: string) {
-  const defaultSerialDmxOutputId = randomUint64();
-
-  return create(PatchSchema, {
-    name: name,
-    outputs: {
-      [defaultSerialDmxOutputId.toString()]: {
-        name: 'DMX Serial Output',
-        latencyMs: 0,
-        output: {
-          case: 'serialDmxOutput',
-          value: {
-            fixtures: {},
-          },
-        },
-      },
-    },
   });
 }
 

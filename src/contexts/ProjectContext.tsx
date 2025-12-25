@@ -112,7 +112,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
     async (project: Project, changeDescription: string) => {
       console.time(changeDescription);
       try {
-        const minProject = create(ProjectSchema, project) as Project;
+        const minProject = clone(ProjectSchema, project);
         minProject.assets = undefined;
         await storeBlob(
           PROJECT_KEY,
@@ -140,7 +140,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
         throw new Error('Tried to save without project loaded!');
       }
       await saveImpl(projectRef.current, changeDescription);
-      const minProject = create(ProjectSchema, projectRef.current) as Project;
+      const minProject = clone(ProjectSchema, projectRef.current);
       minProject.assets = undefined;
 
       if (undoable !== false) {

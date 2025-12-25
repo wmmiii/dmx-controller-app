@@ -84,7 +84,11 @@ export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
     if (outputId) {
       return <SerialProviderImpl>{children}</SerialProviderImpl>;
     } else {
-      return <SerialContext.Provider value={EMPTY_CONTEXT} />;
+      return (
+        <SerialContext.Provider value={EMPTY_CONTEXT}>
+          {children}
+        </SerialContext.Provider>
+      );
     }
   }
 }

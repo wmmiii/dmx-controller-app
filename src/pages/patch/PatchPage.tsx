@@ -1,7 +1,11 @@
 import { JSX, useContext, useState } from 'react';
 
 import { create } from '@bufbuild/protobuf';
-import { OutputSchema } from '@dmx-controller/proto/output_pb';
+import {
+  Output,
+  OutputSchema,
+  PatchSchema,
+} from '@dmx-controller/proto/output_pb';
 import { BiPlus, BiTrash } from 'react-icons/bi';
 import { Button } from '../../components/Button';
 import { EditableText, TextInput } from '../../components/Input';
@@ -10,7 +14,6 @@ import { Tabs, TabsType } from '../../components/Tabs';
 import { ProjectContext } from '../../contexts/ProjectContext';
 import { randomUint64 } from '../../util/numberUtils';
 import {
-  createNewPatch,
   deleteFromOutputTargets,
   getActivePatch,
 } from '../../util/projectUtils';
@@ -43,15 +46,12 @@ export default function PatchPage(): JSX.Element {
       case 'sacnDmxOutput':
         tabs[outputId.toString()] = {
           name: (
-            <>
-              <EditableText
-                value={output.name}
-                onChange={(name) => {
-                  output.name = name;
-                  save(`Change name of output to ${name}.`);
-                }}
-              />
-            </>
+            <OutputTabHeader
+              output={output}
+              outputId={outputId}
+              tabKey={tabKey}
+              setTabKey={setTabKey}
+            />
           ),
           contents: <SacnEditor outputId={outputId} />,
         };
@@ -59,15 +59,12 @@ export default function PatchPage(): JSX.Element {
       case 'serialDmxOutput':
         tabs[outputId.toString()] = {
           name: (
-            <>
-              <EditableText
-                value={output.name}
-                onChange={(name) => {
-                  output.name = name;
-                  save(`Change name of output to ${name}.`);
-                }}
-              />
-            </>
+            <OutputTabHeader
+              output={output}
+              outputId={outputId}
+              tabKey={tabKey}
+              setTabKey={setTabKey}
+            />
           ),
           contents: <DmxEditor outputId={outputId} />,
         };
@@ -75,37 +72,12 @@ export default function PatchPage(): JSX.Element {
       case 'wledOutput':
         tabs[outputId.toString()] = {
           name: (
-            <>
-              <EditableText
-                value={output.name}
-                onChange={(name) => {
-                  output.name = name;
-                  save(`Change name of output to ${name}.`);
-                }}
-              />
-              {tabKey === outputId.toString() && (
-                <>
-                  &nbsp;
-                  <BiTrash
-                    size="1em"
-                    onClick={(ev) => {
-                      deleteFromOutputTargets(
-                        project,
-                        (id) => id.output === outputId,
-                      );
-
-                      delete getActivePatch(project).outputs[
-                        outputId.toString()
-                      ];
-
-                      setTabKey(GROUP_KEY);
-                      save(`Delete output ${output.name}.`);
-                      ev.stopPropagation();
-                    }}
-                  />
-                </>
-              )}
-            </>
+            <OutputTabHeader
+              output={output}
+              outputId={outputId}
+              tabKey={tabKey}
+              setTabKey={setTabKey}
+            />
           ),
           contents: <WledEditor outputId={outputId} />,
         };
@@ -141,7 +113,10 @@ export default function PatchPage(): JSX.Element {
               onChange={(e) => {
                 if (e.target.value === 'new') {
                   const id = randomUint64();
-                  project.patches[id.toString()] = createNewPatch('New Patch');
+                  project.patches[id.toString()] = create(PatchSchema, {
+                    name: 'New Patch',
+                    outputs: {},
+                  });
                   project.activePatch = id;
                   save('Create a new patch.');
                 } else {
@@ -174,6 +149,34 @@ export default function PatchPage(): JSX.Element {
           title="Create new output"
           onClose={() => setShowNewOutputDialog(false)}
         >
+          <Button
+            onClick={() => {
+              const id = randomUint64();
+              getActivePatch(project).outputs[id.toString()] = create(
+                OutputSchema,
+                {
+                  name: 'DMX Serial Output',
+                  latencyMs: 0,
+                  output: {
+                    case: 'serialDmxOutput',
+                    value: {
+                      fixtures: {},
+                    },
+                  },
+                },
+              );
+              save('Create Serial DMX output.');
+              setTabKey(id.toString());
+              setShowNewOutputDialog(false);
+            }}
+            disabled={Boolean(
+              Object.values(getActivePatch(project).outputs).find(
+                (o) => o.output.case === 'serialDmxOutput',
+              ),
+            )}
+          >
+            Serial Output
+          </Button>
           <Button
             onClick={() => {
               const id = randomUint64();
@@ -224,5 +227,49 @@ export default function PatchPage(): JSX.Element {
         </Modal>
       )}
     </div>
+  );
+}
+
+interface OutputTabHeaderProps {
+  output: Output;
+  outputId: bigint;
+  tabKey: string;
+  setTabKey: (key: string) => void;
+}
+
+function OutputTabHeader({
+  output,
+  outputId,
+  tabKey,
+  setTabKey,
+}: OutputTabHeaderProps) {
+  const { project, save } = useContext(ProjectContext);
+  return (
+    <>
+      <EditableText
+        value={output.name}
+        onChange={(name) => {
+          output.name = name;
+          save(`Change name of output to ${name}.`);
+        }}
+      />
+      {tabKey === outputId.toString() && (
+        <>
+          &nbsp;
+          <BiTrash
+            size="1em"
+            onClick={(ev) => {
+              deleteFromOutputTargets(project, (id) => id.output === outputId);
+
+              delete getActivePatch(project).outputs[outputId.toString()];
+
+              setTabKey(GROUP_KEY);
+              save(`Delete output ${output.name}.`);
+              ev.stopPropagation();
+            }}
+          />
+        </>
+      )}
+    </>
   );
 }
