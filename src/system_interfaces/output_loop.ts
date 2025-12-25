@@ -12,9 +12,7 @@ export type OutputLoopConfig =
 export const startOutputLoop = isTauri
   ? tauriStartOutputLoop
   : webStartOutputLoop;
-export const stopOutputLoop = isTauri
-  ? tauriStopOutputLoop
-  : webStopOutputLoop;
+export const stopOutputLoop = isTauri ? tauriStopOutputLoop : webStopOutputLoop;
 export const rebuildOutputLoops = isTauri
   ? tauriRebuildOutputLoops
   : webRebuildOutputLoops;

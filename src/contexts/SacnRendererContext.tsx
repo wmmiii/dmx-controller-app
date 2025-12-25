@@ -86,7 +86,9 @@ export function SacnRendererProvider({ children }: PropsWithChildren) {
 
     // Web fallback: run the loop in JavaScript
     const renderLoops: Array<() => void> = [];
-    sacnOutputs.forEach(([id, _]) => renderLoops.push(startRenderLoop(BigInt(id))));
+    sacnOutputs.forEach(([id, _]) =>
+      renderLoops.push(startRenderLoop(BigInt(id))),
+    );
 
     return () => renderLoops.forEach((f) => f());
   }, [project]);

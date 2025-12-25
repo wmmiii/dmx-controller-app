@@ -1,14 +1,14 @@
 use dmx_engine::project::PROJECT_REF;
-use dmx_engine::proto::{output::output::Output as ProtoOutput, Project};
+use dmx_engine::proto::output::Output as ProtoOutput;
 use dmx_engine::render::scene;
+use prost::Message;
+use serde::Serialize;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tauri::{AppHandle, Emitter, Manager, State};
+use tauri::{AppHandle, Emitter, State};
 use tokio::sync::Mutex as TokioMutex;
 use tokio::task::JoinHandle;
-use serde::Serialize;
-use prost::Message;
 
 use crate::sacn::SacnState;
 use crate::serial::SerialState;
@@ -270,7 +270,7 @@ impl OutputLoopManager {
         sacn_state: Arc<TokioMutex<SacnState>>,
         wled_state: Arc<TokioMutex<WledState>>,
         app: AppHandle,
-        mut cancel_rx: tokio::sync::watch::Receiver<bool>,
+        cancel_rx: tokio::sync::watch::Receiver<bool>,
     ) -> Result<(), String> {
         let target_fps = match &output_type {
             OutputType::Serial => SERIAL_FPS,
@@ -281,7 +281,12 @@ impl OutputLoopManager {
         let frame_duration = Duration::from_millis(1000 / target_fps as u64);
         let mut frame = 0u32;
 
-        log::info!("Starting output loop {} ({:?}) at {} FPS", output_id, output_type, target_fps);
+        log::info!(
+            "Starting output loop {} ({:?}) at {} FPS",
+            output_id,
+            output_type,
+            target_fps
+        );
 
         loop {
             // Check for cancellation
@@ -300,16 +305,24 @@ impl OutputLoopManager {
 
             match &output_type {
                 OutputType::Serial => {
-                    if let Ok(dmx_vec) = Self::render_and_emit_dmx(output_id, system_t, frame, &app).await {
+                    if let Ok(dmx_vec) =
+                        Self::render_and_emit_dmx(output_id, system_t, frame, &app).await
+                    {
                         // Output via serial
                         let serial = serial_state.lock().await;
-                        if let Err(e) = serial.output_dmx_internal(&output_id.to_string(), &dmx_vec) {
+                        if let Err(e) = serial.output_dmx_internal(&output_id.to_string(), &dmx_vec)
+                        {
                             log::error!("Failed to output serial DMX: {}", e);
                         }
                     }
                 }
-                OutputType::Sacn { universe, ip_address } => {
-                    if let Ok(dmx_vec) = Self::render_and_emit_dmx(output_id, system_t, frame, &app).await {
+                OutputType::Sacn {
+                    universe,
+                    ip_address,
+                } => {
+                    if let Ok(dmx_vec) =
+                        Self::render_and_emit_dmx(output_id, system_t, frame, &app).await
+                    {
                         // Output via sACN
                         let sacn = sacn_state.lock().await;
                         if let Err(e) = sacn.output_sacn_internal(*universe, ip_address, &dmx_vec) {

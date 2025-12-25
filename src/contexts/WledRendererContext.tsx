@@ -92,7 +92,9 @@ export function WledRendererProvider({ children }: PropsWithChildren) {
 
     // Web fallback: run the loop in JavaScript
     const renderLoops: Array<() => void> = [];
-    wledOutputs.forEach(([id, _]) => renderLoops.push(startRenderLoop(BigInt(id))));
+    wledOutputs.forEach(([id, _]) =>
+      renderLoops.push(startRenderLoop(BigInt(id))),
+    );
 
     return () => renderLoops.forEach((f) => f());
   }, [toJsonString(PatchSchema, getActivePatch(project))]);
