@@ -28,15 +28,12 @@ import { DialogContext } from './DialogContext';
 import { ProjectContext } from './ProjectContext';
 import { ShortcutContext } from './ShortcutContext';
 
-const FPS_BUFFER_SIZE = 100;
-
 const EMPTY_CONTEXT = {
   port: false,
   connect: () => {},
   disconnect: () => {},
   blackout: true,
   setBlackout: (_blackout: boolean) => {},
-  subscribeToFspUpdates: (_callback: (fps: number) => void) => {},
 };
 
 export const SerialContext = createContext(EMPTY_CONTEXT);
@@ -106,8 +103,6 @@ function SerialProviderImpl({
   const frameRef = useRef(0);
   const blackout = useRef(false);
   const [blackoutState, setBlackoutState] = useState(false);
-  const fpsBuffer = useRef([0]);
-  const fpsSubscribers = useRef<Array<(fps: number) => void>>([]);
   const [selectPort, setSelectPort] = useState<{
     ports: string[];
     callback: (port: string | null) => void;
@@ -166,11 +161,6 @@ function SerialProviderImpl({
     ]);
   });
 
-  const resetFps = useCallback(() => {
-    fpsSubscribers.current.forEach((s) => s(NaN));
-    fpsBuffer.current = [0];
-  }, [fpsBuffer]);
-
   useEffect(() => {
     if (!port) {
       const output = getOutput(project, outputId).output;
@@ -190,14 +180,11 @@ function SerialProviderImpl({
     // On Tauri, output loops are automatically managed by the backend
     // when the project is updated, so we don't need to start/stop them here.
     if (outputLoopSupported) {
-      return () => {
-        resetFps();
-      };
+      return () => {};
     }
 
     // Web fallback: run the loop in JavaScript
     let closed = false;
-    let lastFrame = new Date().getTime();
     const latencySamples: number[] = [];
     (async () => {
       while (!closed) {
@@ -215,23 +202,8 @@ function SerialProviderImpl({
         } catch (e) {
           console.error('Could not write to serial port!', e);
           closed = true;
-          resetFps();
           disconnect();
         }
-
-        const now = new Date().getTime();
-        fpsBuffer.current.push(now - lastFrame);
-        fpsBuffer.current = fpsBuffer.current.slice(
-          fpsBuffer.current.length - FPS_BUFFER_SIZE,
-          fpsBuffer.current.length,
-        );
-        let average = 0;
-        for (const fps of fpsBuffer.current) {
-          average += fps;
-        }
-        average /= fpsBuffer.current.length;
-        fpsSubscribers.current.forEach((s) => s(Math.floor(1000 / average)));
-        lastFrame = now;
 
         if (latencySamples.length >= 40) {
           const total = latencySamples.reduce((a, b) => a + b);
@@ -246,9 +218,8 @@ function SerialProviderImpl({
 
     return () => {
       closed = true;
-      resetFps();
     };
-  }, [blackout, disconnect, port, outputId, resetFps, update]);
+  }, [blackout, disconnect, port, outputId, update]);
 
   return (
     <SerialContext.Provider
@@ -261,10 +232,6 @@ function SerialProviderImpl({
           blackout.current = b;
           setBlackoutState(b);
         },
-        subscribeToFspUpdates: useCallback(
-          (callback) => fpsSubscribers.current.push(callback),
-          [fpsSubscribers],
-        ),
       }}
     >
       {selectPort && (

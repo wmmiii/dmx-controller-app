@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from 'react';
+import { createRef, useContext, useEffect, useState } from 'react';
 
 import { ProjectContext } from '../contexts/ProjectContext';
 
@@ -18,6 +18,7 @@ interface WledVisualizerProps {
 export function WledVisualizer({ wledOutputId }: WledVisualizerProps) {
   const { project } = useContext(ProjectContext);
   const { warnings } = useContext(WledRendererContext);
+  const fpsRef = createRef<HTMLLIElement>();
 
   const [wledRenderOutput, setWledRenderOutput] =
     useState<WledRenderTarget | null>(null);
@@ -27,9 +28,12 @@ export function WledVisualizer({ wledOutputId }: WledVisualizerProps) {
   const warning = warnings[wledOutputId.toString()];
 
   useEffect(() => {
-    subscribeToWledRender(wledOutputId, (output, _fps) =>
-      setWledRenderOutput(output),
-    );
+    subscribeToWledRender(wledOutputId, (output, fps) => {
+      setWledRenderOutput(output);
+      if (fpsRef.current) {
+        fpsRef.current.innerText = String(fps);
+      }
+    });
   }, [setWledRenderOutput]);
 
   return (
@@ -58,6 +62,7 @@ export function WledVisualizer({ wledOutputId }: WledVisualizerProps) {
             ></li>
           );
         })}
+        <li ref={fpsRef} className={styles.fps} title="frames per second"></li>
       </ol>
     </div>
   );

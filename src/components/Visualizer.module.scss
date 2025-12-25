@@ -19,14 +19,14 @@ $dot-size: 20px;
   padding: 0;
 }
 
-.visualizerDot {
+.visualizer-dot {
   border-radius: calc($dot-size / 4);
   height: $dot-size;
   width: $dot-size;
   margin: vars.spacing(0.5);
 }
 
-.visualizerSegment {
+.visualizer-segment {
   height: $dot-size;
   margin: 0 1px;
   width: $dot-size;
@@ -36,10 +36,20 @@ $dot-size: 20px;
     border-top-left-radius: vars.$dim-border-radius;
   }
 
-  &:last-child {
+  &:nth-last-child(2) {
     border-bottom-right-radius: vars.$dim-border-radius;
     border-top-right-radius: vars.$dim-border-radius;
   }
+}
+
+.fps {
+  align-items: center;
+  color: vars.$col-text-dim;
+  display: flex;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  width: 2.5em;
 }
 
 .warning {

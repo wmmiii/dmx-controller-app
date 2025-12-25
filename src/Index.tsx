@@ -178,7 +178,6 @@ export default function Index(): JSX.Element {
         )}
         <Spacer />
         <div className={styles.message}>{lastOperation}</div>
-        <FpsIndicator />
         <ControllerButton
           title="Midi Controller"
           iconOnly={true}
@@ -199,28 +198,6 @@ export default function Index(): JSX.Element {
           </Routes>
         </ErrorBoundary>
       </main>
-    </div>
-  );
-}
-
-function FpsIndicator() {
-  const { subscribeToFspUpdates } = useContext(SerialContext);
-  const [fps, setFps] = useState(0);
-
-  useEffect(() => {
-    subscribeToFspUpdates(setFps);
-  }, [subscribeToFspUpdates, setFps]);
-
-  return (
-    <div className={styles.fps}>
-      Fps:{' '}
-      {Number.isNaN(fps) ? (
-        <>N/A</>
-      ) : fps < 30 ? (
-        <span className={styles.warning}>{fps}</span>
-      ) : (
-        <>{fps}</>
-      )}
     </div>
   );
 }

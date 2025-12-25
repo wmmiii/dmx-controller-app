@@ -26,6 +26,7 @@ export function DmxUniverseVisualizer({
   dmxOutputId,
 }: DmxUniverseVisualizerProps) {
   const { project } = useContext(ProjectContext);
+  const fpsRef = createRef<HTMLLIElement>();
 
   const dmxOutput = getOutput(project, dmxOutputId).output.value as
     | SerialDmxOutput
@@ -92,13 +93,21 @@ export function DmxUniverseVisualizer({
       });
   }, [project]);
 
+  useEffect(() => {
+    subscribeToDmxRender(dmxOutputId, (_, fps) => {
+      if (fpsRef.current) {
+        fpsRef.current.innerText = String(fps);
+      }
+    });
+  }, [fpsRef]);
+
   return (
     <ol className={styles.visualizer}>
       {fixtureMapping.map((f, i) => {
         const fixtureRef = createRef<HTMLLIElement>();
 
         useEffect(() => {
-          return subscribeToDmxRender(dmxOutputId, (universe, _fps) => {
+          return subscribeToDmxRender(dmxOutputId, (universe, _) => {
             if (!f || !fixtureRef.current) {
               return;
             }
@@ -184,6 +193,7 @@ export function DmxUniverseVisualizer({
           ></li>
         );
       })}
+      <li ref={fpsRef} className={styles.fps} title="frames per second"></li>
     </ol>
   );
 }
