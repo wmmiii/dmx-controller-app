@@ -3,6 +3,11 @@ import {
   WledRenderTarget,
   WledRenderTargetSchema,
 } from '@dmx-controller/proto/wled_pb';
+import {
+  initTauriRenderListeners,
+  subscribeToDmxRender as tauriSubscribeToDmxRender,
+  subscribeToWledRender as tauriSubscribeToWledRender,
+} from '../system_interfaces/tauri_render_listener';
 
 export type DmxRenderOutput = Uint8Array;
 
@@ -44,9 +49,15 @@ export function subscribeToDmxRender(
   }
   subscribers.push(listener);
 
+  // Also subscribe to Tauri events if in Tauri mode
+  const tauriUnsubscribe = tauriSubscribeToDmxRender(outputId, listener);
+
   return () => {
-    const index = subscribers.indexOf(listener);
-    subscribers.splice(index, 1);
+    const index = subscribers!.indexOf(listener);
+    if (index > -1) {
+      subscribers!.splice(index, 1);
+    }
+    tauriUnsubscribe();
   };
 }
 
@@ -60,6 +71,20 @@ export function subscribeToWledRender(
   } else {
     wledSubscriptions.set(outputId, [listener]);
   }
+
+  // Also subscribe to Tauri events if in Tauri mode
+  const tauriUnsubscribe = tauriSubscribeToWledRender(outputId, listener);
+
+  return () => {
+    const subs = wledSubscriptions.get(outputId);
+    if (subs) {
+      const index = subs.indexOf(listener);
+      if (index > -1) {
+        subs.splice(index, 1);
+      }
+    }
+    tauriUnsubscribe();
+  };
 }
 
 export async function renderDmx(outputId: bigint, frame: number) {
@@ -72,4 +97,12 @@ export async function renderWled(outputId: bigint, frame: number) {
   const output = await renderFunctions.renderWled(outputId, frame);
   wledSubscriptions.get(outputId)?.forEach((f) => f(output));
   return output;
+}
+
+/**
+ * Initialize render router with Tauri event listeners.
+ * Call this once when the app starts.
+ */
+export async function initRenderRouter(): Promise<(() => void) | null> {
+  return await initTauriRenderListeners();
 }

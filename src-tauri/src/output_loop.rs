@@ -4,9 +4,11 @@ use dmx_engine::render::scene;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tauri::State;
+use tauri::{AppHandle, Emitter, Manager, State};
 use tokio::sync::Mutex as TokioMutex;
 use tokio::task::JoinHandle;
+use serde::Serialize;
+use prost::Message;
 
 use crate::sacn::SacnState;
 use crate::serial::SerialState;
@@ -16,6 +18,21 @@ use crate::wled::WledState;
 const SERIAL_FPS: u32 = 30;
 const SACN_FPS: u32 = 100;
 const WLED_FPS: u32 = 30;
+
+// Event payloads for rendering results
+#[derive(Clone, Serialize)]
+struct DmxRenderEvent {
+    output_id: String,
+    frame: u32,
+    data: Vec<u8>,
+}
+
+#[derive(Clone, Serialize)]
+struct WledRenderEvent {
+    output_id: String,
+    frame: u32,
+    data: Vec<u8>,
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum OutputType {
@@ -32,12 +49,14 @@ struct OutputLoopHandle {
 
 pub struct OutputLoopManager {
     loops: Arc<TokioMutex<HashMap<u64, OutputLoopHandle>>>,
+    app: AppHandle,
 }
 
 impl OutputLoopManager {
-    pub fn new() -> Self {
+    pub fn new(app: AppHandle) -> Self {
         OutputLoopManager {
             loops: Arc::new(TokioMutex::new(HashMap::new())),
+            app,
         }
     }
 
@@ -55,6 +74,7 @@ impl OutputLoopManager {
         let (cancel_tx, cancel_rx) = tokio::sync::watch::channel(false);
         let loops_clone = self.loops.clone();
         let output_type_clone = output_type.clone();
+        let app_clone = self.app.clone();
 
         let task = tokio::spawn(async move {
             if let Err(e) = Self::run_output_loop(
@@ -63,6 +83,7 @@ impl OutputLoopManager {
                 serial_state,
                 sacn_state,
                 wled_state,
+                app_clone,
                 cancel_rx,
             )
             .await
@@ -222,6 +243,7 @@ impl OutputLoopManager {
         serial_state: Arc<TokioMutex<SerialState>>,
         sacn_state: Arc<TokioMutex<SacnState>>,
         wled_state: Arc<TokioMutex<WledState>>,
+        app: AppHandle,
         mut cancel_rx: tokio::sync::watch::Receiver<bool>,
     ) -> Result<(), String> {
         let target_fps = match &output_type {
@@ -255,10 +277,23 @@ impl OutputLoopManager {
                     // Render DMX
                     match scene::render_scene_dmx(output_id, system_t, frame) {
                         Ok(dmx_data) => {
+                            let dmx_vec = dmx_data.to_vec();
+
                             // Output via serial
                             let serial = serial_state.lock().await;
-                            if let Err(e) = serial.output_dmx_internal(&output_id.to_string(), &dmx_data.to_vec()) {
+                            if let Err(e) = serial.output_dmx_internal(&output_id.to_string(), &dmx_vec) {
                                 log::error!("Failed to output serial DMX: {}", e);
+                            }
+                            drop(serial);
+
+                            // Emit render event to frontend
+                            let event = DmxRenderEvent {
+                                output_id: output_id.to_string(),
+                                frame,
+                                data: dmx_vec,
+                            };
+                            if let Err(e) = app.emit("dmx-render", event) {
+                                log::error!("Failed to emit DMX render event: {}", e);
                             }
                         }
                         Err(e) => {
@@ -270,10 +305,23 @@ impl OutputLoopManager {
                     // Render DMX
                     match scene::render_scene_dmx(output_id, system_t, frame) {
                         Ok(dmx_data) => {
+                            let dmx_vec = dmx_data.to_vec();
+
                             // Output via sACN
                             let sacn = sacn_state.lock().await;
-                            if let Err(e) = sacn.output_sacn_internal(*universe, ip_address, &dmx_data.to_vec()) {
+                            if let Err(e) = sacn.output_sacn_internal(*universe, ip_address, &dmx_vec) {
                                 log::error!("Failed to output sACN DMX: {}", e);
+                            }
+                            drop(sacn);
+
+                            // Emit render event to frontend
+                            let event = DmxRenderEvent {
+                                output_id: output_id.to_string(),
+                                frame,
+                                data: dmx_vec,
+                            };
+                            if let Err(e) = app.emit("dmx-render", event) {
+                                log::error!("Failed to emit DMX render event: {}", e);
                             }
                         }
                         Err(e) => {
@@ -289,6 +337,17 @@ impl OutputLoopManager {
                             let wled = wled_state.lock().await;
                             if let Err(e) = wled.output_wled_internal(ip_address, &wled_data) {
                                 log::error!("Failed to output WLED: {}", e);
+                            }
+                            drop(wled);
+
+                            // Emit render event to frontend (encode to protobuf bytes)
+                            let event = WledRenderEvent {
+                                output_id: output_id.to_string(),
+                                frame,
+                                data: wled_data.encode_to_vec(),
+                            };
+                            if let Err(e) = app.emit("wled-render", event) {
+                                log::error!("Failed to emit WLED render event: {}", e);
                             }
                         }
                         Err(e) => {

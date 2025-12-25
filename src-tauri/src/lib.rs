@@ -34,7 +34,7 @@ pub fn run() {
             })?;
             app.manage(Arc::new(TokioMutex::new(wled_state)));
 
-            let output_loop_manager = output_loop::OutputLoopManager::new();
+            let output_loop_manager = output_loop::OutputLoopManager::new(app.handle().clone());
             app.manage(Arc::new(TokioMutex::new(output_loop_manager)));
 
             if cfg!(debug_assertions) {

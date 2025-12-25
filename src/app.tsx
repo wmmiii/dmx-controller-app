@@ -11,6 +11,10 @@ import { SacnRendererProvider } from './contexts/SacnRendererContext';
 import { SerialProvider } from './contexts/SerialContext';
 import { ShortcutProvider } from './contexts/ShortcutContext';
 import { WledRendererProvider } from './contexts/WledRendererContext';
+import { initRenderRouter } from './engine/renderRouter';
+
+// Initialize Tauri render event listeners
+initRenderRouter();
 
 const root = createRoot(document.getElementById('root')!);
 root.render(
