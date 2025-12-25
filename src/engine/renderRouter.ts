@@ -28,45 +28,37 @@ const wledSubscriptions: Map<
   Array<(o: WledRenderTarget, fps: number) => void>
 > = new Map();
 
-// FPS tracking state
-const dmxLastRenderTime: Map<bigint, number> = new Map();
-const dmxFpsBuffers: Map<bigint, number[]> = new Map();
-const wledLastRenderTime: Map<bigint, number> = new Map();
-const wledFpsBuffers: Map<bigint, number[]> = new Map();
+// Unified FPS tracking: stores render timestamps for all outputs
+const renderTimes: Map<bigint, number[]> = new Map();
 
 /**
- * Calculate smoothed FPS for an output using its FPS buffer.
+ * Calculate smoothed FPS for an output based on its render time history.
  */
-function calculateSmoothedFps(
-  lastRenderTime: Map<bigint, number>,
-  fpsBuffers: Map<bigint, number[]>,
-  outputId: bigint,
-): number {
+function calculateSmoothedFps(outputId: bigint): number {
   const now = Date.now();
-  const lastTime = lastRenderTime.get(outputId);
 
-  if (lastTime === undefined) {
-    // First render for this output
-    lastRenderTime.set(outputId, now);
-    fpsBuffers.set(outputId, []);
+  // Get or create render times array for this output
+  let times = renderTimes.get(outputId) || [];
+  times.push(now);
+
+  // Trim to max buffer size
+  if (times.length > FPS_BUFFER_SIZE) {
+    times = times.slice(times.length - FPS_BUFFER_SIZE);
+  }
+  renderTimes.set(outputId, times);
+
+  // Need at least 2 samples to calculate FPS
+  if (times.length < 2) {
     return NaN;
   }
 
-  const deltaMs = now - lastTime;
-  lastRenderTime.set(outputId, now);
-
-  // Get or create FPS buffer for this output
-  let buffer = fpsBuffers.get(outputId) || [];
-  buffer.push(deltaMs);
-
-  // Trim buffer to max size
-  if (buffer.length > FPS_BUFFER_SIZE) {
-    buffer = buffer.slice(buffer.length - FPS_BUFFER_SIZE);
+  // Calculate average time delta between all consecutive renders
+  let totalDelta = 0;
+  for (let i = 1; i < times.length; i++) {
+    totalDelta += times[i] - times[i - 1];
   }
-  fpsBuffers.set(outputId, buffer);
+  const averageDelta = totalDelta / (times.length - 1);
 
-  // Calculate average delta and convert to FPS
-  const averageDelta = buffer.reduce((a, b) => a + b, 0) / buffer.length;
   return Math.floor(1000 / averageDelta);
 }
 
@@ -120,18 +112,14 @@ export function subscribeToWledRender(
 
 export async function renderDmx(outputId: bigint, frame: number) {
   const output = await renderFunctions.renderDmx(outputId, frame);
-  const fps = calculateSmoothedFps(dmxLastRenderTime, dmxFpsBuffers, outputId);
+  const fps = calculateSmoothedFps(outputId);
   triggerDmxSubscriptions(outputId, output, fps);
   return output;
 }
 
 export async function renderWled(outputId: bigint, frame: number) {
   const output = await renderFunctions.renderWled(outputId, frame);
-  const fps = calculateSmoothedFps(
-    wledLastRenderTime,
-    wledFpsBuffers,
-    outputId,
-  );
+  const fps = calculateSmoothedFps(outputId);
   triggerWledSubscriptions(outputId, output, fps);
   return output;
 }
@@ -145,8 +133,7 @@ export function triggerDmxSubscriptions(
   data: Uint8Array,
   fps?: number,
 ) {
-  const calculatedFps =
-    fps ?? calculateSmoothedFps(dmxLastRenderTime, dmxFpsBuffers, outputId);
+  const calculatedFps = fps ?? calculateSmoothedFps(outputId);
   dmxSubscriptions.get(outputId)?.forEach((f) => f(data, calculatedFps));
 }
 
@@ -159,7 +146,6 @@ export function triggerWledSubscriptions(
   data: WledRenderTarget,
   fps?: number,
 ) {
-  const calculatedFps =
-    fps ?? calculateSmoothedFps(wledLastRenderTime, wledFpsBuffers, outputId);
+  const calculatedFps = fps ?? calculateSmoothedFps(outputId);
   wledSubscriptions.get(outputId)?.forEach((f) => f(data, calculatedFps));
 }
