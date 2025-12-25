@@ -76,13 +76,13 @@ export function subscribeToWledRender(
 
 export async function renderDmx(outputId: bigint, frame: number) {
   const output = await renderFunctions.renderDmx(outputId, frame);
-  dmxSubscriptions.get(outputId)?.forEach((f) => f(output));
+  triggerDmxSubscriptions(outputId, output);
   return output;
 }
 
 export async function renderWled(outputId: bigint, frame: number) {
   const output = await renderFunctions.renderWled(outputId, frame);
-  wledSubscriptions.get(outputId)?.forEach((f) => f(output));
+  triggerWledSubscriptions(outputId, output);
   return output;
 }
 
