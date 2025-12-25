@@ -34,7 +34,7 @@ const renderTimes: Map<bigint, number[]> = new Map();
 /**
  * Calculate smoothed FPS for an output based on its render time history.
  */
-function calculateSmoothedFps(outputId: bigint): number {
+function recordAndSmoothFps(outputId: bigint): number {
   const now = Date.now();
 
   // Get or create render times array for this output
@@ -126,11 +126,8 @@ export async function renderWled(outputId: bigint, frame: number) {
  * Trigger DMX subscriptions with already-rendered data.
  * Used by Tauri event listeners to notify subscribers.
  */
-export function triggerDmxSubscriptions(
-  outputId: bigint,
-  data: Uint8Array,
-) {
-  const fps = calculateSmoothedFps(outputId);
+export function triggerDmxSubscriptions(outputId: bigint, data: Uint8Array) {
+  const fps = recordAndSmoothFps(outputId);
   dmxSubscriptions.get(outputId)?.forEach((f) => f(data, fps));
 }
 
@@ -142,6 +139,6 @@ export function triggerWledSubscriptions(
   outputId: bigint,
   data: WledRenderTarget,
 ) {
-  const fps = calculateSmoothedFps(outputId);
+  const fps = recordAndSmoothFps(outputId);
   wledSubscriptions.get(outputId)?.forEach((f) => f(data, fps));
 }

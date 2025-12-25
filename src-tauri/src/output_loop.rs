@@ -126,19 +126,6 @@ impl OutputLoopManager {
         }
     }
 
-    pub async fn stop_all_loops(&self) -> Result<(), String> {
-        let output_ids: Vec<u64> = {
-            let loops = self.loops.lock().await;
-            loops.keys().copied().collect()
-        };
-
-        for output_id in output_ids {
-            self.stop_loop(output_id).await?;
-        }
-
-        Ok(())
-    }
-
     pub async fn rebuild_all_loops(
         &self,
         serial_state: Arc<Mutex<SerialState>>,
