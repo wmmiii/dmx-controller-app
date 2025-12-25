@@ -12,7 +12,12 @@ use crate::sacn::SacnState;
 use crate::serial::SerialState;
 use crate::wled::WledState;
 
-#[derive(Debug, Clone)]
+// FPS constants for each output type
+const SERIAL_FPS: u32 = 30;
+const SACN_FPS: u32 = 100;
+const WLED_FPS: u32 = 30;
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum OutputType {
     Serial,
     Sacn { universe: u16, ip_address: String },
@@ -22,6 +27,7 @@ pub enum OutputType {
 struct OutputLoopHandle {
     task: JoinHandle<()>,
     cancel_tx: tokio::sync::watch::Sender<bool>,
+    output_type: OutputType,
 }
 
 pub struct OutputLoopManager {
@@ -39,7 +45,6 @@ impl OutputLoopManager {
         &self,
         output_id: u64,
         output_type: OutputType,
-        target_fps: u32,
         serial_state: Arc<TokioMutex<SerialState>>,
         sacn_state: Arc<TokioMutex<SacnState>>,
         wled_state: Arc<TokioMutex<WledState>>,
@@ -49,12 +54,12 @@ impl OutputLoopManager {
 
         let (cancel_tx, cancel_rx) = tokio::sync::watch::channel(false);
         let loops_clone = self.loops.clone();
+        let output_type_clone = output_type.clone();
 
         let task = tokio::spawn(async move {
             if let Err(e) = Self::run_output_loop(
                 output_id,
-                output_type,
-                target_fps,
+                output_type_clone,
                 serial_state,
                 sacn_state,
                 wled_state,
@@ -70,7 +75,11 @@ impl OutputLoopManager {
             loops.remove(&output_id);
         });
 
-        let handle = OutputLoopHandle { task, cancel_tx };
+        let handle = OutputLoopHandle {
+            task,
+            cancel_tx,
+            output_type,
+        };
 
         let mut loops = self.loops.lock().await;
         loops.insert(output_id, handle);
@@ -86,7 +95,7 @@ impl OutputLoopManager {
             let _ = handle.cancel_tx.send(true);
 
             // Wait for task to finish (with timeout)
-            match tokio::time::timeout(Duration::from_secs(2), handle.task).await {
+            match tokio::time::timeout(Duration::from_millis(500), handle.task).await {
                 Ok(_) => Ok(()),
                 Err(_) => {
                     log::warn!("Output loop {} did not stop within timeout", output_id);
@@ -117,10 +126,7 @@ impl OutputLoopManager {
         sacn_state: Arc<TokioMutex<SacnState>>,
         wled_state: Arc<TokioMutex<WledState>>,
     ) -> Result<(), String> {
-        // Stop all current loops
-        self.stop_all_loops().await?;
-
-        // Read the current project to determine what outputs to start
+        // Read the current project to determine what outputs should be running
         let project = PROJECT_REF
             .lock()
             .map_err(|e| format!("Failed to lock project: {}", e))?
@@ -132,7 +138,8 @@ impl OutputLoopManager {
             .get(&active_patch_id)
             .ok_or_else(|| format!("Active patch {} not found", active_patch_id))?;
 
-        // Start a loop for each output in the active patch
+        // Build a map of desired outputs
+        let mut desired_outputs: HashMap<u64, OutputType> = HashMap::new();
         for (output_id, output) in &active_patch.outputs {
             let output_type = match &output.output {
                 Some(ProtoOutput::SerialDmxOutput(_)) => OutputType::Serial,
@@ -145,18 +152,60 @@ impl OutputLoopManager {
                 },
                 None => continue, // Skip outputs without a type
             };
+            desired_outputs.insert(*output_id, output_type);
+        }
 
-            // Determine target FPS based on output type
-            let target_fps = match &output_type {
-                OutputType::Serial => 30,  // Match current ~33ms interval
-                OutputType::Sacn { .. } => 60, // Match current 16ms target
-                OutputType::Wled { .. } => 30, // Match current ~33ms behavior
-            };
+        // Get current running loops
+        let current_loops = {
+            let loops = self.loops.lock().await;
+            loops
+                .iter()
+                .map(|(id, handle)| (*id, handle.output_type.clone()))
+                .collect::<HashMap<_, _>>()
+        };
 
+        // Determine which loops to stop, start, or keep
+        let mut to_stop = Vec::new();
+        let mut to_start = Vec::new();
+
+        // Find loops to stop (no longer in desired or changed configuration)
+        for (output_id, current_type) in &current_loops {
+            match desired_outputs.get(output_id) {
+                Some(desired_type) if desired_type == current_type => {
+                    // Keep running - configuration unchanged
+                }
+                _ => {
+                    // Stop - either removed or configuration changed
+                    to_stop.push(*output_id);
+                }
+            }
+        }
+
+        // Find loops to start (new or changed configuration)
+        for (output_id, desired_type) in &desired_outputs {
+            match current_loops.get(output_id) {
+                Some(current_type) if current_type == desired_type => {
+                    // Already running with correct configuration
+                }
+                _ => {
+                    // Start - either new or configuration changed
+                    to_start.push((*output_id, desired_type.clone()));
+                }
+            }
+        }
+
+        // Stop loops that need to be stopped
+        for output_id in to_stop {
+            log::info!("Stopping output loop {} (removed or changed)", output_id);
+            self.stop_loop(output_id).await?;
+        }
+
+        // Start new loops
+        for (output_id, output_type) in to_start {
+            log::info!("Starting output loop {} ({:?})", output_id, output_type);
             self.start_loop(
-                *output_id,
+                output_id,
                 output_type,
-                target_fps,
                 serial_state.clone(),
                 sacn_state.clone(),
                 wled_state.clone(),
@@ -170,12 +219,17 @@ impl OutputLoopManager {
     async fn run_output_loop(
         output_id: u64,
         output_type: OutputType,
-        target_fps: u32,
         serial_state: Arc<TokioMutex<SerialState>>,
         sacn_state: Arc<TokioMutex<SacnState>>,
         wled_state: Arc<TokioMutex<WledState>>,
         mut cancel_rx: tokio::sync::watch::Receiver<bool>,
     ) -> Result<(), String> {
+        let target_fps = match &output_type {
+            OutputType::Serial => SERIAL_FPS,
+            OutputType::Sacn { .. } => SACN_FPS,
+            OutputType::Wled { .. } => WLED_FPS,
+        };
+
         let frame_duration = Duration::from_millis(1000 / target_fps as u64);
         let mut frame = 0u32;
 
@@ -267,7 +321,6 @@ pub async fn start_output_loop(
     output_type: String,
     universe: Option<u16>,
     ip_address: Option<String>,
-    target_fps: u32,
 ) -> Result<(), String> {
     let output_id_u64 = output_id
         .parse::<u64>()
@@ -290,7 +343,6 @@ pub async fn start_output_loop(
         .start_loop(
             output_id_u64,
             output_type,
-            target_fps,
             serial_state.inner().clone(),
             sacn_state.inner().clone(),
             wled_state.inner().clone(),

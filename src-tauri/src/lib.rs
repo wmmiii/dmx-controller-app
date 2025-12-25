@@ -23,23 +23,19 @@ pub fn run() {
                 Box::new(std::io::Error::new(std::io::ErrorKind::Other, e))
                     as Box<dyn std::error::Error>
             })?;
-            let sacn_state_arc = Arc::new(TokioMutex::new(sacn_state));
-            app.manage(sacn_state_arc.clone());
+            app.manage(Arc::new(TokioMutex::new(sacn_state)));
 
             let serial_state = serial::SerialState::new();
-            let serial_state_arc = Arc::new(TokioMutex::new(serial_state));
-            app.manage(serial_state_arc.clone());
+            app.manage(Arc::new(TokioMutex::new(serial_state)));
 
             let wled_state = wled::WledState::new().map_err(|e| {
                 Box::new(std::io::Error::new(std::io::ErrorKind::Other, e))
                     as Box<dyn std::error::Error>
             })?;
-            let wled_state_arc = Arc::new(TokioMutex::new(wled_state));
-            app.manage(wled_state_arc.clone());
+            app.manage(Arc::new(TokioMutex::new(wled_state)));
 
             let output_loop_manager = output_loop::OutputLoopManager::new();
-            let output_loop_manager_arc = Arc::new(TokioMutex::new(output_loop_manager));
-            app.manage(output_loop_manager_arc);
+            app.manage(Arc::new(TokioMutex::new(output_loop_manager)));
 
             if cfg!(debug_assertions) {
                 app.handle().plugin(
