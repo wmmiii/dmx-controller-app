@@ -20,14 +20,14 @@ pub async fn update_project(
     let project_object = Project::decode(&project_binary[..])
         .map_err(|e| format!("Failed to decode project: {}", e))?;
 
-    let mut project_mutex = PROJECT_REF
-        .lock()
-        .map_err(|e| format!("Failed to lock project: {}", e))?;
+    // Use a scoped block to ensure the mutex guard is dropped before any .await
+    {
+        let mut project_mutex = PROJECT_REF
+            .lock()
+            .map_err(|e| format!("Failed to lock project: {}", e))?;
 
-    *project_mutex = project_object;
-
-    // Release the project lock before rebuilding loops
-    drop(project_mutex);
+        *project_mutex = project_object;
+    } // Mutex guard is dropped here
 
     // Automatically rebuild output loops when project changes
     let manager = output_loop_manager.lock().await;
