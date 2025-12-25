@@ -13,6 +13,7 @@ import { PatchSchema } from '@dmx-controller/proto/output_pb';
 import { Project } from '@dmx-controller/proto/project_pb';
 import { WledOutput } from '@dmx-controller/proto/wled_pb';
 import { renderWled } from '../engine/renderRouter';
+import { outputLoopSupported } from '../system_interfaces/output_loop';
 import { sendWled } from '../system_interfaces/wled';
 import { getActivePatch, getOutput } from '../util/projectUtils';
 import { ProjectContext } from './ProjectContext';
@@ -79,10 +80,19 @@ export function WledRendererProvider({ children }: PropsWithChildren) {
   );
 
   useEffect(() => {
+    const wledOutputs = Object.entries(getActivePatch(project).outputs).filter(
+      ([_, output]) => output.output.case === 'wledOutput',
+    );
+
+    // On Tauri, output loops are automatically managed by the backend
+    // when the project is updated, so we don't need to start/stop them here.
+    if (outputLoopSupported) {
+      return () => {};
+    }
+
+    // Web fallback: run the loop in JavaScript
     const renderLoops: Array<() => void> = [];
-    Object.entries(getActivePatch(project).outputs)
-      .filter(([_, output]) => output.output.case === 'wledOutput')
-      .forEach(([id, _]) => renderLoops.push(startRenderLoop(BigInt(id))));
+    wledOutputs.forEach(([id, _]) => renderLoops.push(startRenderLoop(BigInt(id))));
 
     return () => renderLoops.forEach((f) => f());
   }, [toJsonString(PatchSchema, getActivePatch(project))]);

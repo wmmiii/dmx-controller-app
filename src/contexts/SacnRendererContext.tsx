@@ -8,6 +8,7 @@ import {
 
 import { SacnDmxOutput } from '@dmx-controller/proto/output_pb';
 import { renderDmx } from '../engine/renderRouter';
+import { outputLoopSupported } from '../system_interfaces/output_loop';
 import { outputDmxSacn, sacnSupported } from '../system_interfaces/sacn';
 import { getActivePatch, getOutput } from '../util/projectUtils';
 import { ProjectContext } from './ProjectContext';
@@ -73,10 +74,19 @@ export function SacnRendererProvider({ children }: PropsWithChildren) {
       return;
     }
 
+    const sacnOutputs = Object.entries(getActivePatch(project).outputs).filter(
+      ([_, output]) => output.output.case === 'sacnDmxOutput',
+    );
+
+    // On Tauri, output loops are automatically managed by the backend
+    // when the project is updated, so we don't need to start/stop them here.
+    if (outputLoopSupported) {
+      return () => {};
+    }
+
+    // Web fallback: run the loop in JavaScript
     const renderLoops: Array<() => void> = [];
-    Object.entries(getActivePatch(project).outputs)
-      .filter(([_, output]) => output.output.case === 'sacnDmxOutput')
-      .forEach(([id, _]) => renderLoops.push(startRenderLoop(BigInt(id))));
+    sacnOutputs.forEach(([id, _]) => renderLoops.push(startRenderLoop(BigInt(id))));
 
     return () => renderLoops.forEach((f) => f());
   }, [project]);

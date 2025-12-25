@@ -13,6 +13,7 @@ import { Modal } from '../components/Modal';
 
 import { BiErrorAlt } from 'react-icons/bi';
 import { DmxRenderOutput, renderDmx } from '../engine/renderRouter';
+import { outputLoopSupported } from '../system_interfaces/output_loop';
 import {
   closePort,
   listPorts,
@@ -182,6 +183,15 @@ function SerialProviderImpl({
       }
     }
 
+    // On Tauri, output loops are automatically managed by the backend
+    // when the project is updated, so we don't need to start/stop them here.
+    if (outputLoopSupported) {
+      return () => {
+        resetFps();
+      };
+    }
+
+    // Web fallback: run the loop in JavaScript
     let closed = false;
     let lastFrame = new Date().getTime();
     const latencySamples: number[] = [];
