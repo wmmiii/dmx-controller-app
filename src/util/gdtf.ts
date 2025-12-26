@@ -1,7 +1,6 @@
 import { create } from '@bufbuild/protobuf';
 import { type Color } from '@dmx-controller/proto/color_pb';
 import { BlobReader, TextWriter, ZipReader } from '@zip.js/zip.js';
-import getUuidByString from 'uuid-by-string';
 
 import {
   AMOUNT_CHANNELS,
@@ -26,6 +25,7 @@ import {
   DmxFixtureDefinitionSchema,
 } from '@dmx-controller/proto/dmx_pb';
 import { cieToColor } from './colorUtil';
+import { getUuidByString } from './uuidUtils';
 
 export async function extractGdtf(arrayBuffer: Blob) {
   // Unzip archive and find XML.
@@ -205,7 +205,7 @@ export async function extractGdtf(arrayBuffer: Blob) {
 
     mode.numChannels = maxChannel;
 
-    definition.modes[getUuidByString(mode.name)] = mode;
+    definition.modes[await getUuidByString(mode.name)] = mode;
   }
 
   return definition;
