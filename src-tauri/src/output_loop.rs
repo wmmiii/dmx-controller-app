@@ -15,9 +15,9 @@ use crate::serial::SerialState;
 use crate::wled::WledState;
 
 // FPS constants for each output type
-const SERIAL_FPS: u32 = 30;
-const SACN_FPS: u32 = 120;
-const WLED_FPS: u32 = 60;
+const SERIAL_FPS: u32 = 44;
+const SACN_FPS: u32 = 44;
+const WLED_FPS: u32 = 42;
 
 // Event payloads for rendering results
 #[derive(Clone, Serialize)]
