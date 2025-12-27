@@ -28,21 +28,77 @@ impl PartialOrd for TileMap {
 
 impl Ord for TileMap {
     fn cmp(&self, other: &Self) -> Ordering {
+        // 1. Sort by priority first (higher priority comes first)
         if self.priority > other.priority {
             return Ordering::Less;
         } else if self.priority < other.priority {
             return Ordering::Greater;
-        } else if self.x < other.x {
+        }
+
+        // 2-4. Sort by transition type and values in order: absolute, fade_in, fade_out
+        // For each type, tiles with that transition come first, and higher values come first
+        match (
+            self.tile.as_ref().and_then(|t| t.transition.as_ref()),
+            other.tile.as_ref().and_then(|t| t.transition.as_ref()),
+        ) {
+            // Both have absolute strength - higher values come first
+            (Some(Transition::AbsoluteStrength(s)), Some(Transition::AbsoluteStrength(o))) => {
+                if s > o {
+                    return Ordering::Less;
+                } else if s < o {
+                    return Ordering::Greater;
+                }
+            }
+            // Only self has absolute
+            (Some(Transition::AbsoluteStrength(_)), _) => return Ordering::Less,
+            // Only other has absolute
+            (_, Some(Transition::AbsoluteStrength(_))) => return Ordering::Greater,
+
+            // Both have fade in - later timestamps come first
+            (Some(Transition::StartFadeInMs(s)), Some(Transition::StartFadeInMs(o))) => {
+                if s > o {
+                    return Ordering::Less;
+                } else if s < o {
+                    return Ordering::Greater;
+                }
+            }
+            // Only self has fade in
+            (Some(Transition::StartFadeInMs(_)), _) => return Ordering::Less,
+            // Only other has fade in
+            (_, Some(Transition::StartFadeInMs(_))) => return Ordering::Greater,
+
+            // Both have fade out - later timestamps come first
+            (Some(Transition::StartFadeOutMs(s)), Some(Transition::StartFadeOutMs(o))) => {
+                if s > o {
+                    return Ordering::Less;
+                } else if s < o {
+                    return Ordering::Greater;
+                }
+            }
+            // Only self has fade out
+            (Some(Transition::StartFadeOutMs(_)), _) => return Ordering::Less,
+            // Only other has fade out
+            (_, Some(Transition::StartFadeOutMs(_))) => return Ordering::Greater,
+
+            // Neither has any transition
+            (None, None) => {}
+        }
+
+        // 5. Sort by x coordinate
+        if self.x < other.x {
             return Ordering::Less;
         } else if self.x > other.x {
             return Ordering::Greater;
-        } else if self.y < other.y {
+        }
+
+        // 6. Sort by y coordinate
+        if self.y < other.y {
             return Ordering::Less;
         } else if self.y > other.y {
             return Ordering::Greater;
-        } else {
-            return Ordering::Equal;
         }
+
+        Ordering::Equal
     }
 }
 
