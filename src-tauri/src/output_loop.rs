@@ -323,7 +323,8 @@ impl OutputLoopManager {
                         Ok(wled_data) => {
                             // Output via WLED
                             let wled = wled_state.lock().await;
-                            if let Err(e) = wled.output_wled_internal(ip_address, &wled_data) {
+                            if let Err(e) = wled.output_wled_internal(ip_address, &wled_data).await
+                            {
                                 log::error!("Failed to output WLED: {}", e);
                             }
                             drop(wled);

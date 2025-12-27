@@ -30,7 +30,7 @@ export async function getUuidByString(str: string): Promise<string> {
 
   // Convert to UUID string format
   const hex = Array.from(hashArray.slice(0, 16))
-    .map(b => b.toString(16).padStart(2, '0'))
+    .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
 
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
