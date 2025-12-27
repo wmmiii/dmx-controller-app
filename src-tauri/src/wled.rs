@@ -1,4 +1,4 @@
-use std::{net::UdpSocket, sync::Arc};
+use std::sync::Arc;
 
 use dmx_engine::proto::WledRenderTarget;
 use prost::Message;
@@ -6,10 +6,8 @@ use serde::{Deserialize, Serialize};
 use tauri::State;
 use tokio::sync::Mutex;
 
-const WLED_UDP_PORT: u32 = 65506;
-
 pub struct WledState {
-    socket: UdpSocket,
+    client: reqwest::Client,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -30,14 +28,16 @@ struct WledJson {
 
 impl WledState {
     pub fn new() -> Result<Self, String> {
-        let socket = UdpSocket::bind("0.0.0.0:0")
-            .map_err(|e| format!("Failed to bind to UDP socket for WLED: {}", e))?;
+        let client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_millis(500))
+            .build()
+            .map_err(|e| format!("Failed to create HTTP client for WLED: {}", e))?;
 
-        Ok(WledState { socket: socket })
+        Ok(WledState { client })
     }
 
     /// Internal method for use by output loop
-    pub fn output_wled_internal(
+    pub async fn output_wled_internal(
         &self,
         ip_address: &str,
         wled_render_target: &WledRenderTarget,
@@ -63,16 +63,14 @@ impl WledState {
                 .collect(),
         };
 
-        let json_string = serde_json::to_string(&json)
-            .map_err(|e| format!("Failed to serialize WLED JSON: {}", e))?;
+        let url = format!("http://{}/json/state", ip_address);
 
-        let address = format!("{}:{}", ip_address, WLED_UDP_PORT)
-            .parse::<std::net::SocketAddr>()
-            .map_err(|e| format!("Failed to parse WLED address: {}", e))?;
-
-        self.socket
-            .send_to(json_string.as_bytes(), address)
-            .map_err(|e| format!("Failed to send WLED JSON: {}", e))?;
+        self.client
+            .post(&url)
+            .json(&json)
+            .send()
+            .await
+            .map_err(|e| format!("Failed to send WLED HTTP request: {}", e))?;
 
         Ok(())
     }
@@ -88,5 +86,5 @@ pub async fn output_wled(
         .map_err(|e| format!("Failed to deserialize WLED render target: {}", e))?;
 
     let wled_state = state.lock().await;
-    wled_state.output_wled_internal(&ip_address, &wled_render_target)
+    wled_state.output_wled_internal(&ip_address, &wled_render_target).await
 }
