@@ -51,11 +51,7 @@ impl Ord for TileMap {
 
             // Both have fade in - later timestamps come first
             (Some(Transition::StartFadeInMs(s)), Some(Transition::StartFadeInMs(o))) => {
-                if s > o {
-                    return Ordering::Less;
-                } else if s < o {
-                    return Ordering::Greater;
-                }
+                return o.cmp(s);
             }
             // Only self has fade in
             (Some(Transition::StartFadeInMs(_)), _) => return Ordering::Less,
@@ -64,11 +60,7 @@ impl Ord for TileMap {
 
             // Both have fade out - later timestamps come first
             (Some(Transition::StartFadeOutMs(s)), Some(Transition::StartFadeOutMs(o))) => {
-                if s > o {
-                    return Ordering::Less;
-                } else if s < o {
-                    return Ordering::Greater;
-                }
+                return o.cmp(s);
             }
             // Only self has fade out
             (Some(Transition::StartFadeOutMs(_)), _) => return Ordering::Less,
