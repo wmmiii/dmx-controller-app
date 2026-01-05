@@ -1,3 +1,4 @@
+mod mcp;
 mod midi;
 mod output_loop;
 mod project;
@@ -37,6 +38,13 @@ pub fn run() {
 
             let output_loop_manager = output_loop::OutputLoopManager::new(app.handle().clone());
             app.manage(Arc::new(Mutex::new(output_loop_manager)));
+
+            // Start MCP server for AI-powered tile creation
+            let mcp_server = mcp::McpServer::new(app.handle().clone());
+            tauri::async_runtime::spawn(async move {
+                mcp_server.start_stdio().await;
+            });
+            log::info!("MCP server initialized");
 
             if cfg!(debug_assertions) {
                 app.handle().plugin(
