@@ -6,9 +6,9 @@ use crate::{
         ColorPalette, EffectTiming, FixtureState, OutputTarget, Project, QualifiedFixtureId,
     },
     render::{
-        project::get_all_qualified_ids, ramp_effect::apply_ramp_effect,
-        random_effect::apply_random_effect, render_target::RenderTarget,
-        sequence_effect::apply_sequence_effect, strobe_effect::apply_strobe_effect,
+        ramp_effect::apply_ramp_effect, random_effect::apply_random_effect,
+        render_target::RenderTarget, sequence_effect::apply_sequence_effect,
+        strobe_effect::apply_strobe_effect,
     },
 };
 use std::f64::consts::PI;
@@ -100,7 +100,7 @@ pub fn apply_state<T: RenderTarget<T>>(
             }
         }
         Output::Group(0) => {
-            for fixture_id in get_all_qualified_ids(project) {
+            for fixture_id in project.get_all_qualified_ids() {
                 apply_state(
                     project,
                     render_target,
@@ -143,7 +143,7 @@ pub fn get_fixtures(project: &Project, output_target: &OutputTarget) -> Vec<Qual
             }
         }
 
-        Output::Group(0) => get_all_qualified_ids(project),
+        Output::Group(0) => project.get_all_qualified_ids(),
 
         Output::Group(id) => {
             let mut ids: Vec<QualifiedFixtureId> = Vec::new();
