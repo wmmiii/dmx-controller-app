@@ -10,6 +10,7 @@ pub fn apply_ramp_effect<T: RenderTarget<T>>(
     project: &Project,
     render_target: &mut T,
     output_target: &OutputTarget,
+    system_t: &u64,
     ms_since_start: &u64,
     effect_duration_ms: &u64,
     beat_t: &f64,
@@ -21,6 +22,7 @@ pub fn apply_ramp_effect<T: RenderTarget<T>>(
     for (i, fixture) in fixtures.iter().enumerate() {
         let t = calculate_timing(
             &ramp_effect.timing_mode.unwrap(),
+            system_t,
             ms_since_start,
             effect_duration_ms,
             beat_t,

@@ -288,7 +288,7 @@ fn render_scene<T: RenderTarget<T>>(
                     &mut after,
                     &output_target,
                     &t,
-                    &since_transition,
+                    &t,
                     &duration_ms,
                     &beat_t,
                     &frame,

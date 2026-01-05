@@ -31,6 +31,7 @@ pub fn apply_effect<T: RenderTarget<T>>(
             project,
             render_target,
             output_target,
+            system_t,
             ms_since_start,
             effect_duration_ms,
             beat_t,
@@ -66,6 +67,7 @@ pub fn apply_effect<T: RenderTarget<T>>(
             project,
             render_target,
             output_target,
+            system_t,
             ms_since_start,
             effect_duration_ms,
             beat_t,
@@ -172,6 +174,7 @@ pub fn get_fixtures(project: &Project, output_target: &OutputTarget) -> Vec<Qual
 
 pub fn calculate_timing(
     effect_timing: &EffectTiming,
+    system_t: &u64,
     ms_since_start: &u64,
     effect_duration_ms: &u64,
     beat_t: &f64,
@@ -179,7 +182,7 @@ pub fn calculate_timing(
 ) -> f64 {
     // Calculate based on timing mode.
     let mut t = match effect_timing.timing {
-        Some(Timing::Absolute(Absolute { duration })) => *ms_since_start as f64 / duration as f64,
+        Some(Timing::Absolute(Absolute { duration })) => *system_t as f64 / duration as f64,
         Some(Timing::Beat(Beat { multiplier })) => beat_t / multiplier as f64,
         Some(Timing::OneShot(_)) => *ms_since_start as f64 / *effect_duration_ms as f64,
         _ => panic!("Timing type not specified when trying to calculate timing!"),
