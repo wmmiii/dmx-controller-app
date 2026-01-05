@@ -153,15 +153,6 @@ impl McpServer {
                     }
                 },
                 {
-                    "name": "list_fixtures_and_groups",
-                    "description": "List all available fixtures and groups in the current patch",
-                    "inputSchema": {
-                        "type": "object",
-                        "properties": {},
-                        "required": []
-                    }
-                },
-                {
                     "name": "get_examples",
                     "description": "Get example tiles for learning common lighting patterns",
                     "inputSchema": {
@@ -204,7 +195,6 @@ impl McpServer {
 
         match tool_name {
             "get_current_scene" => crate::mcp::tools::get_current_scene(&self.app).await,
-            "list_fixtures_and_groups" => crate::mcp::tools::list_fixtures_and_groups(&self.app).await,
             "get_examples" => crate::mcp::tools::get_examples(arguments).await,
             _ => Err(McpError {
                 code: -32601,
@@ -218,12 +208,6 @@ impl McpServer {
     fn handle_resources_list(&self) -> Result<Value, McpError> {
         Ok(serde_json::json!({
             "resources": [
-                {
-                    "uri": "dmx://fixtures",
-                    "name": "Fixture Library",
-                    "description": "All available fixtures in the current patch",
-                    "mimeType": "application/json"
-                },
                 {
                     "uri": "dmx://examples",
                     "name": "Example Tiles",
@@ -249,7 +233,6 @@ impl McpServer {
         })?;
 
         match uri {
-            "dmx://fixtures" => crate::mcp::tools::list_fixtures_and_groups(&self.app).await,
             "dmx://examples" => crate::mcp::tools::get_examples(&Value::Null).await,
             _ => Err(McpError {
                 code: -32602,
