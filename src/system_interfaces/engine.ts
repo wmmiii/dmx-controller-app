@@ -29,11 +29,31 @@ interface WledRenderEvent {
   data: number[];
 }
 
+interface ProjectUpdateEvent {
+  project_binary: number[];
+  description: string;
+}
+
 export const updateProject = isTauri ? tauriUpdateProject : webUpdateProject;
 export const renderDmxScene = isTauri ? tauriRenderDmxScene : webRenderDmxScene;
 export const renderSceneWled = isTauri
   ? tauriRenderSceneWled
   : webRenderSceneWled;
+
+// Project update listeners
+type ProjectUpdateListener = (project: Project, description: string) => void;
+const projectUpdateListeners: ProjectUpdateListener[] = [];
+
+export function onProjectUpdate(listener: ProjectUpdateListener): () => void {
+  projectUpdateListeners.push(listener);
+  // Return unsubscribe function
+  return () => {
+    const index = projectUpdateListeners.indexOf(listener);
+    if (index > -1) {
+      projectUpdateListeners.splice(index, 1);
+    }
+  };
+}
 
 if (!isTauri) {
   await init();
@@ -127,5 +147,23 @@ async function initRenderListeners(): Promise<void> {
 
     // Trigger subscriptions in renderRouter
     triggerWledSubscriptions(outputId, data);
+  });
+
+  // Listen for project update events from Tauri backend
+  await listen<ProjectUpdateEvent>('project-update', (event) => {
+    const payload = event.payload;
+    const projectBinary = new Uint8Array(payload.project_binary);
+    const project = fromBinary(ProjectSchema, projectBinary);
+
+    console.log('[engine] Project updated from Rust:', payload.description);
+
+    // Trigger all project update listeners
+    projectUpdateListeners.forEach((listener) => {
+      try {
+        listener(project, payload.description);
+      } catch (error) {
+        console.error('Error in project update listener:', error);
+      }
+    });
   });
 }
