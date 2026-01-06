@@ -3,11 +3,15 @@ description: Sets up all the dependencies necessary to build the project.
 runs:
   using: 'composite'
   steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
     - name: Setup pnpm
       uses: pnpm/action-setup@v4
       with:
         version: 10
-        cache: true
 
     - name: Install JS dependencies
       shell: bash
@@ -22,5 +26,6 @@ runs:
         toolchain: stable
 
     - name: Install wasm-pack
-      shell: bash
-      run: cargo install wasm-pack
+      uses: jetli/wasm-pack-action@v0.4.0
+      with:
+        version: 'latest'

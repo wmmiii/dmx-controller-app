@@ -3,7 +3,6 @@ import {
   ControllerMappingSchema,
   ControllerMapping_ActionSchema,
 } from '@dmx-controller/proto/controller_pb';
-import { ControllerChannel } from '../contexts/ControllerContext';
 import { randomUint64 } from '../util/numberUtils';
 import { createNewProject } from '../util/projectUtils';
 import { getActiveScene } from '../util/sceneUtils';
@@ -25,22 +24,26 @@ describe('externalController', () => {
       const project = createNewProject();
       let beatSample: number | null = null;
       const addBeatSample = (t: number) => (beatSample = t);
-      let output: { channel: ControllerChannel; value: number } | null = null;
-      performAction(
+      let firstBeat: number | null = null;
+      const setFirstBeat = (t: number) => (firstBeat = t);
+      let beat: number | null = null;
+      const setBeat = (durationMs: number) => (beat = durationMs);
+
+      const result = performAction(
         project,
         'unknown',
         CHANNEL_NAME,
         1,
         null,
         addBeatSample,
-        () => {},
-        (c, v) => {
-          output = { channel: c, value: v };
-        },
+        setFirstBeat,
+        setBeat,
       );
 
+      expect(result).toBe(false);
       expect(beatSample).toBeNull();
-      expect(output).toEqual({ channel: CHANNEL_NAME, value: 1 });
+      expect(firstBeat).toBeNull();
+      expect(beat).toBeNull();
     });
 
     it('should add beat match', () => {
@@ -61,22 +64,26 @@ describe('externalController', () => {
       });
       let beatSample: number | null = null;
       const addBeatSample = (t: number) => (beatSample = t);
-      let output: { channel: ControllerChannel; value: number } | null = null;
-      performAction(
+      let firstBeat: number | null = null;
+      const setFirstBeat = (t: number) => (firstBeat = t);
+      let beat: number | null = null;
+      const setBeat = (durationMs: number) => (beat = durationMs);
+
+      const result = performAction(
         project,
         CONTROLLER_NAME,
         CHANNEL_NAME,
         1,
         null,
         addBeatSample,
-        () => {},
-        (c, v) => {
-          output = { channel: c, value: v };
-        },
+        setFirstBeat,
+        setBeat,
       );
 
+      expect(result).toBe(false);
       expect(beatSample).toEqual(946684800000);
-      expect(output).toBeNull();
+      expect(firstBeat).toBeNull();
+      expect(beat).toBeNull();
     });
 
     it('should set color palette', () => {
