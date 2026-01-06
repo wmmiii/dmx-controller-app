@@ -15,7 +15,8 @@ message Project {
   message Assets {
     map<uint64, AudioFile> audio_files = 2;
 
-    reserved 1; // repeated AudioFile deprecated_audio_files = 1 [ deprecated = true ];
+    reserved 1; // repeated AudioFile deprecated_audio_files = 1 [ deprecated =
+                // true ];
   }
 
   string name = 1;
@@ -47,22 +48,19 @@ message Project {
   reserved 51; // repeated Scene scenes = 51;
   reserved 11; // uint32 update_frequency_ms = 11;
   reserved 12; // int32 timing_offset_ms = 12;
-  reserved 14; // map<uint32, PhysicalDmxFixture> physical_fixtures = 14 [ deprecated = true ];
-  reserved 41; // map<uint32, FixtureSequence> fixture_sequences = 41 [ deprecated = true ];
-  reserved 16; // repeated DefaultChannelValues default_channel_values = 16 [ deprecated = true ];
-  reserved 13; // map<uint32, DmxFixtureDefinition> deprecated_uint32_fixture_definitions = 13 [ deprecated = true ];
-  reserved 15; // map<uint32, PhysicalFixtureGroup> physical_fixture_groups = 15 [ deprecated = true ];
-  reserved 20; // map<uint64, DmxFixtureDefinition> deprecated_uint64_fixture_definitions = 20;
+  reserved 14; // map<uint32, PhysicalDmxFixture> physical_fixtures = 14 [
+               // deprecated = true ];
+  reserved 41; // map<uint32, FixtureSequence> fixture_sequences = 41 [
+               // deprecated = true ];
+  reserved 16; // repeated DefaultChannelValues default_channel_values = 16 [
+               // deprecated = true ];
+  reserved 13; // map<uint32, DmxFixtureDefinition>
+               // deprecated_uint32_fixture_definitions = 13 [ deprecated = true
+               // ];
+  reserved 15; // map<uint32, PhysicalFixtureGroup> physical_fixture_groups = 15
+               // [ deprecated = true ];
+  reserved 20; // map<uint64, DmxFixtureDefinition>
+               // deprecated_uint64_fixture_definitions = 20;
   reserved 17; // map<uint64, Universe> universes = 17 [deprecated = true];
-  reserved 22; //map<string, DmxFixtureDefinition> fixture_definitions = 22;
-
-  // message DefaultChannelValues {
-  //   string name = 1;
-  //   oneof output {
-  //     uint32 physical_fixture_id = 2;
-  //     uint32 physical_fixture_group_id = 3;
-  //   }
-  //   OutputTarget output_target = 5;
-  //   map<uint32, uint32> channels = 4;
-  // }
+  reserved 22; // map<string, DmxFixtureDefinition> fixture_definitions = 22;
 }

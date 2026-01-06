@@ -1,4 +1,4 @@
-use crate::proto;
+use crate::proto::{self, scene::tile::OneShotDetails};
 
 pub fn calculate_tile_strength(project: &proto::Project, tile_id: u64, t: u64) -> f64 {
     // Find the active scene
@@ -13,42 +13,26 @@ pub fn calculate_tile_strength(project: &proto::Project, tile_id: u64, t: u64) -
 
     let tile = tile_entry.tile.as_ref().unwrap();
 
-    tile_active_amount(tile, project.live_beat.as_ref(), t)
+    tile_active_amount(tile, &project.live_beat.unwrap(), t)
 }
 
-pub fn tile_active_amount(
-    tile: &proto::scene::Tile,
-    beat: Option<&proto::BeatMetadata>,
-    t: u64,
-) -> f64 {
+pub fn tile_active_amount(tile: &proto::scene::Tile, beat: &proto::BeatMetadata, t: u64) -> f64 {
     match &tile.transition {
-        Some(proto::scene::tile::Transition::StartFadeInMs(start_t)) => {
-            if tile.one_shot {
-                let duration = get_tile_duration_ms(tile, beat);
-                if t < start_t + duration {
-                    1.0
-                } else {
-                    0.0
-                }
-            } else {
-                1.0
-            }
-        }
         Some(proto::scene::tile::Transition::AbsoluteStrength(strength)) => *strength as f64,
-        _ => 0.0,
-    }
-}
-
-fn get_tile_duration_ms(tile: &proto::scene::Tile, beat: Option<&proto::BeatMetadata>) -> u64 {
-    match &tile.duration {
-        Some(proto::scene::tile::Duration::DurationBeat(_)) => {
-            if let Some(b) = beat {
-                b.length_ms as u64
-            } else {
-                0
+        Some(proto::scene::tile::Transition::StartFadeInMs(start_fade_time)) => {
+            match tile.timing_details {
+                Some(proto::scene::tile::TimingDetails::OneShot(OneShotDetails {
+                    duration: Some(duration),
+                })) => {
+                    if t < start_fade_time + duration.as_ms(beat) as u64 {
+                        1.0
+                    } else {
+                        0.0
+                    }
+                }
+                _ => 1.0,
             }
         }
-        Some(proto::scene::tile::Duration::DurationMs(ms)) => *ms as u64,
-        None => 0,
+        Some(proto::scene::tile::Transition::StartFadeOutMs(_)) | None => 0.0,
     }
 }

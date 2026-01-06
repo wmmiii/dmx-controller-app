@@ -11,8 +11,7 @@ pub fn apply_ramp_effect<T: RenderTarget<T>>(
     render_target: &mut T,
     output_target: &OutputTarget,
     system_t: &u64,
-    ms_since_start: &u64,
-    effect_duration_ms: &u64,
+    effect_t: &Option<f64>,
     beat_t: &f64,
     ramp_effect: &RampEffect,
     color_palette: &ColorPalette,
@@ -23,8 +22,7 @@ pub fn apply_ramp_effect<T: RenderTarget<T>>(
         let t = calculate_timing(
             &ramp_effect.timing_mode.unwrap(),
             system_t,
-            ms_since_start,
-            effect_duration_ms,
+            effect_t,
             beat_t,
             i as f64 / fixtures.len() as f64,
         );

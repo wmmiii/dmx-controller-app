@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package dmx_controller;
+
+message Duration {
+  oneof amount {
+    uint32 ms = 1;
+    double beat = 2;
+  }
+}

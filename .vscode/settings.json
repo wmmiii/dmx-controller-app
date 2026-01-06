@@ -23,5 +23,8 @@
     "Tauri",
     "wavesurfer",
     "wled"
-  ]
+  ],
+  "[proto]": {
+    "editor.defaultFormatter": "xaver.clang-format"
+  }
 }

@@ -18,9 +18,7 @@ pub fn apply_effect<T: RenderTarget<T>>(
     render_target: &mut T,
     output_target: &OutputTarget,
     system_t: &u64,
-    // Number of milliseconds since the start of the effect.
-    ms_since_start: &u64,
-    effect_duration_ms: &u64,
+    effect_t: &Option<f64>,
     beat_t: &f64,
     frame: &u32,
     effect: &Effect,
@@ -32,8 +30,7 @@ pub fn apply_effect<T: RenderTarget<T>>(
             render_target,
             output_target,
             system_t,
-            ms_since_start,
-            effect_duration_ms,
+            effect_t,
             beat_t,
             ramp_effect,
             color_palette,
@@ -68,8 +65,7 @@ pub fn apply_effect<T: RenderTarget<T>>(
             render_target,
             output_target,
             system_t,
-            ms_since_start,
-            effect_duration_ms,
+            effect_t,
             beat_t,
             frame,
             sequence_effect,
@@ -162,7 +158,7 @@ pub fn get_fixtures(project: &Project, output_target: &OutputTarget) -> Vec<Qual
                                 .filter(|id| id.patch == project.active_patch)
                                 .for_each(|id| ids.push(*id));
                         }
-                        _ => (),
+                        None => (),
                     }
                 }
             }
@@ -175,17 +171,16 @@ pub fn get_fixtures(project: &Project, output_target: &OutputTarget) -> Vec<Qual
 pub fn calculate_timing(
     effect_timing: &EffectTiming,
     system_t: &u64,
-    ms_since_start: &u64,
-    effect_duration_ms: &u64,
+    effect_t: &Option<f64>,
     beat_t: &f64,
     phase_index: f64,
 ) -> f64 {
     // Calculate based on timing mode.
     let mut t = match effect_timing.timing {
-        Some(Timing::Absolute(Absolute { duration })) => *system_t as f64 / duration as f64,
+        Some(Timing::Absolute(Absolute { duration_ms })) => *system_t as f64 / duration_ms as f64,
         Some(Timing::Beat(Beat { multiplier })) => beat_t / multiplier as f64,
-        Some(Timing::OneShot(_)) => *ms_since_start as f64 / *effect_duration_ms as f64,
-        _ => panic!("Timing type not specified when trying to calculate timing!"),
+        Some(Timing::OneShot(_)) => effect_t.unwrap_or(*beat_t),
+        None => panic!("Timing type not specified when trying to calculate timing!"),
     };
 
     // Modify with phase offset.

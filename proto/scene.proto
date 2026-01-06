@@ -3,6 +3,7 @@ syntax = "proto3";
 package dmx_controller;
 
 import "proto/color.proto";
+import "proto/duration.proto";
 import "proto/effect.proto";
 import "proto/output.proto";
 
@@ -19,25 +20,20 @@ message Scene {
       OutputTarget output_target = 2;
     }
 
+    message OneShotDetails { Duration duration = 1; }
+
+    message LoopDetails {
+      Duration fade_in = 1;
+      Duration fade_out = 2;
+    }
+
     string name = 1;
-    reserved 2; // universe_sequence_id
 
     repeated EffectChannel channels = 18;
-    bool one_shot = 15;
 
-    oneof duration {
-      uint32 duration_ms = 5;
-      double duration_beat = 6;
-    }
-
-    oneof fade_in_duration {
-      uint32 fade_in_ms = 7;
-      uint32 fade_in_beat = 8;
-    }
-
-    oneof fade_out_duration {
-      uint32 fade_out_ms = 9;
-      uint32 fade_out_beat = 10;
+    oneof timing_details {
+      OneShotDetails one_shot = 19;
+      LoopDetails loop = 20;
     }
 
     oneof transition {
@@ -46,11 +42,20 @@ message Scene {
       float absolute_strength = 17;
     }
 
-    reserved 3; // active
-    reserved 4; // string shortcut = 4 [deprecated = true];
-    reserved 16; // map<string, string> controller_channel = 16 [deprecated = true];
+    reserved 2;  // universe_sequence_id
+    reserved 3;  // active
+    reserved 4;  // string shortcut = 4 [deprecated = true];
+    reserved 5;  // uint32 duration_ms = 5;
+    reserved 6;  // double duration_beat = 6;
+    reserved 7;  // uint32 fade_in_ms = 7;
+    reserved 8;  // uint32 fade_in_beat = 8;
+    reserved 9;  // uint32 fade_out_ms = 9;
+    reserved 10; // uint32 fade_out_beat = 10;
     reserved 13; // uint64 sequence_id = 13;
     reserved 14; // EffectGroupTile effect_group = 14;
+    reserved 15; // bool one_shot = 15;
+    reserved 16; // map<string, string> controller_channel = 16 [deprecated =
+                 // true];
   }
 
   message TileMap {
@@ -79,7 +84,9 @@ message Scene {
 
   reserved 11; // repeated Tile components = 11 [deprecated = true];
   reserved 12; // repeated ComponentRow rows = 12 [deprecated = true];
-  reserved 2; // repeated ColorPalette deprecated_color_palettes = 2 [deprecated = true];
+  reserved 2; // repeated ColorPalette deprecated_color_palettes = 2 [deprecated
+              // = true];
   reserved 3; // uint32 deprecated_active_color_palette = 3 [deprecated = true];
-  reserved 4; // uint32 deprecated_last_active_color_palette = 4 [deprecated = true];
+  reserved 4; // uint32 deprecated_last_active_color_palette = 4 [deprecated =
+              // true];
 }

@@ -3,6 +3,7 @@ syntax = "proto3";
 package dmx_controller;
 
 import "proto/color.proto";
+import "proto/duration.proto";
 
 message FixtureState {
   enum StrobeSpeed {
@@ -49,19 +50,14 @@ message EffectTiming {
   }
 
   // Cycle is defined by an absolute duration.
-  message Absolute {
-    uint32 duration = 1;
-  }
+  message Absolute { uint32 duration_ms = 1; }
 
   // Cycle is defined by the beat.
-  message Beat {
-    float multiplier = 1;
-  }
+  message Beat { float multiplier = 1; }
 
-  // Cycle is defined externally. (used only during sequences)
-  message OneShot {
-
-  }
+  // Cycle is defined externally. (used only during sequences and one-shot
+  // tiles)
+  message OneShot {}
 
   oneof timing {
     Absolute absolute = 1;
@@ -73,16 +69,14 @@ message EffectTiming {
   double phase = 6;
 }
 
-
 message TimecodedEffect {
   Effect effect = 1;
-  
+
   uint32 start_ms = 2;
   uint32 end_ms = 3;
 }
 
 message Layer { repeated TimecodedEffect effects = 1; }
-
 
 message Sequence {
   string name = 1;
@@ -105,11 +99,11 @@ message Effect {
     EffectTiming timing_mode = 10;
 
     reserved 4 to 5; // Deprecated fixture_sequence_mapping
-    reserved 1; // EasingFunction easing = 1;
-    reserved 6; // EffectTiming timing_mode = 6;
-    reserved 7; // double timing_multiplier = 7;
-    reserved 8; // bool mirrored = 8;
-    reserved 9; // double phase = 9;
+    reserved 1;      // EasingFunction easing = 1;
+    reserved 6;      // EffectTiming timing_mode = 6;
+    reserved 7;      // double timing_multiplier = 7;
+    reserved 8;      // bool mirrored = 8;
+    reserved 9;      // double phase = 9;
   }
 
   message StrobeEffect {
@@ -136,7 +130,7 @@ message Effect {
     uint64 sequence_id = 1;
 
     EffectTiming timing_mode = 4;
-    reserved 2; //Sequence sequence_impl = 2;
+    reserved 2; // Sequence sequence_impl = 2;
   }
 
   reserved 3 to 10;
@@ -152,8 +146,8 @@ message Effect {
   }
 
   // Deprecated
-  reserved 1; // uint32 start_ms = 1;
-  reserved 2; // uint32 end_ms = 2;
+  reserved 1;  // uint32 start_ms = 1;
+  reserved 2;  // uint32 end_ms = 2;
   reserved 11; // EffectTiming timing_mode = 11 [deprecated = true];
   reserved 12; // Deprecated offset_ms
   reserved 13; // double timing_multiplier = 13 [deprecated = true];

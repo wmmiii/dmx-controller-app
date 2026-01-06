@@ -5,11 +5,11 @@ use crate::{
     proto::{
         output::Output,
         scene::{
-            tile::{EffectChannel, FadeInDuration, Transition},
+            tile::{EffectChannel, LoopDetails, OneShotDetails, TimingDetails, Transition},
             TileMap,
         },
         wled_render_target::{Color, Segment},
-        Effect, Project, Scene, WledRenderTarget,
+        BeatMetadata, Duration, Effect, Project, Scene, WledRenderTarget,
     },
     render::{
         dmx_render_target::DmxRenderTarget,
@@ -42,6 +42,16 @@ impl Ord for TileMap {
             return Ordering::Greater;
         } else {
             return Ordering::Equal;
+        }
+    }
+}
+
+impl Duration {
+    pub fn as_ms(&self, beat_metadata: &BeatMetadata) -> f64 {
+        match self.amount {
+            Some(crate::proto::duration::Amount::Ms(ms)) => ms as f64,
+            Some(crate::proto::duration::Amount::Beat(b)) => (b * beat_metadata.length_ms) as f64,
+            None => panic!("Unknown duration type!"),
         }
     }
 }
@@ -97,7 +107,7 @@ pub fn render_scene_dmx(output_id: u64, system_t: u64, frame: u32) -> Result<[u8
         &project,
     );
 
-    return Ok(render_target.get_universe());
+    Ok(render_target.get_universe())
 }
 
 pub fn render_scene_wled(
@@ -168,16 +178,16 @@ pub fn render_scene_wled(
 fn render_scene<T: RenderTarget<T>>(
     scene: &Scene,
     render_target: &mut T,
-    t: u64,
+    system_t: u64,
     frame: u32,
-    beat_metadata: &crate::proto::BeatMetadata,
+    beat_metadata: &BeatMetadata,
     project: &Project,
 ) {
-    let beat_t = (t - beat_metadata.offset_ms) as f64 / beat_metadata.length_ms;
+    let beat_t = (system_t - beat_metadata.offset_ms) as f64 / beat_metadata.length_ms;
 
     // Interpolate color palette
     let color_palette_t = {
-        let since = (t as i64) - (scene.color_palette_start_transition as i64);
+        let since = (system_t as i64) - (scene.color_palette_start_transition as i64);
         let since = if since < 0 { 0 } else { since as u64 };
         (since as f64 / scene.color_palette_transition_duration_ms as f64).min(1.0)
     };
@@ -207,68 +217,55 @@ fn render_scene<T: RenderTarget<T>>(
             None => continue,
         };
 
-        // Calculate time since transition
-        let since_transition = match &tile.transition {
-            Some(Transition::StartFadeInMs(ts)) | Some(Transition::StartFadeOutMs(ts)) => {
-                i64::max((t as i64) - (*ts as i64), 0) as u64
-            }
-            _ => 0,
-        };
-
-        // Calculate effect duration
-        let duration_ms = match &tile.duration {
-            Some(crate::proto::scene::tile::Duration::DurationBeat(beat)) => {
-                (beat * beat_metadata.length_ms) as u64
-            }
-            Some(crate::proto::scene::tile::Duration::DurationMs(ms)) => *ms as u64,
-            None => 0,
-        };
-
-        // Skip one-shot tiles that are fading out or that have expired
-        if tile.one_shot
-            && (matches!(&tile.transition, Some(Transition::StartFadeOutMs(_)))
-                || since_transition > duration_ms)
-        {
-            continue;
-        }
-
         // Calculate amount (fade in/out)
         let amount: f64 = match &tile.transition {
-            Some(Transition::StartFadeInMs(_)) => {
-                let fade_in_ms = match &tile.fade_in_duration {
-                    Some(FadeInDuration::FadeInBeat(beats)) => {
-                        (*beats as f64) * (beat_metadata.length_ms as f64)
+            Some(Transition::AbsoluteStrength(a)) => *a as f64,
+            Some(Transition::StartFadeInMs(fade_in_time)) => match &tile.timing_details {
+                Some(TimingDetails::OneShot(OneShotDetails {
+                    duration: Some(duration),
+                })) => {
+                    if system_t - fade_in_time > duration.as_ms(beat_metadata) as u64 {
+                        0.0
+                    } else {
+                        1.0
                     }
-                    Some(FadeInDuration::FadeInMs(ms)) => *ms as f64,
-                    None => 0.0,
-                };
-
-                (since_transition as f64 / fade_in_ms).min(1.0)
-            }
-            Some(crate::proto::scene::tile::Transition::StartFadeOutMs(_)) => {
-                let fade_out_ms = match &tile.fade_out_duration {
-                    Some(crate::proto::scene::tile::FadeOutDuration::FadeOutBeat(beats)) => {
-                        (*beats as f64) * (beat_metadata.length_ms as f64)
-                    }
-                    Some(crate::proto::scene::tile::FadeOutDuration::FadeOutMs(ms)) => *ms as f64,
-                    None => 0.0,
-                };
-
-                if since_transition as f64 > fade_out_ms {
-                    continue; // Tile has fully faded out
                 }
-
-                (1.0 - (since_transition as f64 / fade_out_ms)).max(0.0)
-            }
-            Some(crate::proto::scene::tile::Transition::AbsoluteStrength(strength)) => {
-                *strength as f64
-            }
-            None => 0.0,
+                Some(TimingDetails::Loop(LoopDetails {
+                    fade_in: Some(fade_in_duration),
+                    fade_out: _,
+                })) => ((system_t - *fade_in_time) as f64 / fade_in_duration.as_ms(beat_metadata))
+                    .clamp(0.0, 1.0),
+                _ => 0.0,
+            },
+            Some(Transition::StartFadeOutMs(fade_out_time)) => match &tile.timing_details {
+                Some(TimingDetails::Loop(LoopDetails {
+                    fade_in: _,
+                    fade_out: Some(fade_out_duration),
+                })) => (1.0
+                    - ((system_t - *fade_out_time) as f64
+                        / fade_out_duration.as_ms(beat_metadata)))
+                .clamp(0.0, 1.0),
+                _ => 0.0,
+            },
+            _ => panic!("Unknown transition type!"),
         };
 
         if amount == 0.0 {
             continue;
         }
+
+        // Calculate effect timing
+        let effect_t: Option<f64> = match (tile.timing_details, tile.transition) {
+            (
+                Some(TimingDetails::OneShot(OneShotDetails {
+                    duration: Some(duration),
+                })),
+                Some(Transition::StartFadeInMs(fade_in_time)),
+            ) => Some(
+                ((system_t - fade_in_time) as f64 / duration.as_ms(beat_metadata)).clamp(0.0, 1.0),
+            ),
+            _ => None,
+        };
 
         let before = render_target.clone();
         let mut after = render_target.clone();
@@ -287,9 +284,8 @@ fn render_scene<T: RenderTarget<T>>(
                     project,
                     &mut after,
                     &output_target,
-                    &t,
-                    &t,
-                    &duration_ms,
+                    &system_t,
+                    &effect_t,
                     &beat_t,
                     &frame,
                     effect,

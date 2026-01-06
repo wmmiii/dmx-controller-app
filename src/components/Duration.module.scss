@@ -1,0 +1,8 @@
+@use '../_vars';
+
+.container {
+  align-items: baseline;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}

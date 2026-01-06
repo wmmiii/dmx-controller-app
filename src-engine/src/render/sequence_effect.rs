@@ -13,8 +13,7 @@ pub fn apply_sequence_effect<T: RenderTarget<T>>(
     render_target: &mut T,
     output_target: &OutputTarget,
     system_t: &u64,
-    ms_since_start: &u64,
-    effect_duration_ms: &u64,
+    effect_t: &Option<f64>,
     beat_t: &f64,
     frame: &u32,
     sequence_effect: &SequenceEffect,
@@ -35,8 +34,7 @@ pub fn apply_sequence_effect<T: RenderTarget<T>>(
         let t = calculate_timing(
             &sequence_effect.timing_mode.unwrap(),
             system_t,
-            ms_since_start,
-            effect_duration_ms,
+            effect_t,
             &(beat_t / sequence.native_beats as f64),
             fixture_index as f64 / fixtures.len() as f64,
         );
@@ -51,7 +49,7 @@ pub fn apply_sequence_effect<T: RenderTarget<T>>(
                 .find(|e| (e.start_ms < sequence_t as u32) && (e.end_ms >= sequence_t as u32));
             let effect = match effect_option {
                 Some(e) => e,
-                _ => continue,
+                None => continue,
             };
 
             let single_target = &OutputTarget {
@@ -67,8 +65,10 @@ pub fn apply_sequence_effect<T: RenderTarget<T>>(
                 render_target,
                 single_target,
                 &sequence_t,
-                &(sequence_t - effect.start_ms as u64),
-                &((effect.end_ms - effect.start_ms) as u64),
+                &Some(
+                    (sequence_t as u32 - effect.start_ms) as f64
+                        / (effect.end_ms - effect.start_ms) as f64,
+                ),
                 beat_t,
                 frame,
                 &effect.effect.as_ref().unwrap().effect.as_ref().unwrap(),

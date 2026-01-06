@@ -8,6 +8,8 @@ import {
   Scene_TileSchema,
   Scene_Tile_EffectChannel,
   Scene_Tile_EffectChannelSchema,
+  Scene_Tile_LoopDetailsSchema,
+  Scene_Tile_OneShotDetailsSchema,
   type Scene_TileMap,
 } from '@dmx-controller/proto/scene_pb';
 import { JSX, useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -36,6 +38,7 @@ import { ProjectContext } from '../contexts/ProjectContext';
 import { getAvailableChannels } from '../engine/fixtures/fixture';
 
 import { BiPlus, BiTrash } from 'react-icons/bi';
+import { DurationInput } from '../components/Duration';
 import { Spacer } from '../components/Spacer';
 import { Tabs, TabsType } from '../components/Tabs';
 import { setRenderFunctions } from '../engine/renderRouter';
@@ -79,10 +82,22 @@ export function LivePage(): JSX.Element {
           setAddTileIndex={({ x, y }) => {
             const tile = create(Scene_TileSchema, {
               name: 'New Tile',
-
-              duration: {
-                case: 'durationBeat',
-                value: 1,
+              timingDetails: {
+                case: 'loop',
+                value: {
+                  fadeIn: {
+                    amount: {
+                      case: 'beat',
+                      value: 0,
+                    },
+                  },
+                  fadeOut: {
+                    amount: {
+                      case: 'beat',
+                      value: 0,
+                    },
+                  },
+                },
               },
               transition: {
                 case: 'startFadeInMs',
@@ -336,100 +351,67 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
             <div className={styles.row}>
               <ToggleInput
                 className={styles.switch}
-                value={tile.oneShot}
-                onChange={(value) => {
-                  tile.oneShot = value;
+                value={tile.timingDetails.case === 'oneShot'}
+                onChange={(oneShot) => {
+                  if (oneShot) {
+                    tile.timingDetails = {
+                      case: 'oneShot',
+                      value: create(Scene_Tile_OneShotDetailsSchema, {
+                        duration: {
+                          amount: {
+                            case: 'beat',
+                            value: 0,
+                          },
+                        },
+                      }),
+                    };
+                  } else {
+                    tile.timingDetails = {
+                      case: 'loop',
+                      value: create(Scene_Tile_LoopDetailsSchema, {
+                        fadeIn: {
+                          amount: {
+                            case: 'ms',
+                            value: 0,
+                          },
+                        },
+                        fadeOut: {
+                          amount: {
+                            case: 'ms',
+                            value: 0,
+                          },
+                        },
+                      }),
+                    };
+                  }
                   save(
-                    `Set  ${tile.name} to ${value ? 'one-shot' : 'looping'}.`,
+                    `Set ${tile.name} to ${oneShot ? 'one-shot' : 'looping'}.`,
                   );
                 }}
                 labels={{ left: 'Loop', right: 'One-shot' }}
               />
             </div>
-            <div className={styles.row}>
-              <ToggleInput
-                className={styles.switch}
-                value={tile.duration?.case === 'durationMs'}
-                onChange={(value) => {
-                  if (value) {
-                    tile.duration = {
-                      case: 'durationMs',
-                      value: 1000,
-                    };
-                  } else {
-                    tile.duration = {
-                      case: 'durationBeat',
-                      value: 1,
-                    };
-                  }
-                  save(
-                    `Set timing type for tile ${tile.name} to ${value ? 'seconds' : 'beats'}.`,
-                  );
-                }}
-                labels={{ left: 'Beat', right: 'Seconds' }}
-              />
-            </div>
-            <div className={styles.row}>
-              <label>Loop Duration</label>
-              {tile.duration.case === 'durationMs' && (
-                <NumberInput
-                  type="float"
-                  min={0.001}
-                  max={300}
-                  value={tile.duration?.value / 1000 || NaN}
-                  onChange={(value) => {
-                    tile.duration.value = Math.floor(value * 1000);
-                    save(`Set duration for tile ${tile.name}.`);
-                  }}
-                />
-              )}
-              {tile.duration.case === 'durationBeat' && (
-                <NumberInput
-                  type="float"
-                  min={1 / 256}
-                  max={256}
-                  value={tile.duration?.value}
-                  onChange={(value) => {
-                    tile.duration.value = value;
-                    save(`Set duration for tile ${tile.name}.`);
-                  }}
-                />
-              )}
-            </div>
-            <div className={styles.row}>
-              <label>Fade in</label>
-              <NumberInput
-                type="float"
-                title="Fade in seconds"
-                min={0}
-                max={300}
-                value={(tile.fadeInDuration.value || 0) / 1000}
-                onChange={(value) => {
-                  tile.fadeInDuration = {
-                    case: 'fadeInMs',
-                    value: Math.floor(value * 1000),
-                  };
-                  save(`Set fade in duration for ${tile.name}.`);
-                }}
-              />
-            </div>
-            <div className={styles.row}>
-              <label>Fade out</label>
-              <NumberInput
-                type="float"
-                title="Fade out seconds"
-                min={0}
-                max={300}
-                value={(tile.fadeOutDuration.value || 0) / 1000}
-                onChange={(value) => {
-                  tile.fadeOutDuration = {
-                    case: 'fadeOutMs',
-                    value: Math.floor(value * 1000),
-                  };
-                  save(`Set fade out duration for ${tile.name}.`);
-                }}
-              />
-            </div>
+            <hr />
+            {tile.timingDetails.case === 'oneShot' && (
+              <>
+                <div className={styles.row}>
+                  <label>Duration</label>
+                </div>
+                <DurationInput duration={tile.timingDetails.value.duration!} />
+              </>
+            )}
+            {tile.timingDetails.case === 'loop' && (
+              <>
+                <div className={styles.row}>
+                  <label>Fade in</label>
+                </div>
+                <DurationInput duration={tile.timingDetails.value.fadeIn!} />
+                <div className={styles.row}>
+                  <label>Fade out</label>
+                </div>
+                <DurationInput duration={tile.timingDetails.value.fadeOut!} />
+              </>
+            )}
           </div>
         }
         right={<EffectGroupEditor channels={tile.channels} name={tile.name} />}
@@ -489,7 +471,6 @@ function EffectGroupEditor({ channels, name }: EffectGroupEditorProps) {
             </label>
             <EffectDetails
               effect={c.effect}
-              showTiming={false}
               showPhase={c.outputTarget?.output.case === 'group'}
               availableChannels={getAvailableChannels(c.outputTarget, project)}
             />

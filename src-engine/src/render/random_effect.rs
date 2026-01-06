@@ -98,7 +98,6 @@ fn apply_random_effect_impl<T: RenderTarget<T>>(
 
         if effect_t < counter as u64 {
             let sub_effect_fract = (effect_t as f64 - prev_counter) / (counter - prev_counter);
-            let sub_effect_t = (sub_effect_fract * u32::MAX as f64) as u64;
 
             let sub_effect = if i % 2 == 0 {
                 random_effect.effect_a.as_ref()
@@ -111,8 +110,7 @@ fn apply_random_effect_impl<T: RenderTarget<T>>(
                 render_target,
                 output_target,
                 system_t,
-                &sub_effect_t,
-                &(u32::MAX as u64),
+                &Some(sub_effect_fract),
                 beat_t,
                 frame,
                 sub_effect.unwrap().effect.as_ref().unwrap(),
