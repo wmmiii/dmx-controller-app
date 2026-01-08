@@ -86,5 +86,7 @@ pub async fn output_wled(
         .map_err(|e| format!("Failed to deserialize WLED render target: {}", e))?;
 
     let wled_state = state.lock().await;
-    wled_state.output_wled_internal(&ip_address, &wled_render_target).await
+    wled_state
+        .output_wled_internal(&ip_address, &wled_render_target)
+        .await
 }
