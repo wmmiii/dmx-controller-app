@@ -22,6 +22,7 @@ fn main() {
 
     // Compile all proto files with include path set to project root
     prost_build::Config::new()
+        .protoc_arg("--experimental_allow_proto3_optional")
         .compile_protos(&proto_path_refs, &[project_root.to_str().unwrap()])
         .expect("Failed to compile protos");
 }
