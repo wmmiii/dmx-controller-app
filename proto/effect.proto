@@ -3,7 +3,6 @@ syntax = "proto3";
 package dmx_controller;
 
 import "proto/color.proto";
-import "proto/duration.proto";
 
 message FixtureState {
   enum StrobeSpeed {
