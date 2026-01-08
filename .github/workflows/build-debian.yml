@@ -1,0 +1,25 @@
+name: Build Debian Package
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-debian:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup
+        uses: ./.github/setup
+
+      - name: Build Tauri app
+        run: pnpm tauri build --bundles deb
+
+      - name: Upload Debian package
+        uses: actions/upload-artifact@v4
+        with:
+          name: debian-package
+          path: src-tauri/target/release/bundle/deb/*.deb
+          if-no-files-found: error
