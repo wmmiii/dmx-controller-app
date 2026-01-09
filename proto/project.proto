@@ -9,6 +9,7 @@ import "proto/effect.proto";
 import "proto/fixture_definitions.proto";
 import "proto/output.proto";
 import "proto/scene.proto";
+import "proto/settings.proto";
 import "proto/show.proto";
 
 message Project {
@@ -21,7 +22,8 @@ message Project {
 
   string name = 1;
   uint32 version = 2;
-  reserved 3 to 10;
+  Settings settings = 3;
+  reserved 4 to 10;
 
   // Path descriptions
   uint64 active_patch = 18;

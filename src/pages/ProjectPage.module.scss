@@ -1,26 +1,11 @@
 @use '../_vars';
 
-.browser {
+.table {
   @include vars.fill;
-}
+  margin: vars.spacing(2);
 
-.splitPane {
-  @include vars.fill;
-}
-
-.audioFileList {
-  @include vars.fill;
-  border: 1px solid transparent;
-}
-
-.faint {
-  color: vars.$col-text-dim;
-}
-
-.highlightDrop {
-  border-color: vars.$col-interactive;
-}
-
-.audioDetails {
-  padding: vars.spacing(1);
+  th {
+    font-weight: 600;
+    padding-right: vars.spacing(2);
+  }
 }

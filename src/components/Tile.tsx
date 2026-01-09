@@ -10,7 +10,15 @@ import {
   Scene_TileSchema,
   type Scene_Tile,
 } from '@dmx-controller/proto/scene_pb';
-import { createRef, useCallback, useContext, useEffect, useMemo } from 'react';
+import {
+  createRef,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { SiMidi } from 'react-icons/si';
 
 import { ControllerContext } from '../contexts/ControllerContext';
@@ -51,6 +59,8 @@ export function Tile({
   const { controllerName } = useContext(ControllerContext);
   const { palette } = useContext(PaletteContext);
   const tileRef = createRef<HTMLDivElement>();
+  const longPressHandle = useRef<any>(null);
+  const [longPress, setLongPress] = useState(false);
 
   useEffect(() => {
     return listenToTick((t) => {
@@ -134,9 +144,33 @@ export function Tile({
         gridRowStart: y + 1,
         gridRowEnd: y + 2,
       }}
-      onClick={toggle}
+      onMouseDown={(e) => {
+        if (!project.settings?.touchInterface) {
+          toggle();
+          e.stopPropagation();
+        } else {
+          clearTimeout(longPressHandle.current);
+          longPressHandle.current = setTimeout(() => {
+            onSelect();
+            setLongPress(true);
+          }, 500);
+        }
+      }}
+      onMouseUp={(e) => {
+        if (!longPress && project.settings?.touchInterface) {
+          toggle();
+        }
+        clearTimeout(longPressHandle.current);
+        setLongPress(false);
+        e.preventDefault();
+      }}
       draggable={true}
       onDragStart={(e) => {
+        if (!project.settings?.touchInterface) {
+          toggle();
+        }
+        clearTimeout(longPressHandle.current);
+        setLongPress(false);
         onDragTile();
         e.stopPropagation();
       }}
@@ -147,13 +181,16 @@ export function Tile({
       }}
     >
       <div className={styles.contents}>
-        <div
-          className={styles.settingsTriangle}
-          onClick={(e) => {
-            onSelect();
-            e.stopPropagation();
-          }}
-        ></div>
+        {!project.settings?.touchInterface && (
+          <div
+            className={styles.settingsTriangle}
+            onClick={(e) => {
+              onSelect();
+              e.stopPropagation();
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+          ></div>
+        )}
         <div
           className={styles.title}
           style={{ background: background || undefined }}

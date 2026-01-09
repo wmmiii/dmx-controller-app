@@ -1,0 +1,5 @@
+syntax = "proto3";
+
+package dmx_controller;
+
+message Settings { bool touchInterface = 1; }
