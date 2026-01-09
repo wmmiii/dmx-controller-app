@@ -34,6 +34,8 @@ import { rgbwToHex } from '../util/colorUtil';
 import { listenToTick } from '../util/time';
 import styles from './Tile.module.scss';
 
+const DRAG_THRESHOLD_PX = Math.pow(10, 2);
+
 interface TileProps {
   tileId: bigint;
   tile: Scene_Tile;
@@ -59,8 +61,18 @@ export function Tile({
   const { controllerName } = useContext(ControllerContext);
   const { palette } = useContext(PaletteContext);
   const tileRef = createRef<HTMLDivElement>();
+
+  // Touch interface state
   const longPressHandle = useRef<any>(null);
-  const [longPress, setLongPress] = useState(false);
+  const [pointerMode, setPointerMode] = useState<
+    'idle' | 'click' | 'press' | 'drag'
+  >('idle');
+  const [pointerDown, setPointerDown] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+
+  const touch = project.settings?.touchInterface ?? false;
 
   useEffect(() => {
     return listenToTick((t) => {
@@ -135,6 +147,10 @@ export function Tile({
 
   const classes = [styles.tile];
 
+  if (pointerMode === 'press') {
+    classes.push(styles.pressed);
+  }
+
   return (
     <div
       className={classes.join(' ')}
@@ -144,34 +160,55 @@ export function Tile({
         gridRowStart: y + 1,
         gridRowEnd: y + 2,
       }}
-      onMouseDown={(e) => {
-        if (!project.settings?.touchInterface) {
+      onClick={(e) => {
+        if (!touch) {
           toggle();
           e.stopPropagation();
-        } else {
+        }
+      }}
+      onMouseDown={(e) => {
+        if (touch) {
+          setPointerDown({ x: e.clientX, y: e.clientY });
+          setPointerMode('click');
           clearTimeout(longPressHandle.current);
           longPressHandle.current = setTimeout(() => {
-            onSelect();
-            setLongPress(true);
+            // onSelect();
+            setPointerMode('press');
           }, 500);
         }
       }}
       onMouseUp={(e) => {
-        if (!longPress && project.settings?.touchInterface) {
-          toggle();
+        if (touch) {
+          if (pointerMode === 'click') {
+            toggle();
+          } else if (pointerMode === 'press') {
+            onSelect();
+          }
+          clearTimeout(longPressHandle.current);
+          setPointerMode('idle');
         }
-        clearTimeout(longPressHandle.current);
-        setLongPress(false);
         e.preventDefault();
+      }}
+      onMouseMove={(e) => {
+        if (
+          (pointerMode === 'click' || pointerMode === 'press') &&
+          pointerDown
+        ) {
+          const dist =
+            Math.pow(e.clientX - pointerDown.x, 2) +
+            Math.pow(e.clientY - pointerDown.y, 2);
+          if (dist > DRAG_THRESHOLD_PX) {
+            clearTimeout(longPressHandle.current);
+            setPointerMode('drag');
+            onDragTile();
+          }
+        }
       }}
       draggable={true}
       onDragStart={(e) => {
-        if (!project.settings?.touchInterface) {
+        if (!touch) {
           toggle();
         }
-        clearTimeout(longPressHandle.current);
-        setLongPress(false);
-        onDragTile();
         e.stopPropagation();
       }}
       onDragOver={(e) => e.preventDefault()}
@@ -181,7 +218,7 @@ export function Tile({
       }}
     >
       <div className={styles.contents}>
-        {!project.settings?.touchInterface && (
+        {!touch && (
           <div
             className={styles.settingsTriangle}
             onClick={(e) => {

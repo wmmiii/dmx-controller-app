@@ -29,6 +29,13 @@ $triangle-diag: 40px;
   height: $element-size;
   position: relative;
   width: $element-size;
+  transition: 200ms box-shadow;
+
+  &.pressed {
+    box-shadow:
+      0 0 16px vars.$col-accent,
+      0 0 8px vars.$col-accent;
+  }
 
   .contents {
     align-items: center;
