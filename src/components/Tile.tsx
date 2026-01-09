@@ -61,6 +61,9 @@ export function Tile({
   const tileRef = createRef<HTMLDivElement>();
   const longPressHandle = useRef<any>(null);
   const [longPress, setLongPress] = useState(false);
+  const startTouchPos = useRef<{ x: number; y: number } | null>(null);
+  const hasMoved = useRef(false);
+  const isDragging = useRef(false);
 
   useEffect(() => {
     return listenToTick((t) => {
@@ -149,30 +152,75 @@ export function Tile({
           toggle();
           e.stopPropagation();
         } else {
+          // Touch interface: track start position and set up long press timer
+          startTouchPos.current = { x: e.clientX, y: e.clientY };
+          hasMoved.current = false;
+          isDragging.current = false;
           clearTimeout(longPressHandle.current);
           longPressHandle.current = setTimeout(() => {
-            onSelect();
-            setLongPress(true);
+            if (!hasMoved.current && !isDragging.current) {
+              onSelect();
+              setLongPress(true);
+            }
           }, 500);
         }
       }}
-      onMouseUp={(e) => {
-        if (!longPress && project.settings?.touchInterface) {
-          toggle();
+      onMouseMove={(e) => {
+        if (
+          project.settings?.touchInterface &&
+          startTouchPos.current &&
+          !isDragging.current
+        ) {
+          const dx = e.clientX - startTouchPos.current.x;
+          const dy = e.clientY - startTouchPos.current.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+
+          // If moved more than 10 pixels, consider it a drag
+          if (distance > 10) {
+            hasMoved.current = true;
+            clearTimeout(longPressHandle.current);
+            setLongPress(false);
+          }
         }
-        clearTimeout(longPressHandle.current);
-        setLongPress(false);
+      }}
+      onMouseUp={(e) => {
+        if (project.settings?.touchInterface) {
+          if (!longPress && !hasMoved.current && !isDragging.current) {
+            // Short tap without movement
+            toggle();
+          }
+          clearTimeout(longPressHandle.current);
+          setLongPress(false);
+          startTouchPos.current = null;
+          hasMoved.current = false;
+          isDragging.current = false;
+        }
         e.preventDefault();
       }}
-      draggable={true}
+      draggable={!project.settings?.touchInterface || hasMoved.current}
       onDragStart={(e) => {
         if (!project.settings?.touchInterface) {
           toggle();
+        } else {
+          // On touch interface, only allow drag if user has moved
+          if (!hasMoved.current) {
+            e.preventDefault();
+            return;
+          }
+          // Cancel long press and mark as dragging
+          clearTimeout(longPressHandle.current);
+          setLongPress(false);
+          isDragging.current = true;
         }
-        clearTimeout(longPressHandle.current);
-        setLongPress(false);
         onDragTile();
         e.stopPropagation();
+      }}
+      onDragEnd={() => {
+        if (project.settings?.touchInterface) {
+          startTouchPos.current = null;
+          hasMoved.current = false;
+          isDragging.current = false;
+        }
       }}
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => {
