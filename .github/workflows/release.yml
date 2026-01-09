@@ -132,6 +132,10 @@ jobs:
       # Use 'debugging' for development builds. Change to 'app-store-connect' when ready to deploy to the App Store.
       - name: Build Tauri iOS app
         run: pnpm tauri ios build --export-method debugging
+        env:
+          CODE_SIGN_IDENTITY: ''
+          CODE_SIGNING_REQUIRED: 'NO'
+          CODE_SIGNING_ALLOWED: 'NO'
 
       - name: Upload iOS app
         uses: actions/upload-artifact@v4
