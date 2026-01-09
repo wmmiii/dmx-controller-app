@@ -47,7 +47,6 @@ export function performAction(
     case 'setTempo':
       const bpm = Math.floor(value * 127 + 80);
       setBeat(60_000 / bpm);
-      console.log(bpm);
       return true;
     case 'sceneMapping':
       const sceneAction = action.value.actions[project.activeScene.toString()];

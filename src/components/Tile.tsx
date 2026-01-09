@@ -34,7 +34,7 @@ import { rgbwToHex } from '../util/colorUtil';
 import { listenToTick } from '../util/time';
 import styles from './Tile.module.scss';
 
-const DRAG_THRESHOLD_PX = Math.pow(10, 2);
+const DRAG_THRESHOLD_PX = Math.pow(20, 2);
 
 interface TileProps {
   tileId: bigint;
@@ -208,6 +208,7 @@ export function Tile({
       onDragStart={(e) => {
         if (!touch) {
           toggle();
+          onDragTile();
         }
         e.stopPropagation();
       }}

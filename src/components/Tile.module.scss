@@ -92,6 +92,7 @@ $triangle-diag: 40px;
     height: calc(100% - vars.spacing(1));
     justify-content: center;
     overflow: hidden;
+    pointer-events: none;
     padding: vars.spacing(1);
     text-align: center;
     text-shadow:
