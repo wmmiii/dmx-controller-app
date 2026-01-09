@@ -111,38 +111,38 @@ jobs:
           path: src-tauri/target/release/bundle/dmg/*.dmg
           if-no-files-found: error
 
-  build-ios:
-    runs-on: macos-latest
-    needs: check-version
-    if: needs.check-version.outputs.version-changed == 'true'
+  # build-ios:
+  #   runs-on: macos-latest
+  #   needs: check-version
+  #   if: needs.check-version.outputs.version-changed == 'true'
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
 
-      - name: Setup
-        uses: ./.github/setup
+  #     - name: Setup
+  #       uses: ./.github/setup
 
-      - name: Install iOS targets
-        run: rustup target add aarch64-apple-ios
+  #     - name: Install iOS targets
+  #       run: rustup target add aarch64-apple-ios
 
-      - name: Initialize iOS project
-        run: pnpm tauri ios init
+  #     - name: Initialize iOS project
+  #       run: pnpm tauri ios init
 
-      # Use 'debugging' for development builds. Change to 'app-store-connect' when ready to deploy to the App Store.
-      - name: Build Tauri iOS app
-        run: pnpm tauri ios build --export-method debugging
-        env:
-          CODE_SIGN_IDENTITY: ''
-          CODE_SIGNING_REQUIRED: 'NO'
-          CODE_SIGNING_ALLOWED: 'NO'
+  #     # Use 'debugging' for development builds. Change to 'app-store-connect' when ready to deploy to the App Store.
+  #     - name: Build Tauri iOS app
+  #       run: pnpm tauri ios build --export-method debugging
+  #       env:
+  #         CODE_SIGN_IDENTITY: ''
+  #         CODE_SIGNING_REQUIRED: 'NO'
+  #         CODE_SIGNING_ALLOWED: 'NO'
 
-      - name: Upload iOS app
-        uses: actions/upload-artifact@v4
-        with:
-          name: ios-app
-          path: src-tauri/gen/apple/*.ipa
-          if-no-files-found: error
+  #     - name: Upload iOS app
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: ios-app
+  #         path: src-tauri/gen/apple/*.ipa
+  #         if-no-files-found: error
 
   publish-release:
     runs-on: ubuntu-22.04
@@ -170,11 +170,11 @@ jobs:
           name: macos-installer
           path: artifacts
 
-      - name: Download iOS app
-        uses: actions/download-artifact@v4
-        with:
-          name: ios-app
-          path: artifacts
+      # - name: Download iOS app
+      #   uses: actions/download-artifact@v4
+      #   with:
+      #     name: ios-app
+      #     path: artifacts
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -184,7 +184,6 @@ jobs:
           files: artifacts/*
           fail_on_unmatched_files: true
           make_latest: true
-          # Overwrite existing release on manual trigger (useful for handling build flakes)
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
