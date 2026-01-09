@@ -146,7 +146,7 @@ jobs:
 
   publish-release:
     runs-on: ubuntu-22.04
-    needs: [check-version, build-debian, build-windows, build-macos, build-ios]
+    needs: [check-version, build-debian, build-windows, build-macos]
     if: needs.check-version.outputs.version-changed == 'true'
     permissions:
       contents: write
