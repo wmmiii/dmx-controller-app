@@ -1,0 +1,155 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src-tauri/tauri.conf.json'
+  workflow_dispatch:
+
+jobs:
+  check-version:
+    runs-on: ubuntu-22.04
+    outputs:
+      version-changed: ${{ steps.version_check.outputs.changed }}
+      version: ${{ steps.version_check.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check if version changed
+        id: version_check
+        run: |
+          CURRENT_VERSION=$(grep -oP '(?<="version": ")[^"]*' src-tauri/tauri.conf.json)
+          echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "Manual trigger - skipping version check"
+            echo "changed=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          PREVIOUS_VERSION=$(git show HEAD~1:src-tauri/tauri.conf.json | grep -oP '(?<="version": ")[^"]*')
+
+          echo "Current version: $CURRENT_VERSION"
+          echo "Previous version: $PREVIOUS_VERSION"
+
+          if [ "$CURRENT_VERSION" != "$PREVIOUS_VERSION" ]; then
+            echo "Version changed from $PREVIOUS_VERSION to $CURRENT_VERSION"
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "Version unchanged - skipping build"
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+  build-debian:
+    runs-on: ubuntu-22.04
+    needs: check-version
+    if: needs.check-version.outputs.version-changed == 'true'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup
+        uses: ./.github/setup
+
+      - name: Build Tauri app
+        run: pnpm tauri build --bundles deb
+
+      - name: Upload Debian package
+        uses: actions/upload-artifact@v4
+        with:
+          name: debian-package
+          path: src-tauri/target/release/bundle/deb/*.deb
+          if-no-files-found: error
+
+  # TODO: Uncomment when ready to build Windows installers
+  # build-windows:
+  #   runs-on: windows-latest
+  #   needs: check-version
+  #   if: needs.check-version.outputs.version-changed == 'true'
+  #
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
+  #
+  #     - name: Setup
+  #       uses: ./.github/setup
+  #
+  #     - name: Build Tauri app
+  #       run: pnpm tauri build --bundles msi
+  #
+  #     - name: Upload Windows installer
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: windows-installer
+  #         path: src-tauri/target/release/bundle/msi/*.msi
+  #         if-no-files-found: error
+
+  # TODO: Uncomment when ready to build macOS installers
+  # build-macos:
+  #   runs-on: macos-latest
+  #   needs: check-version
+  #   if: needs.check-version.outputs.version-changed == 'true'
+  #
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
+  #
+  #     - name: Setup
+  #       uses: ./.github/setup
+  #
+  #     - name: Build Tauri app
+  #       run: pnpm tauri build --bundles dmg
+  #
+  #     - name: Upload macOS installer
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: macos-installer
+  #         path: src-tauri/target/release/bundle/dmg/*.dmg
+  #         if-no-files-found: error
+
+  publish-release:
+    runs-on: ubuntu-22.04
+    needs: [check-version, build-debian]
+    # TODO: Add build-windows and build-macos to needs array when implemented
+    if: needs.check-version.outputs.version-changed == 'true'
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download Debian package
+        uses: actions/download-artifact@v4
+        with:
+          name: debian-package
+          path: artifacts
+
+      # TODO: Add download steps for Windows and macOS artifacts when implemented
+      # - name: Download Windows installer
+      #   uses: actions/download-artifact@v4
+      #   with:
+      #     name: windows-installer
+      #     path: artifacts
+      #
+      # - name: Download macOS installer
+      #   uses: actions/download-artifact@v4
+      #   with:
+      #     name: macos-installer
+      #     path: artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.check-version.outputs.version }}
+          name: Release v${{ needs.check-version.outputs.version }}
+          files: artifacts/*
+          fail_on_unmatched_files: true
+          make_latest: true
+          # Overwrite existing release on manual trigger (useful for handling build flakes)
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
