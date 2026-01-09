@@ -38,9 +38,9 @@ runs:
         toolchain: stable
 
     - name: Install wasm-pack
-      uses: jetli/wasm-pack-action@v0.4.0
+      uses: taiki-e/install-action@v2
       with:
-        version: 'latest'
+        tool: wasm-pack
 
     - name: Install Tauri system dependencies (Linux only)
       if: runner.os == 'Linux'
