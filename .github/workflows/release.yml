@@ -67,56 +67,53 @@ jobs:
           path: src-tauri/target/release/bundle/deb/*.deb
           if-no-files-found: error
 
-  # TODO: Uncomment when ready to build Windows installers
-  # build-windows:
-  #   runs-on: windows-latest
-  #   needs: check-version
-  #   if: needs.check-version.outputs.version-changed == 'true'
-  #
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v4
-  #
-  #     - name: Setup
-  #       uses: ./.github/setup
-  #
-  #     - name: Build Tauri app
-  #       run: pnpm tauri build --bundles msi
-  #
-  #     - name: Upload Windows installer
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: windows-installer
-  #         path: src-tauri/target/release/bundle/msi/*.msi
-  #         if-no-files-found: error
+  build-windows:
+    runs-on: windows-latest
+    needs: check-version
+    if: needs.check-version.outputs.version-changed == 'true'
 
-  # TODO: Uncomment when ready to build macOS installers
-  # build-macos:
-  #   runs-on: macos-latest
-  #   needs: check-version
-  #   if: needs.check-version.outputs.version-changed == 'true'
-  #
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v4
-  #
-  #     - name: Setup
-  #       uses: ./.github/setup
-  #
-  #     - name: Build Tauri app
-  #       run: pnpm tauri build --bundles dmg
-  #
-  #     - name: Upload macOS installer
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: macos-installer
-  #         path: src-tauri/target/release/bundle/dmg/*.dmg
-  #         if-no-files-found: error
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup
+        uses: ./.github/setup
+
+      - name: Build Tauri app
+        run: pnpm tauri build --bundles msi
+
+      - name: Upload Windows installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: src-tauri/target/release/bundle/msi/*.msi
+          if-no-files-found: error
+
+  build-macos:
+    runs-on: macos-latest
+    needs: check-version
+    if: needs.check-version.outputs.version-changed == 'true'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup
+        uses: ./.github/setup
+
+      - name: Build Tauri app
+        run: pnpm tauri build --bundles dmg
+
+      - name: Upload macOS installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-installer
+          path: src-tauri/target/release/bundle/dmg/*.dmg
+          if-no-files-found: error
 
   publish-release:
     runs-on: ubuntu-22.04
-    needs: [check-version, build-debian]
-    # TODO: Add build-windows and build-macos to needs array when implemented
+    needs: [check-version, build-debian, build-windows, build-macos]
     if: needs.check-version.outputs.version-changed == 'true'
     permissions:
       contents: write
@@ -128,18 +125,17 @@ jobs:
           name: debian-package
           path: artifacts
 
-      # TODO: Add download steps for Windows and macOS artifacts when implemented
-      # - name: Download Windows installer
-      #   uses: actions/download-artifact@v4
-      #   with:
-      #     name: windows-installer
-      #     path: artifacts
-      #
-      # - name: Download macOS installer
-      #   uses: actions/download-artifact@v4
-      #   with:
-      #     name: macos-installer
-      #     path: artifacts
+      - name: Download Windows installer
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-installer
+          path: artifacts
+
+      - name: Download macOS installer
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-installer
+          path: artifacts
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

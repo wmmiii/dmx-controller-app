@@ -17,9 +17,21 @@ runs:
       shell: bash
       run: pnpm install
 
-    - name: Install protoc
+    - name: Install protoc (Linux)
+      if: runner.os == 'Linux'
       shell: bash
       run: sudo apt install -y protobuf-compiler
+
+    - name: Install protoc (Windows)
+      if: runner.os == 'Windows'
+      shell: bash
+      run: |
+        choco install protoc -y
+
+    - name: Install protoc (macOS)
+      if: runner.os == 'macOS'
+      shell: bash
+      run: brew install protobuf
 
     - uses: actions-rs/toolchain@v1
       with:
@@ -30,7 +42,8 @@ runs:
       with:
         version: 'latest'
 
-    - name: Install Tauri system dependencies
+    - name: Install Tauri system dependencies (Linux only)
+      if: runner.os == 'Linux'
       shell: bash
       run: |
         sudo apt-get update
