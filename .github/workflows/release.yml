@@ -111,9 +111,38 @@ jobs:
           path: src-tauri/target/release/bundle/dmg/*.dmg
           if-no-files-found: error
 
+  build-ios:
+    runs-on: macos-latest
+    needs: check-version
+    if: needs.check-version.outputs.version-changed == 'true'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup
+        uses: ./.github/setup
+
+      - name: Install iOS targets
+        run: rustup target add aarch64-apple-ios
+
+      - name: Initialize iOS project
+        run: pnpm tauri ios init
+
+      # Use 'debugging' for development builds. Change to 'app-store-connect' when ready to deploy to the App Store.
+      - name: Build Tauri iOS app
+        run: pnpm tauri ios build --export-method debugging
+
+      - name: Upload iOS app
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-app
+          path: src-tauri/gen/apple/*.ipa
+          if-no-files-found: error
+
   publish-release:
     runs-on: ubuntu-22.04
-    needs: [check-version, build-debian, build-windows, build-macos]
+    needs: [check-version, build-debian, build-windows, build-macos, build-ios]
     if: needs.check-version.outputs.version-changed == 'true'
     permissions:
       contents: write
@@ -135,6 +164,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: macos-installer
+          path: artifacts
+
+      - name: Download iOS app
+        uses: actions/download-artifact@v4
+        with:
+          name: ios-app
           path: artifacts
 
       - name: Create GitHub Release
