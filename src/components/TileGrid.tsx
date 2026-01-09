@@ -24,7 +24,7 @@ export function TileGrid({
   maxY,
 }: TileGridProps): JSX.Element {
   const { project, save, update } = useContext(ProjectContext);
-  const [draggingTile, setDraggingTile] = useState<Scene_TileMap | null>(null);
+  const [draggingTileId, setDraggingTileId] = useState<bigint | null>(null);
 
   const scene = useMemo(
     () => project?.scenes[sceneId.toString()],
@@ -59,12 +59,12 @@ export function TileGrid({
                 key={x + ' ' + y}
                 tileId={mapping.id}
                 tile={mapping.tile!}
-                onDragTile={() => setDraggingTile(mapping)}
+                onDragTile={() => setDraggingTileId(mapping.id)}
                 onDropTile={() => {
-                  if (draggingTile) {
+                  if (draggingTileId) {
                     save(`Rearrange tiles in scene ${scene.name}.`);
                   }
-                  setDraggingTile(null);
+                  setDraggingTileId(null);
                 }}
                 onSelect={() => onSelectId(mapping.id)}
                 x={x}
@@ -85,10 +85,15 @@ export function TileGrid({
                 }}
                 onClick={() => setAddTileIndex({ x, y })}
                 onDragOver={(e) => {
-                  if (draggingTile) {
-                    draggingTile.x = x;
-                    draggingTile.y = y;
-                    update();
+                  if (draggingTileId) {
+                    const tile = scene.tileMap.find(
+                      (t) => t.id === draggingTileId,
+                    );
+                    if (tile) {
+                      tile.x = x;
+                      tile.y = y;
+                      update();
+                    }
                   }
                   e.stopPropagation();
                   e.preventDefault();
