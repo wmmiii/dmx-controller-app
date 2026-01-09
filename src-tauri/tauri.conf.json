@@ -1,6 +1,6 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "dmx_controller_app",
+  "productName": "DMX Controller App",
   "version": "0.1.0",
   "identifier": "app.dmx-controller",
   "build": {
