@@ -7,7 +7,12 @@ type VersatileState = 'idle' | 'click' | 'press' | 'drag';
 
 export const VersatileContainerContext = createContext({
   activeElement: null as any,
-  mouseDown: (_element: any, _x: number, _y: number) => {},
+  mouseDown: (
+    _element: any,
+    _onDragComplete: (() => void) | undefined,
+    _x: number,
+    _y: number,
+  ) => {},
   state: 'idle' as VersatileState,
   reset: () => {},
 });
@@ -22,14 +27,23 @@ export function VersatileContainer({
   children,
 }: DragAndDropProviderProps) {
   const [state, setState] = useState<VersatileState>('idle');
-  const mouseDown = useRef<{ timeout: any; x: number; y: number } | null>(null);
+  const mouseDown = useRef<{
+    timeout: any;
+    onDragComplete: (() => void) | undefined;
+    x: number;
+    y: number;
+  } | null>(null);
   const [activeElement, setActiveElement] = useState(null);
 
   const reset = () => {
+    const onDragComplete = mouseDown.current?.onDragComplete;
     clearTimeout(mouseDown.current?.timeout);
     mouseDown.current = null;
     setState('idle');
     setActiveElement(null);
+    if (onDragComplete) {
+      onDragComplete();
+    }
   };
 
   return (
@@ -50,12 +64,13 @@ export function VersatileContainer({
       <VersatileContainerContext.Provider
         value={{
           activeElement,
-          mouseDown: (element, x, y) => {
+          mouseDown: (element, onDragComplete, x, y) => {
             setActiveElement(element);
             mouseDown.current = {
               timeout: setTimeout(() => {
                 setState('press');
               }, PRESS_TIMEOUT_MS),
+              onDragComplete,
               x,
               y,
             };

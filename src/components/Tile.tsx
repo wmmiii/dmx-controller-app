@@ -30,22 +30,13 @@ import { VersatileElement } from './VersatileElement';
 interface TileProps {
   tileId: bigint;
   tile: Scene_Tile;
-  onDragOver?: (dragId: bigint) => void;
   onSelect: () => void;
   x: number;
   y: number;
   priority: number;
 }
 
-export function Tile({
-  tileId,
-  tile,
-  onDragOver,
-  onSelect,
-  x,
-  y,
-  priority,
-}: TileProps) {
+export function Tile({ tileId, tile, onSelect, x, y, priority }: TileProps) {
   const { project, save } = useContext(ProjectContext);
   const { controllerName } = useContext(ControllerContext);
   const { palette } = useContext(PaletteContext);
@@ -138,7 +129,7 @@ export function Tile({
       onClick={toggle}
       onPress={touch ? onSelect : undefined}
       element={tileId}
-      onDragOver={onDragOver}
+      onDragComplete={() => save(`Move ${tile.name} tile.`)}
     >
       <div className={styles.contents}>
         {!touch && (

@@ -9,6 +9,7 @@ interface VersatileElementProps {
   onClick?: () => void;
   onPress?: () => void;
   onDragOver?: (element: any) => void;
+  onDragComplete?: () => void;
   children: React.ReactNode;
 }
 
@@ -19,6 +20,7 @@ export function VersatileElement({
   onClick,
   onPress,
   onDragOver,
+  onDragComplete,
   children,
 }: VersatileElementProps) {
   const { activeElement, mouseDown, state, reset } = useContext(
@@ -50,12 +52,13 @@ export function VersatileElement({
       style={style}
       onMouseDown={(e) => {
         if (element) {
-          mouseDown(element, e.clientX, e.clientY);
+          mouseDown(element, onDragComplete, e.clientX, e.clientY);
         } else if (onClick) {
           onClick();
         }
+        e.stopPropagation();
       }}
-      onMouseUp={() => {
+      onMouseUp={(e) => {
         if (state === 'click' && onClick) {
           onClick();
         } else if (state === 'press') {
@@ -66,8 +69,9 @@ export function VersatileElement({
           }
         }
         reset();
+        e.stopPropagation();
       }}
-      onMouseMove={() => {
+      onMouseMove={(e) => {
         if (
           onDragOver &&
           state === 'drag' &&
@@ -75,6 +79,7 @@ export function VersatileElement({
           activeElement !== element
         ) {
           onDragOver(activeElement);
+          e.stopPropagation();
         }
       }}
     >
