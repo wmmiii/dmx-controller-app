@@ -21,6 +21,10 @@ $triangle-diag: 40px;
   }
 }
 
+.tile {
+  touch-action: none;
+}
+
 .tile,
 .tile-placeholder {
   border-radius: vars.$dim-border-radius;

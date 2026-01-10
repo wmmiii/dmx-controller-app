@@ -31,12 +31,14 @@
   box-shadow:
     0 0 16px white,
     0 0 8px white;
-  transition: 50ms box-shadow;
   cursor: grabbing;
+  touch-action: none;
+  transition: 50ms box-shadow;
 }
 
 .drag {
-  animation: wiggle 200ms infinite;
   animation-timing-function: ease-in-out;
+  animation: wiggle 200ms infinite;
   cursor: grabbing;
+  touch-action: none;
 }

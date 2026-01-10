@@ -1,4 +1,5 @@
-import { createContext, useRef, useState } from 'react';
+import { createContext, useEffect, useRef, useState } from 'react';
+import styles from './VersatileContainer.module.scss';
 
 const PRESS_TIMEOUT_MS = 500;
 const DRAG_DISTANCE_PX_SQ = Math.pow(20, 2);
@@ -35,38 +36,49 @@ export function VersatileContainer({
   } | null>(null);
   const [activeElement, setActiveElement] = useState(null);
 
+  useEffect(() => {
+    if (state === 'press' || state === 'drag') {
+      const root = document.body;
+      root.classList.add(styles.suppressTouch);
+      return () => root.classList.remove(styles.suppressTouch);
+    }
+    return () => {};
+  }, [state]);
+
   const reset = () => {
-    const onDragComplete = mouseDown.current?.onDragComplete;
+    setState((state) => {
+      if (state === 'drag' && mouseDown.current?.onDragComplete) {
+        mouseDown.current.onDragComplete();
+      }
+      return 'idle';
+    });
     clearTimeout(mouseDown.current?.timeout);
     mouseDown.current = null;
-    setState('idle');
     setActiveElement(null);
-    if (onDragComplete) {
-      onDragComplete();
-    }
   };
 
-  const pointerMove = (x: number, y: number) => {
-    const pos = mouseDown.current;
-    if (pos && state !== 'idle' && state !== 'drag') {
-      const dist = Math.pow(x - pos.x, 2) + Math.pow(y - pos.y, 2);
-      if (dist > DRAG_DISTANCE_PX_SQ) {
-        setState('drag');
-      }
-    }
-  };
+  const classes = [];
+  if (state === 'press' || state === 'drag') {
+    classes.push(styles.suppressTouch);
+  }
+  if (className) {
+    classes.push(className);
+  }
 
   return (
     <div
-      className={className}
-      onMouseMove={(e) => {
-        pointerMove(e.clientX, e.clientY);
+      className={classes.join(' ')}
+      onPointerMove={(e) => {
+        const pos = mouseDown.current;
+        if (pos && state !== 'idle' && state !== 'drag') {
+          const dist =
+            Math.pow(e.clientX - pos.x, 2) + Math.pow(e.clientY - pos.y, 2);
+          if (dist > DRAG_DISTANCE_PX_SQ) {
+            setState('drag');
+          }
+        }
       }}
-      onTouchMove={(e) => {
-        pointerMove(e.touches[0].clientX, e.touches[0].clientY);
-      }}
-      onMouseLeave={reset}
-      onTouchCancel={reset}
+      onPointerLeave={reset}
     >
       <VersatileContainerContext.Provider
         value={{
