@@ -1,10 +1,12 @@
 import { Scene_TileMap } from '@dmx-controller/proto/scene_pb';
-import { JSX, useContext, useMemo, useState } from 'react';
+import { JSX, useContext, useMemo } from 'react';
 
 import { ProjectContext } from '../contexts/ProjectContext';
 
+import { VersatileContainer } from '../contexts/VersatileContianer';
 import { Tile } from './Tile';
 import styles from './Tile.module.scss';
+import { VersatileElement } from './VersatileElement';
 
 interface TileGridProps {
   className?: string;
@@ -23,8 +25,7 @@ export function TileGrid({
   maxX,
   maxY,
 }: TileGridProps): JSX.Element {
-  const { project, save, update } = useContext(ProjectContext);
-  const [dragId, setDragId] = useState<bigint | null>(null);
+  const { project, update } = useContext(ProjectContext);
 
   const scene = useMemo(
     () => project?.scenes[sceneId.toString()],
@@ -50,7 +51,7 @@ export function TileGrid({
   }
 
   return (
-    <div className={classes.join(' ')}>
+    <VersatileContainer className={classes.join(' ')}>
       {map.map((r, y) =>
         r.map((mapping, x) => {
           if (mapping != null) {
@@ -59,13 +60,6 @@ export function TileGrid({
                 key={x + ' ' + y}
                 tileId={mapping.id}
                 tile={mapping.tile!}
-                onDragTile={() => setDragId(mapping.id)}
-                onDropTile={() => {
-                  if (dragId) {
-                    save(`Rearrange tiles in scene ${scene.name}.`);
-                  }
-                  setDragId(null);
-                }}
                 onSelect={() => onSelectId(mapping.id)}
                 x={x}
                 y={y}
@@ -74,7 +68,7 @@ export function TileGrid({
             );
           } else {
             return (
-              <div
+              <VersatileElement
                 key={x + ' ' + y}
                 className={styles.tilePlaceholder}
                 style={{
@@ -84,25 +78,21 @@ export function TileGrid({
                   gridRowEnd: y + 2,
                 }}
                 onClick={() => setAddTileIndex({ x, y })}
-                onDragOver={(e) => {
-                  if (dragId) {
-                    const tile = scene.tileMap.find((t) => t.id === dragId);
-                    if (tile) {
-                      tile.x = x;
-                      tile.y = y;
-                      update();
-                    }
+                onDragOver={(id) => {
+                  const tile = scene.tileMap.find((t) => t.id === id);
+                  if (tile) {
+                    tile.x = x;
+                    tile.y = y;
+                    update();
                   }
-                  e.stopPropagation();
-                  e.preventDefault();
                 }}
               >
                 <div className={styles.contents}></div>
-              </div>
+              </VersatileElement>
             );
           }
         }),
       )}
-    </div>
+    </VersatileContainer>
   );
 }

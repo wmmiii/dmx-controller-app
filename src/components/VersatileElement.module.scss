@@ -1,0 +1,42 @@
+@use '../_vars';
+
+@keyframes wiggle {
+  0% {
+    transform: rotate(2deg);
+  }
+  50% {
+    transform: rotate(-2deg);
+  }
+  100% {
+    transform: rotate(2deg);
+  }
+}
+
+.element {
+  cursor: pointer;
+  transition: 500ms box-shadow;
+  user-select: none;
+}
+
+.click {
+  box-shadow:
+    0 0 16px vars.$col-accent,
+    0 0 8px vars.$col-accent;
+  cursor: grab;
+}
+
+.press {
+  animation: wiggle 200ms infinite;
+  animation-timing-function: ease-in-out;
+  box-shadow:
+    0 0 16px white,
+    0 0 8px white;
+  transition: 50ms box-shadow;
+  cursor: grabbing;
+}
+
+.drag {
+  animation: wiggle 200ms infinite;
+  animation-timing-function: ease-in-out;
+  cursor: grabbing;
+}

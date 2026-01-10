@@ -10,15 +10,7 @@ import {
   Scene_TileSchema,
   type Scene_Tile,
 } from '@dmx-controller/proto/scene_pb';
-import {
-  createRef,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { createRef, useCallback, useContext, useEffect, useMemo } from 'react';
 import { SiMidi } from 'react-icons/si';
 
 import { ControllerContext } from '../contexts/ControllerContext';
@@ -33,14 +25,12 @@ import { hasAction } from '../external_controller/externalController';
 import { rgbwToHex } from '../util/colorUtil';
 import { listenToTick } from '../util/time';
 import styles from './Tile.module.scss';
-
-const DRAG_THRESHOLD_PX = Math.pow(20, 2);
+import { VersatileElement } from './VersatileElement';
 
 interface TileProps {
   tileId: bigint;
   tile: Scene_Tile;
-  onDragTile: () => void;
-  onDropTile: () => void;
+  onDragOver?: (dragId: bigint) => void;
   onSelect: () => void;
   x: number;
   y: number;
@@ -50,8 +40,7 @@ interface TileProps {
 export function Tile({
   tileId,
   tile,
-  onDragTile,
-  onDropTile,
+  onDragOver,
   onSelect,
   x,
   y,
@@ -62,15 +51,12 @@ export function Tile({
   const { palette } = useContext(PaletteContext);
   const tileRef = createRef<HTMLDivElement>();
 
-  // Touch interface state
-  const longPressHandle = useRef<any>(null);
-  const [pointerMode, setPointerMode] = useState<
-    'idle' | 'click' | 'press' | 'drag'
-  >('idle');
-  const [pointerDown, setPointerDown] = useState<{
-    x: number;
-    y: number;
-  } | null>(null);
+  const toggle = useCallback(() => {
+    const [modified, enabled] = toggleTile(tile, project.liveBeat!);
+    if (modified) {
+      save(`${enabled ? 'Enable' : 'Disable'} tile ${tile.name}.`);
+    }
+  }, [tile, toJsonString(BeatMetadataSchema, project.liveBeat!), save]);
 
   const touch = project.settings?.touchInterface ?? false;
 
@@ -138,21 +124,10 @@ export function Tile({
     return gradient + ')';
   }, [details, palette]);
 
-  const toggle = useCallback(() => {
-    const [modified, enabled] = toggleTile(tile, project.liveBeat!);
-    if (modified) {
-      save(`${enabled ? 'Enable' : 'Disable'} tile ${tile.name}.`);
-    }
-  }, [tile, toJsonString(BeatMetadataSchema, project.liveBeat!), save]);
-
   const classes = [styles.tile];
 
-  if (pointerMode === 'press') {
-    classes.push(styles.pressed);
-  }
-
   return (
-    <div
+    <VersatileElement
       className={classes.join(' ')}
       style={{
         gridColumnStart: x + 1,
@@ -160,63 +135,10 @@ export function Tile({
         gridRowStart: y + 1,
         gridRowEnd: y + 2,
       }}
-      onClick={(e) => {
-        if (!touch) {
-          toggle();
-          e.stopPropagation();
-        }
-      }}
-      onMouseDown={(e) => {
-        if (touch) {
-          setPointerDown({ x: e.clientX, y: e.clientY });
-          setPointerMode('click');
-          clearTimeout(longPressHandle.current);
-          longPressHandle.current = setTimeout(() => {
-            // onSelect();
-            setPointerMode('press');
-          }, 500);
-        }
-      }}
-      onMouseUp={(e) => {
-        if (touch) {
-          if (pointerMode === 'click') {
-            toggle();
-          } else if (pointerMode === 'press') {
-            onSelect();
-          }
-          clearTimeout(longPressHandle.current);
-          setPointerMode('idle');
-        }
-        e.preventDefault();
-      }}
-      onMouseMove={(e) => {
-        if (
-          (pointerMode === 'click' || pointerMode === 'press') &&
-          pointerDown
-        ) {
-          const dist =
-            Math.pow(e.clientX - pointerDown.x, 2) +
-            Math.pow(e.clientY - pointerDown.y, 2);
-          if (dist > DRAG_THRESHOLD_PX) {
-            clearTimeout(longPressHandle.current);
-            setPointerMode('drag');
-            onDragTile();
-          }
-        }
-      }}
-      draggable={true}
-      onDragStart={(e) => {
-        if (!touch) {
-          toggle();
-          onDragTile();
-        }
-        e.stopPropagation();
-      }}
-      onDragOver={(e) => e.preventDefault()}
-      onDrop={(e) => {
-        onDropTile();
-        e.stopPropagation();
-      }}
+      onClick={toggle}
+      onPress={touch ? onSelect : undefined}
+      element={tileId}
+      onDragOver={onDragOver}
     >
       <div className={styles.contents}>
         {!touch && (
@@ -244,7 +166,7 @@ export function Tile({
         )}
       </div>
       <div ref={tileRef} className={styles.border}></div>
-    </div>
+    </VersatileElement>
   );
 }
 
