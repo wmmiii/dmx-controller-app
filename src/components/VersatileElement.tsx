@@ -3,8 +3,8 @@ import { VersatileContainerContext } from '../contexts/VersatileContianer';
 import styles from './VersatileElement.module.scss';
 
 interface VersatileElementProps {
-  className: string;
-  style: CSSProperties;
+  className?: string;
+  style?: CSSProperties;
   element?: any;
   onClick?: () => void;
   onPress?: () => void;

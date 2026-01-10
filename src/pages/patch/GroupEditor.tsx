@@ -11,7 +11,9 @@ import { Button, IconButton } from '../../components/Button';
 import { TextInput } from '../../components/Input';
 import { getOutputTargetName } from '../../components/OutputSelector';
 import { HorizontalSplitPane } from '../../components/SplitPane';
+import { VersatileElement } from '../../components/VersatileElement';
 import { ProjectContext } from '../../contexts/ProjectContext';
+import { VersatileContainer } from '../../contexts/VersatileContianer';
 import {
   addToGroup,
   deleteTargetGroup,
@@ -92,10 +94,6 @@ function GroupEditorPane({
 }: GroupEditorPaneProps) {
   const { project, save, update } = useContext(ProjectContext);
 
-  const [draggingMember, setDraggingMember] = useState<OutputTarget | null>(
-    null,
-  );
-
   useEffect(
     () =>
       setRenderFunctions({
@@ -166,18 +164,10 @@ function GroupEditorPane({
           <BiTrash />
         </IconButton>
       </div>
-      <div className={styles.members}>
-        <div
+      <VersatileContainer className={styles.members}>
+        <VersatileElement
           className={styles.outMembers}
-          onDragOver={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-          }}
-          onDragEnter={(e) => {
-            if (!draggingMember) {
-              return;
-            }
-
+          onDragOver={(draggingMember) => {
             group.targets = group.targets.filter(
               (t) => !equals(OutputTargetSchema, t, draggingMember),
             );
@@ -185,71 +175,65 @@ function GroupEditorPane({
             save(
               `Remove member ${getOutputTargetName(project, draggingMember)} from group ${group.name}.`,
             );
-            e.preventDefault();
-            e.stopPropagation();
           }}
         >
           <div className={styles.header}>Not in group</div>
-          <ul>
+          <div className={styles.list}>
             {applicableMembers.map((t, i) => (
-              <li
+              <VersatileElement
                 key={i}
-                draggable={true}
-                onDragStart={(e) => {
-                  setDraggingMember(t);
-                  e.stopPropagation();
+                className={styles.listElement}
+                element={t}
+                onClick={() => {
+                  if (addToGroupImpl(t)) {
+                    save(
+                      `Add member ${getOutputTargetName(project, t)} to group ${group.name}.`,
+                    );
+                  }
                 }}
-                onDragEnd={(e) => {
-                  setDraggingMember(null);
-                  e.stopPropagation();
+                onDragComplete={() => {
+                  save(
+                    `Modify group membership for ${getOutputTargetName(project, t)}.`,
+                  );
                 }}
               >
                 {getOutputTargetName(project, t)}
-              </li>
+              </VersatileElement>
             ))}
-          </ul>
-        </div>
-        <div
+          </div>
+        </VersatileElement>
+        <VersatileElement
           className={styles.inMembers}
-          onDragEnter={(e) => {
-            if (!draggingMember) {
-              return;
-            }
-
+          onDragOver={(draggingMember) => {
             if (addToGroupImpl(draggingMember)) {
               save(
                 `Add member ${getOutputTargetName(project, draggingMember)} to group ${group.name}.`,
               );
             }
-            e.preventDefault();
-            e.stopPropagation();
-          }}
-          onDragOver={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
           }}
         >
           <div className={styles.header}>In group</div>
-          <ol>
+          <div className={styles.list}>
             {group.targets.map((t, i) => (
-              <li
+              <VersatileElement
                 key={i}
-                draggable={true}
-                onDragStart={(e) => {
-                  setDraggingMember(t);
-                  e.stopPropagation();
-                }}
-                onDragEnd={(e) => {
-                  setDraggingMember(null);
-                  e.stopPropagation();
-                }}
-                onDragEnter={(e) => {
-                  if (!draggingMember) {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    return;
-                  }
+                className={styles.listElement}
+                element={t}
+                onClick={() => {
+                  group.targets = group.targets.filter(
+                    (ot) => !equals(OutputTargetSchema, ot, t),
+                  );
 
+                  save(
+                    `Remove member ${getOutputTargetName(project, t)} from group ${group.name}.`,
+                  );
+                }}
+                onDragComplete={() => {
+                  save(
+                    `Modify group membership for ${getOutputTargetName(project, t)}.`,
+                  );
+                }}
+                onDragOver={(draggingMember) => {
                   const otherIndex = group.targets.findIndex((t) =>
                     equals(OutputTargetSchema, t, draggingMember),
                   );
@@ -259,16 +243,14 @@ function GroupEditorPane({
                     save(`Rearrange members of ${group.name}.`);
                     update();
                   }
-                  e.stopPropagation();
-                  e.preventDefault();
                 }}
               >
                 {getOutputTargetName(project, t)}
-              </li>
+              </VersatileElement>
             ))}
-          </ol>
-        </div>
-      </div>
+          </div>
+        </VersatileElement>
+      </VersatileContainer>
     </div>
   );
 }

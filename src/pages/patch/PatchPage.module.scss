@@ -137,8 +137,7 @@ $channel-size: 100px;
     top: 0;
     width: calc(50% - vars.spacing(1));
 
-    ul,
-    ol {
+    .list {
       border: 1px solid vars.$col-border-lower;
       flex: 1;
       list-style: none;
@@ -147,7 +146,7 @@ $channel-size: 100px;
       padding: 0 vars.spacing(1);
     }
 
-    li {
+    .listElement {
       cursor: grab;
 
       &:hover {
