@@ -42,7 +42,7 @@ export function VersatileElement({
   }, [state, onDragOver, activeElement, element, elementRef]);
 
   const classes = [styles.element];
-  if (element !== null && activeElement === element) {
+  if (element != null && activeElement === element) {
     if (state === 'click' && onPress) {
       classes.push(styles.click);
     } else if (state === 'press') {
@@ -66,7 +66,9 @@ export function VersatileElement({
       className={classes.join(' ')}
       style={style}
       onPointerDown={(e) => {
-        mouseDown(element, onDragComplete, e.clientX, e.clientY);
+        if (onClick || onPress) {
+          mouseDown(element, onDragComplete, e.clientX, e.clientY);
+        }
       }}
       onPointerUp={(e) => {
         if (state === 'click' && onClick) {

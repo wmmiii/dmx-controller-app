@@ -1,4 +1,9 @@
-import { create, equals } from '@bufbuild/protobuf';
+import {
+  create,
+  equals,
+  fromJsonString,
+  toJsonString,
+} from '@bufbuild/protobuf';
 
 import {
   OutputTarget,
@@ -169,12 +174,9 @@ function GroupEditorPane({
           className={styles.outMembers}
           onDragOver={(draggingMember) => {
             group.targets = group.targets.filter(
-              (t) => !equals(OutputTargetSchema, t, draggingMember),
+              (t) => toJsonString(OutputTargetSchema, t) !== draggingMember,
             );
-
-            save(
-              `Remove member ${getOutputTargetName(project, draggingMember)} from group ${group.name}.`,
-            );
+            update();
           }}
         >
           <div className={styles.header}>Not in group</div>
@@ -183,7 +185,7 @@ function GroupEditorPane({
               <VersatileElement
                 key={i}
                 className={styles.listElement}
-                element={t}
+                element={toJsonString(OutputTargetSchema, t)}
                 onClick={() => {
                   if (addToGroupImpl(t)) {
                     save(
@@ -205,11 +207,8 @@ function GroupEditorPane({
         <VersatileElement
           className={styles.inMembers}
           onDragOver={(draggingMember) => {
-            if (addToGroupImpl(draggingMember)) {
-              save(
-                `Add member ${getOutputTargetName(project, draggingMember)} to group ${group.name}.`,
-              );
-            }
+            addToGroupImpl(fromJsonString(OutputTargetSchema, draggingMember));
+            update();
           }}
         >
           <div className={styles.header}>In group</div>
@@ -218,7 +217,7 @@ function GroupEditorPane({
               <VersatileElement
                 key={i}
                 className={styles.listElement}
-                element={t}
+                element={toJsonString(OutputTargetSchema, t)}
                 onClick={() => {
                   group.targets = group.targets.filter(
                     (ot) => !equals(OutputTargetSchema, ot, t),
@@ -234,13 +233,17 @@ function GroupEditorPane({
                   );
                 }}
                 onDragOver={(draggingMember) => {
-                  const otherIndex = group.targets.findIndex((t) =>
-                    equals(OutputTargetSchema, t, draggingMember),
+                  const otherIndex = group.targets.findIndex(
+                    (t) =>
+                      toJsonString(OutputTargetSchema, t) === draggingMember,
                   );
                   if (otherIndex > -1) {
                     group.targets.splice(otherIndex, 1);
-                    group.targets.splice(i, 0, draggingMember);
-                    save(`Rearrange members of ${group.name}.`);
+                    group.targets.splice(
+                      i,
+                      0,
+                      fromJsonString(OutputTargetSchema, draggingMember),
+                    );
                     update();
                   }
                 }}

@@ -2,13 +2,19 @@
 
 @keyframes wiggle {
   0% {
-    transform: rotate(2deg);
+    transform: translate(2px, 2px);
+  }
+  25% {
+    transform: translate(-2px, 2px);
   }
   50% {
-    transform: rotate(-2deg);
+    transform: translate(-2px, -2px);
+  }
+  75% {
+    transform: translate(2px, -2px);
   }
   100% {
-    transform: rotate(2deg);
+    transform: translate(2px, 2px);
   }
 }
 
@@ -26,8 +32,7 @@
 }
 
 .press {
-  animation: wiggle 200ms infinite;
-  animation-timing-function: ease-in-out;
+  animation: wiggle 300ms infinite;
   box-shadow:
     0 0 16px white,
     0 0 8px white;
@@ -37,8 +42,7 @@
 }
 
 .drag {
-  animation-timing-function: ease-in-out;
-  animation: wiggle 200ms infinite;
+  animation: wiggle 300ms infinite;
   cursor: grabbing;
   touch-action: none;
 }
