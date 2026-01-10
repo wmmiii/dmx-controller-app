@@ -56,7 +56,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
   const [lastLoad, setLastLoad] = useState(new Date());
   const [lastOperation, setLastOperation] = useState('');
   const operationStack = useRef<Operation[]>([]);
-  const [operationIndex, setOperationIndex] = useState<number>(-1);
+  const operationIndexRef = useRef(-1);
 
   // Expose project globally for debugging purposes.
   useEffect(() => {
@@ -99,7 +99,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
               description: 'Open project.',
             },
           ];
-          setOperationIndex(0);
+          operationIndexRef.current = 0;
         }
       } catch (ex) {
         console.error('Could not open project!', ex);
@@ -146,8 +146,8 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
       if (undoable !== false) {
         // Remove all redo future operations & push current operation.
         operationStack.current.splice(
-          operationIndex + 1,
-          operationStack.current.length - operationIndex - 1,
+          operationIndexRef.current + 1,
+          operationStack.current.length - operationIndexRef.current - 1,
         );
 
         operationStack.current.push({
@@ -163,13 +163,13 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
             operationStack.current.length - MAX_UNDO,
           );
         }
-        setOperationIndex(operationStack.current.length - 1);
+        operationIndexRef.current = operationStack.current.length - 1;
       }
 
       setProject(clone(ProjectSchema, projectRef.current));
       setLastOperation(changeDescription);
     },
-    [projectRef, operationStack, operationIndex, setProject, setOperationIndex],
+    [projectRef, operationStack, operationIndexRef, setProject],
   );
 
   const saveAssetsImpl = useCallback(async (project: Project) => {
@@ -194,50 +194,39 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
     if (project == null) {
       throw new Error('Tried to undo without project loaded!');
     }
-    if (operationIndex > 0) {
-      const state = operationStack.current[operationIndex - 1].projectState;
-      const description = operationStack.current[operationIndex].description;
+    if (operationIndexRef.current > 0) {
+      const state =
+        operationStack.current[operationIndexRef.current - 1].projectState;
+      const description =
+        operationStack.current[operationIndexRef.current].description;
       const p = fromBinary(ProjectSchema, state) as Project;
       await saveImpl(p, `Undo: ${description}`);
-      setOperationIndex(operationIndex - 1);
+      operationIndexRef.current -= 1;
       setProject(
         create(ProjectSchema, { ...p, assets: project.assets }) as Project,
       );
       setLastOperation(`Undo: ${description}`);
     }
-  }, [
-    operationIndex,
-    operationStack,
-    project,
-    setOperationIndex,
-    setProject,
-    saveImpl,
-  ]);
+  }, [operationIndexRef, operationStack, project, setProject, saveImpl]);
 
   const redo = useCallback(async () => {
     if (project == null) {
       throw new Error('Tried to redo without project loaded!');
     }
-    if (operationIndex < operationStack.current.length - 1) {
-      const state = operationStack.current[operationIndex + 1].projectState;
+    if (operationIndexRef.current < operationStack.current.length - 1) {
+      const state =
+        operationStack.current[operationIndexRef.current + 1].projectState;
       const description =
-        operationStack.current[operationIndex + 1].description;
+        operationStack.current[operationIndexRef.current + 1].description;
       const p = fromBinary(ProjectSchema, state) as Project;
       await saveImpl(p, `Redo: ${description}`);
-      setOperationIndex(operationIndex + 1);
+      operationIndexRef.current += 1;
       setProject(
         create(ProjectSchema, { ...p, assets: project.assets }) as Project,
       );
       setLastOperation(`Redo: ${description}`);
     }
-  }, [
-    operationIndex,
-    operationStack,
-    project,
-    setOperationIndex,
-    setProject,
-    saveImpl,
-  ]);
+  }, [operationIndexRef, operationStack, project, setProject, saveImpl]);
 
   const downloadProject = useCallback(() => {
     if (project == null) {
@@ -258,7 +247,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
       await saveImpl(p, 'Open project.');
       setProject(p);
       setLastLoad(new Date());
-      setOperationIndex(0);
+      operationIndexRef.current = 0;
       operationStack.current = [
         {
           projectState: projectBlob,
@@ -271,7 +260,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
       saveAssetsImpl,
       saveImpl,
       setProject,
-      setOperationIndex,
+      operationIndexRef,
       operationStack,
       setLastOperation,
     ],
@@ -279,22 +268,22 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
 
   useEffect(() => {
     const shortcuts: Parameters<typeof setShortcuts>[0] = [];
-    if (operationIndex > 0) {
+    if (operationIndexRef.current > 0) {
       shortcuts.push({
         shortcut: { key: 'KeyZ', modifiers: ['ctrl'] },
         action: () => undo(),
-        description: `Undo ${operationStack.current[operationIndex].description}`,
+        description: `Undo ${operationStack.current[operationIndexRef.current].description}`,
       });
     }
-    if (operationIndex < operationStack.current.length - 1) {
+    if (operationIndexRef.current < operationStack.current.length - 1) {
       shortcuts.push({
         shortcut: { key: 'KeyZ', modifiers: ['ctrl', 'shift'] },
         action: () => redo(),
-        description: `Redo ${operationStack.current[operationIndex + 1].description}`,
+        description: `Redo ${operationStack.current[operationIndexRef.current + 1].description}`,
       });
     }
     return setShortcuts(shortcuts);
-  }, [operationStack, operationIndex, redo, undo]);
+  }, [operationStack, operationIndexRef, redo, undo]);
 
   if (project == null) {
     return <>Loading...</>;
