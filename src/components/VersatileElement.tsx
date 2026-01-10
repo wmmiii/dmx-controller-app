@@ -1,11 +1,8 @@
-import React, {
-  CSSProperties,
-  MouseEventHandler,
-  TouchEventHandler,
-  useContext,
-} from 'react';
+import React, { createRef, CSSProperties, useContext, useEffect } from 'react';
 import { VersatileContainerContext } from '../contexts/VersatileContianer';
 import styles from './VersatileElement.module.scss';
+
+const EMULATED_POINTER_EVENT = 'emulatedPointerEvent';
 
 interface VersatileElementProps {
   className?: string;
@@ -28,46 +25,21 @@ export function VersatileElement({
   onDragComplete,
   children,
 }: VersatileElementProps) {
+  const elementRef = createRef<HTMLDivElement>();
   const { activeElement, mouseDown, state, reset } = useContext(
     VersatileContainerContext,
   );
 
-  const pointerDown = (x: number, y: number) => {
-    if (element) {
-      mouseDown(element, onDragComplete, x, y);
-    } else if (onClick) {
-      onClick();
-    }
-  };
-
-  const pointerUp: MouseEventHandler<HTMLDivElement> &
-    TouchEventHandler<HTMLDivElement> = (e) => {
-    if (state === 'click' && onClick) {
-      onClick();
-    } else if (state === 'press') {
-      if (onPress) {
-        onPress();
-      } else if (onClick) {
-        onClick();
+  useEffect(() => {
+    const listener = () => {
+      if (onDragOver && state === 'drag' && activeElement != null) {
+        onDragOver(activeElement);
       }
-    }
-    reset();
-    e.stopPropagation();
-  };
-
-  const pointerMove: MouseEventHandler<HTMLDivElement> &
-    TouchEventHandler<HTMLDivElement> = (e) => {
-    if (
-      onDragOver &&
-      state === 'drag' &&
-      activeElement != null &&
-      activeElement !== element
-    ) {
-      onDragOver(activeElement);
-      e.stopPropagation();
-    }
-    e.preventDefault();
-  };
+    };
+    const ref = elementRef.current;
+    ref?.addEventListener(EMULATED_POINTER_EVENT, listener);
+    return () => ref?.removeEventListener(EMULATED_POINTER_EVENT, listener);
+  }, [state, onDragOver, activeElement, element, elementRef]);
 
   const classes = [styles.element];
   if (element !== null && activeElement === element) {
@@ -90,21 +62,32 @@ export function VersatileElement({
 
   return (
     <div
+      ref={elementRef}
       className={classes.join(' ')}
       style={style}
-      onMouseDown={(e) => {
-        pointerDown(e.clientX, e.clientY);
+      onPointerDown={(e) => {
+        mouseDown(element, onDragComplete, e.clientX, e.clientY);
+      }}
+      onPointerUp={(e) => {
+        if (state === 'click' && onClick) {
+          onClick();
+        } else if (state === 'press') {
+          if (onPress) {
+            onPress();
+          } else if (onClick) {
+            onClick();
+          }
+        }
+        reset();
         e.stopPropagation();
       }}
-      onTouchStart={(e) => {
-        pointerDown(e.touches[0].clientX, e.touches[0].clientY);
-        e.stopPropagation();
+      onPointerMove={(e) => {
+        const element = document.elementFromPoint(e.clientX, e.clientY);
+        element?.dispatchEvent(
+          new Event(EMULATED_POINTER_EVENT, { bubbles: true }),
+        );
         e.preventDefault();
       }}
-      onMouseUp={pointerUp}
-      onTouchEnd={pointerUp}
-      onMouseMove={pointerMove}
-      onTouchMove={pointerMove}
     >
       {children}
     </div>

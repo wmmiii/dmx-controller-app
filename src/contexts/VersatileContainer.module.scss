@@ -1,0 +1,11 @@
+@use '../_vars';
+
+.container {
+  touch-action: pan-x pan-y;
+}
+
+.suppress-touch,
+.suppress-touch * {
+  overflow: hidden !important;
+  touch-action: none !important;
+}
