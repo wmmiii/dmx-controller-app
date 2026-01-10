@@ -46,20 +46,27 @@ export function VersatileContainer({
     }
   };
 
+  const pointerMove = (x: number, y: number) => {
+    const pos = mouseDown.current;
+    if (pos && state !== 'idle' && state !== 'drag') {
+      const dist = Math.pow(x - pos.x, 2) + Math.pow(y - pos.y, 2);
+      if (dist > DRAG_DISTANCE_PX_SQ) {
+        setState('drag');
+      }
+    }
+  };
+
   return (
     <div
       className={className}
       onMouseMove={(e) => {
-        const pos = mouseDown.current;
-        if (pos && state !== 'idle' && state !== 'drag') {
-          const dist =
-            Math.pow(e.clientX - pos.x, 2) + Math.pow(e.clientY - pos.y, 2);
-          if (dist > DRAG_DISTANCE_PX_SQ) {
-            setState('drag');
-          }
-        }
+        pointerMove(e.clientX, e.clientY);
+      }}
+      onTouchMove={(e) => {
+        pointerMove(e.touches[0].clientX, e.touches[0].clientY);
       }}
       onMouseLeave={reset}
+      onTouchCancel={reset}
     >
       <VersatileContainerContext.Provider
         value={{

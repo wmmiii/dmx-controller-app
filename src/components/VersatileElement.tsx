@@ -1,4 +1,9 @@
-import React, { CSSProperties, useContext } from 'react';
+import React, {
+  CSSProperties,
+  MouseEventHandler,
+  TouchEventHandler,
+  useContext,
+} from 'react';
 import { VersatileContainerContext } from '../contexts/VersatileContianer';
 import styles from './VersatileElement.module.scss';
 
@@ -27,6 +32,43 @@ export function VersatileElement({
     VersatileContainerContext,
   );
 
+  const pointerDown = (x: number, y: number) => {
+    if (element) {
+      mouseDown(element, onDragComplete, x, y);
+    } else if (onClick) {
+      onClick();
+    }
+  };
+
+  const pointerUp: MouseEventHandler<HTMLDivElement> &
+    TouchEventHandler<HTMLDivElement> = (e) => {
+    if (state === 'click' && onClick) {
+      onClick();
+    } else if (state === 'press') {
+      if (onPress) {
+        onPress();
+      } else if (onClick) {
+        onClick();
+      }
+    }
+    reset();
+    e.stopPropagation();
+  };
+
+  const pointerMove: MouseEventHandler<HTMLDivElement> &
+    TouchEventHandler<HTMLDivElement> = (e) => {
+    if (
+      onDragOver &&
+      state === 'drag' &&
+      activeElement != null &&
+      activeElement !== element
+    ) {
+      onDragOver(activeElement);
+      e.stopPropagation();
+    }
+    e.preventDefault();
+  };
+
   const classes = [styles.element];
   if (element !== null && activeElement === element) {
     if (state === 'click' && onPress) {
@@ -51,37 +93,18 @@ export function VersatileElement({
       className={classes.join(' ')}
       style={style}
       onMouseDown={(e) => {
-        if (element) {
-          mouseDown(element, onDragComplete, e.clientX, e.clientY);
-        } else if (onClick) {
-          onClick();
-        }
+        pointerDown(e.clientX, e.clientY);
         e.stopPropagation();
       }}
-      onMouseUp={(e) => {
-        if (state === 'click' && onClick) {
-          onClick();
-        } else if (state === 'press') {
-          if (onPress) {
-            onPress();
-          } else if (onClick) {
-            onClick();
-          }
-        }
-        reset();
+      onTouchStart={(e) => {
+        pointerDown(e.touches[0].clientX, e.touches[0].clientY);
         e.stopPropagation();
+        e.preventDefault();
       }}
-      onMouseMove={(e) => {
-        if (
-          onDragOver &&
-          state === 'drag' &&
-          activeElement != null &&
-          activeElement !== element
-        ) {
-          onDragOver(activeElement);
-          e.stopPropagation();
-        }
-      }}
+      onMouseUp={pointerUp}
+      onTouchEnd={pointerUp}
+      onMouseMove={pointerMove}
+      onTouchMove={pointerMove}
     >
       {children}
     </div>
