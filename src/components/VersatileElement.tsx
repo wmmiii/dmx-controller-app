@@ -6,6 +6,7 @@ const EMULATED_POINTER_EVENT = 'emulatedPointerEvent';
 
 interface VersatileElementProps {
   className?: string;
+  id: any;
   style?: CSSProperties;
   element?: any;
   onClick?: () => void;
@@ -17,6 +18,7 @@ interface VersatileElementProps {
 
 export function VersatileElement({
   className,
+  id,
   style,
   element,
   onClick,
@@ -26,9 +28,13 @@ export function VersatileElement({
   children,
 }: VersatileElementProps) {
   const elementRef = createRef<HTMLDivElement>();
-  const { activeElement, mouseDown, state, reset } = useContext(
-    VersatileContainerContext,
-  );
+  const {
+    id: activeId,
+    activeElement,
+    mouseDown,
+    state,
+    reset,
+  } = useContext(VersatileContainerContext);
 
   useEffect(() => {
     const listener = () => {
@@ -42,16 +48,12 @@ export function VersatileElement({
   }, [state, onDragOver, activeElement, element, elementRef]);
 
   const classes = [styles.element];
-  if (element != null && activeElement === element) {
-    if (state === 'click' && onPress) {
+  // If there is a long click component add affordances.
+  if ((onPress || element) && id === activeId) {
+    if (state === 'click') {
       classes.push(styles.click);
     } else if (state === 'press') {
-      if (onPress) {
-        classes.push(styles.press);
-      }
-      if (element) {
-        classes.push(styles.drag);
-      }
+      classes.push(styles.press);
     } else if (state === 'drag') {
       classes.push(styles.drag);
     }
@@ -67,10 +69,11 @@ export function VersatileElement({
       style={style}
       onPointerDown={(e) => {
         if (onClick || onPress) {
-          mouseDown(element, onDragComplete, e.clientX, e.clientY);
+          mouseDown(id, element, onDragComplete, e.clientX, e.clientY);
         }
       }}
       onPointerUp={(e) => {
+        console.log('Pointer up', state);
         if (state === 'click' && onClick) {
           onClick();
         } else if (state === 'press') {

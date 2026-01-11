@@ -7,8 +7,10 @@ const DRAG_DISTANCE_PX_SQ = Math.pow(20, 2);
 type VersatileState = 'idle' | 'click' | 'press' | 'drag';
 
 export const VersatileContainerContext = createContext({
+  id: null as any,
   activeElement: null as any,
   mouseDown: (
+    _id: any,
     _element: any,
     _onDragComplete: (() => void) | undefined,
     _x: number,
@@ -29,6 +31,7 @@ export function VersatileContainer({
 }: DragAndDropProviderProps) {
   const [state, setState] = useState<VersatileState>('idle');
   const mouseDown = useRef<{
+    id: any;
     timeout: any;
     onDragComplete: (() => void) | undefined;
     x: number;
@@ -70,7 +73,7 @@ export function VersatileContainer({
       className={classes.join(' ')}
       onPointerMove={(e) => {
         const pos = mouseDown.current;
-        if (pos && state !== 'idle' && state !== 'drag') {
+        if (pos && state === 'press') {
           const dist =
             Math.pow(e.clientX - pos.x, 2) + Math.pow(e.clientY - pos.y, 2);
           if (dist > DRAG_DISTANCE_PX_SQ) {
@@ -82,10 +85,12 @@ export function VersatileContainer({
     >
       <VersatileContainerContext.Provider
         value={{
+          id: mouseDown.current?.id,
           activeElement,
-          mouseDown: (element, onDragComplete, x, y) => {
+          mouseDown: (id, element, onDragComplete, x, y) => {
             setActiveElement(element);
             mouseDown.current = {
+              id,
               timeout: setTimeout(() => {
                 setState('press');
               }, PRESS_TIMEOUT_MS),

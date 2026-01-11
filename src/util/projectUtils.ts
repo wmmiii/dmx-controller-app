@@ -77,6 +77,9 @@ export function createNewProject() {
 
   return create(ProjectSchema, {
     name: 'Untitled Project',
+    settings: {
+      touchInterface: Boolean(window.ontouchstart),
+    },
     activeScene: defaultSceneId,
     scenes: {
       [defaultSceneId.toString()]: {

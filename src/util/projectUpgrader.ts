@@ -1,6 +1,7 @@
 import { create } from '@bufbuild/protobuf';
 import { type Project } from '@dmx-controller/proto/project_pb';
 import { Scene_Tile_LoopDetailsSchema } from '@dmx-controller/proto/scene_pb';
+import { SettingsSchema } from '@dmx-controller/proto/settings_pb';
 
 export default function upgradeProject(p: Project): void {
   Object.values(p.patches)
@@ -35,4 +36,14 @@ export default function upgradeProject(p: Project): void {
         };
       }
     });
+
+  if (p.settings?.touchInterface === undefined) {
+    if (p.settings === undefined) {
+      p.settings = create(SettingsSchema, {
+        touchInterface: Boolean(window.ontouchstart),
+      });
+    } else {
+      p.settings.touchInterface === Boolean(window.ontouchstart);
+    }
+  }
 }

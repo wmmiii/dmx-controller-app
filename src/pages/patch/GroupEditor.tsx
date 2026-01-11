@@ -172,6 +172,7 @@ function GroupEditorPane({
       <VersatileContainer className={styles.members}>
         <VersatileElement
           className={styles.outMembers}
+          id="out-group"
           onDragOver={(draggingMember) => {
             group.targets = group.targets.filter(
               (t) => toJsonString(OutputTargetSchema, t) !== draggingMember,
@@ -184,6 +185,7 @@ function GroupEditorPane({
             {applicableMembers.map((t, i) => (
               <VersatileElement
                 key={i}
+                id={toJsonString(OutputTargetSchema, t)}
                 className={styles.listElement}
                 element={toJsonString(OutputTargetSchema, t)}
                 onClick={() => {
@@ -206,6 +208,7 @@ function GroupEditorPane({
         </VersatileElement>
         <VersatileElement
           className={styles.inMembers}
+          id="in-group"
           onDragOver={(draggingMember) => {
             addToGroupImpl(fromJsonString(OutputTargetSchema, draggingMember));
             update();
@@ -217,6 +220,7 @@ function GroupEditorPane({
               <VersatileElement
                 key={i}
                 className={styles.listElement}
+                id={toJsonString(OutputTargetSchema, t)}
                 element={toJsonString(OutputTargetSchema, t)}
                 onClick={() => {
                   group.targets = group.targets.filter(

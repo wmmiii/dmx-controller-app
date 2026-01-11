@@ -27,6 +27,8 @@ export function TileGrid({
 }: TileGridProps): JSX.Element {
   const { project, update } = useContext(ProjectContext);
 
+  const touch = project.settings?.touchInterface ?? false;
+
   const scene = useMemo(
     () => project?.scenes[sceneId.toString()],
     [project, sceneId],
@@ -71,13 +73,15 @@ export function TileGrid({
               <VersatileElement
                 key={x + ' ' + y}
                 className={styles.tilePlaceholder}
+                id={`${x} ${y}`}
                 style={{
                   gridColumnStart: x + 1,
                   gridColumnEnd: x + 2,
                   gridRowStart: y + 1,
                   gridRowEnd: y + 2,
                 }}
-                onClick={() => setAddTileIndex({ x, y })}
+                onClick={touch ? undefined : () => setAddTileIndex({ x, y })}
+                onPress={touch ? () => setAddTileIndex({ x, y }) : undefined}
                 onDragOver={(id) => {
                   const tile = scene.tileMap.find((t) => t.id === id);
                   if (tile) {

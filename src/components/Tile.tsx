@@ -49,8 +49,6 @@ export function Tile({ tileId, tile, onSelect, x, y, priority }: TileProps) {
     }
   }, [tile, toJsonString(BeatMetadataSchema, project.liveBeat!), save]);
 
-  const touch = project.settings?.touchInterface ?? false;
-
   useEffect(() => {
     return listenToTick((t) => {
       if (!tileRef.current) {
@@ -120,6 +118,7 @@ export function Tile({ tileId, tile, onSelect, x, y, priority }: TileProps) {
   return (
     <VersatileElement
       className={classes.join(' ')}
+      id={tileId}
       style={{
         gridColumnStart: x + 1,
         gridColumnEnd: x + 2,
@@ -127,12 +126,12 @@ export function Tile({ tileId, tile, onSelect, x, y, priority }: TileProps) {
         gridRowEnd: y + 2,
       }}
       onClick={toggle}
-      onPress={touch ? onSelect : undefined}
+      onPress={onSelect}
       element={tileId}
       onDragComplete={() => save(`Move ${tile.name} tile.`)}
     >
       <div className={styles.contents}>
-        {!touch && (
+        {!project.settings?.touchInterface && (
           <div
             className={styles.settingsTriangle}
             onClick={(e) => {

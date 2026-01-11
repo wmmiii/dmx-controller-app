@@ -6,6 +6,5 @@
 
 .suppress-touch,
 .suppress-touch * {
-  overflow: hidden !important;
   touch-action: none !important;
 }
