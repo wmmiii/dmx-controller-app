@@ -40,7 +40,7 @@ export function Tile({ tileId, tile, onSelect, x, y, priority }: TileProps) {
   const { project, save } = useContext(ProjectContext);
   const { controllerName } = useContext(ControllerContext);
   const { palette } = useContext(PaletteContext);
-  const tileRef = createRef<HTMLDivElement>();
+  const activeRef = createRef<HTMLDivElement>();
 
   const toggle = useCallback(() => {
     const [modified, enabled] = toggleTile(tile, project.liveBeat!);
@@ -51,14 +51,13 @@ export function Tile({ tileId, tile, onSelect, x, y, priority }: TileProps) {
 
   useEffect(() => {
     return listenToTick((t) => {
-      if (!tileRef.current) {
+      if (!activeRef.current) {
         return;
       }
-      const opacity = tileActiveAmount(tile, project.liveBeat, t);
-
-      tileRef.current.style.opacity = String(opacity);
+      const amount = tileActiveAmount(tile, project.liveBeat, t);
+      activeRef.current.style.top = `${(1 - amount) * 100}%`;
     });
-  }, [tile, project, tileRef]);
+  }, [tile, project, activeRef]);
 
   const details = useMemo(
     () => tileTileDetails(tile),
@@ -130,32 +129,32 @@ export function Tile({ tileId, tile, onSelect, x, y, priority }: TileProps) {
       element={tileId}
       onDragComplete={() => save(`Move ${tile.name} tile.`)}
     >
-      <div className={styles.contents}>
-        {!project.settings?.touchInterface && (
-          <div
-            className={styles.settingsTriangle}
-            onClick={(e) => {
-              onSelect();
-              e.stopPropagation();
-            }}
-            onMouseDown={(e) => e.stopPropagation()}
-          ></div>
-        )}
+      {!project.settings?.touchInterface && (
         <div
-          className={styles.title}
-          style={{ background: background || undefined }}
-        >
-          {details.wled && <div className={styles.wled}></div>}
-          {tile.name}
-        </div>
-        {priority != 0 && <div className={styles.priority}>{priority}</div>}
-        {hasControllerMapping && (
-          <div className={styles.controller}>
-            <SiMidi />
-          </div>
-        )}
+          className={styles.settingsTriangle}
+          onClick={(e) => {
+            onSelect();
+            e.stopPropagation();
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
+        ></div>
+      )}
+      <div
+        className={styles.title}
+        style={{ background: background || undefined }}
+      >
+        {details.wled && <div className={styles.wled}></div>}
+        {tile.name}
       </div>
-      <div ref={tileRef} className={styles.border}></div>
+      {priority != 0 && <div className={styles.priority}>{priority}</div>}
+      {hasControllerMapping && (
+        <div className={styles.controller}>
+          <SiMidi />
+        </div>
+      )}
+      <div className={styles.activeGage}>
+        <div ref={activeRef}></div>
+      </div>
     </VersatileElement>
   );
 }

@@ -2,8 +2,8 @@
 @use '../_vars';
 
 $element-size: 100px;
-$border-size: 2px;
-$triangle-diag: 40px;
+$border-size: 8px;
+$triangle-diag: 45px;
 
 .tile-grid {
   display: grid;
@@ -13,66 +13,50 @@ $triangle-diag: 40px;
   margin: vars.spacing(1);
 }
 
-.tile-placeholder {
-  cursor: pointer;
-
-  &:hover {
-    background-color: vars.$col-bg-placeholder-hover;
-  }
-}
-
 .tile {
   touch-action: none;
 }
 
 .tile,
 .tile-placeholder {
-  border-radius: vars.$dim-border-radius;
+  align-items: center;
+  background-color: vars.$col-bg-tile;
   box-sizing: border-box;
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
   height: $element-size;
+  justify-content: center;
+  overflow: hidden;
   position: relative;
-  width: $element-size;
   transition: 200ms box-shadow;
+  width: $element-size;
 
-  &.pressed {
-    box-shadow:
-      0 0 16px vars.$col-accent,
-      0 0 8px vars.$col-accent;
+  &:hover,
+  &:hover .priority {
+    background-color: vars.$col-bg-tile-hover;
   }
 
-  .contents {
-    align-items: center;
-    background-color: vars.$col-bg-higher;
-    border-radius: vars.$dim-border-radius;
-    bottom: $border-size;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    height: $element-size - $border-size * 2;
-    justify-content: center;
-    left: $border-size;
-    overflow: hidden;
-    position: absolute;
-    right: $border-size;
-    top: $border-size;
-    width: $element-size - $border-size * 2;
-    z-index: 1;
-  }
-
-  .border {
-    background-color: vars.$col-accent;
-    border-radius: vars.$dim-border-radius;
+  .active-gage {
     bottom: 0;
+    box-shadow: inset (-$border-size) 0 $border-size (-$border-size) #000;
     left: 0;
     position: absolute;
-    right: 0;
     top: 0;
-    z-index: 0;
+    width: $border-size;
+
+    & > * {
+      background-color: vars.$col-accent;
+      bottom: 0;
+      left: 0;
+      position: absolute;
+      right: 0;
+      transition: 50ms top ease-out;
+    }
   }
 
   .settings-triangle {
-    background-color: vars.$col-border;
+    background-color: vars.$col-bg-triangle;
     width: $triangle-diag;
     height: $triangle-diag;
     position: absolute;
@@ -82,18 +66,19 @@ $triangle-diag: 40px;
     transform: rotate(-45deg);
 
     &:hover {
-      background-color: vars.$col-border-higher;
+      background-color: vars.$col-bg-triangle-hover;
     }
   }
 
   .title {
+    position: absolute;
+    inset: $border-size;
     align-items: center;
     border-radius: 100%;
     box-sizing: border-box;
     display: flex;
     font-size: 12pt;
     font-weight: 600;
-    height: calc(100% - vars.spacing(1));
     justify-content: center;
     overflow: hidden;
     pointer-events: none;
@@ -103,29 +88,29 @@ $triangle-diag: 40px;
       0 0 1px #000,
       0 0 2px #000,
       0 0 4px #000;
-    width: calc(100% - vars.spacing(1));
     z-index: 0;
   }
 
   .wled {
     background-image: url('/wled.svg');
     background-size: cover;
-    bottom: vars.spacing(1);
-    left: vars.spacing(1);
+    inset: vars.spacing(1);
     pointer-events: none;
     position: absolute;
-    right: vars.spacing(1);
-    top: vars.spacing(1);
     z-index: -1;
   }
 
   .priority {
-    bottom: vars.spacing(0.5);
+    background-color: vars.$col-bg-higher;
+    border-radius: vars.spacing(1);
     color: vars.$col-text-dim;
     flex-shrink: 0;
     font-size: 10pt;
-    left: vars.spacing(0.5);
+    left: $border-size;
+    padding: vars.spacing(0.5);
     position: absolute;
+    top: 0;
+    z-index: 1;
   }
 
   .controller {

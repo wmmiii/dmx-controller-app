@@ -9,8 +9,6 @@ $col-bg-higher: #1a1a1a;
 $col-bg-higher-hover: color.adjust($col-bg-higher, $lightness: 10%);
 $col-bg-active: color.adjust($col-accent, $lightness: -18%);
 $col-bg-active-lower: color.adjust($col-accent, $lightness: -25%);
-$col-bg-placeholder: $col-bg-higher;
-$col-bg-placeholder-hover: color.adjust($col-bg-placeholder, $lightness: 10%);
 $col-text: #ffffff;
 $col-text-dim: #8f8f8f;
 $col-border: #333333;
@@ -22,6 +20,11 @@ $col-interactive: color.adjust($col-accent, $lightness: 20%);
 $col-interactive-hover: color.adjust($col-accent, $lightness: 50%);
 $col-disabled: color.adjust($col-interactive, $saturation: -100%);
 $col-warning-hover: color.adjust($col-warning, $lightness: 50%);
+$col-bg-tile: $col-bg-higher;
+$col-bg-tile-hover: color.adjust($col-bg-tile, $lightness: 10%);
+$col-bg-gage: #000;
+$col-bg-triangle: color.adjust($col-bg-higher, $lightness: 20%);
+$col-bg-triangle-hover: color.adjust($col-bg-triangle, $lightness: 10%);
 
 $dim-border-radius: 8px;
 
