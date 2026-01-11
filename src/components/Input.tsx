@@ -75,13 +75,13 @@ export function EditableText({ value, onChange }: EditableTextProps) {
   }
 }
 
-export type NumberInpuType = 'float' | 'integer';
+export type NumberInputType = 'float' | 'integer';
 
 interface NumberInputProps {
   className?: string;
   title?: string;
   disabled?: boolean;
-  type?: NumberInpuType;
+  type?: NumberInputType;
   value: number;
   onChange: (value: number) => void;
   min: number;

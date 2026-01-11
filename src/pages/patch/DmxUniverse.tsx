@@ -261,11 +261,9 @@ function EditFixtureDialog({
       onClose={close}
       bodyClass={styles.editor}
       footer={
-        <div className={styles.dialogFooter}>
-          <Button onClick={close} variant="primary">
-            Done
-          </Button>
-        </div>
+        <Button onClick={close} variant="primary">
+          Done
+        </Button>
       }
     >
       <div>

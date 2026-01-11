@@ -23,7 +23,7 @@ import { ProjectContext } from '../contexts/ProjectContext';
 import { Button, IconButton } from './Button';
 import { ColorSwatch } from './ColorSwatch';
 import styles from './EffectState.module.scss';
-import { NumberInpuType, NumberInput } from './Input';
+import { NumberInput, NumberInputType } from './Input';
 
 type ColorSelectorType = 'none' | 'color' | PaletteColor;
 
@@ -142,7 +142,7 @@ interface ChannelProps {
   }>;
   min: number;
   max: number;
-  type: NumberInpuType;
+  type: NumberInputType;
 }
 
 function Channel({ name, values, min, max, type }: ChannelProps) {
@@ -260,7 +260,7 @@ interface ChannelValueProps {
   name: string;
   min: number;
   max: number;
-  type: NumberInpuType;
+  type: NumberInputType;
   value: number | undefined;
   onChange: (value: number | undefined) => void;
 }

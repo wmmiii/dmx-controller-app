@@ -20,6 +20,7 @@ $header-height: 56px;
 
 .modal {
   @include vars.drop-shadow;
+
   background-color: vars.$col-bg-higher;
   border: none;
   box-sizing: border-box;
@@ -28,7 +29,7 @@ $header-height: 56px;
   flex-direction: column;
   margin-top: $header-height;
   max-height: calc(100vh - $header-height);
-  padding: vars.spacing(2);
+  max-width: 100vw;
 
   &.full-screen {
     height: calc(100vh - vars.spacing(2));
@@ -38,13 +39,14 @@ $header-height: 56px;
 
 .header {
   align-items: center;
+  border-bottom: 1px solid vars.$col-border;
   display: flex;
   flex-direction: row;
   flex-shrink: 0;
   font-size: 24px;
   font-weight: 600;
   gap: vars.spacing(2);
-  padding: vars.spacing(1) 0;
+  padding: vars.spacing(2);
 }
 
 .icon {
@@ -58,8 +60,11 @@ $header-height: 56px;
   flex: 1;
   overflow-y: auto;
   position: relative;
+  padding: 0 vars.spacing(2);
 }
 
 .footer {
+  border-top: 1px solid vars.$col-border;
   flex-shrink: 1;
+  padding: vars.spacing(2);
 }

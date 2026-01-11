@@ -268,24 +268,12 @@ function EditDefinitionDialog({
       onClose={close}
       bodyClass={styles.editor}
       footer={
-        <div className={styles.dialogFooter}>
-          <Button onClick={close} variant="primary">
-            Done
-          </Button>
-        </div>
+        <Button onClick={close} variant="primary">
+          Done
+        </Button>
       }
     >
-      <IconButton title="Copy Fixture Profile" onClick={copy}>
-        <BiCopyAlt />
-      </IconButton>
-      <IconButton
-        variant="warning"
-        title="Delete Fixture Profile"
-        onClick={deleteDefinition}
-      >
-        <BiTrash />
-      </IconButton>
-      <div>
+      <div className={styles.editorMetadata}>
         <label>
           <span>Name</span>
           <TextInput
@@ -308,43 +296,58 @@ function EditDefinitionDialog({
             }}
           />
         </label>
+        <div className={styles.spacer}></div>
+        <IconButton title="Copy Fixture Profile" onClick={copy}>
+          <BiCopyAlt />
+        </IconButton>
+        <IconButton
+          variant="warning"
+          title="Delete Fixture Profile"
+          onClick={deleteDefinition}
+        >
+          <BiTrash />
+        </IconButton>
       </div>
 
-      <label>
-        <span>Mode</span>
-        <select value={modeId} onChange={(e) => setModeId(e.target.value)}>
-          {Object.keys(definition.modes).map((m) => (
-            <option key={m} value={m}>
-              {definition.modes[m].name}
-            </option>
-          ))}
-        </select>
-      </label>
+      <div className={styles.editorMetadata}>
+        <label>
+          <span>Mode</span>
+          <select value={modeId} onChange={(e) => setModeId(e.target.value)}>
+            {Object.keys(definition.modes).map((m) => (
+              <option key={m} value={m}>
+                {definition.modes[m].name}
+              </option>
+            ))}
+          </select>
+        </label>
 
-      <label>
-        <span>Total channels</span>
-        <NumberInput
-          min={Math.max(
-            0,
-            ...Object.keys(mode.channels).map((i) => parseInt(i)),
-          )}
-          max={512}
-          value={mode.numChannels}
-          onChange={(v) => {
-            mode.numChannels = v;
-            save(`Set number of channels of ${mode.name} to ${v}.`);
-          }}
-        />
-      </label>
-      <label>
-        <span>Test fixture index</span>
-        <NumberInput
-          min={1}
-          max={512}
-          value={testIndex + 1}
-          onChange={(v) => setTestIndex(v - 1)}
-        />
-      </label>
+        <label>
+          <span>Total channels</span>
+          <NumberInput
+            min={Math.max(
+              0,
+              ...Object.keys(mode.channels).map((i) => parseInt(i)),
+            )}
+            max={512}
+            value={mode.numChannels}
+            onChange={(v) => {
+              mode.numChannels = v;
+              save(`Set number of channels of ${mode.name} to ${v}.`);
+            }}
+          />
+        </label>
+        <div className={styles.spacer}></div>
+        <label>
+          <span>Test fixture index</span>
+          <NumberInput
+            min={1}
+            max={512}
+            value={testIndex + 1}
+            onChange={(v) => setTestIndex(v - 1)}
+          />
+        </label>
+      </div>
+
       <table>
         <thead>
           <tr>
