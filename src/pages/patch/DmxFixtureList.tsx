@@ -13,9 +13,7 @@ import {
   DmxFixtureDefinition_ChannelSchema,
   DmxFixtureDefinition_ModeSchema,
   DmxFixtureDefinitionSchema,
-  PhysicalDmxFixtureSchema,
 } from '@dmx-controller/proto/dmx_pb';
-import { QualifiedFixtureIdSchema } from '@dmx-controller/proto/output_pb';
 import { WledRenderTargetSchema } from '@dmx-controller/proto/wled_pb';
 import { BiCopyAlt, BiGridVertical, BiPlus, BiTrash } from 'react-icons/bi';
 import { Button, IconButton } from '../../components/Button';
@@ -23,6 +21,7 @@ import { ColorSwatch } from '../../components/ColorSwatch';
 import { NumberInput, TextInput } from '../../components/Input';
 import { Modal } from '../../components/Modal';
 import RangeInput from '../../components/RangeInput';
+import { VersatileElement } from '../../components/VersatileElement';
 import {
   AMOUNT_CHANNELS,
   ANGLE_CHANNELS,
@@ -31,25 +30,21 @@ import {
   isAmountChannel,
   isAngleChannel,
 } from '../../engine/channel';
-import { deleteFixture } from '../../engine/fixtures/fixture';
 import { setRenderFunctions } from '../../engine/renderRouter';
 import { extractGdtf } from '../../util/gdtf';
 import { randomUint64 } from '../../util/numberUtils';
 import { getOutput } from '../../util/projectUtils';
+import { DraggableDmxFixture } from './DmxEditor';
 import styles from './PatchPage.module.scss';
 
 interface DmxFixtureListProps {
   outputId: bigint;
-  draggingFixture: bigint | null;
-  setDraggingFixture: (id: bigint | null) => void;
 }
 
 export function DmxFixtureList({
   outputId,
-  draggingFixture: dragFixtureId,
-  setDraggingFixture: setDragFixtureId,
 }: DmxFixtureListProps): JSX.Element | null {
-  const { project, save, update } = useContext(ProjectContext);
+  const { project, save } = useContext(ProjectContext);
   const [selectedDefinitionId, setSelectedDefinitionId] = useState<
     bigint | null
   >(null);
@@ -63,7 +58,7 @@ export function DmxFixtureList({
     return project.fixtureDefinitions?.dmxFixtureDefinitions[id];
   }, [project, selectedDefinitionId]);
 
-  const classes = [styles.pane];
+  const classes = [styles.fixtureDefinitionList];
   if (highlightDrop) {
     classes.push(styles.highlightDrop);
   }
@@ -110,18 +105,24 @@ export function DmxFixtureList({
       <h2>Fixture Profiles</h2>
       <ul>
         {Object.entries(project.fixtureDefinitions!.dmxFixtureDefinitions)
-          .sort((a, b) => a[1].name.localeCompare(b[1].name))
+          .sort(([_a, a], [_b, b]) => a.name.localeCompare(b.name))
           .map(([id, definition]) => (
-            <li key={id} onClick={() => setSelectedDefinitionId(BigInt(id))}>
+            <li key={id}>
               {definition.name}
-
-              <ul className={styles.fixtureModes}>
-                {Object.entries(definition.modes).map((e, i) => (
-                  <li
+              {Object.entries(definition.modes).map(([modeId, e], i) => {
+                const f: DraggableDmxFixture = {
+                  id: randomUint64(),
+                  definition: BigInt(id),
+                  mode: modeId,
+                };
+                return (
+                  <VersatileElement
                     key={i}
-                    draggable={true}
-                    onDragStart={() => {
-                      const newFixtureId = randomUint64();
+                    className={styles.mode}
+                    id={f.id}
+                    element={f}
+                    onClick={() => setSelectedDefinitionId(BigInt(id))}
+                    onDragComplete={() => {
                       const output = getOutput(project, outputId);
                       if (
                         output.output.case !== 'serialDmxOutput' &&
@@ -129,53 +130,22 @@ export function DmxFixtureList({
                       ) {
                         throw Error('Tried to edit non DMX output!');
                       }
-                      output.output.value.fixtures[newFixtureId.toString()] =
-                        create(PhysicalDmxFixtureSchema, {
-                          name: 'New Fixture',
-                          // -1 is transient.
-                          // This should always be set before saving.
-                          channelOffset: -1,
-                          fixtureDefinitionId: BigInt(id),
-                          fixtureMode: e[0],
-                        });
-                      setDragFixtureId(newFixtureId);
-                      update();
-                    }}
-                    onDragEnd={() => {
-                      if (dragFixtureId != null) {
-                        const output = getOutput(project, outputId);
-                        if (
-                          output.output.case !== 'serialDmxOutput' &&
-                          output.output.case !== 'sacnDmxOutput'
-                        ) {
-                          throw Error('Tried to edit non DMX output!');
-                        }
-                        const fixture =
-                          output.output.value.fixtures[
-                            dragFixtureId.toString()
-                          ];
-                        if (fixture.channelOffset !== -1) {
-                          save(`Add new fixture at ${fixture.channelOffset}`);
-                        } else {
-                          setDragFixtureId(null);
-                          deleteFixture(
-                            project,
-                            create(QualifiedFixtureIdSchema, {
-                              patch: project.activePatch,
-                              output: outputId,
-                              fixture: dragFixtureId,
-                            }),
-                          );
-                          update();
-                        }
+                      if (
+                        Object.keys(output.output.value.fixtures).indexOf(
+                          String(f.id),
+                        ) > -1
+                      ) {
+                        save(
+                          `Add fixture ${definition.name} to output ${output.name}.`,
+                        );
                       }
                     }}
                   >
                     <BiGridVertical />
-                    {e[1].name}
-                  </li>
-                ))}
-              </ul>
+                    {e.name}
+                  </VersatileElement>
+                );
+              })}
             </li>
           ))}
       </ul>

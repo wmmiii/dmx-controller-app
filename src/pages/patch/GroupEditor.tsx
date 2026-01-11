@@ -15,7 +15,6 @@ import { BiTrash } from 'react-icons/bi';
 import { Button, IconButton } from '../../components/Button';
 import { TextInput } from '../../components/Input';
 import { getOutputTargetName } from '../../components/OutputSelector';
-import { HorizontalSplitPane } from '../../components/SplitPane';
 import { VersatileElement } from '../../components/VersatileElement';
 import { ProjectContext } from '../../contexts/ProjectContext';
 import { VersatileContainer } from '../../contexts/VersatileContianer';
@@ -32,22 +31,16 @@ export function GroupEditor() {
   const [selectedGroupId, setSelectedGroupId] = useState<bigint | null>(null);
 
   return (
-    <HorizontalSplitPane
-      className={styles.splitPane}
-      defaultAmount={0.2}
-      left={
-        <GroupList
-          selectedGroupId={selectedGroupId}
-          setSelectedGroupId={setSelectedGroupId}
-        />
-      }
-      right={
-        <GroupEditorPane
-          selectedGroupId={selectedGroupId}
-          setSelectedGroupId={setSelectedGroupId}
-        />
-      }
-    />
+    <div className={styles.contents}>
+      <GroupList
+        selectedGroupId={selectedGroupId}
+        setSelectedGroupId={setSelectedGroupId}
+      />
+      <GroupEditorPane
+        selectedGroupId={selectedGroupId}
+        setSelectedGroupId={setSelectedGroupId}
+      />
+    </div>
   );
 }
 

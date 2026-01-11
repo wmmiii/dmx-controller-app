@@ -51,6 +51,7 @@ export function WledEditor({ outputId }: WledEditorProps) {
           }}
         />
       </label>
+      <hr />
       <Button onClick={syncDevice}>Sync</Button>
       <ol>
         {Object.entries(wledOutput.segments).map(([id, s]) => (

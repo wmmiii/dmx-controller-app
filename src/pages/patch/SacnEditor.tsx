@@ -33,6 +33,7 @@ export function SacnEditor({ outputId }: SacnEditorProps) {
           }}
         />
       </label>
+      <hr />
       <div>
         <DmxEditor outputId={outputId} />
       </div>

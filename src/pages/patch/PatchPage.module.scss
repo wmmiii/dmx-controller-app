@@ -38,6 +38,27 @@ $channel-size: 100px;
   }
 }
 
+.contents {
+  @include vars.fill;
+
+  display: flex;
+  flex-direction: row;
+}
+
+.no-flex,
+.fixture-definition-list,
+.group-list {
+  flex-shrink: 0;
+  overflow-y: auto;
+}
+
+.grow,
+.group-editor,
+.empty-pane {
+  flex: 1;
+  overflow-y: auto;
+}
+
 .splitPane {
   @include vars.fill;
 }
@@ -71,8 +92,6 @@ $channel-size: 100px;
 }
 
 .empty-pane {
-  @include vars.fill;
-
   align-items: center;
   color: vars.$col-text-dim;
   display: flex;
@@ -80,6 +99,8 @@ $channel-size: 100px;
 }
 
 .group-list {
+  border-right: 1px solid vars.$col-border;
+
   ul {
     list-style: none;
     font-size: 1.5em;
@@ -89,7 +110,7 @@ $channel-size: 100px;
 
   li {
     cursor: pointer;
-    padding: vars.spacing(1);
+    padding: vars.spacing(1) vars.spacing(2);
 
     &.selected {
       background: linear-gradient(to right, vars.$col-bg-active, transparent);
@@ -101,12 +122,11 @@ $channel-size: 100px;
   }
 
   button {
-    margin: vars.spacing(1);
+    margin: vars.spacing(1) vars.spacing(2);
   }
 }
 
 .group-editor {
-  @include vars.fill;
   display: flex;
   flex-direction: column;
 
@@ -168,6 +188,7 @@ $channel-size: 100px;
   display: grid;
   grid-template-columns: repeat(10, auto);
   gap: vars.spacing(1);
+  padding: vars.spacing(1);
 
   .channel {
     align-items: center;
@@ -243,6 +264,15 @@ $channel-size: 100px;
   }
 }
 
+.fixture-definition-list {
+  border-left: 1px solid vars.$col-border;
+  padding: vars.spacing(2);
+
+  & h2 {
+    margin: 0;
+  }
+}
+
 .draggable {
   cursor: grab;
 }
@@ -250,30 +280,26 @@ $channel-size: 100px;
 .hint {
   color: vars.$col-text-dim;
   font-size: 10pt;
+  max-width: 20rem;
 }
 
-.fixture-modes {
-  margin: 0;
-  padding: 0;
+.mode {
+  align-items: center;
+  background-color: vars.$col-bg-higher;
+  border-radius: vars.$dim-border-radius;
+  display: flex;
+  flex-direction: row;
+  gap: vars.spacing(1);
+  list-style: none;
+  padding: vars.spacing(1);
+  width: fit-content;
+  cursor: grab;
 
-  li {
-    align-items: center;
-    background-color: vars.$col-bg-higher;
-    border-radius: vars.$dim-border-radius;
-    display: flex;
-    flex-direction: row;
-    gap: vars.spacing(1);
-    list-style: none;
-    padding: vars.spacing(1);
-    width: fit-content;
-    cursor: grab;
+  &:hover {
+    background-color: vars.$col-bg-higher-hover;
+  }
 
-    &:hover {
-      background-color: vars.$col-bg-higher-hover;
-    }
-
-    svg {
-      color: vars.$col-text-dim;
-    }
+  svg {
+    color: vars.$col-text-dim;
   }
 }

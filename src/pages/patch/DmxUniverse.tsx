@@ -18,39 +18,40 @@ import { getOutput } from '../../util/projectUtils';
 import {
   DmxFixtureDefinition,
   PhysicalDmxFixture,
+  PhysicalDmxFixtureSchema,
 } from '@dmx-controller/proto/dmx_pb';
+import { VersatileElement } from '../../components/VersatileElement';
+import { DraggableDmxFixture } from './DmxEditor';
 import styles from './PatchPage.module.scss';
 
 type DmxOutput = SacnDmxOutput | SerialDmxOutput;
 
 interface DmxUniverse {
   outputId: bigint;
-  draggingFixture: bigint | null;
-  setDraggingFixture: (id: bigint | null) => void;
 }
 
-export function DmxUniverse({
-  outputId,
-  draggingFixture,
-  setDraggingFixture,
-}: DmxUniverse): JSX.Element | null {
+export function DmxUniverse({ outputId }: DmxUniverse): JSX.Element | null {
   const { project, save, update } = useContext(ProjectContext);
   const [selectedFixtureId, setSelectedFixtureId] = useState<bigint | null>(
     null,
+  );
+
+  const output = useMemo(
+    () => getOutput(project, outputId).output.value as DmxOutput,
+    [project, outputId],
   );
 
   const selectedFixture = useMemo(() => {
     if (!selectedFixtureId) {
       return undefined;
     }
-    const output = getOutput(project, outputId).output.value as DmxOutput;
     return output.fixtures[selectedFixtureId?.toString()];
-  }, [project, selectedFixtureId]);
+  }, [output, selectedFixtureId]);
 
   interface ChannelInfo {
     fixtureName: string;
     type: string;
-    id?: string;
+    startChannel: DraggableDmxFixture | undefined;
   }
 
   const channels = useMemo(() => {
@@ -61,10 +62,7 @@ export function DmxUniverse({
 
     // Map all fixtures to their channels.
     const output = getOutput(project, outputId).output.value as DmxOutput;
-    for (const f of Object.entries(output.fixtures)) {
-      const id = f[0];
-      const fixture = f[1];
-
+    for (const [id, fixture] of Object.entries(output.fixtures)) {
       if (fixture.channelOffset === -1) {
         break;
       }
@@ -82,7 +80,14 @@ export function DmxUniverse({
         channels[c + fixture.channelOffset].push({
           fixtureName: fixture.name,
           type: channel?.type,
-          id: c === 0 ? id : undefined,
+          startChannel:
+            c === 0
+              ? {
+                  id: BigInt(id),
+                  definition: fixture.fixtureDefinitionId,
+                  mode: fixture.fixtureMode,
+                }
+              : undefined,
         });
       }
     }
@@ -100,7 +105,7 @@ export function DmxUniverse({
   }, [project]);
 
   return (
-    <div className={styles.pane}>
+    <div className={styles.grow}>
       <div className={styles.universeGrid}>
         {channels.map((ciArray, i) => {
           const classes = [styles.channel];
@@ -136,54 +141,70 @@ export function DmxUniverse({
             );
           }
 
-          const fixtureStartCi = ciArray.find((ci) => ci.id);
+          const fixtureStartCi = ciArray.find((ci) => ci.startChannel);
           if (fixtureStartCi) {
             classes.push(styles.startChannel);
-            return (
-              <div
-                key={i}
-                className={classes.join(' ')}
-                onClick={() => {
-                  setSelectedFixtureId(BigInt(fixtureStartCi.id!));
-                }}
-                draggable={true}
-                onDragStart={() =>
-                  setDraggingFixture(BigInt(fixtureStartCi.id!))
-                }
-              >
-                <div className={styles.channelNumber}>{i + 1}</div>
-                {channelDescriptions}
-              </div>
-            );
-          } else {
-            const output = getOutput(project, outputId).output
-              .value as DmxOutput;
-            return (
-              <div
-                key={i}
-                className={classes.join(' ')}
-                onDragOver={() => {
-                  if (draggingFixture) {
-                    const fixture = output.fixtures[draggingFixture.toString()];
-                    fixture.channelOffset = i;
-                    update();
-                  }
-                }}
-                onDragEnd={() => {
-                  if (draggingFixture) {
-                    const fixture = output.fixtures[draggingFixture.toString()];
-                    save(
-                      `Change fixture ${fixture.name} start channel to ${fixture.channelOffset + 1}.`,
-                    );
-                    setDraggingFixture(null);
-                  }
-                }}
-              >
-                <div className={styles.channelNumber}>{i + 1}</div>
-                {channelDescriptions}
-              </div>
-            );
           }
+
+          return (
+            <VersatileElement
+              key={i}
+              className={classes.join(' ')}
+              id={fixtureStartCi?.startChannel?.id}
+              element={fixtureStartCi?.startChannel}
+              onClick={
+                fixtureStartCi?.startChannel
+                  ? () => {
+                      setSelectedFixtureId(fixtureStartCi.startChannel!.id);
+                    }
+                  : undefined
+              }
+              onDragOver={
+                fixtureStartCi == null
+                  ? (f: DraggableDmxFixture) => {
+                      const existingFixture = output.fixtures[String(f.id)];
+                      if (existingFixture) {
+                        existingFixture.channelOffset = i;
+                      } else {
+                        output.fixtures[String(f.id)] = create(
+                          PhysicalDmxFixtureSchema,
+                          {
+                            name: 'New Fixture',
+                            channelOffset: i,
+                            fixtureDefinitionId: f.definition,
+                            fixtureMode: f.mode,
+                          },
+                        );
+                      }
+                      update();
+                    }
+                  : undefined
+              }
+              onDragComplete={
+                fixtureStartCi?.startChannel
+                  ? () => {
+                      const output = getOutput(project, outputId);
+                      if (
+                        output.output.case !== 'serialDmxOutput' &&
+                        output.output.case !== 'sacnDmxOutput'
+                      ) {
+                        throw Error('Tried to edit non DMX output!');
+                      }
+                      const fixture =
+                        output.output.value.fixtures[
+                          String(fixtureStartCi.startChannel!.id)
+                        ];
+                      save(
+                        `Move fixture ${fixture.name} to offset ${fixture.channelOffset + 1}.`,
+                      );
+                    }
+                  : undefined
+              }
+            >
+              <div className={styles.channelNumber}>{i + 1}</div>
+              {channelDescriptions}
+            </VersatileElement>
+          );
         })}
       </div>
       {selectedFixture && (
@@ -289,7 +310,7 @@ function EditFixtureDialog({
             &lt;unset&gt;
           </option>
           {Object.entries(project.fixtureDefinitions!.dmxFixtureDefinitions)
-            .sort((a, b) => a[1].name.localeCompare(b[1].name))
+            .sort(([_a, a], [_b, b]) => a.name.localeCompare(b.name))
             .map(([id, definition]) => (
               <option key={id} value={id}>
                 {definition.name}
@@ -318,7 +339,7 @@ function EditFixtureDialog({
               fixture.fixtureDefinitionId.toString()
             ]?.modes || {},
           )
-            .sort((a, b) => a[1].name.localeCompare(b[1].name))
+            .sort(([_a, a], [_b, b]) => a.name.localeCompare(b.name))
             .map(([id, mode]) => (
               <option key={id} value={id}>
                 {mode.name}

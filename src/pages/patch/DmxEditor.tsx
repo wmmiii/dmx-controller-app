@@ -1,35 +1,23 @@
-import { useState } from 'react';
-import { HorizontalSplitPane } from '../../components/SplitPane';
-
+import { VersatileContainer } from '../../contexts/VersatileContianer';
 import { DmxFixtureList } from './DmxFixtureList';
 import { DmxUniverse } from './DmxUniverse';
 import styles from './PatchPage.module.scss';
+
+export interface DraggableDmxFixture {
+  id: bigint;
+  definition: bigint;
+  mode: string;
+}
 
 interface DmxEditorProps {
   outputId: bigint;
 }
 
 export function DmxEditor({ outputId }: DmxEditorProps) {
-  const [draggingFixture, setDraggingFixture] = useState<bigint | null>(null);
-
   return (
-    <HorizontalSplitPane
-      className={styles.splitPane}
-      defaultAmount={0.65}
-      left={
-        <DmxUniverse
-          outputId={outputId}
-          draggingFixture={draggingFixture}
-          setDraggingFixture={setDraggingFixture}
-        />
-      }
-      right={
-        <DmxFixtureList
-          outputId={outputId}
-          draggingFixture={draggingFixture}
-          setDraggingFixture={setDraggingFixture}
-        />
-      }
-    />
+    <VersatileContainer className={styles.contents}>
+      <DmxUniverse outputId={outputId} />
+      <DmxFixtureList outputId={outputId} />
+    </VersatileContainer>
   );
 }
