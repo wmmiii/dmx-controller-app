@@ -74,55 +74,51 @@ export function LivePage(): JSX.Element {
 
   const body = (
     <div className={styles.body}>
-      <div className={styles.gridWrapper}>
-        <TileGrid
-          className={styles.sceneEditor}
-          sceneId={project.activeScene}
-          onSelectId={setSelectedId}
-          setAddTileIndex={({ x, y }) => {
-            const tile = create(Scene_TileSchema, {
-              name: 'New Tile',
-              timingDetails: {
-                case: 'loop',
-                value: {
-                  fadeIn: {
-                    amount: {
-                      case: 'beat',
-                      value: 0,
-                    },
+      <TileGrid
+        className={styles.gridWrapper}
+        sceneId={project.activeScene}
+        onSelectId={setSelectedId}
+        setAddTileIndex={({ x, y }) => {
+          const tile = create(Scene_TileSchema, {
+            name: 'New Tile',
+            timingDetails: {
+              case: 'loop',
+              value: {
+                fadeIn: {
+                  amount: {
+                    case: 'beat',
+                    value: 0,
                   },
-                  fadeOut: {
-                    amount: {
-                      case: 'beat',
-                      value: 0,
-                    },
+                },
+                fadeOut: {
+                  amount: {
+                    case: 'beat',
+                    value: 0,
                   },
                 },
               },
-              transition: {
-                case: 'startFadeInMs',
-                value: 0n,
-              },
-            });
-            const tileMap = create(Scene_TileMapSchema, {
-              id: randomUint64(),
-              tile: tile,
-              x: x,
-              y: y,
-            });
-            scene.tileMap.push(tileMap);
-            save('Add new effect to group.');
-          }}
-          maxX={
-            scene.tileMap.map((c) => c.x).reduce((a, b) => (a > b ? a : b), 0) +
-            2
-          }
-          maxY={
-            scene.tileMap.map((c) => c.y).reduce((a, b) => (a > b ? a : b), 0) +
-            2
-          }
-        />
-      </div>
+            },
+            transition: {
+              case: 'startFadeInMs',
+              value: 0n,
+            },
+          });
+          const tileMap = create(Scene_TileMapSchema, {
+            id: randomUint64(),
+            tile: tile,
+            x: x,
+            y: y,
+          });
+          scene.tileMap.push(tileMap);
+          save('Add new effect to group.');
+        }}
+        maxX={
+          scene.tileMap.map((c) => c.x).reduce((a, b) => (a > b ? a : b), 0) + 2
+        }
+        maxY={
+          scene.tileMap.map((c) => c.y).reduce((a, b) => (a > b ? a : b), 0) + 2
+        }
+      />
       <div className={styles.palettes}>
         {Object.entries(scene?.colorPalettes).map(([paletteId, palette], i) => (
           <PaletteSwatch

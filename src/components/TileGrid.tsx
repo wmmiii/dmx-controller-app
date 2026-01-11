@@ -1,5 +1,5 @@
 import { Scene_TileMap } from '@dmx-controller/proto/scene_pb';
-import { JSX, useContext, useMemo } from 'react';
+import { JSX, useContext } from 'react';
 
 import { ProjectContext } from '../contexts/ProjectContext';
 
@@ -28,11 +28,7 @@ export function TileGrid({
   const { project, update } = useContext(ProjectContext);
 
   const touch = project.settings?.touchInterface ?? false;
-
-  const scene = useMemo(
-    () => project?.scenes[sceneId.toString()],
-    [project, sceneId],
-  );
+  const scene = project?.scenes[sceneId.toString()];
 
   if (scene == null) {
     return <div className={className}></div>;

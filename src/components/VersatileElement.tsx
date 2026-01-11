@@ -73,7 +73,6 @@ export function VersatileElement({
         }
       }}
       onPointerUp={(e) => {
-        console.log('Pointer up', state);
         if (state === 'click' && onClick) {
           onClick();
         } else if (state === 'press') {
