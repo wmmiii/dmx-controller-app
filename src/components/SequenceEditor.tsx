@@ -1,4 +1,5 @@
 import React, {
+  createRef,
   JSX,
   useCallback,
   useContext,
@@ -22,7 +23,6 @@ import { IconButton } from './Button';
 import { NumberInput, TextInput } from './Input';
 import { Layer } from './Layer';
 import styles from './SequenceEditor.module.scss';
-import { HorizontalSplitPane } from './SplitPane';
 import { EffectDetails } from './TimecodeEffect';
 
 // Good resolution, nice divisors (2^5 * 3^2 * 5^2.)
@@ -39,7 +39,8 @@ export function SequenceEditor({
 }: SequenceEditorProps): JSX.Element {
   const { project, save } = useContext(ProjectContext);
   const { setShortcuts } = useContext(ShortcutContext);
-  const [panelElement, setPanelElement] = useState<HTMLDivElement | null>(null);
+  const panelElement = createRef<HTMLDivElement>();
+  const [panelWidth, setPanelWidth] = useState(100);
   const [selectedEffectAddress, setSelectedEffectAddress] = useState<{
     layer: number;
     index: number;
@@ -81,38 +82,37 @@ export function SequenceEditor({
     [setSelectedEffectAddress, setCopyEffect, selectedEffect],
   );
 
+  useEffect(() => {
+    if (panelElement.current) {
+      const observer = new ResizeObserver(() => {
+        if (panelElement.current) {
+          setPanelWidth(panelElement.current.getBoundingClientRect().width);
+        }
+      });
+
+      observer.observe(panelElement.current);
+      return () => observer.disconnect();
+    }
+    return () => {};
+  }, [panelElement, setPanelWidth]);
+
   const msToPx = useCallback(
-    (ms: number) => {
-      if (!panelElement) {
-        return 0;
-      }
-      const width = panelElement.getBoundingClientRect().width;
-      return (ms * width) / SEQUENCE_BEAT_RESOLUTION / sequence.nativeBeats;
-    },
-    [panelElement],
+    (ms: number) =>
+      (ms * panelWidth) / SEQUENCE_BEAT_RESOLUTION / sequence.nativeBeats,
+    [panelWidth],
   );
 
   const pxToMs = useCallback(
-    (px: number) => {
-      if (!panelElement) {
-        return 0;
-      }
-      const width = panelElement.getBoundingClientRect().width;
-      return Math.floor(
-        (px * SEQUENCE_BEAT_RESOLUTION * sequence.nativeBeats) / width,
-      );
-    },
-    [panelElement],
+    (px: number) =>
+      Math.floor(
+        (px * SEQUENCE_BEAT_RESOLUTION * sequence.nativeBeats) / panelWidth,
+      ),
+    [panelWidth],
   );
 
   const snapToBeat = useCallback(
     (t: number) => {
-      if (!panelElement) {
-        return t;
-      }
-      const width = panelElement.getBoundingClientRect().width;
-
-      const beatSnapRangeMs = Math.floor(width / 32);
+      const beatSnapRangeMs = Math.floor(panelWidth / 32);
 
       const lengthMs =
         SEQUENCE_BEAT_RESOLUTION / sequence.nativeBeats / beatSubdivisions;
@@ -125,77 +125,71 @@ export function SequenceEditor({
         return t;
       }
     },
-    [panelElement],
+    [panelWidth],
   );
 
-  const classes = [styles.SequenceEditor, className];
+  const classes = [styles.sequenceEditor, className];
 
   return (
-    <HorizontalSplitPane
-      className={classes.join(' ')}
-      defaultAmount={0.8}
-      left={
-        <div className={styles.sequenceEditor} ref={setPanelElement}>
-          <label>
-            Name
-            <TextInput
-              value={sequence.name}
-              onChange={(n) => {
-                sequence.name = n;
-                save(`Set sequence name to ${n}.`);
-              }}
-            />
-          </label>
-          <label>
-            Sequence length in beats
-            <NumberInput
-              value={sequence.nativeBeats}
-              onChange={(i) => {
-                sequence.nativeBeats = i;
-                save(`Set number of beats in sequence to ${i}.`);
-              }}
-              min={1}
-              max={16}
-            />
-          </label>
-          <label>
-            Subdivide beat
-            <NumberInput
-              value={beatSubdivisions}
-              onChange={setBeatSubdivisions}
-              min={1}
-              max={16}
-            />
-          </label>
-          <br />
-          <Layers
-            layers={sequence.layers}
-            nativeBeats={sequence.nativeBeats}
-            beatSubdivisions={beatSubdivisions}
-            selectedEffect={selectedEffect}
-            setSelectedEffectAddress={setSelectedEffectAddress}
-            copyEffect={copyEffect}
-            msToPx={msToPx}
-            pxToMs={pxToMs}
-            snapToBeat={snapToBeat}
+    <div className={classes.join(' ')}>
+      <div className={styles.sequence} ref={panelElement}>
+        <label>
+          Name
+          <TextInput
+            value={sequence.name}
+            onChange={(n) => {
+              sequence.name = n;
+              save(`Set sequence name to ${n}.`);
+            }}
           />
+        </label>
+        <label>
+          Sequence length in beats
+          <NumberInput
+            value={sequence.nativeBeats}
+            onChange={(i) => {
+              sequence.nativeBeats = i;
+              save(`Set number of beats in sequence to ${i}.`);
+            }}
+            min={1}
+            max={16}
+          />
+        </label>
+        <label>
+          Subdivide beat
+          <NumberInput
+            value={beatSubdivisions}
+            onChange={setBeatSubdivisions}
+            min={1}
+            max={16}
+          />
+        </label>
+        <hr />
+        <Layers
+          layers={sequence.layers}
+          nativeBeats={sequence.nativeBeats}
+          beatSubdivisions={beatSubdivisions}
+          selectedEffect={selectedEffect}
+          setSelectedEffectAddress={setSelectedEffectAddress}
+          copyEffect={copyEffect}
+          msToPx={msToPx}
+          pxToMs={pxToMs}
+          snapToBeat={snapToBeat}
+        />
+      </div>
+      {selectedEffect ? (
+        <EffectDetails
+          className={styles.effectDetails}
+          effect={selectedEffect.effect!}
+          showPhase={true}
+          availableChannels={ALL_CHANNELS}
+        />
+      ) : (
+        <div className={styles.effectDetailsPlaceholder}>
+          Select an effect to view details.
         </div>
-      }
-      right={
-        selectedEffect ? (
-          <EffectDetails
-            className={styles.effectDetails}
-            effect={selectedEffect.effect!}
-            showPhase={true}
-            availableChannels={ALL_CHANNELS}
-          />
-        ) : (
-          <div className={styles.effectDetailsPlaceholder}>
-            Select an effect to view details.
-          </div>
-        )
-      }
-    />
+      )}
+    </div>
   );
 }
 

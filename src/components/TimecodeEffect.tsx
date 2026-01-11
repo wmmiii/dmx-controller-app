@@ -1000,7 +1000,7 @@ function EffectTimingDetails({ effect, showPhase }: EffectTimingDetailsProps) {
                 effect.timingMode!.timing = {
                   case: 'absolute',
                   value: create(EffectTiming_AbsoluteSchema, {
-                    duration: 1000,
+                    durationMs: 1000,
                   }),
                 };
                 break;
@@ -1036,12 +1036,12 @@ function EffectTimingDetails({ effect, showPhase }: EffectTimingDetailsProps) {
             type="float"
             max={300}
             min={0}
-            value={effect.timingMode.timing.value.duration / 1_000}
+            value={effect.timingMode.timing.value.durationMs / 1_000}
             onChange={(v) => {
               if (effect.timingMode?.timing.case !== 'absolute') {
                 throw new Error('Expected absolute timing mode!');
               }
-              effect.timingMode.timing.value.duration = Math.floor(v * 1_000);
+              effect.timingMode.timing.value.durationMs = Math.floor(v * 1_000);
               save(`Change effect duration to ${v} seconds.`);
             }}
           />

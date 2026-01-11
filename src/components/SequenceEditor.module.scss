@@ -1,11 +1,32 @@
 @use '../_vars';
 
 .sequence-editor {
-  @include vars.fill;
+  display: flex;
+  flex-direction: row;
+  inset: 0;
+  position: absolute;
+
+  .sequence {
+    flex: 1;
+
+    & > label {
+      display: inline;
+    }
+  }
+
+  .effect-details,
+  .effect-details-placeholder {
+    flex-shrink: 0;
+    border: 1px solid vars.$col-border;
+    padding: vars.spacing(2);
+    overflow-y: auto;
+    min-width: 351px;
+  }
 }
 
 .layer-container {
   position: relative;
+  margin-top: vars.spacing(1);
 }
 
 .verticalRules {
@@ -31,10 +52,6 @@
 
 .ruleFaint {
   border-right-style: dashed;
-}
-
-.effect-details {
-  margin: vars.spacing(1);
 }
 
 .new-layer-row {

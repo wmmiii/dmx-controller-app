@@ -29,7 +29,6 @@ import {
   getOutputTargetName,
 } from '../components/OutputSelector';
 import { PaletteSwatch } from '../components/Palette';
-import { HorizontalSplitPane } from '../components/SplitPane';
 import { TileGrid } from '../components/TileGrid';
 import { EffectDetails } from '../components/TimecodeEffect';
 import { ControllerContext } from '../contexts/ControllerContext';
@@ -290,128 +289,121 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
     <Modal
       title={`Edit Tile "${tile.name}"`}
       fullScreen={true}
+      bodyClass={styles.editorBody}
       onClose={onClose}
     >
-      <HorizontalSplitPane
-        className={styles.splitPane}
-        defaultAmount={0.15}
-        left={
-          <div className={styles.metaPane}>
-            <div className={styles.header}>
-              <h2>Tile Details</h2>
-              <IconButton
-                title="Delete tile"
-                variant="warning"
-                onClick={() => {
-                  const tileMap = getActiveScene(project).tileMap;
-                  const index = tileMap.findIndex((c) => c.tile === tile);
-                  if (index > -1) {
-                    tileMap.splice(index, 1);
+      <div className={styles.metaPane}>
+        <div className={styles.header}>
+          <h2>Tile Details</h2>
+          <IconButton
+            title="Delete tile"
+            variant="warning"
+            onClick={() => {
+              const tileMap = getActiveScene(project).tileMap;
+              const index = tileMap.findIndex((c) => c.tile === tile);
+              if (index > -1) {
+                tileMap.splice(index, 1);
 
-                    onClose();
-                    save(`Delete tile ${tile.name}.`);
-                  }
-                }}
-              >
-                <BiTrash />
-              </IconButton>
-            </div>
-            <div className={styles.row}>
-              <label>Name</label>
-              <TextInput
-                value={tile.name}
-                onChange={(v) => {
-                  tile.name = v;
-                  save(`Change tile name to "${v}".`);
-                }}
-              />
-            </div>
-            <div className={styles.row}>
-              <label>Priority</label>
-              <NumberInput
-                min={-1000}
-                max={1000}
-                type="integer"
-                value={tileMap.priority}
-                onChange={(v) => {
-                  tileMap.priority = v;
-                  save(`Set priority to ${v} for ${tile.name}.`);
-                }}
-              />
-            </div>
-            {controllerName != null && (
-              <div className={styles.row}>
-                <ControllerConnection action={action} title="Strength" />
-              </div>
-            )}
-            <div className={styles.row}>
-              <ToggleInput
-                className={styles.switch}
-                value={tile.timingDetails.case === 'oneShot'}
-                onChange={(oneShot) => {
-                  if (oneShot) {
-                    tile.timingDetails = {
-                      case: 'oneShot',
-                      value: create(Scene_Tile_OneShotDetailsSchema, {
-                        duration: {
-                          amount: {
-                            case: 'beat',
-                            value: 0,
-                          },
-                        },
-                      }),
-                    };
-                  } else {
-                    tile.timingDetails = {
-                      case: 'loop',
-                      value: create(Scene_Tile_LoopDetailsSchema, {
-                        fadeIn: {
-                          amount: {
-                            case: 'ms',
-                            value: 0,
-                          },
-                        },
-                        fadeOut: {
-                          amount: {
-                            case: 'ms',
-                            value: 0,
-                          },
-                        },
-                      }),
-                    };
-                  }
-                  save(
-                    `Set ${tile.name} to ${oneShot ? 'one-shot' : 'looping'}.`,
-                  );
-                }}
-                labels={{ left: 'Loop', right: 'One-shot' }}
-              />
-            </div>
-            <hr />
-            {tile.timingDetails.case === 'oneShot' && (
-              <>
-                <div className={styles.row}>
-                  <label>Duration</label>
-                </div>
-                <DurationInput duration={tile.timingDetails.value.duration!} />
-              </>
-            )}
-            {tile.timingDetails.case === 'loop' && (
-              <>
-                <div className={styles.row}>
-                  <label>Fade in</label>
-                </div>
-                <DurationInput duration={tile.timingDetails.value.fadeIn!} />
-                <div className={styles.row}>
-                  <label>Fade out</label>
-                </div>
-                <DurationInput duration={tile.timingDetails.value.fadeOut!} />
-              </>
-            )}
+                onClose();
+                save(`Delete tile ${tile.name}.`);
+              }
+            }}
+          >
+            <BiTrash />
+          </IconButton>
+        </div>
+        <div className={styles.row}>
+          <label>Name</label>
+          <TextInput
+            value={tile.name}
+            onChange={(v) => {
+              tile.name = v;
+              save(`Change tile name to "${v}".`);
+            }}
+          />
+        </div>
+        <div className={styles.row}>
+          <label>Priority</label>
+          <NumberInput
+            min={-1000}
+            max={1000}
+            type="integer"
+            value={tileMap.priority}
+            onChange={(v) => {
+              tileMap.priority = v;
+              save(`Set priority to ${v} for ${tile.name}.`);
+            }}
+          />
+        </div>
+        {controllerName != null && (
+          <div className={styles.row}>
+            <ControllerConnection action={action} title="Strength" />
           </div>
-        }
-        right={<EffectGroupEditor channels={tile.channels} name={tile.name} />}
-      />
+        )}
+        <div className={styles.row}>
+          <ToggleInput
+            className={styles.switch}
+            value={tile.timingDetails.case === 'oneShot'}
+            onChange={(oneShot) => {
+              if (oneShot) {
+                tile.timingDetails = {
+                  case: 'oneShot',
+                  value: create(Scene_Tile_OneShotDetailsSchema, {
+                    duration: {
+                      amount: {
+                        case: 'beat',
+                        value: 0,
+                      },
+                    },
+                  }),
+                };
+              } else {
+                tile.timingDetails = {
+                  case: 'loop',
+                  value: create(Scene_Tile_LoopDetailsSchema, {
+                    fadeIn: {
+                      amount: {
+                        case: 'ms',
+                        value: 0,
+                      },
+                    },
+                    fadeOut: {
+                      amount: {
+                        case: 'ms',
+                        value: 0,
+                      },
+                    },
+                  }),
+                };
+              }
+              save(`Set ${tile.name} to ${oneShot ? 'one-shot' : 'looping'}.`);
+            }}
+            labels={{ left: 'Loop', right: 'One-shot' }}
+          />
+        </div>
+        <hr />
+        {tile.timingDetails.case === 'oneShot' && (
+          <>
+            <div className={styles.row}>
+              <label>Duration</label>
+            </div>
+            <DurationInput duration={tile.timingDetails.value.duration!} />
+          </>
+        )}
+        {tile.timingDetails.case === 'loop' && (
+          <>
+            <div className={styles.row}>
+              <label>Fade in</label>
+            </div>
+            <DurationInput duration={tile.timingDetails.value.fadeIn!} />
+            <div className={styles.row}>
+              <label>Fade out</label>
+            </div>
+            <DurationInput duration={tile.timingDetails.value.fadeOut!} />
+          </>
+        )}
+      </div>
+      <EffectGroupEditor channels={tile.channels} name={tile.name} />
       {existingTile && (
         <Modal
           title="Controller mapping error"
@@ -433,7 +425,7 @@ function EffectGroupEditor({ channels, name }: EffectGroupEditorProps) {
   const { project, save } = useContext(ProjectContext);
 
   return (
-    <div className={`${styles.detailsPane} ${styles.effectGroup}`}>
+    <div className={styles.detailsPane}>
       {channels.map((c, i) => {
         if (c.effect == null) {
           throw new Error('Channel effect is not defined!');
