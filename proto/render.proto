@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package dmx_controller;
+
+message RenderMode {
+  message Blackout {}
+
+  message FixtureDebug {
+    uint32 channel_offset = 1;
+    map<uint32, uint32> channel_values = 2;
+  }
+
+  message GroupDebug { uint64 group_id = 1; }
+
+  message Scene { uint64 scene_id = 1; }
+
+  message Show {
+    uint64 show_id = 1;
+
+    oneof state {
+      uint64 start_t = 2;
+      uint32 paused = 3;
+    }
+  }
+
+  oneof mode {
+    Blackout blackout = 1;
+    FixtureDebug fixture_debug = 2;
+    GroupDebug group_debug = 3;
+    Scene scene = 4;
+    Show show = 5;
+  }
+}
