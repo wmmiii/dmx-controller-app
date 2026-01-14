@@ -17,7 +17,6 @@ import { Modal } from '../components/Modal';
 import { PaletteContext } from '../contexts/PaletteContext';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { ShortcutContext } from '../contexts/ShortcutContext';
-import { setRenderFunctions } from '../engine/renderRouter';
 import { DEFAULT_COLOR_PALETTE } from '../util/colorUtil';
 import { UNSET_INDEX, idMapToArray } from '../util/mapUtils';
 import { randomUint64 } from '../util/numberUtils';
@@ -62,19 +61,6 @@ export default function ShowPage(): JSX.Element {
   const show = useMemo(
     () => project?.shows[project.selectedShow.toString()],
     [project],
-  );
-
-  useEffect(
-    () =>
-      setRenderFunctions({
-        renderDmx: () => {
-          throw new Error('renderDmx not implemented!');
-        },
-        renderWled: () => {
-          throw new Error('renderDmx not implemented!');
-        },
-      }),
-    [project, t],
   );
 
   useEffect(

@@ -14,7 +14,7 @@ import {
   DmxFixtureDefinition_ModeSchema,
   DmxFixtureDefinitionSchema,
 } from '@dmx-controller/proto/dmx_pb';
-import { WledRenderTargetSchema } from '@dmx-controller/proto/wled_pb';
+import { RenderModeSchema } from '@dmx-controller/proto/render_pb';
 import { BiCopyAlt, BiGridVertical, BiPlus, BiTrash } from 'react-icons/bi';
 import { Button, IconButton } from '../../components/Button';
 import { ColorSwatch } from '../../components/ColorSwatch';
@@ -30,7 +30,7 @@ import {
   isAmountChannel,
   isAngleChannel,
 } from '../../engine/channel';
-import { setRenderFunctions } from '../../engine/renderRouter';
+import { useRenderMode } from '../../hooks/renderMode';
 import { extractGdtf } from '../../util/gdtf';
 import { randomUint64 } from '../../util/numberUtils';
 import { getOutput } from '../../util/projectUtils';
@@ -244,20 +244,16 @@ function EditDefinitionDialog({
     setTestValues(testValues);
   }, [setTestValues]);
 
-  useEffect(
-    () =>
-      setRenderFunctions({
-        renderDmx: async (_output) => {
-          const renderOutput = new Uint8Array(512);
-          for (let i = 0; i < mode.numChannels; ++i) {
-            renderOutput[i + testIndex] = testValues[i] || 0;
-          }
-          return renderOutput;
+  useRenderMode(
+    create(RenderModeSchema, {
+      mode: {
+        case: 'fixtureDebug',
+        value: {
+          channelOffset: testIndex,
+          channelValues: testValues,
         },
-        renderWled: async () =>
-          create(WledRenderTargetSchema, { segments: [] }),
-      }),
-    [testIndex, testValues],
+      },
+    }),
   );
 
   const mode = definition.modes[modeId];

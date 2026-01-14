@@ -10,7 +10,8 @@ import {
   OutputTargetSchema,
   TargetGroupSchema,
 } from '@dmx-controller/proto/output_pb';
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { RenderModeSchema } from '@dmx-controller/proto/render_pb';
+import { useCallback, useContext, useMemo, useState } from 'react';
 import { BiTrash } from 'react-icons/bi';
 import { Button, IconButton } from '../../components/Button';
 import { TextInput } from '../../components/Input';
@@ -23,7 +24,7 @@ import {
   deleteTargetGroup,
   getApplicableMembers,
 } from '../../engine/group';
-import { setRenderFunctions } from '../../engine/renderRouter';
+import { useRenderMode } from '../../hooks/renderMode';
 import { randomUint64 } from '../../util/numberUtils';
 import styles from './PatchPage.module.scss';
 
@@ -92,17 +93,18 @@ function GroupEditorPane({
 }: GroupEditorPaneProps) {
   const { project, save, update } = useContext(ProjectContext);
 
-  useEffect(
-    () =>
-      setRenderFunctions({
-        renderDmx: () => {
-          throw new Error('renderDmx not implemented!');
-        },
-        renderWled: () => {
-          throw new Error('renderDmx not implemented!');
-        },
-      }),
-    [project, selectedGroupId],
+  useRenderMode(
+    create(RenderModeSchema, {
+      mode: selectedGroupId
+        ? {
+            case: 'groupDebug',
+            value: {},
+          }
+        : {
+            case: 'blackout',
+            value: {},
+          },
+    }),
   );
 
   const group = useMemo(() => {

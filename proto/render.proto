@@ -7,7 +7,7 @@ message RenderMode {
 
   message FixtureDebug {
     uint32 channel_offset = 1;
-    map<uint32, uint32> channel_values = 2;
+    repeated uint32 channel_values = 2;
   }
 
   message GroupDebug { uint64 group_id = 1; }

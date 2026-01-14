@@ -36,12 +36,12 @@ import { PaletteContext } from '../contexts/PaletteContext';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { getAvailableChannels } from '../engine/fixtures/fixture';
 
+import { RenderModeSchema } from '@dmx-controller/proto/render_pb';
 import { BiPlus, BiTrash } from 'react-icons/bi';
 import { DurationInput } from '../components/Duration';
 import { Spacer } from '../components/Spacer';
 import { Tabs, TabsType } from '../components/Tabs';
-import { setRenderFunctions } from '../engine/renderRouter';
-import { renderDmxScene, renderSceneWled } from '../system_interfaces/engine';
+import { useRenderMode } from '../hooks/renderMode';
 import { DEFAULT_COLOR_PALETTE } from '../util/colorUtil';
 import { randomUint64 } from '../util/numberUtils';
 import { getActiveScene } from '../util/sceneUtils';
@@ -62,14 +62,16 @@ export function LivePage(): JSX.Element {
     projectRef.current = project;
   }, [project]);
 
-  useEffect(() => {
-    return setRenderFunctions({
-      renderDmx: (outputId, frame) =>
-        renderDmxScene(outputId, BigInt(new Date().getTime()), frame),
-      renderWled: (outputId, frame) =>
-        renderSceneWled(outputId, BigInt(new Date().getTime()), frame),
-    });
-  }, []);
+  useRenderMode(
+    create(RenderModeSchema, {
+      mode: {
+        case: 'scene',
+        value: {
+          sceneId: project.activeScene,
+        },
+      },
+    }),
+  );
 
   const body = (
     <div className={styles.body}>

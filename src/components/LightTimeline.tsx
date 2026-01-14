@@ -88,7 +88,7 @@ interface TracksProps {
   audioBlob: Blob | undefined;
   audioDuration: number;
   setAudioDuration: (duration: number) => void;
-  selectedEffect: TimecodedEffect;
+  selectedEffect: TimecodedEffect | null;
   selectedEffectAddress: EffectAddress | null;
   setSelectedEffectAddress: (a: EffectAddress | null) => void;
   copyEffect: TimecodedEffect | null;
@@ -329,7 +329,7 @@ function Tracks({
               <LightTrack
                 key={i}
                 output={o}
-                selectedEffect={selectedEffect || null}
+                selectedEffect={selectedEffect}
                 setSelectedEffectAddress={(address) => {
                   if (!address) {
                     setSelectedEffectAddress(null);

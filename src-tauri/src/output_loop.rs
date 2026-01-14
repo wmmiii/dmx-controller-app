@@ -1,6 +1,6 @@
 use dmx_engine::project::PROJECT_REF;
 use dmx_engine::proto::output::Output as ProtoOutput;
-use dmx_engine::render::scene;
+use dmx_engine::render::render::{render_dmx, render_wled};
 use prost::Message;
 use serde::Serialize;
 use std::collections::HashMap;
@@ -228,7 +228,7 @@ impl OutputLoopManager {
         frame: u32,
         app: &AppHandle,
     ) -> Result<Vec<u8>, String> {
-        match scene::render_scene_dmx(output_id, system_t, frame) {
+        match render_dmx(output_id, system_t, frame) {
             Ok(dmx_data) => {
                 let dmx_vec = dmx_data.to_vec();
 
@@ -319,7 +319,7 @@ impl OutputLoopManager {
                 }
                 OutputType::Wled { ip_address } => {
                     // Render WLED
-                    match scene::render_scene_wled(output_id, system_t, frame) {
+                    match render_wled(output_id, system_t, frame) {
                         Ok(wled_data) => {
                             // Output via WLED
                             let wled = wled_state.lock().await;
