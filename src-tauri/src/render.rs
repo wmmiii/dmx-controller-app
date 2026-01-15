@@ -6,7 +6,9 @@ use prost::Message;
 
 #[tauri::command]
 pub fn render_dmx(output_id: String, system_t: u64, frame: u32) -> Result<Vec<u8>, String> {
-    let oid = output_id.parse::<u64>().unwrap();
+    let oid = output_id
+        .parse::<u64>()
+        .map_err(|e| format!("Error parsing output id: {}", e))?;
 
     let universe = render::render_dmx(oid, system_t, frame)?;
 
@@ -15,7 +17,9 @@ pub fn render_dmx(output_id: String, system_t: u64, frame: u32) -> Result<Vec<u8
 
 #[tauri::command]
 pub fn render_wled(output_id: String, system_t: u64, frame: u32) -> Result<Vec<u8>, String> {
-    let oid = output_id.parse::<u64>().unwrap();
+    let oid = output_id
+        .parse::<u64>()
+        .map_err(|e| format!("Error parsing output id: {}", e))?;
 
     let wled_render_target = render::render_wled(oid, system_t, frame)?;
 
@@ -29,11 +33,11 @@ pub async fn set_render_mode(render_mode_binary: Vec<u8>) -> Result<(), String> 
 
     // Use a scoped block to ensure the mutex guard is dropped before any .await
     {
-        let mut render_mode_mutux = RENDER_MODE_REF
+        let mut render_mode_mutex = RENDER_MODE_REF
             .lock()
             .map_err(|e| format!("Failed to lock render mode: {}", e))?;
 
-        *render_mode_mutux = render_mode_object;
+        *render_mode_mutex = render_mode_object;
     } // Mutex guard is dropped here
 
     Ok(())

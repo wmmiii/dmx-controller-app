@@ -107,7 +107,7 @@ fn render<T: RenderTarget<T>>(
 ) -> Result<(), String> {
     let render_mode = RENDER_MODE_REF
         .lock()
-        .map_err(|e| format!("Failed to lock project: {}", e))?;
+        .map_err(|e| format!("Failed to lock render mode: {}", e))?;
 
     match render_mode.mode {
         None | Some(Mode::Blackout(_)) => Ok(()),

@@ -98,7 +98,9 @@ function GroupEditorPane({
       mode: selectedGroupId
         ? {
             case: 'groupDebug',
-            value: {},
+            value: {
+              groupId: selectedGroupId,
+            },
           }
         : {
             case: 'blackout',
