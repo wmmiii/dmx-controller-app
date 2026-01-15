@@ -30,6 +30,23 @@ import styles from './PatchPage.module.scss';
 export function GroupEditor() {
   const [selectedGroupId, setSelectedGroupId] = useState<bigint | null>(null);
 
+  useRenderMode(
+    {
+      mode: selectedGroupId
+        ? {
+            case: 'groupDebug',
+            value: {
+              groupId: selectedGroupId,
+            },
+          }
+        : {
+            case: 'blackout',
+            value: {},
+          },
+    },
+    [selectedGroupId],
+  );
+
   return (
     <div className={styles.contents}>
       <GroupList

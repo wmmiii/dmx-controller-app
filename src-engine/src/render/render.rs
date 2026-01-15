@@ -5,13 +5,16 @@ use once_cell::sync::Lazy;
 use crate::{
     project::PROJECT_REF,
     proto::{
+        fixture_state::LightColor,
         output::Output,
-        render_mode::{Mode, Scene},
-        wled_render_target::{Color, Segment},
-        Project, RenderMode, WledRenderTarget,
+        output_target,
+        render_mode::{GroupDebug, Mode, Scene},
+        wled_render_target::Segment,
+        Color, ColorPalette, FixtureState, OutputTarget, Project, RenderMode, WledRenderTarget,
     },
     render::{
         dmx_render_target::DmxRenderTarget, render_target::RenderTarget, scene::render_scene,
+        util::get_fixtures,
     },
 };
 
@@ -86,7 +89,7 @@ pub fn render_wled(output_id: u64, system_t: u64, frame: u32) -> Result<WledRend
             .map(|_| Segment {
                 effect: 0,
                 palette: 0,
-                primary_color: Some(Color {
+                primary_color: Some(crate::proto::wled_render_target::Color {
                     red: 0.0,
                     green: 0.0,
                     blue: 0.0,
@@ -119,9 +122,53 @@ fn render<T: RenderTarget<T>>(
             }
             Ok(())
         }
+        Some(Mode::GroupDebug(GroupDebug { group_id })) => {
+            render_group_debug(render_target, project, group_id)
+        }
         Some(Mode::Scene(Scene { scene_id })) => {
             render_scene(*scene_id, render_target, system_t, frame, project)
         }
-        _ => Ok(()),
+        Some(Mode::Show(_)) => todo!("Show not implemented yet!"),
     }
+}
+
+fn render_group_debug<T: RenderTarget<T>>(
+    render_target: &mut T,
+    project: &Project,
+    group_id: &u64,
+) -> Result<(), String> {
+    let group_target = OutputTarget {
+        output: Some(output_target::Output::Group(*group_id)),
+    };
+    let fixtures = get_fixtures(project, &group_target);
+    for (index, fixture) in fixtures.iter().enumerate() {
+        // Normalize hue to [0, 1) range (handle wraparound)
+        let h = index as f64 / fixtures.len() as f64;
+
+        // Scale to [0, 6) to represent the 6 segments of the color wheel
+        let h_scaled = h * 6.0;
+        let segment = h_scaled.floor() as i32;
+        let f = h_scaled - segment as f64;
+
+        let color = match segment {
+            0 => (1.0, f, 0.0),       // Red to Yellow
+            1 => (1.0 - f, 1.0, 0.0), // Yellow to Green
+            2 => (0.0, 1.0, f),       // Green to Cyan
+            3 => (0.0, 1.0 - f, 1.0), // Cyan to Blue
+            4 => (f, 0.0, 1.0),       // Blue to Magenta
+            _ => (1.0, 0.0, 1.0 - f), // Magenta to Red (segment 5 or wraparound)
+        };
+
+        let mut state = FixtureState::default();
+        state.light_color = Some(LightColor::Color(Color {
+            red: color.0,
+            green: color.1,
+            blue: color.2,
+            white: None,
+        }));
+
+        render_target.apply_state(fixture, &state, &ColorPalette::default());
+    }
+
+    Ok(())
 }
