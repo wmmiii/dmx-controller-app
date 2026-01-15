@@ -44,3 +44,27 @@ pnpm run build
 ```
 
 The build output will be in the `dist/` directory.
+
+## HTTP MCP Server
+
+The application includes an embedded HTTP MCP (Model Context Protocol) server for external control of tiles in the active scene. The server runs automatically on `http://localhost:3001` when the Tauri desktop application starts.
+
+### Quick Start
+
+```bash
+# Get all tiles in active scene
+curl http://localhost:3001/tiles
+
+# Enable a tile
+curl -X POST http://localhost:3001/tiles/{tile_id}/enable
+
+# Disable a tile
+curl -X POST http://localhost:3001/tiles/{tile_id}/disable
+
+# Set tile strength (0.0 - 1.0)
+curl -X POST http://localhost:3001/tiles/{tile_id}/amount \
+  -H "Content-Type: application/json" \
+  -d '{"amount": 0.5}'
+```
+
+For complete API documentation, see [MCP_SERVER.md](MCP_SERVER.md).
