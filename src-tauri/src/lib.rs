@@ -1,3 +1,4 @@
+mod mcp;
 mod midi;
 mod output_loop;
 mod project;
@@ -37,6 +38,20 @@ pub fn run() {
 
             let output_loop_manager = output_loop::OutputLoopManager::new(app.handle().clone());
             app.manage(Arc::new(Mutex::new(output_loop_manager)));
+
+            // Start MCP HTTP server in background
+            let app_handle = app.handle().clone();
+            tokio::spawn(async move {
+                match mcp::start_mcp_server(app_handle).await {
+                    Ok(_handle) => {
+                        // Server handle is kept alive by the tokio runtime
+                        // Server will run until the application exits
+                    }
+                    Err(e) => {
+                        eprintln!("MCP server error: {}", e);
+                    }
+                }
+            });
 
             if cfg!(debug_assertions) {
                 app.handle().plugin(
