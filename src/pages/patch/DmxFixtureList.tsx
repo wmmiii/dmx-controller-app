@@ -14,7 +14,6 @@ import {
   DmxFixtureDefinition_ModeSchema,
   DmxFixtureDefinitionSchema,
 } from '@dmx-controller/proto/dmx_pb';
-import { RenderModeSchema } from '@dmx-controller/proto/render_pb';
 import { BiCopyAlt, BiGridVertical, BiPlus, BiTrash } from 'react-icons/bi';
 import { Button, IconButton } from '../../components/Button';
 import { ColorSwatch } from '../../components/ColorSwatch';
@@ -180,6 +179,7 @@ export function DmxFixtureList({
       </p>
       {selectedDefinition && (
         <EditDefinitionDialog
+          debugOutputId={outputId}
           definition={selectedDefinition}
           close={() => setSelectedDefinitionId(null)}
           copy={() => {
@@ -215,6 +215,7 @@ export function DmxFixtureList({
 }
 
 interface EditDefinitionDialogProps {
+  debugOutputId: bigint;
   definition: DmxFixtureDefinition;
   close: () => void;
   copy: () => void;
@@ -222,6 +223,7 @@ interface EditDefinitionDialogProps {
 }
 
 function EditDefinitionDialog({
+  debugOutputId,
   definition,
   close,
   copy,
@@ -237,23 +239,25 @@ function EditDefinitionDialog({
     useState<DmxFixtureDefinition_Channel_ColorWheelMapping | null>(null);
 
   useEffect(() => {
-    const testValues: number[] = [];
+    const testValues: number[] = new Array(mode.numChannels).fill(0);
     Object.entries(mode.channels).forEach(([i, c]) => {
-      testValues[parseInt(i) - 1 + testIndex] = c.defaultValue || 0;
+      testValues[parseInt(i) - 1 + testIndex] = c.defaultValue ?? 0;
     });
     setTestValues(testValues);
   }, [setTestValues]);
 
   useRenderMode(
-    create(RenderModeSchema, {
+    {
       mode: {
         case: 'fixtureDebug',
         value: {
+          outputId: debugOutputId,
           channelOffset: testIndex,
           channelValues: testValues,
         },
       },
-    }),
+    },
+    [debugOutputId, testIndex, testValues],
   );
 
   const mode = definition.modes[modeId];

@@ -1,21 +1,34 @@
-import { create, toJsonString } from '@bufbuild/protobuf';
-import { RenderMode, RenderModeSchema } from '@dmx-controller/proto/render_pb';
+import { create, MessageInitShape } from '@bufbuild/protobuf';
+import { RenderModeSchema } from '@dmx-controller/proto/render_pb';
 import { useEffect } from 'react';
 import { setRenderMode } from '../system_interfaces/engine';
 
-export function useRenderMode(renderMode: RenderMode) {
+let modeLock = Promise.resolve();
+
+export function useRenderMode(
+  renderMode: MessageInitShape<typeof RenderModeSchema>,
+  deps: any[],
+) {
   useEffect(() => {
-    setRenderMode(renderMode);
+    const next = modeLock.then(() =>
+      setRenderMode(create(RenderModeSchema, renderMode)),
+    );
+    let release: (_: any) => void;
+    modeLock = new Promise((r) => (release = r));
 
     return () => {
-      setRenderMode(
-        create(RenderModeSchema, {
-          mode: {
-            case: 'blackout',
-            value: {},
-          },
-        }),
-      );
+      next
+        .then(() =>
+          setRenderMode(
+            create(RenderModeSchema, {
+              mode: {
+                case: 'blackout',
+                value: {},
+              },
+            }),
+          ),
+        )
+        .then(release);
     };
-  }, [toJsonString(RenderModeSchema, renderMode)]);
+  }, deps);
 }

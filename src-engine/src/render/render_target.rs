@@ -1,7 +1,8 @@
 use std::fmt::Debug;
 
 use crate::proto::{
-    fixture_state::LightColor, Color, ColorPalette, FixtureState, QualifiedFixtureId,
+    fixture_state::LightColor, render_mode::FixtureDebug, Color, ColorPalette, FixtureState,
+    QualifiedFixtureId,
 };
 
 const BLACK: Color = Color {
@@ -26,6 +27,7 @@ pub trait RenderTarget<T: RenderTarget<T>>: Clone + Debug {
         color_palette: &ColorPalette,
     );
     fn interpolate(&mut self, a: &T, b: &T, t: f64);
+    fn apply_fixture_debug(&mut self, fixture_debug: &FixtureDebug);
 }
 
 impl FixtureState {

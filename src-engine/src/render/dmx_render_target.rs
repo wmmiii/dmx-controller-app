@@ -290,6 +290,12 @@ impl<'a> RenderTarget<DmxRenderTarget<'a>> for DmxRenderTarget<'a> {
             }
         }
     }
+
+    fn apply_fixture_debug(&mut self, fixture_debug: &crate::proto::render_mode::FixtureDebug) {
+        for (index, &value) in fixture_debug.channel_values.iter().enumerate() {
+            self.universe[fixture_debug.channel_offset as usize + index] = value as f64 / 255.0;
+        }
+    }
 }
 
 #[cfg(test)]

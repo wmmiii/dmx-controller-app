@@ -6,8 +6,9 @@ message RenderMode {
   message Blackout {}
 
   message FixtureDebug {
-    uint32 channel_offset = 1;
-    repeated uint32 channel_values = 2;
+    uint64 output_id = 1;
+    uint32 channel_offset = 2;
+    repeated uint32 channel_values = 3;
   }
 
   message GroupDebug { uint64 group_id = 1; }

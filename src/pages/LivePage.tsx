@@ -36,7 +36,6 @@ import { PaletteContext } from '../contexts/PaletteContext';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { getAvailableChannels } from '../engine/fixtures/fixture';
 
-import { RenderModeSchema } from '@dmx-controller/proto/render_pb';
 import { BiPlus, BiTrash } from 'react-icons/bi';
 import { DurationInput } from '../components/Duration';
 import { Spacer } from '../components/Spacer';
@@ -63,14 +62,15 @@ export function LivePage(): JSX.Element {
   }, [project]);
 
   useRenderMode(
-    create(RenderModeSchema, {
+    {
       mode: {
         case: 'scene',
         value: {
           sceneId: project.activeScene,
         },
       },
-    }),
+    },
+    [project.activeScene],
   );
 
   const body = (

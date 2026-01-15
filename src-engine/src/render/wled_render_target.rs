@@ -87,4 +87,8 @@ impl<'a> RenderTarget<WledRenderTarget> for WledRenderTarget {
             self.segments[index] = segment;
         }
     }
+
+    fn apply_fixture_debug(&mut self, _fixture_debug: &crate::proto::render_mode::FixtureDebug) {
+        panic!("Cannot perform fixture debug for WLED render target!");
+    }
 }

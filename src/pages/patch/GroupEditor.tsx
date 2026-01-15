@@ -10,7 +10,6 @@ import {
   OutputTargetSchema,
   TargetGroupSchema,
 } from '@dmx-controller/proto/output_pb';
-import { RenderModeSchema } from '@dmx-controller/proto/render_pb';
 import { useCallback, useContext, useMemo, useState } from 'react';
 import { BiTrash } from 'react-icons/bi';
 import { Button, IconButton } from '../../components/Button';
@@ -94,7 +93,7 @@ function GroupEditorPane({
   const { project, save, update } = useContext(ProjectContext);
 
   useRenderMode(
-    create(RenderModeSchema, {
+    {
       mode: selectedGroupId
         ? {
             case: 'groupDebug',
@@ -106,7 +105,8 @@ function GroupEditorPane({
             case: 'blackout',
             value: {},
           },
-    }),
+    },
+    [selectedGroupId],
   );
 
   const group = useMemo(() => {

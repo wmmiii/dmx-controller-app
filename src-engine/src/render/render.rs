@@ -53,7 +53,8 @@ pub fn render_dmx(output_id: u64, system_t: u64, frame: u32) -> Result<[u8; 512]
 
     let mut render_target = DmxRenderTarget::new(&fixtures, fixture_definitions);
 
-    render(&mut render_target, system_t, frame, &project).map(|_| render_target.get_universe())
+    render(output_id, &mut render_target, system_t, frame, &project)
+        .map(|_| render_target.get_universe())
 }
 
 pub fn render_wled(output_id: u64, system_t: u64, frame: u32) -> Result<WledRenderTarget, String> {
@@ -96,10 +97,11 @@ pub fn render_wled(output_id: u64, system_t: u64, frame: u32) -> Result<WledRend
             .collect(),
     };
 
-    render(&mut render_target, system_t, frame, &project).map(|_| render_target)
+    render(output_id, &mut render_target, system_t, frame, &project).map(|_| render_target)
 }
 
 fn render<T: RenderTarget<T>>(
+    output_id: u64,
     render_target: &mut T,
     system_t: u64,
     frame: u32,
@@ -109,10 +111,16 @@ fn render<T: RenderTarget<T>>(
         .lock()
         .map_err(|e| format!("Failed to lock render mode: {}", e))?;
 
-    match render_mode.mode {
+    match &render_mode.mode {
         None | Some(Mode::Blackout(_)) => Ok(()),
+        Some(Mode::FixtureDebug(fixture_debug)) => {
+            if output_id == fixture_debug.output_id {
+                render_target.apply_fixture_debug(&fixture_debug);
+            }
+            Ok(())
+        }
         Some(Mode::Scene(Scene { scene_id })) => {
-            render_scene(scene_id, render_target, system_t, frame, project)
+            render_scene(*scene_id, render_target, system_t, frame, project)
         }
         _ => Ok(()),
     }
