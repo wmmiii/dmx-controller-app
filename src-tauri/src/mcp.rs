@@ -1,36 +1,41 @@
 use dmx_engine::project::PROJECT_REF;
-use dmx_engine::proto::scene::tile::Transition;
+use dmx_engine::proto::scene::{tile::Transition, TileMap};
 use dmx_engine::proto::Scene;
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::server::{Server, ServerHandle};
 use jsonrpsee::types::ErrorObjectOwned;
 use jsonrpsee::RpcModule;
+use prost::Message;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tauri::AppHandle;
 
-#[derive(Serialize, Deserialize, Clone)]
-pub struct TileInfo {
-    pub id: String,
-    pub name: String,
-    pub x: i32,
-    pub y: i32,
-    pub priority: i32,
-    pub enabled: bool,
-    pub amount: f32,
+// Helper to serialize protobuf TileMap to JSON
+fn tilemap_to_json(tile_map: &TileMap) -> Value {
+    // Serialize protobuf to JSON via binary encoding
+    let bytes = tile_map.encode_to_vec();
+    // For JSON output, we'll create a simplified representation
+    json!({
+        "id": tile_map.id.to_string(),
+        "name": tile_map.tile.as_ref().map(|t| t.name.clone()).unwrap_or_default(),
+        "x": tile_map.x,
+        "y": tile_map.y,
+        "priority": tile_map.priority,
+        "tile": tile_map.tile.as_ref().map(|t| {
+            json!({
+                "name": t.name,
+                "transition": match &t.transition {
+                    Some(Transition::StartFadeInMs(ms)) => json!({"start_fade_in_ms": ms}),
+                    Some(Transition::StartFadeOutMs(ms)) => json!({"start_fade_out_ms": ms}),
+                    Some(Transition::AbsoluteStrength(s)) => json!({"absolute_strength": s}),
+                    None => json!(null),
+                }
+            })
+        })
+    })
 }
 
-// Tile management functions
-fn get_tile_state(tile: &dmx_engine::proto::scene::Tile) -> (bool, f32) {
-    match &tile.transition {
-        Some(Transition::StartFadeInMs(_)) => (true, 1.0),
-        Some(Transition::StartFadeOutMs(_)) => (false, 0.0),
-        Some(Transition::AbsoluteStrength(strength)) => (*strength > 0.1, *strength),
-        None => (false, 0.0),
-    }
-}
-
-fn list_tiles_impl() -> Result<Vec<TileInfo>, String> {
+fn list_tiles_impl() -> Result<Vec<Value>, String> {
     let project = PROJECT_REF
         .lock()
         .map_err(|e| format!("Failed to lock project: {}", e))?;
@@ -40,28 +45,16 @@ fn list_tiles_impl() -> Result<Vec<TileInfo>, String> {
         .get(&project.active_scene)
         .ok_or_else(|| "Active scene not found".to_string())?;
 
-    let tiles: Vec<TileInfo> = scene
+    let tiles: Vec<Value> = scene
         .tile_map
         .iter()
-        .filter_map(|tile_map| {
-            let tile = tile_map.tile.as_ref()?;
-            let (enabled, amount) = get_tile_state(tile);
-            Some(TileInfo {
-                id: tile_map.id.to_string(),
-                name: tile.name.clone(),
-                x: tile_map.x,
-                y: tile_map.y,
-                priority: tile_map.priority,
-                enabled,
-                amount,
-            })
-        })
+        .map(tilemap_to_json)
         .collect();
 
     Ok(tiles)
 }
 
-fn enable_tile_impl(scene: &mut Scene, tile_id: u64) -> Result<TileInfo, String> {
+fn enable_tile_impl(scene: &mut Scene, tile_id: u64) -> Result<Value, String> {
     let tile_map = scene
         .tile_map
         .iter_mut()
@@ -80,20 +73,10 @@ fn enable_tile_impl(scene: &mut Scene, tile_id: u64) -> Result<TileInfo, String>
 
     tile.transition = Some(Transition::StartFadeInMs(now_ms));
 
-    let (enabled, amount) = get_tile_state(tile);
-
-    Ok(TileInfo {
-        id: tile_id.to_string(),
-        name: tile.name.clone(),
-        x: tile_map.x,
-        y: tile_map.y,
-        priority: tile_map.priority,
-        enabled,
-        amount,
-    })
+    Ok(tilemap_to_json(tile_map))
 }
 
-fn disable_tile_impl(scene: &mut Scene, tile_id: u64) -> Result<TileInfo, String> {
+fn disable_tile_impl(scene: &mut Scene, tile_id: u64) -> Result<Value, String> {
     let tile_map = scene
         .tile_map
         .iter_mut()
@@ -112,20 +95,10 @@ fn disable_tile_impl(scene: &mut Scene, tile_id: u64) -> Result<TileInfo, String
 
     tile.transition = Some(Transition::StartFadeOutMs(now_ms));
 
-    let (enabled, amount) = get_tile_state(tile);
-
-    Ok(TileInfo {
-        id: tile_id.to_string(),
-        name: tile.name.clone(),
-        x: tile_map.x,
-        y: tile_map.y,
-        priority: tile_map.priority,
-        enabled,
-        amount,
-    })
+    Ok(tilemap_to_json(tile_map))
 }
 
-fn set_tile_amount_impl(scene: &mut Scene, tile_id: u64, amount: f32) -> Result<TileInfo, String> {
+fn set_tile_amount_impl(scene: &mut Scene, tile_id: u64, amount: f32) -> Result<Value, String> {
     if !(0.0..=1.0).contains(&amount) {
         return Err("Amount must be between 0.0 and 1.0".to_string());
     }
@@ -143,17 +116,7 @@ fn set_tile_amount_impl(scene: &mut Scene, tile_id: u64, amount: f32) -> Result<
 
     tile.transition = Some(Transition::AbsoluteStrength(amount));
 
-    let (enabled, amount) = get_tile_state(tile);
-
-    Ok(TileInfo {
-        id: tile_id.to_string(),
-        name: tile.name.clone(),
-        x: tile_map.x,
-        y: tile_map.y,
-        priority: tile_map.priority,
-        enabled,
-        amount,
-    })
+    Ok(tilemap_to_json(tile_map))
 }
 
 // Convert String error to JSON-RPC error
@@ -289,8 +252,8 @@ pub async fn start_mcp_server(_app_handle: AppHandle) -> Result<ServerHandle, Bo
                     .get_mut(&project.active_scene)
                     .ok_or_else(|| to_rpc_error("Active scene not found".to_string()))?;
 
-                let tile_info = enable_tile_impl(scene, tile_id).map_err(to_rpc_error)?;
-                let tile_json = serde_json::to_string_pretty(&tile_info).unwrap_or_default();
+                let tile_data = enable_tile_impl(scene, tile_id).map_err(to_rpc_error)?;
+                let tile_json = serde_json::to_string_pretty(&tile_data).unwrap_or_default();
 
                 Ok(json!({
                     "content": [{
@@ -317,8 +280,8 @@ pub async fn start_mcp_server(_app_handle: AppHandle) -> Result<ServerHandle, Bo
                     .get_mut(&project.active_scene)
                     .ok_or_else(|| to_rpc_error("Active scene not found".to_string()))?;
 
-                let tile_info = disable_tile_impl(scene, tile_id).map_err(to_rpc_error)?;
-                let tile_json = serde_json::to_string_pretty(&tile_info).unwrap_or_default();
+                let tile_data = disable_tile_impl(scene, tile_id).map_err(to_rpc_error)?;
+                let tile_json = serde_json::to_string_pretty(&tile_data).unwrap_or_default();
 
                 Ok(json!({
                     "content": [{
@@ -353,8 +316,8 @@ pub async fn start_mcp_server(_app_handle: AppHandle) -> Result<ServerHandle, Bo
                     .get_mut(&project.active_scene)
                     .ok_or_else(|| to_rpc_error("Active scene not found".to_string()))?;
 
-                let tile_info = set_tile_amount_impl(scene, tile_id, amount).map_err(to_rpc_error)?;
-                let tile_json = serde_json::to_string_pretty(&tile_info).unwrap_or_default();
+                let tile_data = set_tile_amount_impl(scene, tile_id, amount).map_err(to_rpc_error)?;
+                let tile_json = serde_json::to_string_pretty(&tile_data).unwrap_or_default();
 
                 Ok(json!({
                     "content": [{
@@ -371,19 +334,6 @@ pub async fn start_mcp_server(_app_handle: AppHandle) -> Result<ServerHandle, Bo
 
     let addr = server.local_addr()?;
     let handle = server.start(module);
-
-    println!("DMX MCP Server listening on http://{}", addr);
-    println!("Protocol: JSON-RPC 2.0 over HTTP (via jsonrpsee)");
-    println!("MCP Protocol Version: 2024-11-05");
-    println!("\nAvailable methods:");
-    println!("  initialize - Initialize MCP connection and get server capabilities");
-    println!("  tools/list - List all available tools");
-    println!("  tools/call - Execute a tool");
-    println!("\nAvailable tools:");
-    println!("  list_tiles - List all tiles in active scene");
-    println!("  enable_tile - Enable a tile");
-    println!("  disable_tile - Disable a tile");
-    println!("  set_tile_amount - Set tile strength (0.0-1.0)");
 
     Ok(handle)
 }

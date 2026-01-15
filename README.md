@@ -44,30 +44,3 @@ pnpm run build
 ```
 
 The build output will be in the `dist/` directory.
-
-## HTTP MCP Server
-
-The application includes an embedded HTTP MCP (Model Context Protocol) server for external control of tiles in the active scene. The server runs automatically on `http://localhost:3001` when the Tauri desktop application starts.
-
-The MCP server uses JSON-RPC 2.0 and follows the official MCP specification, making it compatible with Claude Desktop and other MCP clients.
-
-### Quick Start
-
-```bash
-# Initialize connection
-curl -X POST http://localhost:3001 \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc": "2.0", "method": "initialize", "params": {"protocolVersion": "2024-11-05"}, "id": 1}'
-
-# List available tools
-curl -X POST http://localhost:3001 \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc": "2.0", "method": "tools/list", "id": 2}'
-
-# Call a tool (list tiles)
-curl -X POST http://localhost:3001 \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc": "2.0", "method": "tools/call", "params": {"name": "list_tiles", "arguments": {}}, "id": 3}'
-```
-
-For complete API documentation, see [MCP_SERVER.md](MCP_SERVER.md).
