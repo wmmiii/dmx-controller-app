@@ -12,7 +12,8 @@ import {
 import { Modal } from '../components/Modal';
 
 import { BiErrorAlt } from 'react-icons/bi';
-import { DmxRenderOutput, renderDmx } from '../engine/renderRouter';
+import { DmxRenderOutput } from '../engine/renderRouter';
+import { renderDmx } from '../system_interfaces/engine';
 import { outputLoopSupported } from '../system_interfaces/output_loop';
 import {
   closePort,
@@ -172,7 +173,7 @@ function SerialProviderImpl({
       } else {
         return listenToTick(() => {
           frameRef.current += 1;
-          renderDmx(outputId, frameRef.current++);
+          renderDmx(outputId, BigInt(new Date().getTime()), frameRef.current++);
         });
       }
     }
@@ -193,7 +194,11 @@ function SerialProviderImpl({
         if (blackout.current) {
           dmxOutput = new Uint8Array(512);
         } else {
-          dmxOutput = await renderDmx(outputId, frameRef.current++);
+          dmxOutput = await renderDmx(
+            outputId,
+            BigInt(startMs),
+            frameRef.current++,
+          );
         }
 
         try {

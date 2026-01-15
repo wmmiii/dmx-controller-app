@@ -7,7 +7,7 @@ import {
 } from 'react';
 
 import { SacnDmxOutput } from '@dmx-controller/proto/output_pb';
-import { renderDmx } from '../engine/renderRouter';
+import { renderDmx } from '../system_interfaces/engine';
 import { outputLoopSupported } from '../system_interfaces/output_loop';
 import { outputDmxSacn, sacnSupported } from '../system_interfaces/sacn';
 import { getActivePatch, getOutput } from '../util/projectUtils';
@@ -32,7 +32,11 @@ export function SacnRendererProvider({ children }: PropsWithChildren) {
 
       while (cont) {
         const startMs = new Date().getTime();
-        const dmxOutput = await renderDmx(outputId, frame++);
+        const dmxOutput = await renderDmx(
+          outputId,
+          BigInt(new Date().getTime()),
+          frame++,
+        );
 
         try {
           await outputDmxSacn(

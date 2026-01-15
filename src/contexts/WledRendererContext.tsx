@@ -12,7 +12,7 @@ import { toJsonString } from '@bufbuild/protobuf';
 import { PatchSchema } from '@dmx-controller/proto/output_pb';
 import { Project } from '@dmx-controller/proto/project_pb';
 import { WledOutput } from '@dmx-controller/proto/wled_pb';
-import { renderWled } from '../engine/renderRouter';
+import { renderWled } from '../system_interfaces/engine';
 import { outputLoopSupported } from '../system_interfaces/output_loop';
 import { sendWled } from '../system_interfaces/wled';
 import { getActivePatch, getOutput } from '../util/projectUtils';
@@ -49,7 +49,11 @@ export function WledRendererProvider({ children }: PropsWithChildren) {
           ].output.value as WledOutput;
 
           const startMs = new Date().getTime();
-          const renderTarget = await renderWled(outputId, frame++);
+          const renderTarget = await renderWled(
+            outputId,
+            BigInt(startMs),
+            frame++,
+          );
 
           try {
             await sendWled(wledOutput.ipAddress, renderTarget);

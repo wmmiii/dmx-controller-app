@@ -1,24 +1,8 @@
-import { create } from '@bufbuild/protobuf';
-import {
-  WledRenderTarget,
-  WledRenderTargetSchema,
-} from '@dmx-controller/proto/wled_pb';
-
+import { WledRenderTarget } from '@dmx-controller/proto/wled_pb';
 export type DmxRenderOutput = Uint8Array;
-
-interface RenderFunctions {
-  renderDmx: (outputId: bigint, frame: number) => Promise<DmxRenderOutput>;
-  renderWled: (outputId: bigint, frame: number) => Promise<WledRenderTarget>;
-}
-
-const EMPTY_RENDER_FUNCTIONS: RenderFunctions = {
-  renderDmx: async () => new Uint8Array(512),
-  renderWled: async () => create(WledRenderTargetSchema, {}),
-};
 
 const FPS_BUFFER_SIZE = 100;
 
-let renderFunctions = EMPTY_RENDER_FUNCTIONS;
 const dmxSubscriptions: Map<
   bigint,
   Array<(o: DmxRenderOutput, fps: number) => void>
@@ -62,13 +46,6 @@ function recordAndSmoothFps(outputId: bigint): number {
   return Math.floor(1000 / averageDelta);
 }
 
-export function setRenderFunctions(f: RenderFunctions) {
-  renderFunctions = f;
-  return () => {
-    renderFunctions = EMPTY_RENDER_FUNCTIONS;
-  };
-}
-
 export function subscribeToDmxRender(
   outputId: bigint,
   listener: (o: DmxRenderOutput, fps: number) => void,
@@ -108,18 +85,6 @@ export function subscribeToWledRender(
       }
     }
   };
-}
-
-export async function renderDmx(outputId: bigint, frame: number) {
-  const output = await renderFunctions.renderDmx(outputId, frame);
-  triggerDmxSubscriptions(outputId, output);
-  return output;
-}
-
-export async function renderWled(outputId: bigint, frame: number) {
-  const output = await renderFunctions.renderWled(outputId, frame);
-  triggerWledSubscriptions(outputId, output);
-  return output;
 }
 
 /**

@@ -1,13 +1,15 @@
 import { fromBinary, toBinary } from '@bufbuild/protobuf';
 import { Project, ProjectSchema } from '@dmx-controller/proto/project_pb';
+import { RenderMode, RenderModeSchema } from '@dmx-controller/proto/render_pb';
 import {
   WledRenderTarget,
   WledRenderTargetSchema,
 } from '@dmx-controller/proto/wled_pb';
 import init, {
   init_engine,
-  render_scene_dmx,
-  render_scene_wled,
+  render_dmx,
+  render_wled,
+  set_render_mode,
   update_project,
 } from '@dmx-controller/wasm-engine';
 import { invoke } from '@tauri-apps/api/core';
@@ -30,10 +32,9 @@ interface WledRenderEvent {
 }
 
 export const updateProject = isTauri ? tauriUpdateProject : webUpdateProject;
-export const renderDmxScene = isTauri ? tauriRenderDmxScene : webRenderDmxScene;
-export const renderSceneWled = isTauri
-  ? tauriRenderSceneWled
-  : webRenderSceneWled;
+export const setRenderMode = isTauri ? tauriSetRenderMode : webSetRenderMode;
+export const renderDmx = isTauri ? tauriRenderDmx : webRenderDmx;
+export const renderWled = isTauri ? tauriRenderWled : webRenderWled;
 
 if (!isTauri) {
   await init();
@@ -54,20 +55,28 @@ async function tauriUpdateProject(project: Project) {
   });
 }
 
-async function webRenderDmxScene(
-  outputId: bigint,
-  systemT: bigint,
-  frame: number,
-) {
-  return await render_scene_dmx(outputId, systemT, frame);
+async function webSetRenderMode(renderMode: RenderMode) {
+  const renderModeBytes = toBinary(RenderModeSchema, renderMode);
+  return await set_render_mode(renderModeBytes);
 }
 
-async function tauriRenderDmxScene(
+async function tauriSetRenderMode(renderMode: RenderMode) {
+  const renderModeBytes = toBinary(RenderModeSchema, renderMode);
+  await invoke<number[]>('set_render_mode', {
+    renderModeBinary: Array.from(renderModeBytes),
+  });
+}
+
+async function webRenderDmx(outputId: bigint, systemT: bigint, frame: number) {
+  return await render_dmx(outputId, systemT, frame);
+}
+
+async function tauriRenderDmx(
   outputId: bigint,
   systemT: bigint,
   frame: number,
 ): Promise<Uint8Array> {
-  const result = await invoke<number[]>('render_scene_dmx', {
+  const result = await invoke<number[]>('render_dmx', {
     outputId: outputId.toString(),
     systemT: Number(systemT),
     frame,
@@ -75,21 +84,21 @@ async function tauriRenderDmxScene(
   return new Uint8Array(result);
 }
 
-async function webRenderSceneWled(
+async function webRenderWled(
   outputId: bigint,
   systemT: bigint,
   frame: number,
 ): Promise<WledRenderTarget> {
-  const renderTargetBin = await render_scene_wled(outputId, systemT, frame);
+  const renderTargetBin = await render_wled(outputId, systemT, frame);
   return fromBinary(WledRenderTargetSchema, renderTargetBin);
 }
 
-async function tauriRenderSceneWled(
+async function tauriRenderWled(
   outputId: bigint,
   systemT: bigint,
   frame: number,
 ): Promise<WledRenderTarget> {
-  const renderTargetBin = await invoke<number[]>('render_scene_wled', {
+  const renderTargetBin = await invoke<number[]>('render_wled', {
     outputId: outputId.toString(),
     systemT: Number(systemT),
     frame,
