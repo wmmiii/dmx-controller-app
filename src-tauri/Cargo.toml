@@ -34,6 +34,6 @@ prost = "0.14.1"
 tauri-plugin-keepawake = "0.1.0"
 tokio = { version = "1.48.0", features = ["time", "macros", "sync", "rt-multi-thread"] }
 reqwest = { version = "0.12.28", features = ["json"] }
-axum = "0.7"
-tower = "0.5"
-tower-http = { version = "0.6", features = ["cors"] }
+hyper = { version = "1.8", features = ["server", "http1"] }
+hyper-util = { version = "0.1", features = ["tokio"] }
+http-body-util = "0.1"

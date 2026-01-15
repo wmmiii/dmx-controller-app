@@ -8,7 +8,7 @@ The MCP server is embedded directly in the Rust/Tauri process and provides a RES
 
 ## Architecture
 
-- **Implementation**: Axum web framework in Rust
+- **Implementation**: Hyper HTTP library in Rust (low-level, uses Tauri's existing dependencies)
 - **Port**: 3001 (localhost only)
 - **State Management**: Direct access to `PROJECT_REF` global state
 - **Concurrency**: Thread-safe mutex-protected access
@@ -220,12 +220,16 @@ Tile durations and fades can be synchronized to the project's beat metadata (BPM
 
 ### Dependencies Used
 
+All dependencies are already present as transitive dependencies through Tauri and reqwest:
+
 ```toml
-axum = "0.7"
-tower = "0.5"
-tower-http = { version = "0.6", features = ["cors"] }
+hyper = { version = "1.8", features = ["server", "http1"] }
+hyper-util = { version = "0.1", features = ["tokio"] }
+http-body-util = "0.1"
 tokio = { version = "1.48.0", features = ["rt-multi-thread"] }
 ```
+
+These are the same HTTP libraries used by reqwest, minimizing additional dependencies.
 
 ### Thread Safety
 
