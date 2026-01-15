@@ -9,11 +9,11 @@ The MCP server is embedded directly in the Rust/Tauri process and provides a sta
 ## Architecture
 
 - **Protocol**: MCP (Model Context Protocol) version 2024-11-05
-- **Transport**: JSON-RPC 2.0 over HTTP
+- **Transport**: JSON-RPC 2.0 over HTTP (via jsonrpsee crate)
 - **Port**: 3001 (localhost only)
 - **State Management**: Direct access to `PROJECT_REF` global state
 - **Concurrency**: Thread-safe mutex-protected access
-- **CORS**: Enabled (permissive for local development)
+- **CORS**: Enabled (built-in with jsonrpsee)
 
 ## MCP Protocol Compliance
 
@@ -357,17 +357,19 @@ The server uses standard JSON-RPC 2.0 error codes:
 
 ### Dependencies Used
 
-All dependencies are already present as transitive dependencies through Tauri and reqwest:
+The MCP server uses the `jsonrpsee` crate for JSON-RPC 2.0 handling:
 
 ```toml
-hyper = { version = "1.8", features = ["server", "http1"] }
-hyper-util = { version = "0.1", features = ["tokio"] }
-http-body-util = "0.1"
+jsonrpsee = { version = "0.24", features = ["server"] }
 tokio = { version = "1.48.0", features = ["rt-multi-thread"] }
 serde_json = "1.0"
 ```
 
-These are the same HTTP libraries used by reqwest, minimizing additional dependencies.
+**Benefits of jsonrpsee:**
+- Automatic JSON-RPC 2.0 protocol handling (request/response parsing, error codes)
+- Built-in HTTP server with CORS support
+- Type-safe method registration
+- No manual JSON-RPC implementation needed
 
 ### Thread Safety
 
