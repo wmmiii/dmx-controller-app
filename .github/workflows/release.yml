@@ -101,52 +101,155 @@ jobs:
       - name: Setup
         uses: ./.github/setup
 
-      - name: Build Tauri app
-        run: pnpm tauri build --bundles dmg
+      - name: Import signing certificate
+        if: ${{ secrets.APPLE_CERTIFICATE != '' }}
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          # Create variables
+          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
+
+          # Decode certificate
+          echo -n "$APPLE_CERTIFICATE" | base64 --decode -o $CERTIFICATE_PATH
+
+          # Create temporary keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # Import certificate to keychain
+          security import $CERTIFICATE_PATH -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
+          # Clean up certificate file
+          rm $CERTIFICATE_PATH
+
+      - name: Build Tauri app (signed)
+        if: ${{ secrets.APPLE_CERTIFICATE != '' }}
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+        run: |
+          # Create API key file if using API key authentication
+          if [ -n "$APPLE_API_KEY" ] && [ -n "${{ secrets.APPLE_API_KEY_P8 }}" ]; then
+            mkdir -p ~/private_keys
+            echo "${{ secrets.APPLE_API_KEY_P8 }}" > ~/private_keys/AuthKey_${APPLE_API_KEY}.p8
+          fi
+
+          # Build universal binary (both Intel and Apple Silicon)
+          pnpm tauri build --bundles dmg --target universal-apple-darwin
+
+      - name: Build Tauri app (unsigned)
+        if: ${{ secrets.APPLE_CERTIFICATE == '' }}
+        run: pnpm tauri build --bundles dmg --target universal-apple-darwin
 
       - name: Upload macOS installer
         uses: actions/upload-artifact@v4
         with:
           name: macos-installer
-          path: src-tauri/target/release/bundle/dmg/*.dmg
+          path: src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
           if-no-files-found: error
 
-  # build-ios:
-  #   runs-on: macos-latest
-  #   needs: check-version
-  #   if: needs.check-version.outputs.version-changed == 'true'
+      - name: Cleanup keychain
+        if: always()
+        run: |
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          security delete-keychain $KEYCHAIN_PATH || true
 
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v4
+  build-ios:
+    runs-on: macos-latest
+    needs: check-version
+    if: needs.check-version.outputs.version-changed == 'true'
 
-  #     - name: Setup
-  #       uses: ./.github/setup
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-  #     - name: Install iOS targets
-  #       run: rustup target add aarch64-apple-ios
+      - name: Setup
+        uses: ./.github/setup
 
-  #     - name: Initialize iOS project
-  #       run: pnpm tauri ios init
+      - name: Install iOS targets
+        run: rustup target add aarch64-apple-ios aarch64-apple-ios-sim
 
-  #     # Use 'debugging' for development builds. Change to 'app-store-connect' when ready to deploy to the App Store.
-  #     - name: Build Tauri iOS app
-  #       run: pnpm tauri ios build --export-method debugging
-  #       env:
-  #         CODE_SIGN_IDENTITY: ''
-  #         CODE_SIGNING_REQUIRED: 'NO'
-  #         CODE_SIGNING_ALLOWED: 'NO'
+      - name: Initialize iOS project
+        run: pnpm tauri ios init
 
-  #     - name: Upload iOS app
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: ios-app
-  #         path: src-tauri/gen/apple/*.ipa
-  #         if-no-files-found: error
+      - name: Setup iOS signing
+        if: ${{ secrets.APPLE_CERTIFICATE != '' }}
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          IOS_MOBILE_PROVISION: ${{ secrets.IOS_MOBILE_PROVISION }}
+        run: |
+          # Create variables
+          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
+
+          # Decode certificate
+          echo -n "$APPLE_CERTIFICATE" | base64 --decode -o $CERTIFICATE_PATH
+
+          # Create temporary keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # Import certificate to keychain
+          security import $CERTIFICATE_PATH -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
+          # Install provisioning profile if provided
+          if [ -n "$IOS_MOBILE_PROVISION" ]; then
+            PROVISION_PATH="$HOME/Library/MobileDevice/Provisioning Profiles"
+            mkdir -p "$PROVISION_PATH"
+            echo -n "$IOS_MOBILE_PROVISION" | base64 --decode -o "$PROVISION_PATH/profile.mobileprovision"
+          fi
+
+          # Clean up certificate file
+          rm $CERTIFICATE_PATH
+
+      # Build with signing for App Store
+      - name: Build Tauri iOS app (signed)
+        if: ${{ secrets.APPLE_CERTIFICATE != '' }}
+        env:
+          APPLE_DEVELOPMENT_TEAM: ${{ secrets.APPLE_DEVELOPMENT_TEAM }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+        run: pnpm tauri ios build --export-method app-store
+
+      # Build without signing (for testing workflow)
+      - name: Build Tauri iOS app (unsigned)
+        if: ${{ secrets.APPLE_CERTIFICATE == '' }}
+        run: pnpm tauri ios build --export-method debugging
+        env:
+          CODE_SIGN_IDENTITY: ''
+          CODE_SIGNING_REQUIRED: 'NO'
+          CODE_SIGNING_ALLOWED: 'NO'
+
+      - name: Upload iOS app
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-app
+          path: src-tauri/gen/apple/*.ipa
+          if-no-files-found: error
+
+      - name: Cleanup keychain
+        if: always()
+        run: |
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          security delete-keychain $KEYCHAIN_PATH || true
 
   publish-release:
     runs-on: ubuntu-22.04
-    needs: [check-version, build-debian, build-windows, build-macos]
+    needs: [check-version, build-debian, build-windows, build-macos, build-ios]
     if: needs.check-version.outputs.version-changed == 'true'
     permissions:
       contents: write
@@ -170,11 +273,11 @@ jobs:
           name: macos-installer
           path: artifacts
 
-      # - name: Download iOS app
-      #   uses: actions/download-artifact@v4
-      #   with:
-      #     name: ios-app
-      #     path: artifacts
+      - name: Download iOS app
+        uses: actions/download-artifact@v4
+        with:
+          name: ios-app
+          path: artifacts
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
