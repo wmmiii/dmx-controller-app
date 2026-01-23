@@ -235,8 +235,7 @@ function EditDefinitionDialog({
   );
   const [testIndex, setTestIndex] = useState(0);
   const [testValues, setTestValues] = useState<number[]>([]);
-  const [wheel, setWheel] =
-    useState<DmxFixtureDefinition_Channel_ColorWheelMapping | null>(null);
+  const [wheelChannel, setWheelChannel] = useState<number | null>(null);
 
   useEffect(() => {
     const testValues: number[] = new Array(mode.numChannels).fill(0);
@@ -261,6 +260,11 @@ function EditDefinitionDialog({
   );
 
   const mode = definition.modes[modeId];
+
+  const wheel = wheelChannel
+    ? (mode.channels[wheelChannel].mapping
+        .value as DmxFixtureDefinition_Channel_ColorWheelMapping)
+    : null;
 
   return (
     <Modal
@@ -365,6 +369,9 @@ function EditDefinitionDialog({
           {Array.from(Array(mode.numChannels), (_, i) => {
             const index = i + 1;
             const channel = mode.channels[index];
+            if (channel?.type === 'dimmer') {
+              console.log(index, channel);
+            }
             return (
               <tr key={index}>
                 <td>{index}</td>
@@ -474,7 +481,7 @@ function EditDefinitionDialog({
                   index={index}
                   type={channel?.type}
                   mapping={channel?.mapping}
-                  setWheel={setWheel}
+                  setWheelChannel={setWheelChannel}
                 />
                 <td>
                   <NumberInput
@@ -495,7 +502,7 @@ function EditDefinitionDialog({
         </tbody>
       </table>
       {wheel && (
-        <ColorWheelEditor wheel={wheel} onClose={() => setWheel(null)} />
+        <ColorWheelEditor wheel={wheel} onClose={() => setWheelChannel(null)} />
       )}
     </Modal>
   );
@@ -505,14 +512,14 @@ interface ChannelMappingProps {
   index: number;
   type: string | undefined;
   mapping: DmxFixtureDefinition_Channel['mapping'] | undefined;
-  setWheel: (wheel: DmxFixtureDefinition_Channel_ColorWheelMapping) => void;
+  setWheelChannel: (wheel: number) => void;
 }
 
 function ChannelMapping({
   index,
   type,
   mapping,
-  setWheel,
+  setWheelChannel,
 }: ChannelMappingProps) {
   const { save } = useContext(ProjectContext);
 
@@ -588,7 +595,7 @@ function ChannelMapping({
     case 'colorWheelMapping':
       return (
         <td colSpan={4}>
-          <Button onClick={() => setWheel(mapping.value)}>
+          <Button onClick={() => setWheelChannel(index)}>
             Edit Color Wheel
           </Button>
         </td>

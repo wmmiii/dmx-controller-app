@@ -108,7 +108,7 @@ impl<'a> DmxRenderTarget<'a> {
 
                 for (index, channel) in &mode.channels {
                     match channel.mapping {
-                        Some(crate::proto::dmx_fixture_definition::channel::Mapping::ColorWheelMapping(_)) => indices.push((index + fixture.channel_offset) as u16),
+                        Some(crate::proto::dmx_fixture_definition::channel::Mapping::ColorWheelMapping(_)) => indices.push((index + fixture.channel_offset - 1) as u16),
                         Some(_) => (),
                         None => (),
                     }
@@ -154,6 +154,24 @@ impl<'a> DmxRenderTarget<'a> {
                     "green" => Some((channel_index, green)),
                     "blue" => Some((channel_index, blue)),
                     "white" => Some((channel_index, white)),
+                    "color_wheel" => {
+                        match &channel.mapping {
+                            Some(crate::proto::dmx_fixture_definition::channel::Mapping::ColorWheelMapping(color_wheel_mapping)) => {
+                                let mut min_dist = std::f64::MAX;
+                                let mut update = None;
+                                for c in &color_wheel_mapping.colors {
+                                    let color = c.color?; 
+                                    let dist = (color.red - red).powf(2.0) + (color.green - green).powf(2.0) + (color.blue - blue).powf(2.0);
+                                    if dist < min_dist {
+                                        min_dist = dist;
+                                        update = Some((channel_index, c.value as f64 / 255.0));
+                                    }
+                                }
+                                update
+                            },
+                            _ => return None,
+                        }
+                    }
                     _ => None,
                 }
             })
@@ -267,6 +285,9 @@ impl<'a> RenderTarget<DmxRenderTarget<'a>> for DmxRenderTarget<'a> {
                 (speed, "speed", compute_amount_channel_updates),
             ]
         );
+
+        let channels: Vec<(usize, f64)> = state.channels.iter().map(|c| ((c.index + fixture.channel_offset) as usize, c.value as f64 / 255.0)).collect();
+        all_updates.extend(channels);
 
         self.apply_updates(all_updates);
     }
