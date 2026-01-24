@@ -333,8 +333,8 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
             value={tileMap.priority}
             onChange={(v) => {
               tileMap.priority = v;
-              save(`Set priority to ${v} for ${tile.name}.`);
             }}
+            onFinalize={(v) => save(`Set priority to ${v} for ${tile.name}.`)}
           />
         </div>
         {controllerName != null && (

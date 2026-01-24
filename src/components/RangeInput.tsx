@@ -7,6 +7,7 @@ interface RangeInputProps {
   title?: string;
   value: number;
   onChange: (value: number) => void;
+  onFinalize?: (value: number) => void;
   max: '1' | '255';
 }
 
@@ -15,6 +16,7 @@ export default function RangeInput({
   title,
   value,
   onChange,
+  onFinalize,
   max,
 }: RangeInputProps): JSX.Element {
   const set = useCallback(
@@ -37,6 +39,7 @@ export default function RangeInput({
       min={0}
       max={parseInt(max)}
       onChange={set}
+      onFinalize={onFinalize}
     />
   );
 }

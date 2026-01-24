@@ -379,8 +379,10 @@ function EditDefinitionDialog({
             value={mode.numChannels}
             onChange={(v) => {
               mode.numChannels = v;
-              save(`Set number of channels of ${mode.name} to ${v}.`);
             }}
+            onFinalize={(v) =>
+              save(`Set number of channels of ${mode.name} to ${v}.`)
+            }
           />
         </label>
         <div className={styles.spacer}></div>
@@ -412,9 +414,6 @@ function EditDefinitionDialog({
           {Array.from(Array(mode.numChannels), (_, i) => {
             const index = i + 1;
             const channel = mode.channels[index];
-            if (channel?.type === 'dimmer') {
-              console.log(index, channel);
-            }
             return (
               <tr key={index}>
                 <td>{index}</td>
@@ -513,10 +512,12 @@ function EditDefinitionDialog({
                       value={channel.defaultValue}
                       onChange={(v) => {
                         channel.defaultValue = v;
+                      }}
+                      onFinalize={(v) =>
                         save(
                           `Set default value of channel mapping ${index} to ${v}.`,
-                        );
-                      }}
+                        )
+                      }
                     />
                   )}
                 </td>
@@ -582,9 +583,11 @@ function ChannelMapping({
               onChange={(v) => {
                 if (mapping.case === 'angleMapping') {
                   mapping.value.minDegrees = v;
-                  save(`Set channel ${index} min degrees to ${v}.`);
                 }
               }}
+              onFinalize={(v) =>
+                save(`Set channel ${index} min degrees to ${v}.`)
+              }
             />
           </td>
           <td>
@@ -595,9 +598,11 @@ function ChannelMapping({
               onChange={(v) => {
                 if (mapping.case === 'angleMapping') {
                   mapping.value.maxDegrees = v;
-                  save(`Set channel ${index} max degrees to ${v}.`);
                 }
               }}
+              onFinalize={(v) =>
+                save(`Set channel ${index} max degrees to ${v}.`)
+              }
             />
           </td>
           <td colSpan={2}></td>
@@ -614,9 +619,11 @@ function ChannelMapping({
               onChange={(value) => {
                 if (mapping.case === 'amountMapping') {
                   mapping.value.minValue = value;
-                  save(`Set channel ${index} min value to ${value}.`);
                 }
               }}
+              onFinalize={(value) =>
+                save(`Set channel ${index} min value to ${value}.`)
+              }
               max="255"
             />
           </td>
@@ -627,9 +634,11 @@ function ChannelMapping({
               onChange={(value) => {
                 if (mapping.case === 'amountMapping') {
                   mapping.value.maxValue = value;
-                  save(`Set channel ${index} max value to ${value}.`);
                 }
               }}
+              onFinalize={(value) =>
+                save(`Set channel ${index} max value to ${value}.`)
+              }
               max="255"
             />
           </td>
@@ -682,8 +691,10 @@ function ColorWheelEditor({ wheel, onClose }: ColorWheelEditorProps) {
                     value={c.value}
                     onChange={(value) => {
                       c.value = value;
-                      save(`Change color wheel value to ${value}.`);
                     }}
+                    onFinalize={(value) =>
+                      save(`Change color wheel value to ${value}.`)
+                    }
                   />
                 </td>
                 <td>

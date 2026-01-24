@@ -149,8 +149,8 @@ export function SequenceEditor({
             value={sequence.nativeBeats}
             onChange={(i) => {
               sequence.nativeBeats = i;
-              save(`Set number of beats in sequence to ${i}.`);
             }}
+            onFinalize={(i) => save(`Set number of beats in sequence to ${i}.`)}
             min={1}
             max={16}
           />

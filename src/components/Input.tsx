@@ -2,11 +2,13 @@ import {
   JSX,
   createRef,
   useCallback,
+  useContext,
   useEffect,
   useMemo,
   useState,
 } from 'react';
 
+import { ProjectContext } from '../contexts/ProjectContext';
 import styles from './Input.module.scss';
 
 interface TextInputProps {
@@ -84,6 +86,7 @@ interface NumberInputProps {
   type?: NumberInputType;
   value: number;
   onChange: (value: number) => void;
+  onFinalize?: (value: number) => void;
   min: number;
   max: number;
 }
@@ -95,14 +98,17 @@ export function NumberInput({
   type,
   value,
   onChange,
+  onFinalize,
   min,
   max,
 }: NumberInputProps): JSX.Element {
-  const [input, setInput] = useState(String(value));
+  const { update } = useContext(ProjectContext);
   const inputRef = createRef<HTMLInputElement>();
+  const [input, setInput] = useState(String(value));
 
   const step = useMemo(() => (max > 1 ? 1 : 1 / 16), [max]);
 
+  // Sync internal state when value prop changes externally
   useEffect(() => setInput(String(value)), [value]);
 
   const parseValue = useCallback(
@@ -117,27 +123,27 @@ export function NumberInput({
         return NaN;
       }
     },
-    [type, min, max],
+    [type],
   );
 
-  const flushValue = useCallback(() => {
-    const parsed = Math.max(Math.min(parseValue(input), max), min);
-    if (!isNaN(parsed)) {
-      if (parsed != value) {
-        onChange(parsed);
-        setInput(String(parsed));
-      }
-    } else {
-      setInput(String(value));
+  const onChangeImpl = (newInput: string) => {
+    setInput(newInput);
+
+    const parsed = parseValue(newInput);
+    // Only fire onChange if value is valid and within range
+    if (!isNaN(parsed) && parsed >= min && parsed <= max) {
+      onChange(parsed);
+      update();
     }
-  }, [parseValue, input, value]);
+  };
+
+  // Check if current input is valid
+  const parsed = parseValue(input);
+  const isValid = !isNaN(parsed) && parsed >= min && parsed <= max;
 
   const classes = [styles.input, styles.numberInput];
-  const parsed = parseValue(input);
-  if (isNaN(parsed) || parsed < min || parsed > max) {
+  if (!isValid) {
     classes.push(styles.parseError);
-  } else if (parsed != value) {
-    classes.push(styles.modified);
   }
   if (className) {
     classes.push(className);
@@ -155,24 +161,28 @@ export function NumberInput({
             inputRef.current?.blur();
             break;
           case 'Escape':
-            setInput(String(value));
             inputRef.current?.blur();
             break;
           case 'ArrowUp':
-            if (parsed != null) {
-              setInput(String(parsed + step));
-            }
+            const upValue = String(parseValue(input) + step);
+            onChangeImpl(upValue);
+            update();
             break;
           case 'ArrowDown':
-            if (parsed != null) {
-              setInput(String(parsed - step));
-            }
+            const downValue = String(parseValue(input) - step);
+            onChangeImpl(downValue);
+            update();
             break;
         }
       }}
       value={input}
-      onChange={(e) => setInput(e.target.value)}
-      onBlur={flushValue}
+      onInput={(e) => onChangeImpl((e.target as HTMLInputElement).value)}
+      onBlur={() => {
+        setInput(String(value));
+        if (onFinalize) {
+          onFinalize(value);
+        }
+      }}
     />
   );
 }

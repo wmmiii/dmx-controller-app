@@ -541,8 +541,10 @@ function StrobeEffectDetails({
           value={effect.stateAFames}
           onChange={(value) => {
             effect.stateAFames = value;
-            save(`Change strobe effect state A frames to ${value}.`);
           }}
+          onFinalize={(value) =>
+            save(`Change strobe effect state A frames to ${value}.`)
+          }
         />
       </label>
       <label>
@@ -555,8 +557,10 @@ function StrobeEffectDetails({
           value={effect.stateBFames}
           onChange={(value) => {
             effect.stateBFames = value;
-            save(`Change strobe effect state B frames to ${value}.`);
           }}
+          onFinalize={(value) =>
+            save(`Change strobe effect state B frames to ${value}.`)
+          }
         />
       </label>
       <hr />
@@ -590,8 +594,10 @@ function RandomEffectDetails({
           onChange={(value) => {
             const ms = Math.floor(value * 1000);
             effect.effectAMin = ms;
-            save(`Change random effect A min seconds to ${value}.`);
           }}
+          onFinalize={(value) =>
+            save(`Change random effect A min seconds to ${value}.`)
+          }
         />
       </label>
       <label>
@@ -605,8 +611,10 @@ function RandomEffectDetails({
           onChange={(value) => {
             effect.effectAVariation =
               Math.floor(value * 1000) - effect.effectAMin;
-            save(`Change random effect A max seconds to ${value}.`);
           }}
+          onFinalize={(value) =>
+            save(`Change random effect A max seconds to ${value}.`)
+          }
         />
       </label>
 
@@ -621,8 +629,10 @@ function RandomEffectDetails({
           onChange={(value) => {
             const ms = Math.floor(value * 1000);
             effect.effectBMin = ms;
-            save(`Change random effect A min seconds to ${value}.`);
           }}
+          onFinalize={(value) =>
+            save(`Change random effect A min seconds to ${value}.`)
+          }
         />
       </label>
       <label>
@@ -636,8 +646,10 @@ function RandomEffectDetails({
           onChange={(value) => {
             effect.effectBVariation =
               Math.floor(value * 1000) - effect.effectBMin;
-            save(`Change random effect A max seconds to ${value}.`);
           }}
+          onFinalize={(value) =>
+            save(`Change random effect A max seconds to ${value}.`)
+          }
         />
       </label>
 
@@ -664,8 +676,8 @@ function RandomEffectDetails({
           value={effect.seed}
           onChange={(value) => {
             effect.seed = value;
-            save(`Change random effect seed to ${value}.`);
           }}
+          onFinalize={(value) => save(`Change random effect seed to ${value}.`)}
         />
       </label>
 
@@ -1042,8 +1054,8 @@ function EffectTimingDetails({ effect, showPhase }: EffectTimingDetailsProps) {
                 throw new Error('Expected absolute timing mode!');
               }
               effect.timingMode.timing.value.durationMs = Math.floor(v * 1_000);
-              save(`Change effect duration to ${v} seconds.`);
             }}
+            onFinalize={(v) => save(`Change effect duration to ${v} seconds.`)}
           />
         </label>
       )}
@@ -1061,8 +1073,8 @@ function EffectTimingDetails({ effect, showPhase }: EffectTimingDetailsProps) {
                 throw new Error('Expected absolute timing mode!');
               }
               effect.timingMode.timing.value.multiplier = v;
-              save(`Change effect duration to ${v} beats.`);
             }}
+            onFinalize={(v) => save(`Change effect duration to ${v} beats.`)}
           />
         </label>
       )}
@@ -1092,8 +1104,8 @@ function EffectTimingDetails({ effect, showPhase }: EffectTimingDetailsProps) {
             value={effect.timingMode!.phase || 0}
             onChange={(v) => {
               effect.timingMode!.phase = v;
-              save(`Change effect phase to ${v}.`);
             }}
+            onFinalize={(v) => save(`Change effect phase to ${v}.`)}
           />
         </label>
       )}

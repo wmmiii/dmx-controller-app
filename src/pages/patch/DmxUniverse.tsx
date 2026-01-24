@@ -357,8 +357,10 @@ function EditFixtureDialog({
           value={fixture.channelOffset + 1}
           onChange={(v) => {
             fixture.channelOffset = v - 1;
-            save(`Change channel offset of ${fixture.name} to ${v}.`);
           }}
+          onFinalize={(v) =>
+            save(`Change channel offset of ${fixture.name} to ${v}.`)
+          }
         />
       </label>
       {definition != null &&
@@ -373,8 +375,10 @@ function EditFixtureDialog({
               value={fixture.channelOffsets[t] || 0}
               onChange={(v) => {
                 fixture.channelOffsets[t] = v;
-                save(`Change ${t} offset of ${fixture.name} to ${v}.`);
               }}
+              onFinalize={(v) =>
+                save(`Change ${t} offset of ${fixture.name} to ${v}.`)
+              }
             />
           </label>
         ))}

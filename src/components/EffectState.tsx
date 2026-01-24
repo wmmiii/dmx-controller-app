@@ -69,6 +69,8 @@ export function EffectState({
               value: (s.state as any)[channel],
               onChange: (value) => {
                 (s.state as any)[channel] = value;
+              },
+              onFinalize: (value) => {
                 if (value === undefined) {
                   save(`Removed ${channel} on ${s.name}.`);
                 } else {
@@ -93,6 +95,8 @@ export function EffectState({
             value: (s.state as any)[channel],
             onChange: (value) => {
               (s.state as any)[channel] = value;
+            },
+            onFinalize: (value) => {
               if (value === undefined) {
                 save(`Removed ${channel} on ${s.name}.`);
               } else {
@@ -117,6 +121,8 @@ export function EffectState({
             value: (s.state as any)[channel],
             onChange: (value) => {
               (s.state as any)[channel] = value;
+            },
+            onFinalize: (value) => {
               if (value === undefined) {
                 save(`Removed ${channel} on ${s.name}.`);
               } else {
@@ -139,6 +145,7 @@ interface ChannelProps {
   values: Array<{
     value: number | undefined;
     onChange: (value: number | undefined) => void;
+    onFinalize: (value: number | undefined) => void;
   }>;
   min: number;
   max: number;
@@ -162,6 +169,7 @@ function Channel({ name, values, min, max, type }: ChannelProps) {
           type={type}
           value={v.value}
           onChange={v.onChange}
+          onFinalize={v.onFinalize}
         />
       ))}
     </>
@@ -243,8 +251,8 @@ function ColorChannel({ values }: ColorChannelProps) {
                   value={s.lightColor.value.white || 0}
                   onChange={(value) => {
                     (s.lightColor.value as Color).white = value;
-                    save(`Set color of effect.`);
                   }}
+                  onFinalize={() => save(`Set color of effect.`)}
                 />
               </label>
             </div>
@@ -263,6 +271,7 @@ interface ChannelValueProps {
   type: NumberInputType;
   value: number | undefined;
   onChange: (value: number | undefined) => void;
+  onFinalize: (value: number | undefined) => void;
 }
 
 function ChannelValue({
@@ -273,6 +282,7 @@ function ChannelValue({
   type,
   value,
   onChange,
+  onFinalize,
 }: ChannelValueProps) {
   return (
     <div
@@ -286,6 +296,7 @@ function ChannelValue({
             type={type}
             value={value}
             onChange={onChange}
+            onFinalize={onFinalize}
           />
           <IconButton
             title={`Remove ${name}`}
@@ -380,9 +391,14 @@ function CustomChannels({ states }: CustomChannelsProps) {
                           }),
                         );
                       }
-                      save(`Set custom channel.`);
                     } else {
                       s.channels = s.channels.filter((c) => c.index !== index);
+                    }
+                  }}
+                  onFinalize={(value) => {
+                    if (value !== undefined) {
+                      save(`Set custom channel.`);
+                    } else {
                       save(`Remove custom channel.`);
                     }
                   }}

@@ -52,8 +52,8 @@ export function DurationInput({ duration, className }: DurationInputProps) {
                 case: 'ms',
                 value: Math.floor(sec * 1000),
               };
-              save(`Set duration to ${sec} seconds.`);
             }}
+            onFinalize={(sec) => save(`Set duration to ${sec} seconds.`)}
             min={0}
             max={120}
           />
@@ -66,8 +66,8 @@ export function DurationInput({ duration, className }: DurationInputProps) {
                 case: 'beat',
                 value: beat,
               };
-              save(`Set duration to ${beat} beats.`);
             }}
+            onFinalize={(beat) => save(`Set duration to ${beat} beats.`)}
             min={0}
             max={512}
           />
