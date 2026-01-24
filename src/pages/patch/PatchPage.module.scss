@@ -78,11 +78,15 @@ $channel-size: 100px;
   border-color: vars.$col-interactive;
 }
 
+.editor-wrapper {
+  height: 100vh;
+}
+
 .editor {
   display: flex;
   flex-direction: column;
   gap: vars.spacing(2);
-  min-width: 40em;
+  min-width: 60em;
 
   .editor-metadata {
     display: flex;

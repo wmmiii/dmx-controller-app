@@ -14,7 +14,7 @@ import {
   DmxFixtureDefinition_ModeSchema,
   DmxFixtureDefinitionSchema,
 } from '@dmx-controller/proto/dmx_pb';
-import { BiCopyAlt, BiGridVertical, BiPlus, BiTrash } from 'react-icons/bi';
+import { BiGridVertical, BiPlus, BiTrash } from 'react-icons/bi';
 import { Button, IconButton } from '../../components/Button';
 import { ColorSwatch } from '../../components/ColorSwatch';
 import { NumberInput, TextInput } from '../../components/Input';
@@ -44,18 +44,20 @@ export function DmxFixtureList({
   outputId,
 }: DmxFixtureListProps): JSX.Element | null {
   const { project, save } = useContext(ProjectContext);
-  const [selectedDefinitionId, setSelectedDefinitionId] = useState<
-    bigint | null
-  >(null);
+  const [selectedId, setSelectedId] = useState<{
+    definition: bigint;
+    mode: string;
+  } | null>(null);
   const [highlightDrop, setHighlightDrop] = useState(false);
 
   const selectedDefinition = useMemo(() => {
-    const id = selectedDefinitionId?.toString();
-    if (id == null) {
+    if (selectedId == null) {
       return undefined;
     }
-    return project.fixtureDefinitions?.dmxFixtureDefinitions[id];
-  }, [project, selectedDefinitionId]);
+    return project.fixtureDefinitions?.dmxFixtureDefinitions[
+      selectedId.definition.toString()
+    ];
+  }, [project, selectedId]);
 
   const classes = [styles.fixtureDefinitionList];
   if (highlightDrop) {
@@ -105,13 +107,13 @@ export function DmxFixtureList({
       <ul>
         {Object.entries(project.fixtureDefinitions!.dmxFixtureDefinitions)
           .sort(([_a, a], [_b, b]) => a.name.localeCompare(b.name))
-          .map(([id, definition]) => (
-            <li key={id}>
+          .map(([definitionId, definition]) => (
+            <li key={definitionId}>
               {definition.name}
               {Object.entries(definition.modes).map(([modeId, e], i) => {
                 const f: DraggableDmxFixture = {
                   id: randomUint64(),
-                  definition: BigInt(id),
+                  definition: BigInt(definitionId),
                   mode: modeId,
                 };
                 return (
@@ -120,7 +122,12 @@ export function DmxFixtureList({
                     className={styles.mode}
                     id={f.id}
                     element={f}
-                    onClick={() => setSelectedDefinitionId(BigInt(id))}
+                    onClick={() => {
+                      setSelectedId({
+                        definition: BigInt(definitionId),
+                        mode: modeId,
+                      });
+                    }}
                     onDragComplete={() => {
                       const output = getOutput(project, outputId);
                       if (
@@ -150,20 +157,25 @@ export function DmxFixtureList({
       </ul>
       <Button
         onClick={() => {
-          const newId = randomUint64();
+          const definitionId = randomUint64();
           const newDefinition = create(DmxFixtureDefinitionSchema, {
             name: 'New Fixture Profile',
           });
-          newDefinition.modes[newId.toString()] = create(
+          const modeId = randomUint64();
+          newDefinition.modes[modeId.toString()] = create(
             DmxFixtureDefinition_ModeSchema,
             {
               name: 'Default',
               numChannels: 1,
             },
           );
-          project.fixtureDefinitions!.dmxFixtureDefinitions[newId.toString()] =
-            newDefinition;
-          setSelectedDefinitionId(newId);
+          project.fixtureDefinitions!.dmxFixtureDefinitions[
+            definitionId.toString()
+          ] = newDefinition;
+          setSelectedId({
+            definition: definitionId,
+            mode: modeId.toString(),
+          });
           save('Create new fixture profile.');
         }}
       >
@@ -181,25 +193,16 @@ export function DmxFixtureList({
         <EditDefinitionDialog
           debugOutputId={outputId}
           definition={selectedDefinition}
-          close={() => setSelectedDefinitionId(null)}
-          copy={() => {
-            if (selectedDefinition == null) {
-              return;
-            }
-            const newId = randomUint64();
-            const definition = create(
-              DmxFixtureDefinitionSchema,
-              selectedDefinition,
-            );
-            definition.name = 'Copy of ' + selectedDefinition.name;
-            project.fixtureDefinitions!.dmxFixtureDefinitions[
-              newId.toString()
-            ] = definition;
-            setSelectedDefinitionId(BigInt(newId));
-            save(`Copy fixture profile ${selectedDefinition.name}.`);
+          modeId={selectedId!.mode}
+          setModeId={(id) => {
+            setSelectedId({
+              definition: selectedId!.definition,
+              mode: id,
+            });
           }}
+          close={() => setSelectedId(null)}
           deleteDefinition={() => {
-            const id = selectedDefinitionId?.toString();
+            const id = selectedId?.toString();
             if (id == null) {
               return;
             }
@@ -217,22 +220,21 @@ export function DmxFixtureList({
 interface EditDefinitionDialogProps {
   debugOutputId: bigint;
   definition: DmxFixtureDefinition;
+  modeId: string;
+  setModeId: (modeId: string) => void;
   close: () => void;
-  copy: () => void;
   deleteDefinition: () => void;
 }
 
 function EditDefinitionDialog({
   debugOutputId,
   definition,
+  modeId,
+  setModeId,
   close,
-  copy,
   deleteDefinition,
 }: EditDefinitionDialogProps): JSX.Element {
   const { save } = useContext(ProjectContext);
-  const [modeId, setModeId] = useState<string>(
-    Object.keys(definition.modes)[0],
-  );
   const [testIndex, setTestIndex] = useState(0);
   const [testValues, setTestValues] = useState<number[]>([]);
   const [wheelChannel, setWheelChannel] = useState<number | null>(null);
@@ -270,6 +272,7 @@ function EditDefinitionDialog({
     <Modal
       title={'Edit ' + definition.name}
       onClose={close}
+      className={styles.editorWrapper}
       bodyClass={styles.editor}
       footer={
         <Button onClick={close} variant="primary">
@@ -301,9 +304,6 @@ function EditDefinitionDialog({
           />
         </label>
         <div className={styles.spacer}></div>
-        <IconButton title="Copy Fixture Profile" onClick={copy}>
-          <BiCopyAlt />
-        </IconButton>
         <IconButton
           variant="warning"
           title="Delete Fixture Profile"
@@ -312,19 +312,62 @@ function EditDefinitionDialog({
           <BiTrash />
         </IconButton>
       </div>
-
+      <hr />
       <div className={styles.editorMetadata}>
         <label>
           <span>Mode</span>
-          <select value={modeId} onChange={(e) => setModeId(e.target.value)}>
+          <select
+            value={modeId}
+            onChange={(e) => {
+              if (e.target.value === 'new') {
+                const modeId = randomUint64();
+                definition.modes[modeId.toString()] = create(
+                  DmxFixtureDefinition_ModeSchema,
+                  {
+                    name: 'New Mode',
+                    numChannels: 1,
+                  },
+                );
+                save('Add new fixture mode.');
+                setModeId(modeId.toString());
+              } else {
+                setModeId(e.target.value);
+              }
+            }}
+          >
             {Object.keys(definition.modes).map((m) => (
               <option key={m} value={m}>
                 {definition.modes[m].name}
               </option>
             ))}
+            <option value="new">+ Create New Mode</option>
           </select>
         </label>
-
+        <div className={styles.spacer}></div>
+        <IconButton
+          variant="warning"
+          title="Delete Fixture Mode"
+          onClick={() => {
+            delete definition.modes[modeId];
+            save(`Delete mode ${mode.name} from ${definition.name}.`);
+            setModeId(Object.keys(definition.modes)[0]);
+          }}
+          disabled={Object.entries(definition.modes).length < 2}
+        >
+          <BiTrash />
+        </IconButton>
+      </div>
+      <div className={styles.editorMetadata}>
+        <label>
+          <span>Mode name</span>
+          <TextInput
+            value={mode.name}
+            onChange={(value) => {
+              mode.name = value;
+              save(`Change mode name to ${value}.`);
+            }}
+          />
+        </label>
         <label>
           <span>Total channels</span>
           <NumberInput

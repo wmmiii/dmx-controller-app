@@ -12,6 +12,7 @@ interface ModalProps {
   icon?: JSX.Element;
   onClose: () => void;
   children: React.ReactNode;
+  className?: string;
   bodyClass?: string;
   footer?: React.ReactNode;
   fullScreen?: boolean;
@@ -21,6 +22,7 @@ export function Modal({
   title,
   icon,
   onClose,
+  className,
   bodyClass,
   children,
   footer,
@@ -43,6 +45,9 @@ export function Modal({
   const classes = [styles.modal];
   if (fullScreen) {
     classes.push(styles.fullScreen);
+  }
+  if (className) {
+    classes.push(className);
   }
 
   const bodyClasses = [styles.main];
