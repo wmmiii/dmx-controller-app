@@ -6,9 +6,10 @@ import {
 } from '@dmx-controller/proto/wled_pb';
 import { useCallback, useContext } from 'react';
 import { Button } from '../../components/Button';
-import { TextInput } from '../../components/Input';
+import { TextInput, ToggleInput } from '../../components/Input';
 import { ProjectContext } from '../../contexts/ProjectContext';
 import { getOutput } from '../../util/projectUtils';
+import styles from './PatchPage.module.scss';
 
 interface WledEditorProps {
   outputId: bigint;
@@ -39,6 +40,17 @@ export function WledEditor({ outputId }: WledEditorProps) {
 
   return (
     <div>
+      <label>
+        Enabled
+        <ToggleInput
+          className={styles.enabledToggle}
+          value={output.enabled}
+          onChange={(value) => {
+            output.enabled = value;
+            save(`${value ? 'Enabled' : 'Disabled'} output ${output.name}`);
+          }}
+        />
+      </label>
       <label>
         IP Address
         <TextInput

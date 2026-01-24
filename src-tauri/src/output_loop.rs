@@ -147,6 +147,11 @@ impl OutputLoopManager {
         // Build a map of desired outputs
         let mut desired_outputs: HashMap<u64, OutputType> = HashMap::new();
         for (output_id, output) in &active_patch.outputs {
+            // Only include enabled outputs
+            if !output.enabled {
+                continue;
+            }
+
             let output_type = match &output.output {
                 Some(ProtoOutput::SerialDmxOutput(_)) => OutputType::Serial,
                 Some(ProtoOutput::SacnDmxOutput(sacn)) => OutputType::Sacn {

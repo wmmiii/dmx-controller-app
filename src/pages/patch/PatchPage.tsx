@@ -17,10 +17,10 @@ import {
   deleteFromOutputTargets,
   getActivePatch,
 } from '../../util/projectUtils';
-import { DmxEditor } from './DmxEditor';
 import { GroupEditor } from './GroupEditor';
 import styles from './PatchPage.module.scss';
 import { SacnEditor } from './SacnEditor';
+import { SerialEditor } from './SerialEditor';
 import { WledEditor } from './WledEditor';
 
 const GROUP_KEY = 'group';
@@ -66,7 +66,7 @@ export default function PatchPage(): JSX.Element {
               setTabKey={setTabKey}
             />
           ),
-          contents: <DmxEditor outputId={outputId} />,
+          contents: <SerialEditor outputId={outputId} />,
         };
         break;
       case 'wledOutput':
@@ -157,6 +157,7 @@ export default function PatchPage(): JSX.Element {
                 {
                   name: 'DMX Serial Output',
                   latencyMs: 0,
+                  enabled: true,
                   output: {
                     case: 'serialDmxOutput',
                     value: {
@@ -185,6 +186,7 @@ export default function PatchPage(): JSX.Element {
                 {
                   name: 'DMX SACN Output',
                   latencyMs: 0,
+                  enabled: true,
                   output: {
                     case: 'sacnDmxOutput',
                     value: {
@@ -209,6 +211,7 @@ export default function PatchPage(): JSX.Element {
                 {
                   name: 'WLED Output',
                   latencyMs: 0,
+                  enabled: true,
                   output: {
                     case: 'wledOutput',
                     value: {

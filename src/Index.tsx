@@ -156,8 +156,9 @@ export default function Index(): JSX.Element {
             </Dropdown>
           )}
         </div>
-        {Object.entries(getActivePatch(project).outputs).map(
-          ([outputId, output], i) => {
+        {Object.entries(getActivePatch(project).outputs)
+          .filter(([_, output]) => output.enabled)
+          .map(([outputId, output], i) => {
             switch (output.output.case) {
               case 'sacnDmxOutput':
               case 'serialDmxOutput':
@@ -174,8 +175,7 @@ export default function Index(): JSX.Element {
               default:
                 return null;
             }
-          },
-        )}
+          })}
         <Spacer />
         <div className={styles.message}>{lastOperation}</div>
         <ControllerButton

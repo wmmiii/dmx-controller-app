@@ -301,6 +301,12 @@ $channel-size: 100px;
   max-width: 20rem;
 }
 
+.enabled-toggle {
+  display: inline-flex;
+  margin: vars.spacing(1);
+  vertical-align: middle;
+}
+
 .mode {
   align-items: center;
   background-color: vars.$col-bg-higher;

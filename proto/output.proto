@@ -12,9 +12,7 @@ message QualifiedFixtureId {
 }
 
 message OutputTarget {
-  message FixtureMapping {
-    repeated QualifiedFixtureId fixture_ids = 1;
-  }
+  message FixtureMapping { repeated QualifiedFixtureId fixture_ids = 1; }
 
   oneof output {
     FixtureMapping fixtures = 1;
@@ -28,9 +26,7 @@ message TargetGroup {
   repeated OutputTarget targets = 2;
 }
 
-message SerialDmxOutput {
-  map<uint64, PhysicalDmxFixture> fixtures = 1;
-}
+message SerialDmxOutput { map<uint64, PhysicalDmxFixture> fixtures = 1; }
 
 message SacnDmxOutput {
   uint32 universe = 1;
@@ -41,6 +37,7 @@ message SacnDmxOutput {
 message Output {
   string name = 1;
   uint32 latency_ms = 2;
+  bool enabled = 6;
 
   oneof output {
     SacnDmxOutput sacnDmxOutput = 5;
