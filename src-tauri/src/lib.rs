@@ -27,7 +27,16 @@ pub fn run() {
             app.manage(Arc::new(Mutex::new(sacn_state)));
 
             let serial_state = serial::SerialState::new();
-            app.manage(Arc::new(Mutex::new(serial_state)));
+            let serial_state_arc = Arc::new(Mutex::new(serial_state));
+
+            // Start the port watcher for auto-binding
+            {
+                let state_clone = serial_state_arc.clone();
+                let serial = serial_state_arc.blocking_lock();
+                serial.start_port_watcher(state_clone);
+            }
+
+            app.manage(serial_state_arc);
 
             let wled_state = wled::WledState::new().map_err(|e| {
                 Box::new(std::io::Error::new(std::io::ErrorKind::Other, e))

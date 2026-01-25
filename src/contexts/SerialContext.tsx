@@ -16,9 +16,7 @@ import { DmxRenderOutput } from '../engine/renderRouter';
 import { renderDmx } from '../system_interfaces/engine';
 import { outputLoopSupported } from '../system_interfaces/output_loop';
 import {
-  closePort,
   listPorts,
-  openPort,
   outputDmx,
   serialInit,
   serialSupported,
@@ -33,8 +31,6 @@ const EMPTY_CONTEXT = {
   port: false,
   connect: () => {},
   disconnect: () => {},
-  blackout: true,
-  setBlackout: (_blackout: boolean) => {},
 };
 
 export const SerialContext = createContext(EMPTY_CONTEXT);
@@ -98,18 +94,16 @@ interface SerialProviderImplProps {
 function SerialProviderImpl({
   children,
 }: SerialProviderImplProps): JSX.Element {
-  const { project, update } = useContext(ProjectContext);
+  const { project, save, update } = useContext(ProjectContext);
   const { setShortcuts } = useContext(ShortcutContext);
-  const [port, setPort] = useState<boolean>(false);
   const frameRef = useRef(0);
-  const blackout = useRef(false);
-  const [blackoutState, setBlackoutState] = useState(false);
   const [selectPort, setSelectPort] = useState<{
     ports: string[];
     callback: (port: string | null) => void;
   } | null>(null);
 
   const outputId = getSerialOutputId(project);
+  const output = getOutput(project, outputId).output;
 
   const connect = useCallback(async () => {
     try {
@@ -123,25 +117,22 @@ function SerialProviderImpl({
           }),
         );
         setSelectPort(null);
-        if (port) {
-          await openPort(outputId, port);
-          setPort(true);
-        } else {
-          setPort(false);
+        if (output.case === 'serialDmxOutput') {
+          output.value.lastPort = port ?? undefined;
+          save(`Set serial port to ${port}.`);
         }
-      } else {
-        await openPort(outputId, null);
-        setPort(true);
       }
     } catch (e) {
       console.error('Could not open serial port!', e);
     }
-  }, [port]);
+  }, [output]);
 
   const disconnect = useCallback(() => {
-    closePort(outputId);
-    setPort(false);
-  }, [port]);
+    if (output.case === 'serialDmxOutput') {
+      output.value.lastPort = undefined;
+      save(`Disconnect serial port.`);
+    }
+  }, [output]);
 
   useEffect(() => {
     serialInit(connect, disconnect);
@@ -149,11 +140,6 @@ function SerialProviderImpl({
 
   useEffect(() => {
     return setShortcuts([
-      {
-        shortcut: { key: 'KeyB' },
-        action: () => setBlackoutState(!blackoutState),
-        description: 'Toggle output blackout.',
-      },
       {
         shortcut: { key: 'KeyC' },
         action: () => connect(),
@@ -163,8 +149,7 @@ function SerialProviderImpl({
   });
 
   useEffect(() => {
-    if (!port) {
-      const output = getOutput(project, outputId).output;
+    if (output.case !== 'serialDmxOutput' || output.value.lastPort == null) {
       if (
         output.case === 'serialDmxOutput' &&
         Object.values(output.value.fixtures).length === 0
@@ -190,16 +175,11 @@ function SerialProviderImpl({
     (async () => {
       while (!closed) {
         const startMs = new Date().getTime();
-        let dmxOutput: DmxRenderOutput;
-        if (blackout.current) {
-          dmxOutput = new Uint8Array(512);
-        } else {
-          dmxOutput = await renderDmx(
-            outputId,
-            BigInt(startMs),
-            frameRef.current++,
-          );
-        }
+        let dmxOutput: DmxRenderOutput = await renderDmx(
+          outputId,
+          BigInt(startMs),
+          frameRef.current++,
+        );
 
         try {
           await outputDmx(outputId, dmxOutput);
@@ -224,19 +204,15 @@ function SerialProviderImpl({
     return () => {
       closed = true;
     };
-  }, [blackout, disconnect, port, outputId, update]);
+  }, [disconnect, output, outputId, update]);
 
   return (
     <SerialContext.Provider
       value={{
-        port: port,
+        port:
+          output.case === 'serialDmxOutput' && output.value.lastPort != null,
         connect: connect,
         disconnect: disconnect,
-        blackout: blackoutState,
-        setBlackout: (b: boolean) => {
-          blackout.current = b;
-          setBlackoutState(b);
-        },
       }}
     >
       {selectPort && (

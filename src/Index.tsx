@@ -4,13 +4,11 @@ import { Route, Routes, useNavigate } from 'react-router';
 import '@radix-ui/themes/styles.css';
 import { exit } from '@tauri-apps/plugin-process';
 import {
-  BiBulb,
   BiDownload,
   BiLink,
   BiLogoGithub,
   BiLogoWindows,
   BiMenu,
-  BiSolidBulb,
   BiUnlink,
   BiUpload,
 } from 'react-icons/bi';
@@ -36,8 +34,7 @@ import { isTauri } from './system_interfaces/util';
 import { getActivePatch } from './util/projectUtils';
 
 export default function Index(): JSX.Element {
-  const { port, blackout, setBlackout, connect, disconnect } =
-    useContext(SerialContext);
+  const { port, connect, disconnect } = useContext(SerialContext);
   const { controllerName, connect: connectMidi } =
     useContext(ControllerContext);
   const { project, downloadProject, openProject, lastOperation } =
@@ -121,11 +118,6 @@ export default function Index(): JSX.Element {
                   title: 'Connect to serial',
                   icon: port ? <BiLink /> : <BiUnlink />,
                   onSelect: () => (port ? disconnect() : connect()),
-                },
-                {
-                  title: 'Toggle Blackout',
-                  icon: blackout ? <BiBulb /> : <BiSolidBulb />,
-                  onSelect: () => setBlackout(!blackout),
                 },
                 { type: 'separator' },
                 {

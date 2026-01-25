@@ -39,5 +39,10 @@ pub async fn update_project(
         )
         .await?;
 
+    // Auto-bind serial outputs to their last known ports if available
+    let serial = serial_state.lock().await;
+    serial.auto_bind_serial_outputs()?;
+    drop(serial);
+
     Ok(())
 }

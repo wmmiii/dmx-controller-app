@@ -26,7 +26,10 @@ message TargetGroup {
   repeated OutputTarget targets = 2;
 }
 
-message SerialDmxOutput { map<uint64, PhysicalDmxFixture> fixtures = 1; }
+message SerialDmxOutput {
+  map<uint64, PhysicalDmxFixture> fixtures = 1;
+  optional string last_port = 2;
+}
 
 message SacnDmxOutput {
   uint32 universe = 1;
