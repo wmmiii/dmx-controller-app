@@ -3,7 +3,7 @@
 $dot-size: 20px;
 
 .wrapper {
-  margin: 0 vars.spacing(1);
+  margin: 0;
   display: flex;
   flex-direction: row;
   justify-content: center;
@@ -36,20 +36,21 @@ $dot-size: 20px;
     border-top-left-radius: vars.$dim-border-radius;
   }
 
-  &:nth-last-child(2) {
+  &:nth-last-child(3) {
     border-bottom-right-radius: vars.$dim-border-radius;
     border-top-right-radius: vars.$dim-border-radius;
   }
 }
 
-.fps {
+.fps,
+.warning {
   align-items: center;
   color: vars.$col-text-dim;
   display: flex;
   justify-content: center;
   margin: 0;
   padding: 0;
-  width: 2.5em;
+  width: 2em;
 }
 
 .warning {

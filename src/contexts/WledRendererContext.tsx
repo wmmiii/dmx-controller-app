@@ -11,7 +11,12 @@ import {
 import { toJsonString } from '@bufbuild/protobuf';
 import { PatchSchema } from '@dmx-controller/proto/output_pb';
 import { Project } from '@dmx-controller/proto/project_pb';
-import { WledOutput } from '@dmx-controller/proto/wled_pb';
+import { WledOutput, WledRenderTarget } from '@dmx-controller/proto/wled_pb';
+import {
+  RenderError,
+  triggerErrorSubscriptions,
+  triggerWledSubscriptions,
+} from '../engine/renderRouter';
 import { renderWled } from '../system_interfaces/engine';
 import { outputLoopSupported } from '../system_interfaces/output_loop';
 import { sendWled } from '../system_interfaces/wled';
@@ -49,21 +54,41 @@ export function WledRendererProvider({ children }: PropsWithChildren) {
           ].output.value as WledOutput;
 
           const startMs = new Date().getTime();
-          const renderTarget = await renderWled(
-            outputId,
-            BigInt(startMs),
-            frame++,
-          );
+          let renderTarget: WledRenderTarget;
+
+          try {
+            renderTarget = await renderWled(outputId, BigInt(startMs), frame++);
+            // Trigger render subscriptions for visualizers
+            triggerWledSubscriptions(outputId, renderTarget);
+            // Clear any previous render errors
+            triggerErrorSubscriptions(outputId, null);
+          } catch (e) {
+            const error: RenderError = {
+              outputId,
+              message: e instanceof Error ? e.message : String(e),
+            };
+            triggerErrorSubscriptions(outputId, error);
+            console.error('Could not render WLED:', e);
+            continue;
+          }
 
           try {
             await sendWled(wledOutput.ipAddress, renderTarget);
             latencySamples.push(new Date().getTime() - startMs);
+            // Clear any previous output errors
+            triggerErrorSubscriptions(outputId, null);
           } catch (e) {
-            console.error(e);
             const output = getOutput(project, outputId);
+            const errorMessage = `Could not connect to WLED device ${output.name}!`;
+            const error: RenderError = {
+              outputId,
+              message: e instanceof Error ? e.message : String(e),
+            };
+            triggerErrorSubscriptions(outputId, error);
+            console.error(e);
             setWarnings(
               Object.assign({}, warnings, {
-                [outputId.toString()]: `Could not connect to WLED device ${output.name}!`,
+                [outputId.toString()]: errorMessage,
               }),
             );
           }

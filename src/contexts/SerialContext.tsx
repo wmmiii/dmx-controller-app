@@ -12,7 +12,12 @@ import {
 import { Modal } from '../components/Modal';
 
 import { BiErrorAlt } from 'react-icons/bi';
-import { DmxRenderOutput } from '../engine/renderRouter';
+import {
+  DmxRenderOutput,
+  RenderError,
+  triggerDmxSubscriptions,
+  triggerErrorSubscriptions,
+} from '../engine/renderRouter';
 import { renderDmx } from '../system_interfaces/engine';
 import { outputLoopSupported } from '../system_interfaces/output_loop';
 import {
@@ -175,16 +180,39 @@ function SerialProviderImpl({
     (async () => {
       while (!closed) {
         const startMs = new Date().getTime();
-        let dmxOutput: DmxRenderOutput = await renderDmx(
-          outputId,
-          BigInt(startMs),
-          frameRef.current++,
-        );
+        let dmxOutput: DmxRenderOutput;
+
+        try {
+          dmxOutput = await renderDmx(
+            outputId,
+            BigInt(startMs),
+            frameRef.current++,
+          );
+          // Trigger render subscriptions for visualizers
+          triggerDmxSubscriptions(outputId, dmxOutput);
+          // Clear any previous render errors
+          triggerErrorSubscriptions(outputId, null);
+        } catch (e) {
+          const error: RenderError = {
+            outputId,
+            message: e instanceof Error ? e.message : String(e),
+          };
+          triggerErrorSubscriptions(outputId, error);
+          console.error('Could not render DMX:', e);
+          continue;
+        }
 
         try {
           await outputDmx(outputId, dmxOutput);
           latencySamples.push(new Date().getTime() - startMs);
+          // Clear any previous output errors
+          triggerErrorSubscriptions(outputId, null);
         } catch (e) {
+          const error: RenderError = {
+            outputId,
+            message: e instanceof Error ? e.message : String(e),
+          };
+          triggerErrorSubscriptions(outputId, error);
           console.error('Could not write to serial port!', e);
           closed = true;
           disconnect();

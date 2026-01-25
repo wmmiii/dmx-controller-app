@@ -1,6 +1,6 @@
 import { create } from '@bufbuild/protobuf';
 import { ColorSchema } from '@dmx-controller/proto/color_pb';
-import { createRef, useContext, useEffect, useMemo } from 'react';
+import { createRef, useContext, useEffect, useMemo, useState } from 'react';
 
 import { ProjectContext } from '../contexts/ProjectContext';
 import { ChannelTypes } from '../engine/channel';
@@ -16,7 +16,12 @@ import {
 } from '@dmx-controller/proto/output_pb';
 import { getOutput } from '../util/projectUtils';
 
-import { subscribeToDmxRender } from '../engine/renderRouter';
+import { BiError } from 'react-icons/bi';
+import {
+  RenderError,
+  subscribeToDmxRender,
+  subscribeToRenderErrors,
+} from '../engine/renderRouter';
 import styles from './Visualizer.module.scss';
 
 interface FixtureDetails {
@@ -41,6 +46,7 @@ export function DmxUniverseVisualizer({
 }: DmxUniverseVisualizerProps) {
   const { project } = useContext(ProjectContext);
   const fpsRef = createRef<HTMLLIElement>();
+  const [error, setError] = useState<RenderError | null>(null);
 
   const dmxOutput = getOutput(project, dmxOutputId).output.value as
     | SerialDmxOutput
@@ -108,20 +114,41 @@ export function DmxUniverseVisualizer({
   }, [project]);
 
   useEffect(() => {
-    subscribeToDmxRender(dmxOutputId, (_, fps) => {
+    return subscribeToDmxRender(dmxOutputId, (_, fps) => {
       if (fpsRef.current) {
         fpsRef.current.innerText = String(fps);
       }
+      setError(null);
     });
-  }, [fpsRef]);
+  }, [dmxOutputId, fpsRef]);
+
+  useEffect(() => {
+    return subscribeToRenderErrors(dmxOutputId, (err) => {
+      setError(err);
+    });
+  }, [dmxOutputId]);
 
   return (
-    <ol className={styles.visualizer}>
-      {fixtureMapping.map((f, i) => (
-        <FixtureDot key={i} dmxOutputId={dmxOutputId} f={f} />
-      ))}
-      <li ref={fpsRef} className={styles.fps} title="frames per second"></li>
-    </ol>
+    <div className={styles.wrapper}>
+      <ol className={styles.visualizer}>
+        {fixtureMapping.map((f, i) => (
+          <FixtureDot key={i} dmxOutputId={dmxOutputId} f={f} />
+        ))}
+        <li
+          className={styles.warning}
+          style={{ display: error ? undefined : 'none' }}
+          title={error?.message}
+        >
+          <BiError />
+        </li>
+        <li
+          ref={fpsRef}
+          className={styles.fps}
+          style={{ display: error ? 'none' : undefined }}
+          title="frames per second"
+        ></li>
+      </ol>
+    </div>
   );
 }
 

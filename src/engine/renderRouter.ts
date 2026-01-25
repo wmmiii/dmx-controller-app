@@ -1,6 +1,11 @@
 import { WledRenderTarget } from '@dmx-controller/proto/wled_pb';
 export type DmxRenderOutput = Uint8Array;
 
+export interface RenderError {
+  outputId: bigint;
+  message: string;
+}
+
 const FPS_BUFFER_SIZE = 100;
 
 const dmxSubscriptions: Map<
@@ -10,6 +15,12 @@ const dmxSubscriptions: Map<
 const wledSubscriptions: Map<
   bigint,
   Array<(o: WledRenderTarget, fps: number) => void>
+> = new Map();
+
+// Unified error subscriptions for all output types
+const errorSubscriptions: Map<
+  bigint,
+  Array<(error: RenderError | null) => void>
 > = new Map();
 
 // Unified FPS tracking: stores render timestamps for all outputs
@@ -88,6 +99,29 @@ export function subscribeToWledRender(
 }
 
 /**
+ * Subscribe to render errors for any output type.
+ * Pass null to clear the error state.
+ */
+export function subscribeToRenderErrors(
+  outputId: bigint,
+  listener: (error: RenderError | null) => void,
+) {
+  let subscribers = errorSubscriptions.get(outputId);
+  if (!subscribers) {
+    subscribers = [];
+    errorSubscriptions.set(outputId, subscribers);
+  }
+  subscribers.push(listener);
+
+  return () => {
+    const index = subscribers!.indexOf(listener);
+    if (index > -1) {
+      subscribers!.splice(index, 1);
+    }
+  };
+}
+
+/**
  * Trigger DMX subscriptions with already-rendered data.
  * Used by Tauri event listeners to notify subscribers.
  */
@@ -106,4 +140,15 @@ export function triggerWledSubscriptions(
 ) {
   const fps = recordAndSmoothFps(outputId);
   wledSubscriptions.get(outputId)?.forEach((f) => f(data, fps));
+}
+
+/**
+ * Trigger error subscriptions for an output.
+ * Pass null to clear the error state.
+ */
+export function triggerErrorSubscriptions(
+  outputId: bigint,
+  error: RenderError | null,
+) {
+  errorSubscriptions.get(outputId)?.forEach((f) => f(error));
 }

@@ -15,7 +15,9 @@ import init, {
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import {
+  RenderError,
   triggerDmxSubscriptions,
+  triggerErrorSubscriptions,
   triggerWledSubscriptions,
 } from '../engine/renderRouter';
 import { isTauri } from './util';
@@ -29,6 +31,11 @@ interface DmxRenderEvent {
 interface WledRenderEvent {
   output_id: string;
   data: number[];
+}
+
+interface RenderErrorEvent {
+  output_id: string;
+  message: string;
 }
 
 export const updateProject = isTauri ? tauriUpdateProject : webUpdateProject;
@@ -136,5 +143,25 @@ async function initRenderListeners(): Promise<void> {
 
     // Trigger subscriptions in renderRouter
     triggerWledSubscriptions(outputId, data);
+  });
+
+  // Listen for render error events from Tauri backend
+  await listen<RenderErrorEvent>('render-error', (event) => {
+    const payload = event.payload;
+    const outputId = BigInt(payload.output_id);
+    const error: RenderError = {
+      outputId,
+      message: payload.message,
+    };
+
+    // Trigger error subscriptions in renderRouter
+    triggerErrorSubscriptions(outputId, error);
+  });
+
+  // Listen for render error clear events from Tauri backend
+  await listen<string>('render-error-clear', (event) => {
+    const outputId = BigInt(event.payload);
+    // Trigger error subscriptions with null to clear the error
+    triggerErrorSubscriptions(outputId, null);
   });
 }

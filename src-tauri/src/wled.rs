@@ -65,14 +65,18 @@ impl WledState {
 
         let url = format!("http://{}/json/state", ip_address);
 
-        self.client
+        let response = self
+            .client
             .post(&url)
             .json(&json)
             .send()
             .await
-            .map_err(|e| format!("Failed to send WLED HTTP request: {}", e))?;
+            .map_err(|e| e.to_string())?;
 
-        Ok(())
+        match response.error_for_status() {
+            Ok(_) => Ok(()),
+            Err(e) => Err(format!("WLED device returned error: {}", e)),
+        }
     }
 }
 

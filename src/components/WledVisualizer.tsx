@@ -4,12 +4,15 @@ import { ProjectContext } from '../contexts/ProjectContext';
 
 import { getOutput } from '../util/projectUtils';
 
-import { WledRendererContext } from '../contexts/WledRendererContext';
 import styles from './Visualizer.module.scss';
 
 import { WledOutput, WledRenderTarget } from '@dmx-controller/proto/wled_pb';
-import { CiWarning } from 'react-icons/ci';
-import { subscribeToWledRender } from '../engine/renderRouter';
+import { BiError } from 'react-icons/bi';
+import {
+  RenderError,
+  subscribeToRenderErrors,
+  subscribeToWledRender,
+} from '../engine/renderRouter';
 
 interface WledVisualizerProps {
   wledOutputId: bigint;
@@ -17,28 +20,32 @@ interface WledVisualizerProps {
 
 export function WledVisualizer({ wledOutputId }: WledVisualizerProps) {
   const { project } = useContext(ProjectContext);
-  const { warnings } = useContext(WledRendererContext);
   const fpsRef = createRef<HTMLLIElement>();
 
   const [wledRenderOutput, setWledRenderOutput] =
     useState<WledRenderTarget | null>(null);
+  const [error, setError] = useState<RenderError | null>(null);
 
   const wledOutput = getOutput(project, wledOutputId).output
     .value as WledOutput;
-  const warning = warnings[wledOutputId.toString()];
 
   useEffect(() => {
-    subscribeToWledRender(wledOutputId, (output, fps) => {
+    return subscribeToWledRender(wledOutputId, (output, fps) => {
       setWledRenderOutput(output);
       if (fpsRef.current) {
         fpsRef.current.innerText = String(fps);
       }
     });
-  }, [setWledRenderOutput]);
+  }, [wledOutputId, fpsRef]);
+
+  useEffect(() => {
+    return subscribeToRenderErrors(wledOutputId, (err) => {
+      setError(err);
+    });
+  }, [wledOutputId]);
 
   return (
     <div className={styles.wrapper}>
-      {warning && <CiWarning className={styles.warning} title={warning} />}
       <ol className={styles.visualizer}>
         {wledRenderOutput?.segments.map((s, i) => {
           let red = s.primaryColor!.red;
@@ -62,7 +69,19 @@ export function WledVisualizer({ wledOutputId }: WledVisualizerProps) {
             ></li>
           );
         })}
-        <li ref={fpsRef} className={styles.fps} title="frames per second"></li>
+        <li
+          className={styles.warning}
+          style={{ display: error ? undefined : 'none' }}
+          title={error?.message}
+        >
+          <BiError />
+        </li>
+        <li
+          ref={fpsRef}
+          className={styles.fps}
+          style={{ display: error ? 'none' : undefined }}
+          title="frames per second"
+        ></li>
       </ol>
     </div>
   );

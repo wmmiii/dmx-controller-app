@@ -124,7 +124,7 @@ impl SerialState {
                 port.set_channels(dmx_data);
                 Ok(())
             }
-            None => Err(format!("Output '{}' not bound to any port", output_id)),
+            None => Err("Output not bound to any port".to_string()),
         }
     }
 

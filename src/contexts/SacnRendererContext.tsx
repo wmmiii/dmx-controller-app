@@ -7,6 +7,12 @@ import {
 } from 'react';
 
 import { SacnDmxOutput } from '@dmx-controller/proto/output_pb';
+import {
+  DmxRenderOutput,
+  RenderError,
+  triggerDmxSubscriptions,
+  triggerErrorSubscriptions,
+} from '../engine/renderRouter';
 import { renderDmx } from '../system_interfaces/engine';
 import { outputLoopSupported } from '../system_interfaces/output_loop';
 import { outputDmxSacn, sacnSupported } from '../system_interfaces/sacn';
@@ -32,11 +38,27 @@ export function SacnRendererProvider({ children }: PropsWithChildren) {
 
       while (cont) {
         const startMs = new Date().getTime();
-        const dmxOutput = await renderDmx(
-          outputId,
-          BigInt(new Date().getTime()),
-          frame++,
-        );
+        let dmxOutput: DmxRenderOutput;
+
+        try {
+          dmxOutput = await renderDmx(
+            outputId,
+            BigInt(new Date().getTime()),
+            frame++,
+          );
+          // Trigger render subscriptions for visualizers
+          triggerDmxSubscriptions(outputId, dmxOutput);
+          // Clear any previous render errors
+          triggerErrorSubscriptions(outputId, null);
+        } catch (e) {
+          const error: RenderError = {
+            outputId,
+            message: e instanceof Error ? e.message : String(e),
+          };
+          triggerErrorSubscriptions(outputId, error);
+          console.error('Could not render DMX:', e);
+          continue;
+        }
 
         try {
           await outputDmxSacn(
@@ -45,12 +67,20 @@ export function SacnRendererProvider({ children }: PropsWithChildren) {
             dmxOutput,
           );
           latencySamples.push(new Date().getTime() - startMs);
+          // Clear any previous output errors
+          triggerErrorSubscriptions(outputId, null);
         } catch (e) {
-          console.error(e);
           const output = getOutput(project, outputId);
+          const errorMessage = `Could not connect to SACN device ${output.name}!`;
+          const error: RenderError = {
+            outputId,
+            message: e instanceof Error ? e.message : String(e),
+          };
+          triggerErrorSubscriptions(outputId, error);
+          console.error(e);
           setWarnings(
             Object.assign({}, warnings, {
-              [outputId.toString()]: `Could not connect to SACN device ${output.name}!`,
+              [outputId.toString()]: errorMessage,
             }),
           );
         }

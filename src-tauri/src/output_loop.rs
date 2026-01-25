@@ -32,6 +32,12 @@ struct WledRenderEvent {
     data: Vec<u8>,
 }
 
+#[derive(Clone, Serialize)]
+struct RenderErrorEvent {
+    output_id: String,
+    message: String,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum OutputType {
     Serial,
@@ -213,7 +219,6 @@ impl OutputLoopManager {
 
         // Start new loops
         for (output_id, output_type) in to_start {
-            log::info!("Starting output loop {} ({:?})", output_id, output_type);
             self.start_loop(
                 output_id,
                 output_type,
@@ -225,6 +230,23 @@ impl OutputLoopManager {
         }
 
         Ok(())
+    }
+
+    fn emit_error(output_id: u64, message: String, app: &AppHandle) {
+        let event = RenderErrorEvent {
+            output_id: output_id.to_string(),
+            message,
+        };
+        if let Err(e) = app.emit("render-error", event) {
+            log::error!("Failed to emit render error event: {}", e);
+        }
+    }
+
+    fn clear_error(output_id: u64, app: &AppHandle) {
+        // Emit output_id string to signal clearing the error
+        if let Err(e) = app.emit("render-error-clear", output_id.to_string()) {
+            log::error!("Failed to emit render error clear event: {}", e);
+        }
     }
 
     async fn render_and_emit_dmx(
@@ -248,10 +270,7 @@ impl OutputLoopManager {
 
                 Ok(dmx_vec)
             }
-            Err(e) => {
-                log::error!("Failed to render DMX for output {}: {}", output_id, e);
-                Err(e)
-            }
+            Err(e) => Err(e),
         }
     }
 
@@ -295,45 +314,34 @@ impl OutputLoopManager {
                 .unwrap()
                 .as_millis() as u64;
 
-            match &output_type {
+            let result = match &output_type {
                 OutputType::Serial => {
-                    if let Ok(dmx_vec) =
-                        Self::render_and_emit_dmx(output_id, system_t, frame, &app).await
-                    {
-                        // Output via serial
-                        let serial = serial_state.lock().await;
-                        if let Err(e) = serial.output_dmx_internal(&output_id.to_string(), &dmx_vec)
-                        {
-                            log::error!("Failed to output serial DMX: {}", e);
+                    match Self::render_and_emit_dmx(output_id, system_t, frame, &app).await {
+                        Ok(dmx_vec) => {
+                            // Output via serial
+                            let serial = serial_state.lock().await;
+                            serial.output_dmx_internal(&output_id.to_string(), &dmx_vec)
                         }
+                        Err(e) => Err(e),
                     }
                 }
                 OutputType::Sacn {
                     universe,
                     ip_address,
                 } => {
-                    if let Ok(dmx_vec) =
-                        Self::render_and_emit_dmx(output_id, system_t, frame, &app).await
-                    {
-                        // Output via sACN
-                        let sacn = sacn_state.lock().await;
-                        if let Err(e) = sacn.output_sacn_internal(*universe, ip_address, &dmx_vec) {
-                            log::error!("Failed to output sACN DMX: {}", e);
+                    match Self::render_and_emit_dmx(output_id, system_t, frame, &app).await {
+                        Ok(dmx_vec) => {
+                            // Output via sACN
+                            let sacn = sacn_state.lock().await;
+                            sacn.output_sacn_internal(*universe, ip_address, &dmx_vec)
                         }
+                        Err(e) => Err(e),
                     }
                 }
                 OutputType::Wled { ip_address } => {
                     // Render WLED
                     match render_wled(output_id, system_t, frame) {
                         Ok(wled_data) => {
-                            // Output via WLED
-                            let wled = wled_state.lock().await;
-                            if let Err(e) = wled.output_wled_internal(ip_address, &wled_data).await
-                            {
-                                log::error!("Failed to output WLED: {}", e);
-                            }
-                            drop(wled);
-
                             // Emit render event to frontend (encode to protobuf bytes)
                             let event = WledRenderEvent {
                                 output_id: output_id.to_string(),
@@ -342,12 +350,21 @@ impl OutputLoopManager {
                             if let Err(e) = app.emit("wled-render", event) {
                                 log::error!("Failed to emit WLED render event: {}", e);
                             }
+
+                            // Output via WLED
+                            let wled = wled_state.lock().await;
+                            let result = wled.output_wled_internal(ip_address, &wled_data).await;
+                            drop(wled);
+                            result
                         }
-                        Err(e) => {
-                            log::error!("Failed to render WLED for output {}: {}", output_id, e);
-                        }
+                        Err(e) => Err(e),
                     }
                 }
+            };
+
+            match result {
+                Ok(_) => Self::clear_error(output_id, &app),
+                Err(e) => Self::emit_error(output_id, e, &app),
             }
 
             frame = frame.wrapping_add(1);
