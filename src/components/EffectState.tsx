@@ -300,7 +300,10 @@ function ChannelValue({
           />
           <IconButton
             title={`Remove ${name}`}
-            onClick={() => onChange(undefined)}
+            onClick={() => {
+              onChange(undefined);
+              onFinalize(undefined);
+            }}
           >
             <BiTrash />
           </IconButton>
@@ -309,7 +312,10 @@ function ChannelValue({
         <IconButton
           className={styles.addButton}
           title={`Add ${name}`}
-          onClick={() => onChange(0)}
+          onClick={() => {
+            onChange(0);
+            onFinalize(0);
+          }}
         >
           <BiPlus />
         </IconButton>
