@@ -29,6 +29,11 @@ pub async fn update_project(
         *project_mutex = project_object;
     } // Mutex guard is dropped here
 
+    // Auto-bind serial outputs to their last known ports if available
+    let serial = serial_state.lock().await;
+    serial.auto_bind_serial_outputs()?;
+    drop(serial);
+
     // Automatically rebuild output loops when project changes
     let manager = output_loop_manager.lock().await;
     manager
@@ -38,11 +43,6 @@ pub async fn update_project(
             wled_state.inner().clone(),
         )
         .await?;
-
-    // Auto-bind serial outputs to their last known ports if available
-    let serial = serial_state.lock().await;
-    serial.auto_bind_serial_outputs()?;
-    drop(serial);
 
     Ok(())
 }

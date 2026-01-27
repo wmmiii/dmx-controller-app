@@ -8,7 +8,7 @@ use tauri::State;
 use tokio::sync::Mutex;
 
 pub struct SerialState {
-    dmx_ports: std::sync::Mutex<HashMap<String, DMXSerial>>,
+    dmx_ports: std::sync::Mutex<HashMap<String, (String, DMXSerial)>>, // output_id -> (port_name, connection)
     watcher_cancel_tx: std::sync::Mutex<Option<tokio::sync::watch::Sender<bool>>>,
 }
 
@@ -116,12 +116,12 @@ impl SerialState {
             .lock()
             .map_err(|e| format!("Failed to lock DMX ports: {}", e))?;
         match ports.get_mut(output_id) {
-            Some(port) => {
+            Some((_port_name, dmx_serial)) => {
                 let mut dmx_data = [0u8; 512];
                 let copy_len = std::cmp::min(data.len(), 512);
                 dmx_data[..copy_len].copy_from_slice(&data[..copy_len]);
 
-                port.set_channels(dmx_data);
+                dmx_serial.set_channels(dmx_data);
                 Ok(())
             }
             None => Err("Output not bound to any port".to_string()),
@@ -136,18 +136,19 @@ impl SerialState {
                     .dmx_ports
                     .lock()
                     .map_err(|e| format!("Failed to lock DMX ports: {}", e))?;
-                ports.insert(output_id.to_string(), dmx_port);
-                log::info!("Auto-bound output '{}' to port '{}'", output_id, port_name);
+
+                ports.insert(output_id.to_string(), (port_name.to_string(), dmx_port));
+                log::info!("Bound output '{}' to port '{}'", output_id, port_name);
                 Ok(())
             }
             Err(e) => Err(format!("Failed to open DMX port '{}': {}", port_name, e)),
         }
     }
 
-    /// Check if a port is currently open for the given output
-    pub fn is_port_open(&self, output_id: &str) -> bool {
+    /// Get the port name that the output is currently bound to
+    pub fn get_bound_port_name(&self, output_id: &str) -> Option<String> {
         let ports = self.dmx_ports.lock().unwrap_or_else(|e| e.into_inner());
-        ports.contains_key(output_id)
+        ports.get(output_id).map(|(port_name, _)| port_name.clone())
     }
 
     /// Close a port if it's open
@@ -156,13 +157,11 @@ impl SerialState {
             .dmx_ports
             .lock()
             .map_err(|e| format!("Failed to lock DMX ports: {}", e))?;
-        match ports.remove(output_id) {
-            Some(_) => {
-                log::info!("Closed port for output '{}'", output_id);
-                Ok(())
-            }
-            None => Ok(()), // Already closed
+
+        if ports.remove(output_id).is_some() {
+            log::info!("Closed port for output '{}'", output_id);
         }
+        Ok(())
     }
 
     /// Close ports that have been disconnected
@@ -246,43 +245,68 @@ impl SerialState {
         for (output_id, output) in &active_patch.outputs {
             if let Some(ProtoOutput::SerialDmxOutput(serial_output)) = &output.output {
                 let output_id_str = output_id.to_string();
+                let desired_port = &serial_output.last_port;
+                let current_port = self.get_bound_port_name(&output_id_str);
 
-                // Skip if already bound
-                if self.is_port_open(&output_id_str) {
-                    log::debug!(
-                        "Output '{}' already bound, skipping auto-bind",
-                        output_id_str
-                    );
-                    continue;
-                }
+                // Determine if we need to rebind
+                let needs_rebind = match (&current_port, desired_port.is_empty()) {
+                    (None, true) => false, // Not bound and no port desired - nothing to do
+                    (None, false) => true, // Not bound but should be - bind it
+                    (Some(current), true) => {
+                        // Bound but no port desired - unbind it
+                        log::debug!(
+                            "Output '{}' has no last_port set, closing port '{}'",
+                            output_id_str,
+                            current
+                        );
+                        let _ = self.try_close_port(&output_id_str);
+                        false
+                    }
+                    (Some(current), false) => current != desired_port, // Check if port changed
+                };
 
-                // Check if last_port is set and available
-                if !serial_output.last_port.is_empty() {
-                    if available_port_names.contains(&serial_output.last_port) {
-                        // Attempt to bind to the last known port
-                        match self.try_open_port(&output_id_str, &serial_output.last_port) {
+                if needs_rebind && !desired_port.is_empty() {
+                    // Check if the desired port is available
+                    if available_port_names.contains(desired_port) {
+                        // Close any existing port binding first
+                        if let Some(current) = current_port {
+                            log::debug!(
+                                "Output '{}' changing port from '{}' to '{}'",
+                                output_id_str,
+                                current,
+                                desired_port
+                            );
+                            let _ = self.try_close_port(&output_id_str);
+                        }
+
+                        // Attempt to bind to the desired port
+                        match self.try_open_port(&output_id_str, desired_port) {
                             Ok(_) => {
                                 log::info!(
-                                    "Successfully auto-bound output '{}' to last known port '{}'",
+                                    "Successfully auto-bound output '{}' to port '{}'",
                                     output_id_str,
-                                    serial_output.last_port
+                                    desired_port
                                 );
                             }
                             Err(e) => {
                                 log::warn!(
                                     "Failed to auto-bind output '{}' to port '{}': {}",
                                     output_id_str,
-                                    serial_output.last_port,
+                                    desired_port,
                                     e
                                 );
                             }
                         }
                     } else {
                         log::debug!(
-                            "Last known port '{}' for output '{}' not available",
-                            serial_output.last_port,
+                            "Desired port '{}' for output '{}' not available",
+                            desired_port,
                             output_id_str
                         );
+                        // Close port if it's open but the desired port is not available
+                        if current_port.is_some() {
+                            let _ = self.try_close_port(&output_id_str);
+                        }
                     }
                 }
             }
@@ -316,7 +340,9 @@ pub async fn open_port(
                 .dmx_ports
                 .lock()
                 .map_err(|e| format!("Failed to lock DMX ports: {}", e))?;
-            ports.insert(output_id.clone(), dmx_port);
+
+            ports.insert(output_id.clone(), (port_name.clone(), dmx_port));
+            log::info!("Opened port '{}' for output '{}'", port_name, output_id);
             Ok(())
         }
         Err(e) => Err(format!("Failed to open DMX port '{}': {}", port_name, e)),
@@ -333,9 +359,12 @@ pub async fn close_port(
         .dmx_ports
         .lock()
         .map_err(|e| format!("Failed to lock DMX ports: {}", e))?;
-    match ports.remove(&output_id) {
-        Some(_) => Ok(()),
-        None => Err(format!("Output '{}' not found", output_id)),
+
+    if ports.remove(&output_id).is_some() {
+        log::info!("Closed port for output '{}'", output_id);
+        Ok(())
+    } else {
+        Err(format!("Output '{}' not found", output_id))
     }
 }
 
