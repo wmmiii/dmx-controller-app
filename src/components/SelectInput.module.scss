@@ -102,7 +102,7 @@
 .item {
   border-radius: calc(vars.$dim-border-radius / 2);
   cursor: pointer;
-  padding: vars.spacing(1) vars.spacing(1.5);
+  padding: vars.spacing(1);
   outline: none;
   user-select: none;
   list-style: none;
@@ -120,9 +120,7 @@
 
 .categoryLabel {
   color: vars.$col-text-dim;
-  font-size: 0.875rem;
   font-weight: 600;
-  padding: vars.spacing(1) vars.spacing(1.5);
-  text-transform: uppercase;
+  padding: vars.spacing(1.5) vars.spacing(1) vars.spacing(1);
   letter-spacing: 0.05em;
 }

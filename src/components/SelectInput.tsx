@@ -22,6 +22,7 @@ interface SelectValueInputProps<T> {
   onBlur?: (value: string) => void;
   placeholder: string;
   options: SelectItems<T>;
+  equals?: (a: T, b: T) => boolean;
   className?: string;
 }
 
@@ -33,6 +34,7 @@ export function SelectInput<T>({
   onBlur,
   placeholder,
   options,
+  equals = (a, b) => a === b,
   className,
 }: SelectValueInputProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
@@ -54,14 +56,14 @@ export function SelectInput<T>({
     if (isCategories) {
       const categories = options as SelectCategory<T>[];
       for (const category of categories) {
-        const option = category.options.find((opt) => opt.value === value);
+        const option = category.options.find((opt) => equals(opt.value, value));
         if (option) {
           return option.label;
         }
       }
     } else {
       const simpleOptions = options as SelectOption<T>[];
-      const option = simpleOptions.find((opt) => opt.value === value);
+      const option = simpleOptions.find((opt) => equals(opt.value, value));
       if (option) {
         return option.label;
       }
