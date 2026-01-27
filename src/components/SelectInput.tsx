@@ -22,7 +22,7 @@ interface SelectValueInputProps<T> {
   onBlur?: (value: string) => void;
   placeholder: string;
   options: SelectItems<T>;
-  equals?: (a: T, b: T) => boolean;
+  equals?: (a: T | undefined, b: T | undefined) => boolean;
   className?: string;
 }
 
@@ -73,7 +73,6 @@ export function SelectInput<T>({
   }, [value, options]);
 
   const handleSelect = (selectedValue: typeof value) => {
-    console.log('select', selectedValue);
     onChange(selectedValue);
     setTimeout(() => {
       inputRef.current?.blur();
@@ -163,7 +162,6 @@ export function SelectInput<T>({
           onFocus?.();
         }}
         onBlur={() => {
-          console.log('blur', searchQuery);
           setTimeout(() => {
             setIsOpen(false);
             onBlur?.(searchQuery);
@@ -194,39 +192,59 @@ export function SelectInput<T>({
           {isCategories ? (
             // Render categorized options
             (filteredItems as SelectCategory<T>[]).map(
-              (category, categoryIndex) => (
-                <div key={categoryIndex} className={styles.category}>
-                  <div className={styles.categoryLabel}>{category.label}</div>
-                  <ul className={styles.list}>
-                    {category.options.map((option) => (
-                      <li
-                        key={String(option.value)}
-                        className={styles.item}
-                        onClick={() => handleSelect(option.value)}
-                      >
-                        {option.label}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ),
+              (category, categoryIndex) => {
+                return (
+                  <div key={categoryIndex} className={styles.category}>
+                    <div className={styles.categoryLabel}>{category.label}</div>
+                    <ul className={styles.list}>
+                      {category.options.map((option) => (
+                        <Option
+                          option={option}
+                          selected={equals(option.value, value)}
+                          handleSelect={handleSelect}
+                        />
+                      ))}
+                    </ul>
+                  </div>
+                );
+              },
             )
           ) : (
             // Render simple items list
             <ul className={styles.list}>
-              {(filteredItems as Array<SelectOption<T>>).map((item) => (
-                <li
-                  key={String(item.value)}
-                  className={styles.item}
-                  onClick={() => handleSelect(item.value)}
-                >
-                  {item.label}
-                </li>
+              {(filteredItems as Array<SelectOption<T>>).map((option) => (
+                <Option
+                  option={option}
+                  selected={equals(option.value, value)}
+                  handleSelect={handleSelect}
+                />
               ))}
             </ul>
           )}
         </div>
       )}
     </div>
+  );
+}
+
+interface OptionProps<T> {
+  option: SelectOption<T>;
+  selected: boolean;
+  handleSelect: (value: T) => void;
+}
+
+function Option<T>({ option, selected, handleSelect }: OptionProps<T>) {
+  const classes = [styles.item];
+  if (selected) {
+    classes.push(styles.selected);
+  }
+  return (
+    <li
+      key={String(option.value)}
+      className={classes.join(' ')}
+      onClick={() => handleSelect(option.value)}
+    >
+      {option.label}
+    </li>
   );
 }

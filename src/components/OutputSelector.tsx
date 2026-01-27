@@ -136,7 +136,13 @@ export function OutputSelector({
       value={value}
       onChange={setValue}
       options={targets}
-      equals={(a, b) => equals(OutputTargetSchema, a, b)}
+      equals={(a, b) => {
+        if (a === undefined || b === undefined) {
+          return a === b;
+        } else {
+          return equals(OutputTargetSchema, a, b);
+        }
+      }}
     />
   );
 }

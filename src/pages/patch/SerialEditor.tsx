@@ -86,7 +86,6 @@ export function SerialEditor({ outputId }: SacnEditorProps) {
           <SelectInput<string>
             value={output.output.value.lastPort}
             onChange={(value) => {
-              console.log('onChange', value);
               if (output.output.case === 'serialDmxOutput') {
                 output.output.value.lastPort = value || undefined;
                 save(
@@ -106,7 +105,6 @@ export function SerialEditor({ outputId }: SacnEditorProps) {
             placeholder="Select or enter serial port"
             options={options}
             onBlur={(value) => {
-              console.log('onBlur', value);
               if (value && output.output.case === 'serialDmxOutput') {
                 output.output.value.lastPort = value;
                 save(`Set port for ${output.name} to ${value}.`);

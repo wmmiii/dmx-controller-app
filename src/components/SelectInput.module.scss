@@ -110,6 +110,15 @@
   &:hover {
     background-color: vars.$col-bg-active;
   }
+
+  &.selected {
+    color: vars.$col-interactive;
+    font-weight: 500;
+
+    &:hover {
+      color: vars.$col-interactive-hover;
+    }
+  }
 }
 
 .category {

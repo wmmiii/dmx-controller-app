@@ -136,7 +136,7 @@ export function Tile({ tileId, tile, onSelect, x, y, priority }: TileProps) {
             onSelect();
             e.stopPropagation();
           }}
-          onMouseDown={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
         ></div>
       )}
       <div

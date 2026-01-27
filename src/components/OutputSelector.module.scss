@@ -1,5 +1,9 @@
 @use '../_vars';
 
-.warning {
+.warning input {
   border-color: vars.$col-warning;
+
+  &:hover {
+    border-color: vars.$col-warning-hover;
+  }
 }
