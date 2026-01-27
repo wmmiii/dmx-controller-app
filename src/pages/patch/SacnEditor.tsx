@@ -21,33 +21,33 @@ export function SacnEditor({ outputId }: SacnEditorProps) {
 
   return (
     <div className={styles.body}>
-      <label>
-        Enabled
-        <ToggleInput
-          className={styles.enabledToggle}
-          value={output.enabled}
-          onChange={(value) => {
-            output.enabled = value;
-            save(`${value ? 'Enabled' : 'Disabled'} output ${output.name}`);
-          }}
-        />
-      </label>
-      <label>
-        IP Address
-        <TextInput
-          value={sacnOutput.ipAddress}
-          onChange={(ipAddress) => {
-            sacnOutput.ipAddress = ipAddress;
-            save(
-              `Update address of WLED device ${output.name} to ${ipAddress}.`,
-            );
-          }}
-        />
-      </label>
-      <hr />
-      <div>
-        <DmxEditor outputId={outputId} />
+      <div className={styles.meta}>
+        <label>
+          <span>Enabled</span>
+          <ToggleInput
+            className={styles.enabledToggle}
+            value={output.enabled}
+            onChange={(value) => {
+              output.enabled = value;
+              save(`${value ? 'Enabled' : 'Disabled'} output ${output.name}`);
+            }}
+          />
+        </label>
+        <label>
+          IP <span>Address</span>
+          <TextInput
+            value={sacnOutput.ipAddress}
+            onChange={(ipAddress) => {
+              sacnOutput.ipAddress = ipAddress;
+              save(
+                `Update address of WLED device ${output.name} to ${ipAddress}.`,
+              );
+            }}
+          />
+        </label>
       </div>
+      <hr />
+      <DmxEditor outputId={outputId} />
     </div>
   );
 }

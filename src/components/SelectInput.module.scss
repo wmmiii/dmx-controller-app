@@ -1,0 +1,128 @@
+@use 'sass:color';
+@use '../_vars';
+
+.root {
+  position: relative;
+  display: inline-block;
+}
+
+.input {
+  background-color: vars.$col-bg-higher;
+  border: 1px solid vars.$col-border;
+  border-radius: vars.$dim-border-radius;
+  color: vars.$col-text;
+  font-size: 1rem;
+  padding: vars.spacing(1) vars.spacing(1.5);
+  padding-right: vars.spacing(4); // Make room for clear button
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+
+  &:hover {
+    border-color: vars.$col-border-higher;
+  }
+
+  &:focus {
+    border-color: vars.$col-interactive;
+  }
+
+  &::placeholder {
+    color: vars.$col-text-dim;
+  }
+}
+
+.clearButton {
+  position: absolute;
+  right: vars.spacing(1);
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: vars.$col-text-dim;
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: vars.spacing(0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: calc(vars.$dim-border-radius / 2);
+  line-height: 1;
+
+  &:hover {
+    color: vars.$col-text;
+    background-color: vars.$col-bg-active;
+  }
+
+  &:active {
+    background-color: vars.$col-bg-active-lower;
+  }
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background-color: vars.$col-bg-higher;
+  border: 1px solid vars.$col-border;
+  border-radius: vars.$dim-border-radius;
+  @include vars.drop-shadow;
+  max-height: 300px;
+  overflow: auto;
+  outline: none;
+  z-index: vars.$z-index-popover;
+  box-sizing: border-box;
+
+  // Custom scrollbar styling
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: vars.$col-scroll-track;
+    border-radius: vars.$dim-border-radius;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: vars.$col-scroll-thumb;
+    border-radius: vars.$dim-border-radius;
+
+    &:hover {
+      background: color.adjust(vars.$col-scroll-thumb, $lightness: 10%);
+    }
+  }
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: vars.spacing(0.5);
+}
+
+.item {
+  border-radius: calc(vars.$dim-border-radius / 2);
+  cursor: pointer;
+  padding: vars.spacing(1) vars.spacing(1.5);
+  outline: none;
+  user-select: none;
+  list-style: none;
+
+  &:hover {
+    background-color: vars.$col-bg-active;
+  }
+}
+
+.category {
+  &:not(:first-child) {
+    margin-top: vars.spacing(1);
+  }
+}
+
+.categoryLabel {
+  color: vars.$col-text-dim;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: vars.spacing(1) vars.spacing(1.5);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}

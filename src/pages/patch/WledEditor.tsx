@@ -40,29 +40,31 @@ export function WledEditor({ outputId }: WledEditorProps) {
 
   return (
     <div>
-      <label>
-        Enabled
-        <ToggleInput
-          className={styles.enabledToggle}
-          value={output.enabled}
-          onChange={(value) => {
-            output.enabled = value;
-            save(`${value ? 'Enabled' : 'Disabled'} output ${output.name}`);
-          }}
-        />
-      </label>
-      <label>
-        IP Address
-        <TextInput
-          value={wledOutput.ipAddress}
-          onChange={(ipAddress) => {
-            wledOutput.ipAddress = ipAddress;
-            save(
-              `Update address of WLED device ${output.name} to ${ipAddress}.`,
-            );
-          }}
-        />
-      </label>
+      <div className={styles.meta}>
+        <label>
+          <span>Enabled</span>
+          <ToggleInput
+            className={styles.enabledToggle}
+            value={output.enabled}
+            onChange={(value) => {
+              output.enabled = value;
+              save(`${value ? 'Enabled' : 'Disabled'} output ${output.name}`);
+            }}
+          />
+        </label>
+        <label>
+          <span>IP Address</span>
+          <TextInput
+            value={wledOutput.ipAddress}
+            onChange={(ipAddress) => {
+              wledOutput.ipAddress = ipAddress;
+              save(
+                `Update address of WLED device ${output.name} to ${ipAddress}.`,
+              );
+            }}
+          />
+        </label>
+      </div>
       <hr />
       <Button onClick={syncDevice}>Sync</Button>
       <ol>

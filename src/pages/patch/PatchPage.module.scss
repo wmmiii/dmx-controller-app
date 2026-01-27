@@ -25,19 +25,25 @@ $channel-size: 100px;
 
   display: flex;
   flex-direction: column;
+}
+
+.meta {
+  align-items: center;
+  display: flex;
+  flex-direction: row;
+  flex-shrink: 0;
+  gap: vars.spacing(2);
 
   label {
+    align-items: center;
+    display: flex;
+    flex-direction: row;
     flex-shrink: 0;
     min-height: 0;
 
     span {
       padding-right: 1rem;
     }
-  }
-
-  & > div {
-    flex: 1;
-    position: relative;
   }
 }
 
@@ -46,6 +52,8 @@ $channel-size: 100px;
 
   display: flex;
   flex-direction: row;
+  position: relative;
+  overflow-y: auto;
 }
 
 .no-flex,
