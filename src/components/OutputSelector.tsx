@@ -13,6 +13,13 @@ import { GROUP_ALL_ID } from '../engine/fixtures/writableDevice';
 import styles from './OutputSelector.module.scss';
 import { SelectCategory, SelectInput, SelectOption } from './SelectInput';
 
+const EMPTY_OUTPUT_TARGET = create(OutputTargetSchema, {
+  output: {
+    case: undefined,
+    value: undefined,
+  },
+});
+
 interface OutputSelectorProps {
   value: OutputTarget | undefined;
   setValue: (value: OutputTarget | undefined) => void;
@@ -124,8 +131,13 @@ export function OutputSelector({
     return targets;
   }, [project]);
 
+  const selectValue =
+    value && equals(OutputTargetSchema, value, EMPTY_OUTPUT_TARGET)
+      ? undefined
+      : value;
+
   const classes = [];
-  if (value === undefined) {
+  if (selectValue === undefined) {
     classes.push(styles.warning);
   }
 
@@ -133,7 +145,7 @@ export function OutputSelector({
     <SelectInput
       className={classes.join(' ')}
       placeholder="Select output"
-      value={value}
+      value={selectValue}
       onChange={setValue}
       options={targets}
       equals={(a, b) => {

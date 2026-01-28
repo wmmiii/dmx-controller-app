@@ -69,6 +69,7 @@ export function SelectInput<T>({
       }
     }
 
+    console.log('value', value);
     throw Error(`Unknown value in select: ${value}`);
   }, [value, options]);
 
