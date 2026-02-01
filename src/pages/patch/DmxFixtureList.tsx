@@ -3,7 +3,6 @@ import { JSX, useContext, useEffect, useMemo, useState } from 'react';
 import { ProjectContext } from '../../contexts/ProjectContext';
 
 import {
-  DmxFixtureDefinition,
   DmxFixtureDefinition_Channel,
   DmxFixtureDefinition_Channel_AmountMappingSchema,
   DmxFixtureDefinition_Channel_AngleMappingSchema,
@@ -14,6 +13,10 @@ import {
   DmxFixtureDefinition_ModeSchema,
   DmxFixtureDefinitionSchema,
 } from '@dmx-controller/proto/dmx_pb';
+import {
+  SacnDmxOutput,
+  SerialDmxOutput,
+} from '@dmx-controller/proto/output_pb';
 import { BiGridVertical, BiPlus, BiTrash } from 'react-icons/bi';
 import { Button, IconButton } from '../../components/Button';
 import { ColorSwatch } from '../../components/ColorSwatch';
@@ -49,15 +52,6 @@ export function DmxFixtureList({
     mode: string;
   } | null>(null);
   const [highlightDrop, setHighlightDrop] = useState(false);
-
-  const selectedDefinition = useMemo(() => {
-    if (selectedId == null) {
-      return undefined;
-    }
-    return project.fixtureDefinitions?.dmxFixtureDefinitions[
-      selectedId.definition.toString()
-    ];
-  }, [project, selectedId]);
 
   const classes = [styles.fixtureDefinitionList];
   if (highlightDrop) {
@@ -189,11 +183,10 @@ export function DmxFixtureList({
         </a>
         &nbsp;onto this pane to quickly import profiles.
       </p>
-      {selectedDefinition && (
+      {selectedId && (
         <EditDefinitionDialog
           debugOutputId={outputId}
-          definition={selectedDefinition}
-          modeId={selectedId!.mode}
+          id={selectedId}
           setModeId={(id) => {
             setSelectedId({
               definition: selectedId!.definition,
@@ -206,6 +199,25 @@ export function DmxFixtureList({
             if (id == null) {
               return;
             }
+
+            const existing = Object.values(project.patches)
+              .flatMap((p) => Object.values(p.outputs))
+              .filter(
+                (o) =>
+                  o.output.case === 'sacnDmxOutput' ||
+                  o.output.case === 'serialDmxOutput',
+              )
+              .flatMap((o) =>
+                Object.values(
+                  (o.output.value as SacnDmxOutput | SerialDmxOutput).fixtures,
+                ),
+              )
+              .find((f) => f.fixtureDefinitionId === selectedId.definition);
+            if (existing) {
+              alert(`Fixture profile used by ${existing.name}!`);
+              return;
+            }
+
             const name =
               project.fixtureDefinitions?.dmxFixtureDefinitions[id].name;
             delete project.fixtureDefinitions?.dmxFixtureDefinitions[id];
@@ -219,8 +231,7 @@ export function DmxFixtureList({
 
 interface EditDefinitionDialogProps {
   debugOutputId: bigint;
-  definition: DmxFixtureDefinition;
-  modeId: string;
+  id: { definition: bigint; mode: string };
   setModeId: (modeId: string) => void;
   close: () => void;
   deleteDefinition: () => void;
@@ -228,13 +239,12 @@ interface EditDefinitionDialogProps {
 
 function EditDefinitionDialog({
   debugOutputId,
-  definition,
-  modeId,
+  id,
   setModeId,
   close,
   deleteDefinition,
 }: EditDefinitionDialogProps): JSX.Element {
-  const { save } = useContext(ProjectContext);
+  const { project, save } = useContext(ProjectContext);
   const [testIndex, setTestIndex] = useState(0);
   const [testValues, setTestValues] = useState<number[]>([]);
   const [wheelChannel, setWheelChannel] = useState<number | null>(null);
@@ -261,7 +271,13 @@ function EditDefinitionDialog({
     [debugOutputId, testIndex, testValues],
   );
 
-  const mode = definition.modes[modeId];
+  const definition = useMemo(() => {
+    return project.fixtureDefinitions?.dmxFixtureDefinitions[
+      id.definition.toString()
+    ]!;
+  }, [project, id]);
+
+  const mode = definition.modes[id.mode];
 
   const wheel = wheelChannel
     ? (mode.channels[wheelChannel].mapping
@@ -317,7 +333,7 @@ function EditDefinitionDialog({
         <label>
           <span>Mode</span>
           <select
-            value={modeId}
+            value={id.mode}
             onChange={(e) => {
               if (e.target.value === 'new') {
                 const modeId = randomUint64();
@@ -348,7 +364,28 @@ function EditDefinitionDialog({
           variant="warning"
           title="Delete Fixture Mode"
           onClick={() => {
-            delete definition.modes[modeId];
+            const existing = Object.values(project.patches)
+              .flatMap((p) => Object.values(p.outputs))
+              .filter(
+                (o) =>
+                  o.output.case === 'sacnDmxOutput' ||
+                  o.output.case === 'serialDmxOutput',
+              )
+              .flatMap((o) =>
+                Object.values(
+                  (o.output.value as SacnDmxOutput | SerialDmxOutput).fixtures,
+                ),
+              )
+              .find(
+                (f) =>
+                  f.fixtureDefinitionId === id.definition &&
+                  f.fixtureMode === id.mode,
+              );
+            if (existing) {
+              alert(`Fixture mode used by ${existing.name}!`);
+              return;
+            }
+            delete definition.modes[id.mode];
             save(`Delete mode ${mode.name} from ${definition.name}.`);
             setModeId(Object.keys(definition.modes)[0]);
           }}
