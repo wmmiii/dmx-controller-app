@@ -3,6 +3,14 @@ fn main() {
     let project_root = std::path::Path::new(&manifest_dir).join("..");
     let proto_dir = project_root.join("proto");
 
+    // Use protoc from node_modules (installed via pnpm) if PROTOC is not already set
+    if std::env::var("PROTOC").is_err() {
+        let protoc_path = project_root.join("node_modules/.bin/protoc");
+        if protoc_path.exists() {
+            unsafe { std::env::set_var("PROTOC", protoc_path) };
+        }
+    }
+
     // Automatically discover all .proto files
     let proto_files: Vec<_> = std::fs::read_dir(&proto_dir)
         .expect("Failed to read proto directory")

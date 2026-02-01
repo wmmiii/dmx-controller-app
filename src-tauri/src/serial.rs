@@ -1,4 +1,5 @@
 use dmx_engine::project::PROJECT_REF;
+use dmx_engine::proto::SerialDmxOutput;
 use dmx_engine::proto::output::Output as ProtoOutput;
 use open_dmx::DMXSerial;
 use serialport::available_ports;
@@ -189,24 +190,26 @@ impl SerialState {
 
         // Find outputs that were using the disconnected ports
         for (output_id, output) in &active_patch.outputs {
-            if let Some(ProtoOutput::SerialDmxOutput(serial_output)) = &output.output {
-                if !serial_output.last_port.is_empty()
-                    && disconnected_port_names.contains(&serial_output.last_port)
-                {
-                    let output_id_str = output_id.to_string();
-                    if let Err(e) = self.try_close_port(&output_id_str) {
-                        log::error!(
-                            "Failed to close disconnected port for output '{}': {}",
-                            output_id_str,
-                            e
-                        );
-                    } else {
-                        log::info!(
-                            "Closed port '{}' for output '{}' due to disconnection",
-                            serial_output.last_port,
-                            output_id_str
-                        );
-                    }
+            if let Some(ProtoOutput::SerialDmxOutput(SerialDmxOutput {
+                fixtures: _,
+                last_port: Some(last_port),
+            })) = &output.output
+                && !last_port.is_empty()
+                && disconnected_port_names.contains(last_port)
+            {
+                let output_id_str = output_id.to_string();
+                if let Err(e) = self.try_close_port(&output_id_str) {
+                    log::error!(
+                        "Failed to close disconnected port for output '{}': {}",
+                        output_id_str,
+                        e
+                    );
+                } else {
+                    log::info!(
+                        "Closed port '{}' for output '{}' due to disconnection",
+                        last_port,
+                        output_id_str
+                    );
                 }
             }
         }
@@ -243,16 +246,22 @@ impl SerialState {
 
         // Iterate through outputs and auto-bind serial outputs with last_port set
         for (output_id, output) in &active_patch.outputs {
-            if let Some(ProtoOutput::SerialDmxOutput(serial_output)) = &output.output {
+            if let Some(ProtoOutput::SerialDmxOutput(SerialDmxOutput {
+                fixtures: _,
+                last_port: desired_port_option,
+            })) = &output.output
+            {
                 let output_id_str = output_id.to_string();
-                let desired_port = &serial_output.last_port;
                 let current_port = self.get_bound_port_name(&output_id_str);
 
                 // Determine if we need to rebind
-                let needs_rebind = match (&current_port, desired_port.is_empty()) {
-                    (None, true) => false, // Not bound and no port desired - nothing to do
-                    (None, false) => true, // Not bound but should be - bind it
-                    (Some(current), true) => {
+                let needs_rebind = match (
+                    &current_port,
+                    desired_port_option.as_ref().is_some_and(|p| !p.is_empty()),
+                ) {
+                    (None, false) => false, // Not bound and no port desired - nothing to do
+                    (None, true) => true,   // Not bound but should be - bind it
+                    (Some(current), false) => {
                         // Bound but no port desired - unbind it
                         log::debug!(
                             "Output '{}' has no last_port set, closing port '{}'",
@@ -262,10 +271,13 @@ impl SerialState {
                         let _ = self.try_close_port(&output_id_str);
                         false
                     }
-                    (Some(current), false) => current != desired_port, // Check if port changed
+                    (Some(current), true) => current != desired_port_option.as_ref().unwrap(), // Check if port changed
                 };
 
-                if needs_rebind && !desired_port.is_empty() {
+                if let Some(desired_port) = desired_port_option
+                    && !desired_port.is_empty()
+                    && needs_rebind
+                {
                     // Check if the desired port is available
                     if available_port_names.contains(desired_port) {
                         // Close any existing port binding first
