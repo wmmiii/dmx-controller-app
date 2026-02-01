@@ -56,11 +56,7 @@ export function PaletteSwatch({
       <ColorSwatch color={palette.primary!.color} />
       <ColorSwatch color={palette.secondary!.color} />
       <ColorSwatch color={palette.tertiary!.color} />
-      <IconButton
-        title="Modify palette"
-        iconOnly={true}
-        onClick={() => setEditPalette(true)}
-      >
+      <IconButton title="Modify palette" onClick={() => setEditPalette(true)}>
         <BiCog />
       </IconButton>
       {editPalette && (

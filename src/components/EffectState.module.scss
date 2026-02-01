@@ -5,6 +5,24 @@
   display: grid;
   gap: vars.spacing(1);
   grid-template-columns: repeat(1fr);
+
+  button,
+  input,
+  select {
+    margin: 0;
+  }
+
+  label {
+    gap: vars.spacing(2);
+  }
+}
+
+.column-header {
+  position: sticky;
+  top: 0;
+  background-color: vars.$col-bg-higher;
+  padding: vars.spacing(1) 0;
+  border-bottom: 1px solid vars.$col-border;
 }
 
 .state-row {

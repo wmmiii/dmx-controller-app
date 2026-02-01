@@ -28,15 +28,10 @@ export function TextInput({ value, onChange }: TextInputProps): JSX.Element {
     }
   }, [input]);
 
-  const classes = [styles.input];
-  if (input != value) {
-    classes.push(styles.modified);
-  }
-
   return (
     <input
       ref={inputRef}
-      className={classes.join(' ')}
+      className={styles.input}
       onKeyDown={(e) => {
         switch (e.code) {
           case 'Enter':

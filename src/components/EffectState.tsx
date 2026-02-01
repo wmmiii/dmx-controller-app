@@ -18,7 +18,7 @@ import {
   WLED_CHANNELS,
 } from '../engine/channel';
 
-import { BiPlus, BiTrash } from 'react-icons/bi';
+import { BiPlus, BiX } from 'react-icons/bi';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { Button, IconButton } from './Button';
 import { ColorSwatch } from './ColorSwatch';
@@ -43,8 +43,18 @@ export function EffectState({
 
   return (
     <div className={styles.effectState}>
+      <div
+        className={styles.columnHeader}
+        style={{
+          gridColumnStart: 1,
+          gridColumnEnd: 2,
+        }}
+      >
+        Property
+      </div>
       {states.map((s, i) => (
         <div
+          className={styles.columnHeader}
           key={i}
           style={{
             gridColumnStart: i + 2,
@@ -286,6 +296,7 @@ function ChannelValue({
 }: ChannelValueProps) {
   return (
     <div
+      className={styles.channelValue}
       style={{ gridColumnStart: stateIndex + 2, gridColumnEnd: stateIndex + 3 }}
     >
       {value !== undefined ? (
@@ -305,7 +316,7 @@ function ChannelValue({
               onFinalize(undefined);
             }}
           >
-            <BiTrash />
+            <BiX />
           </IconButton>
         </div>
       ) : (
@@ -352,7 +363,8 @@ function CustomChannels({ states }: CustomChannelsProps) {
       {[...setChannels].map((index) => {
         return (
           <Fragment key={index}>
-            <div style={{ gridColumnStart: 1, gridColumnEnd: 2 }}>
+            <label style={{ gridColumnStart: 1, gridColumnEnd: 2 }}>
+              Index
               <NumberInput
                 value={index}
                 onChange={(newIndex) => {
@@ -373,7 +385,7 @@ function CustomChannels({ states }: CustomChannelsProps) {
                 max={512}
                 type="integer"
               />
-            </div>
+            </label>
             {states.map((s, i) => {
               const channel = s.channels.find((c) => c.index === index);
               return (
@@ -416,6 +428,7 @@ function CustomChannels({ states }: CustomChannelsProps) {
       })}
       <div style={{ gridColumnStart: 1, gridColumnEnd: states.length + 2 }}>
         <Button
+          className={styles.addButton}
           onClick={() => {
             const newIndex = Math.max(...setChannels, 0) + 1;
             states[0].channels.push(

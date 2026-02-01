@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { BiX } from 'react-icons/bi';
+import { IconButton } from './Button';
 import styles from './SelectInput.module.scss';
 
 export interface SelectOption<T> {
@@ -171,8 +172,9 @@ export function SelectInput<T>({
         }}
       />
       {value && (
-        <button
+        <IconButton
           className={styles.clearButton}
+          title="Clear"
           onClick={() => {
             if (onClear) {
               onClear();
@@ -181,11 +183,9 @@ export function SelectInput<T>({
             }
             setSearchQuery('');
           }}
-          type="button"
-          aria-label="Clear selection"
         >
           <BiX />
-        </button>
+        </IconButton>
       )}
 
       {isOpen && hasItems && (

@@ -89,7 +89,6 @@ export function ControllerButton(props: ControllerButtonProps) {
 
 interface IconButtonProps extends BaseButtonProps {
   title: string;
-  iconOnly?: boolean;
   children: JSX.Element;
 }
 
@@ -99,7 +98,6 @@ export function IconButton({
   variant,
   disabled,
   title,
-  iconOnly,
   children,
 }: IconButtonProps): JSX.Element {
   const classes = [
@@ -107,9 +105,6 @@ export function IconButton({
     styles.iconButton,
     classFromVariant(variant),
   ];
-  if (iconOnly) {
-    classes.push(styles.borderless);
-  }
   if (className) {
     classes.unshift(className);
   }

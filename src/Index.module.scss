@@ -2,7 +2,6 @@
 @use './_vars';
 
 html {
-  --col-text: vars.$col-text;
   background-color: vars.$col-bg-higher;
   color: vars.$col-text;
   font-family: 'Roboto', sans-serif;
@@ -46,13 +45,43 @@ a {
   }
 }
 
+button,
 input,
 textarea,
 select {
-  background-color: color.adjust(vars.$col-bg, $lightness: 5%);
+  background-color: transparent;
   border-radius: vars.$dim-border-radius;
-  border: 1px solid vars.$col-interactive;
+  border: 1px solid vars.$col-border-higher;
+  box-sizing: border-box;
   color: vars.$col-text;
+  outline: none;
+  padding: vars.spacing(1) vars.spacing(1.5);
+  margin: 0 vars.spacing(1);
+
+  &:active,
+  &:focus {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: vars.$col-interactive;
+  }
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: vars.$col-interactive-hover;
+  }
+
+  &::placeholder {
+    color: vars.$col-text-dim;
+  }
+
+  &:disabled {
+    background-color: transparent !important;
+    border-color: vars.$col-border-disabled !important;
+    color: vars.$col-text-dim !important;
+    cursor: default !important;
+  }
+}
+
+button {
   padding: vars.spacing(1);
 }
 

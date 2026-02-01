@@ -481,7 +481,7 @@ function StaticEffectDetails({
       <EffectState
         states={[
           {
-            name: 'Effect',
+            name: 'Value',
             state: effect.state,
           },
         ]}

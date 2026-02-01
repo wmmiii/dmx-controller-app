@@ -2,18 +2,12 @@
 
 .base-button {
   align-items: center;
-  border-radius: vars.spacing(1);
-  border-style: solid;
-  border-width: 1px;
   cursor: pointer;
   display: inline-flex;
   min-height: 24px + vars.spacing(2);
-  outline: none;
 }
 
 .button {
-  align-items: center;
-  display: flex;
   flex-direction: row;
   font-size: 18px;
   gap: vars.spacing(1);
@@ -34,22 +28,7 @@
   width: 24px + vars.spacing(2);
 }
 
-.borderless {
-  border: none !important;
-  background-color: none;
-}
-
 .default-variant {
-  background-color: transparent;
-  border-color: vars.$col-interactive;
-  color: vars.$col-interactive;
-
-  &:disabled {
-    background-color: transparent !important;
-    border-color: vars.$col-disabled !important;
-    color: vars.$col-disabled !important;
-  }
-
   &:active,
   &:hover,
   &:focus {
@@ -60,21 +39,13 @@
 }
 
 .primary-variant {
-  background-color: vars.$col-interactive;
   border-color: vars.$col-interactive;
-  color: vars.$col-bg;
+  color: vars.$col-interactive;
 
-  &:disabled {
-    background-color: vars.$col-disabled !important;
-    border-color: vars.$col-disabled !important;
-    color: vars.$col-bg !important;
-  }
-
-  &:active,
-  &:hover,
-  &:focus {
-    background-color: vars.$col-interactive-hover;
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1);
     border-color: vars.$col-interactive-hover;
+    color: vars.$col-interactive-hover;
   }
 }
 
@@ -82,12 +53,6 @@
   background-color: vars.$col-bg;
   border-color: vars.$col-warning;
   color: vars.$col-warning;
-
-  &:disabled {
-    background-color: vars.$col-disabled !important;
-    border-color: vars.$col-disabled !important;
-    color: vars.$col-bg !important;
-  }
 
   &:active,
   &:hover,
