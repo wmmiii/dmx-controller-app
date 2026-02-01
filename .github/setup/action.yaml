@@ -21,11 +21,6 @@ runs:
       with:
         toolchain: stable
 
-    - name: Install wasm-pack
-      uses: taiki-e/install-action@v2
-      with:
-        tool: wasm-pack
-
     - name: Install Tauri system dependencies (Linux only)
       if: runner.os == 'Linux'
       shell: bash
