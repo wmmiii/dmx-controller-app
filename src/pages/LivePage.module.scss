@@ -24,18 +24,17 @@
 }
 
 .header {
-  h2,
-  h3 {
-    margin: vars.spacing(1) 0;
-  }
-
-  align-items: center;
   display: flex;
   flex-direction: row;
   flex-shrink: 0;
   gap: vars.spacing(2);
+  align-items: center;
   justify-content: space-between;
   margin-top: vars.spacing(1);
+  h2,
+  h3 {
+    margin: vars.spacing(1) 0;
+  }
 }
 
 .beat {
@@ -56,14 +55,14 @@
 }
 
 .palettes {
-  border-left: 1px solid vars.$col-border;
   flex-shrink: 0;
   overflow-y: auto;
+  border-left: 1px solid vars.$col-border;
 
   > button {
     box-sizing: border-box;
-    margin: vars.spacing(1);
     width: calc(100% - vars.spacing(2));
+    margin: vars.spacing(1);
   }
 }
 
@@ -80,20 +79,20 @@
   flex-direction: row;
 
   .meta-pane {
-    border-right: 1px solid vars.$col-border;
     flex-shrink: 0;
-    overflow-y: auto;
     padding: vars.spacing(1);
+    overflow-y: auto;
+    border-right: 1px solid vars.$col-border;
 
     .row {
-      align-items: baseline;
-      box-sizing: border-box;
       display: flex;
       flex-direction: row;
       gap: vars.spacing(4);
+      align-items: baseline;
       justify-content: space-between;
-      padding: vars.spacing(1) 0;
+      box-sizing: border-box;
       width: 100%;
+      padding: vars.spacing(1) 0;
 
       > label {
         flex-shrink: 0;
@@ -110,34 +109,34 @@
   .details-pane {
     left: 1px solid vars.$col-border;
     display: flex;
-    flex-direction: row;
     flex: 1;
+    flex-direction: row;
     overflow-x: auto;
   }
 }
 
 .effect {
-  border-right: 1px solid vars.$col-border;
   flex-shrink: 0;
+  padding: 0 vars.spacing(2) vars.spacing(1);
   overflow-x: hidden;
   overflow-y: auto;
-  padding: 0 vars.spacing(2) vars.spacing(1);
+  border-right: 1px solid vars.$col-border;
 }
 
 .new-effect {
-  align-items: center;
-  box-sizing: border-box;
   display: flex;
   flex-shrink: 0;
-  height: 100%;
+  align-items: center;
   justify-content: center;
+  box-sizing: border-box;
+  height: 100%;
   padding: vars.spacing(2);
 }
 
 .state-header {
-  align-items: center;
   display: flex;
   flex-direction: row;
+  align-items: center;
   margin: vars.spacing(2) 0;
 
   & > * {

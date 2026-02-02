@@ -52,6 +52,7 @@
     "jest-environment-jsdom": "30.0.5",
     "prettier": "3.5.3",
     "prettier-plugin-organize-imports": "4.1.0",
+    "prettier-plugin-rational-order": "^1.0.3",
     "protoc": "^33.4.0",
     "sass": "1.80.0",
     "ts-jest": "29.4.1",

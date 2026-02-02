@@ -1,12 +1,12 @@
 @use '../_vars';
 
 .palette-swatch {
-  align-items: center;
-  cursor: pointer;
   display: flex;
   flex-direction: row;
   gap: vars.spacing(1);
+  align-items: center;
   padding: vars.spacing(1);
+  cursor: pointer;
 }
 
 .active {
@@ -28,30 +28,30 @@
 }
 
 .visualizer {
-  height: 433px;
   position: relative;
   width: 433px;
+  height: 433px;
 
   .gradient {
-    aspect-ratio: 1/1;
-    mix-blend-mode: lighten;
     position: absolute;
     width: 75%;
+    mix-blend-mode: lighten;
+    aspect-ratio: 1/1;
   }
 
   .primary {
-    left: 0;
     top: 50%;
+    left: 0;
     transform: translateY(-50%);
   }
 
   .secondary {
-    right: 0;
     top: 0;
+    right: 0;
   }
 
   .tertiary {
-    bottom: 0;
     right: 0;
+    bottom: 0;
   }
 }

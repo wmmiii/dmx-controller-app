@@ -1,11 +1,11 @@
 @use '../_vars';
 
 .layer {
-  background-color: vars.$col-bg;
-  border-bottom: 1px solid vars.$col-border;
+  position: relative;
   height: 74px;
   overflow: hidden;
-  position: relative;
+  background-color: vars.$col-bg;
+  border-bottom: 1px solid vars.$col-border;
 
   &:nth-last-child(2) {
     border-bottom: none;
@@ -17,18 +17,18 @@
 }
 
 .delete-button {
-  display: none;
-  left: vars.spacing(0.5);
   position: absolute;
   top: vars.spacing(0.5);
+  left: vars.spacing(0.5);
   z-index: 1;
+  display: none;
 }
 
 .effect,
 .newEffect {
-  bottom: 0;
   position: absolute;
   top: 0;
+  bottom: 0;
   z-index: 0;
 }
 
@@ -37,10 +37,10 @@
 }
 
 .createMask {
+  position: fixed;
+  top: 0;
+  right: 0;
   bottom: 0;
   left: 0;
-  position: fixed;
-  right: 0;
-  top: 0;
   z-index: vars.$z-index-interactive-mask;
 }

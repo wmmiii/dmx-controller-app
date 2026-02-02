@@ -1,23 +1,23 @@
 @use '../_vars';
 
 .live-beat {
-  align-items: center;
   display: flex;
   flex-direction: row;
   gap: vars.spacing(1);
+  align-items: center;
 }
 
 .beat-indicator {
-  align-items: center;
-  background-color: vars.$col-accent;
-  border-radius: 25%;
-  color: vars.$col-bg;
   display: flex;
+  align-items: center;
   justify-content: center;
   padding: vars.spacing(1);
+  color: vars.$col-bg;
+  background-color: vars.$col-accent;
+  border-radius: 25%;
 
   &.sampling {
-    animation: gradient 1s ease infinite;
     background: vars.$col-interactive-hover;
+    animation: gradient 1s ease infinite;
   }
 }

@@ -11,18 +11,18 @@ $toggle-height: 24px;
 }
 
 .toggle-input {
-  cursor: pointer;
   display: flex;
   flex-direction: row;
   align-items: center;
+  cursor: pointer;
 
   label {
-    cursor: pointer;
     flex: 1;
+    cursor: pointer;
 
     &:first-child {
-      color: vars.$col-interactive;
       justify-content: left;
+      color: vars.$col-interactive;
     }
 
     &:last-child {
@@ -54,23 +54,23 @@ $toggle-height: 24px;
 
 .toggle-slide {
   @include vars.inset-shadow;
+  position: relative;
+  width: calc($toggle-height * 2);
+  height: $toggle-height;
 
   background-color: #404040;
   border-radius: calc($toggle-height / 2);
-  height: $toggle-height;
-  position: relative;
-  width: calc($toggle-height * 2);
 }
 
 .toggle-switch {
-  border-radius: calc($toggle-height / 2);
-  bottom: 0;
-  height: $toggle-height;
-  left: 0;
   position: absolute;
   top: 0;
+  bottom: 0;
+  left: 0;
   width: $toggle-height;
+  height: $toggle-height;
   background-color: vars.$col-interactive;
+  border-radius: calc($toggle-height / 2);
 
   &:hover {
     background-color: vars.$col-interactive-hover;

@@ -6,45 +6,45 @@
 }
 
 .overlay {
-  bottom: 0;
-  cursor: ew-resize !important;
-  left: 0;
   position: fixed;
-  right: 0;
   top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   z-index: 999;
+  cursor: ew-resize !important;
 }
 
 .dragging {
   .pane {
-    pointer-events: none;
     user-select: none;
+    pointer-events: none;
   }
 }
 
 .pane {
+  position: relative;
   flex: 1;
   min-width: vars.spacing(4);
   overflow-x: hidden;
   overflow-y: auto;
-  position: relative;
 }
 
 .separator {
-  align-items: center;
-  background-color: vars.$col-bg-higher;
-  cursor: ew-resize;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
+  align-items: center;
   justify-content: center;
   width: vars.spacing(1);
+  background-color: vars.$col-bg-higher;
+  cursor: ew-resize;
 
   &::after {
-    background-color: vars.$col-bg;
     content: '';
     flex-direction: column;
-    height: 24px;
     width: 2px;
+    height: 24px;
+    background-color: vars.$col-bg;
   }
 }

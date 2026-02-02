@@ -41,11 +41,11 @@ $z-index-interactive-mask: 9999;
 }
 
 @mixin fill {
+  position: absolute;
+  top: 0;
+  right: 0;
   bottom: 0;
   left: 0;
-  position: absolute;
-  right: 0;
-  top: 0;
 }
 
 @mixin drop-shadow {
@@ -58,27 +58,27 @@ $z-index-interactive-mask: 9999;
 
 @mixin gradient-border($border-color, $bg-color, $width) {
   &:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: -1;
     background-color: $bg-color;
     border-radius: inherit;
-    bottom: 0;
-    content: '';
-    left: 0;
-    position: absolute;
-    right: 0;
-    top: 0;
-    z-index: -1;
   }
 
   &:after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: -2;
+    margin: -$width; /* !importanté */
     background: $border-color;
     border-radius: inherit; /* !importanté */
-    bottom: 0;
-    content: '';
-    left: 0;
-    margin: -$width; /* !importanté */
-    position: absolute;
-    right: 0;
-    top: 0;
-    z-index: -2;
   }
 }

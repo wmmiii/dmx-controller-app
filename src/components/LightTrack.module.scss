@@ -1,32 +1,32 @@
 @use '../_vars';
 
 .lightTrack {
-  border-top: 1px solid vars.$col-border;
-  border-bottom: 1px solid vars.$col-border;
   display: flex;
   flex-direction: row;
   flex-shrink: 0;
+  border-top: 1px solid vars.$col-border;
+  border-bottom: 1px solid vars.$col-border;
 
   &:last-child {
     border-bottom: 1px solid vars.$col-border;
   }
 
   .left {
-    border-right: 1px solid vars.$col-border;
-    box-sizing: border-box;
+    z-index: 1;
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
     gap: vars.spacing(1);
+    box-sizing: border-box;
     padding: vars.spacing(1);
-    z-index: 1;
+    border-right: 1px solid vars.$col-border;
   }
 
   .header {
-    align-items: center;
     display: flex;
     flex-direction: row;
     gap: vars.spacing(1);
+    align-items: center;
 
     :first-child {
       flex: 1;
@@ -46,26 +46,26 @@
   }
 
   .right {
-    background-color: vars.$col-bg;
-    flex: 1;
-    min-width: 0;
     position: relative;
     z-index: 0;
+    flex: 1;
+    min-width: 0;
+    background-color: vars.$col-bg;
   }
 
   .newLayer {
-    width: 100%;
     display: flex;
     flex-direction: row;
     justify-content: center;
+    width: 100%;
     padding: vars.spacing(2);
   }
 }
 
 .collapsedLayer {
   @include vars.fill;
-  border-bottom: none;
-  pointer-events: none;
   z-index: 0;
   overflow-x: hidden;
+  border-bottom: none;
+  pointer-events: none;
 }

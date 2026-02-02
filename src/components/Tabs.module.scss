@@ -6,9 +6,9 @@
 }
 
 .header {
-  border-bottom: 1px solid vars.$col-border;
   display: flex;
   flex-direction: row;
+  border-bottom: 1px solid vars.$col-border;
 }
 
 .tabs {
@@ -20,16 +20,16 @@
 }
 
 .tab {
+  display: flex;
+  flex-direction: row;
   align-items: center;
+  margin-bottom: -1px;
+  padding: vars.spacing(1);
   border: 1px solid vars.$col-border-lower;
   border-bottom-color: transparent;
   border-top-left-radius: vars.$dim-border-radius;
   border-top-right-radius: vars.$dim-border-radius;
   cursor: pointer;
-  display: flex;
-  flex-direction: row;
-  margin-bottom: -1px;
-  padding: vars.spacing(1);
 
   &:hover {
     border-color: vars.$col-interactive-hover;
@@ -42,6 +42,6 @@
 }
 
 .contents {
-  flex: 1;
   position: relative;
+  flex: 1;
 }

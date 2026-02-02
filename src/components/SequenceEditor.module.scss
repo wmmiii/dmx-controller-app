@@ -1,10 +1,10 @@
 @use '../_vars';
 
 .sequence-editor {
+  position: absolute;
   display: flex;
   flex-direction: row;
   inset: 0;
-  position: absolute;
 
   .sequence {
     flex: 1;
@@ -17,10 +17,10 @@
   .effect-details,
   .effect-details-placeholder {
     flex-shrink: 0;
-    border: 1px solid vars.$col-border;
+    min-width: 351px;
     padding: vars.spacing(2);
     overflow-y: auto;
-    min-width: 351px;
+    border: 1px solid vars.$col-border;
   }
 }
 
@@ -31,19 +31,19 @@
 
 .verticalRules {
   @include vars.fill;
+  z-index: 0;
 
   display: flex;
   flex-direction: row;
   pointer-events: none;
-  z-index: 0;
 }
 
 .rule,
 .ruleFaint {
-  align-self: stretch;
-  border-right: 1px solid vars.$col-border;
   flex: 1;
+  align-self: stretch;
   min-width: 0;
+  border-right: 1px solid vars.$col-border;
 
   &:last-child {
     border-right: none;
@@ -55,8 +55,8 @@
 }
 
 .new-layer-row {
-  align-items: center;
   display: flex;
+  align-items: center;
   justify-content: center;
   padding: vars.spacing(1);
 }

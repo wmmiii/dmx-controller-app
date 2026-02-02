@@ -1,86 +1,86 @@
 @use '../_vars';
 
 .base-button {
-  align-items: center;
-  cursor: pointer;
   display: inline-flex;
+  align-items: center;
   min-height: 24px + vars.spacing(2);
+  cursor: pointer;
 }
 
 .button {
   flex-direction: row;
-  font-size: 18px;
   gap: vars.spacing(1);
   justify-content: space-evenly;
   padding: vars.spacing(1) vars.spacing(2);
+  font-size: 18px;
 
   .icon {
-    font-size: 24px;
-    height: 24px;
     width: 24px;
+    height: 24px;
+    font-size: 24px;
   }
 }
 
 .icon-button {
-  font-size: 24px;
-  height: 24px + vars.spacing(2);
   justify-content: center;
   width: 24px + vars.spacing(2);
+  height: 24px + vars.spacing(2);
+  font-size: 24px;
 }
 
 .default-variant {
   &:active,
   &:hover,
   &:focus {
+    color: vars.$col-interactive-hover;
     background-color: rgba(255, 255, 255, 0.1);
     border-color: vars.$col-interactive-hover;
-    color: vars.$col-interactive-hover;
   }
 }
 
 .primary-variant {
-  border-color: vars.$col-interactive;
   color: vars.$col-interactive;
+  border-color: vars.$col-interactive;
 
   &:hover {
+    color: vars.$col-interactive-hover;
     background-color: rgba(255, 255, 255, 0.1);
     border-color: vars.$col-interactive-hover;
-    color: vars.$col-interactive-hover;
   }
 }
 
 .warning-variant {
+  color: vars.$col-warning;
   background-color: vars.$col-bg;
   border-color: vars.$col-warning;
-  color: vars.$col-warning;
 
   &:active,
   &:hover,
   &:focus {
+    color: vars.$col-warning-hover;
     background-color: rgba(255, 255, 255, 0.1);
     border-color: vars.$col-warning-hover;
-    color: vars.$col-warning-hover;
   }
 }
 
 .controller-button {
-  align-items: center;
-  border: none;
-  color: vars.$col-text;
-  text-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+  position: relative;
+  z-index: 0;
   display: flex;
   flex-direction: row;
   gap: vars.spacing(1);
-  padding: vars.spacing(1);
+  align-items: center;
   justify-content: center;
   margin: 1px;
-  position: relative;
-  z-index: 0;
+  padding: vars.spacing(1);
+  color: vars.$col-text;
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+  border: none;
 
   .icon {
-    font-size: 24px;
-    height: 24px;
     width: 24px;
+    height: 24px;
+    font-size: 24px;
   }
 
   &.inactive {

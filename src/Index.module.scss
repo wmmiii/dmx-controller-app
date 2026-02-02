@@ -2,12 +2,12 @@
 @use './_vars';
 
 html {
-  background-color: vars.$col-bg-higher;
-  color: vars.$col-text;
-  font-family: 'Roboto', sans-serif;
-  font-size: 11pt;
-  font-weight: 300;
   overflow-x: hidden;
+  color: vars.$col-text;
+  font-weight: 300;
+  font-size: 11pt;
+  font-family: 'Roboto', sans-serif;
+  background-color: vars.$col-bg-higher;
   scrollbar-color: vars.$col-scroll-thumb vars.$col-scroll-track;
   scrollbar-width: thin;
 }
@@ -16,25 +16,25 @@ h1,
 h2,
 h3,
 h4 {
-  font-family: 'Montserrat', sans-serif;
   font-weight: 600;
+  font-family: 'Montserrat', sans-serif;
 }
 
 hr {
-  border-bottom: none;
-  border-left: none;
-  border-right: none;
-  border-top: 1px solid vars.$col-border;
   display: block;
   height: 1px;
   margin: 0;
   padding: 0;
+  border-top: 1px solid vars.$col-border;
+  border-right: none;
+  border-bottom: none;
+  border-left: none;
 }
 
 a {
   color: vars.$col-interactive;
-  text-decoration: none;
   font-weight: 600;
+  text-decoration: none;
 
   &:hover {
     color: vars.$col-interactive-hover;
@@ -49,14 +49,14 @@ button,
 input,
 textarea,
 select {
-  background-color: transparent;
-  border-radius: vars.$dim-border-radius;
-  border: 1px solid vars.$col-border-higher;
   box-sizing: border-box;
-  color: vars.$col-text;
-  outline: none;
-  padding: vars.spacing(1) vars.spacing(1.5);
   margin: 0 vars.spacing(1);
+  padding: vars.spacing(1) vars.spacing(1.5);
+  color: vars.$col-text;
+  background-color: transparent;
+  border: 1px solid vars.$col-border-higher;
+  border-radius: vars.$dim-border-radius;
+  outline: none;
 
   &:active,
   &:focus {
@@ -74,9 +74,9 @@ select {
   }
 
   &:disabled {
+    color: vars.$col-text-dim !important;
     background-color: transparent !important;
     border-color: vars.$col-border-disabled !important;
-    color: vars.$col-text-dim !important;
     cursor: default !important;
   }
 }
@@ -86,18 +86,17 @@ button {
 }
 
 select {
-  -webkit-appearance: none; /* For WebKit-based browsers like Android WebView */
-  -moz-appearance: none; /* For Firefox */
-  appearance: none; /* Standard property */
-  cursor: pointer;
+  padding-right: 2rem; /* Spacing for the caret */
 
   /* Caret */
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='white' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .858 1.658l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.5rem center;
   background-size: 0.75rem 0.75rem;
-
-  padding-right: 2rem; /* Spacing for the caret */
+  cursor: pointer;
+  -webkit-appearance: none; /* For WebKit-based browsers like Android WebView */
+  -moz-appearance: none; /* For Firefox */
+  appearance: none; /* Standard property */
 }
 
 li {
@@ -110,14 +109,14 @@ table {
 }
 
 th {
-  background-color: vars.$col-bg;
-  font-size: unset;
-  font-weight: unset;
-  padding: vars.spacing(1) 0;
   position: sticky;
-  text-align: left;
   top: 0;
   z-index: 1;
+  padding: vars.spacing(1) 0;
+  font-weight: unset;
+  font-size: unset;
+  text-align: left;
+  background-color: vars.$col-bg;
 }
 
 .wrapper {
@@ -128,56 +127,56 @@ th {
   padding: vars.spacing(1);
 
   header {
-    align-items: center;
-    background-color: vars.$col-bg-higher;
+    position: relative;
+    z-index: vars.$z-index-menu;
     display: flex;
     flex-direction: row;
     flex-shrink: 0;
     gap: vars.spacing(1);
+    align-items: center;
     min-height: 0;
-    position: relative;
-    z-index: vars.$z-index-menu;
+    background-color: vars.$col-bg-higher;
 
     & > * {
       z-index: 1;
     }
 
     h1 {
-      color: vars.$col-border;
-      font-family: 'Tomorrow', sans-serif;
-      font-size: 28px;
-      font-weight: 800;
-      left: 50%;
-      margin: 0;
       position: absolute;
       top: 0;
+      left: 50%;
+      z-index: 0;
+      margin: 0;
+      color: vars.$col-border;
+      font-weight: 800;
+      font-size: 28px;
+      font-family: 'Tomorrow', sans-serif;
+      text-wrap: nowrap;
       transform: translateX(-50%);
       user-select: none;
-      text-wrap: nowrap;
-      z-index: 0;
     }
   }
 
   main {
-    background-color: vars.$col-bg;
-    border-radius: vars.spacing(1);
+    position: relative;
     flex: 1;
     overflow-y: auto;
-    position: relative;
+    background-color: vars.$col-bg;
+    border-radius: vars.spacing(1);
   }
 
   footer {
-    align-items: center;
     display: flex;
     flex-direction: row;
+    align-items: center;
     justify-content: space-between;
   }
 }
 
 .menu {
-  cursor: pointer;
-  height: 32px;
   position: relative;
+  height: 32px;
+  cursor: pointer;
 
   &:hover {
     color: vars.$col-interactive-hover;
@@ -185,23 +184,23 @@ th {
 }
 
 .menu-icon {
-  height: 32px;
   width: 32px;
+  height: 32px;
 }
 
 .fps {
-  color: vars.$col-text-dim;
   flex-shrink: 0;
+  color: vars.$col-text-dim;
   font-size: 10pt;
 }
 
 .message {
-  color: vars.$col-text-dim;
   flex-shrink: 1;
-  font-size: 10pt;
   overflow: hidden;
-  text-overflow: ellipsis;
+  color: vars.$col-text-dim;
+  font-size: 10pt;
   white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .welcome-dialog {
@@ -213,10 +212,10 @@ th {
 }
 
 .button-row {
-  align-items: center;
   display: flex;
   flex-direction: row;
   gap: vars.spacing(2);
+  align-items: center;
   justify-content: space-between;
   margin: vars.spacing(1) 0;
 }

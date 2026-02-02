@@ -2,12 +2,12 @@
 
 .content {
   @include vars.drop-shadow;
+  z-index: vars.$z-index-popover;
+  padding: vars.spacing(1);
+  color: vars.$col-text;
 
   background-color: vars.$col-bg-higher;
   border-radius: vars.$dim-border-radius;
-  color: vars.$col-text;
-  padding: vars.spacing(1);
-  z-index: vars.$z-index-popover;
 }
 
 .arrow {

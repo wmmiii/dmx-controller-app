@@ -21,8 +21,8 @@
 .element {
   cursor: pointer;
   transition: 500ms box-shadow;
-  user-select: none;
   -webkit-user-select: none;
+  user-select: none;
 }
 
 .click {
@@ -33,20 +33,20 @@
 }
 
 .press {
-  animation: wiggle 300ms infinite;
   box-shadow:
     0 0 16px white,
     0 0 8px white;
   cursor: grabbing;
-  touch-action: none;
   transition: 50ms box-shadow;
+  animation: wiggle 300ms infinite;
+  touch-action: none;
 }
 
 .drag {
-  animation: wiggle 300ms infinite;
   box-shadow:
     0 0 16px white,
     0 0 8px white;
   cursor: grabbing;
+  animation: wiggle 300ms infinite;
   touch-action: none;
 }

@@ -1,10 +1,10 @@
 @use '../_vars';
 
 .effect-state {
-  align-items: center;
   display: grid;
-  gap: vars.spacing(1);
   grid-template-columns: repeat(1fr);
+  gap: vars.spacing(1);
+  align-items: center;
 
   button,
   input,
@@ -20,28 +20,28 @@
 .column-header {
   position: sticky;
   top: 0;
-  background-color: vars.$col-bg-higher;
   padding: vars.spacing(1) 0;
+  background-color: vars.$col-bg-higher;
   border-bottom: 1px solid vars.$col-border;
 }
 
 .state-row {
-  align-items: center;
   display: flex;
   flex-direction: row;
   gap: vars.spacing(1);
+  align-items: center;
   justify-content: space-between;
 
   .input {
     display: flex;
-    flex-direction: row;
     flex: 1;
+    flex-direction: row;
     gap: vars.spacing(1);
     justify-content: space-between;
 
     input[type='number'] {
-      width: 3em;
       flex-shrink: 0;
+      width: 3em;
     }
 
     input[type='range'] {
