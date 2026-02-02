@@ -2,13 +2,16 @@ import { JSX, useContext } from 'react';
 
 import { create } from '@bufbuild/protobuf';
 import { SettingsSchema } from '@dmx-controller/proto/settings_pb';
+import { Button } from '../components/Button';
 import { TextInput, ToggleInput } from '../components/Input';
+import { DialogContext } from '../contexts/DialogContext';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { escapeForFilesystem } from '../util/fileUtils';
 import styles from './ProjectPage.module.scss';
 
 export default function ProjectPage(): JSX.Element {
   const { project, save } = useContext(ProjectContext);
+  const { resetDismissed, dismissedReset } = useContext(DialogContext);
 
   return (
     <table className={styles.table}>
@@ -46,6 +49,14 @@ export default function ProjectPage(): JSX.Element {
                 );
               }}
             />
+          </td>
+        </tr>
+        <tr>
+          <th>Reset dialogs</th>
+          <td>
+            <Button onClick={resetDismissed} disabled={dismissedReset}>
+              Reset dismissed dialogs
+            </Button>
           </td>
         </tr>
       </tbody>

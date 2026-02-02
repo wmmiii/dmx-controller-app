@@ -5,7 +5,7 @@ import styles from './Dropdown.module.scss';
 interface DropdownProps {
   className?: string;
   onClose: () => void;
-  children: Array<
+  items: Array<
     | {
         type?: 'item';
         title: string;
@@ -18,7 +18,7 @@ interface DropdownProps {
   >;
 }
 
-export function Dropdown({ className, onClose, children }: DropdownProps) {
+export function Dropdown({ className, onClose, items }: DropdownProps) {
   useEffect(() => {
     document.addEventListener('click', onClose);
     () => document.removeEventListener('click', onClose);
@@ -31,7 +31,7 @@ export function Dropdown({ className, onClose, children }: DropdownProps) {
 
   return (
     <div className={classes.join(' ')}>
-      {children.map((item, index) => {
+      {items.map((item, index) => {
         if (item.type === 'separator') {
           return <hr key={index} />;
         } else {

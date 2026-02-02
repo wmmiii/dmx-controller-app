@@ -5,9 +5,9 @@ import '@radix-ui/themes/styles.css';
 import { exit } from '@tauri-apps/plugin-process';
 import {
   BiDownload,
+  BiError,
   BiLink,
   BiLogoGithub,
-  BiLogoWindows,
   BiMenu,
   BiUnlink,
   BiUpload,
@@ -76,8 +76,9 @@ export default function Index(): JSX.Element {
         >
           <BiMenu className={styles.menuIcon} />
           {showMenu && (
-            <Dropdown onClose={() => setShowMenu(false)}>
-              {[
+            <Dropdown
+              onClose={() => setShowMenu(false)}
+              items={[
                 {
                   title: 'Live',
                   onSelect: () => navigate('/live'),
@@ -131,7 +132,9 @@ export default function Index(): JSX.Element {
                 },
                 ...(isTauri
                   ? [
-                      { type: 'separator' },
+                      {
+                        type: 'separator' as 'separator', // Type-madness.
+                      },
                       {
                         title: 'Exit',
                         onSelect: async () => {
@@ -145,7 +148,7 @@ export default function Index(): JSX.Element {
                     ]
                   : []),
               ]}
-            </Dropdown>
+            />
           )}
         </div>
         {Object.entries(getActivePatch(project).outputs)
@@ -245,33 +248,17 @@ function WarningDialog() {
         </a>
         . Thanks!
       </p>
-      <h3>⚠️ Warning</h3>
+      <h3>
+        <BiError />
+        Warning
+      </h3>
       <p>
-        This web-app is currently in development and there is a&nbsp;
+        This app is currently in development and there is a&nbsp;
         <strong>significant risk of data-loss</strong>!
         <br />
         <br />
         Use at your own risk!
       </p>
-      {navigator.userAgent.toLowerCase().indexOf('win') > -1 && (
-        <>
-          <h3>
-            <BiLogoWindows /> Windows Users
-          </h3>
-          <p>
-            You may need to install{' '}
-            <a
-              href="https://www.silabs.com/developer-tools/usb-to-uart-bridge-vcp-drivers?tab=downloads"
-              target="_blank"
-            >
-              additional drivers
-            </a>{' '}
-            such that serial UART devices can be recognized by your operating
-            system.
-          </p>
-        </>
-      )}
-      <p></p>
     </Modal>
   );
 }
