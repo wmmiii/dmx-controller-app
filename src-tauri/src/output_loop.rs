@@ -1,4 +1,4 @@
-use dmx_engine::project::PROJECT_REF;
+use dmx_engine::project;
 use dmx_engine::proto::output::Output as ProtoOutput;
 use dmx_engine::render::render::{render_dmx, render_wled};
 use prost::Message;
@@ -138,39 +138,35 @@ impl OutputLoopManager {
         sacn_state: Arc<Mutex<SacnState>>,
         wled_state: Arc<Mutex<WledState>>,
     ) -> Result<(), String> {
-        // Read the current project to determine what outputs should be running
-        let project = PROJECT_REF
-            .lock()
-            .map_err(|e| format!("Failed to lock project: {}", e))?
-            .clone();
+        // Extract desired outputs from project (avoid holding lock during async I/O)
+        let desired_outputs: HashMap<u64, OutputType> = project::with_project(|project| {
+            let active_patch = project
+                .patches
+                .get(&project.active_patch)
+                .ok_or_else(|| format!("Active patch {} not found", project.active_patch))?;
 
-        let active_patch_id = project.active_patch;
-        let active_patch = project
-            .patches
-            .get(&active_patch_id)
-            .ok_or_else(|| format!("Active patch {} not found", active_patch_id))?;
+            let mut outputs = HashMap::new();
+            for (output_id, output) in &active_patch.outputs {
+                // Only include enabled outputs
+                if !output.enabled {
+                    continue;
+                }
 
-        // Build a map of desired outputs
-        let mut desired_outputs: HashMap<u64, OutputType> = HashMap::new();
-        for (output_id, output) in &active_patch.outputs {
-            // Only include enabled outputs
-            if !output.enabled {
-                continue;
+                let output_type = match &output.output {
+                    Some(ProtoOutput::SerialDmxOutput(_)) => OutputType::Serial,
+                    Some(ProtoOutput::SacnDmxOutput(sacn)) => OutputType::Sacn {
+                        universe: sacn.universe as u16,
+                        ip_address: sacn.ip_address.clone(),
+                    },
+                    Some(ProtoOutput::WledOutput(wled)) => OutputType::Wled {
+                        ip_address: wled.ip_address.clone(),
+                    },
+                    None => continue, // Skip outputs without a type
+                };
+                outputs.insert(*output_id, output_type);
             }
-
-            let output_type = match &output.output {
-                Some(ProtoOutput::SerialDmxOutput(_)) => OutputType::Serial,
-                Some(ProtoOutput::SacnDmxOutput(sacn)) => OutputType::Sacn {
-                    universe: sacn.universe as u16,
-                    ip_address: sacn.ip_address.clone(),
-                },
-                Some(ProtoOutput::WledOutput(wled)) => OutputType::Wled {
-                    ip_address: wled.ip_address.clone(),
-                },
-                None => continue, // Skip outputs without a type
-            };
-            desired_outputs.insert(*output_id, output_type);
-        }
+            Ok(outputs)
+        })?;
 
         // Get current running loops
         let current_loops = {

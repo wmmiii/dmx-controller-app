@@ -1,4 +1,4 @@
-use dmx_engine::project::PROJECT_REF;
+use dmx_engine::project;
 use dmx_engine::proto::SerialDmxOutput;
 use dmx_engine::proto::output::Output as ProtoOutput;
 use open_dmx::DMXSerial;
@@ -167,50 +167,54 @@ impl SerialState {
 
     /// Close ports that have been disconnected
     fn close_disconnected_ports(&self, disconnected_port_names: &[String]) {
-        // Get the current project to find which outputs are using the disconnected ports
-        let project = match PROJECT_REF.lock() {
-            Ok(p) => p.clone(),
+        // Extract outputs to close from project (avoid holding lock during I/O)
+        let outputs_to_close: Vec<(String, String)> = match project::with_project(|project| {
+            let active_patch = match project.patches.get(&project.active_patch) {
+                Some(patch) => patch,
+                None => {
+                    log::warn!("Active patch {} not found", project.active_patch);
+                    return Ok(Vec::new());
+                }
+            };
+
+            let mut to_close = Vec::new();
+            for (output_id, output) in &active_patch.outputs {
+                if let Some(ProtoOutput::SerialDmxOutput(SerialDmxOutput {
+                    fixtures: _,
+                    last_port: Some(last_port),
+                })) = &output.output
+                    && !last_port.is_empty()
+                    && disconnected_port_names.contains(last_port)
+                {
+                    to_close.push((output_id.to_string(), last_port.clone()));
+                }
+            }
+            Ok(to_close)
+        }) {
+            Ok(outputs) => outputs,
             Err(e) => {
                 log::error!(
-                    "Failed to lock project while closing disconnected ports: {}",
+                    "Failed to get project while closing disconnected ports: {}",
                     e
                 );
                 return;
             }
         };
 
-        let active_patch_id = project.active_patch;
-        let active_patch = match project.patches.get(&active_patch_id) {
-            Some(patch) => patch,
-            None => {
-                log::warn!("Active patch {} not found", active_patch_id);
-                return;
-            }
-        };
-
-        // Find outputs that were using the disconnected ports
-        for (output_id, output) in &active_patch.outputs {
-            if let Some(ProtoOutput::SerialDmxOutput(SerialDmxOutput {
-                fixtures: _,
-                last_port: Some(last_port),
-            })) = &output.output
-                && !last_port.is_empty()
-                && disconnected_port_names.contains(last_port)
-            {
-                let output_id_str = output_id.to_string();
-                if let Err(e) = self.try_close_port(&output_id_str) {
-                    log::error!(
-                        "Failed to close disconnected port for output '{}': {}",
-                        output_id_str,
-                        e
-                    );
-                } else {
-                    log::info!(
-                        "Closed port '{}' for output '{}' due to disconnection",
-                        last_port,
-                        output_id_str
-                    );
-                }
+        // Close ports outside the project lock
+        for (output_id_str, last_port) in outputs_to_close {
+            if let Err(e) = self.try_close_port(&output_id_str) {
+                log::error!(
+                    "Failed to close disconnected port for output '{}': {}",
+                    output_id_str,
+                    e
+                );
+            } else {
+                log::info!(
+                    "Closed port '{}' for output '{}' due to disconnection",
+                    last_port,
+                    output_id_str
+                );
             }
         }
     }
@@ -226,99 +230,101 @@ impl SerialState {
             }
         };
 
-        // Read the current project to get serial output configurations
-        let project = PROJECT_REF
-            .lock()
-            .map_err(|e| format!("Failed to lock project: {}", e))?
-            .clone();
+        // Extract serial output configurations from project (avoid holding lock during I/O)
+        // Returns: Vec<(output_id, desired_port)>
+        let serial_outputs: Vec<(String, Option<String>)> = project::with_project(|project| {
+            let active_patch = match project.patches.get(&project.active_patch) {
+                Some(patch) => patch,
+                None => {
+                    log::warn!(
+                        "Active patch {} not found, skipping auto-bind",
+                        project.active_patch
+                    );
+                    return Ok(Vec::new());
+                }
+            };
 
-        let active_patch_id = project.active_patch;
-        let active_patch = match project.patches.get(&active_patch_id) {
-            Some(patch) => patch,
-            None => {
-                log::warn!(
-                    "Active patch {} not found, skipping auto-bind",
-                    active_patch_id
-                );
-                return Ok(());
+            let mut outputs = Vec::new();
+            for (output_id, output) in &active_patch.outputs {
+                if let Some(ProtoOutput::SerialDmxOutput(SerialDmxOutput {
+                    fixtures: _,
+                    last_port,
+                })) = &output.output
+                {
+                    outputs.push((output_id.to_string(), last_port.clone()));
+                }
             }
-        };
+            Ok(outputs)
+        })?;
 
-        // Iterate through outputs and auto-bind serial outputs with last_port set
-        for (output_id, output) in &active_patch.outputs {
-            if let Some(ProtoOutput::SerialDmxOutput(SerialDmxOutput {
-                fixtures: _,
-                last_port: desired_port_option,
-            })) = &output.output
+        // Process each serial output outside the project lock
+        for (output_id_str, desired_port_option) in serial_outputs {
+            let current_port = self.get_bound_port_name(&output_id_str);
+
+            // Determine if we need to rebind
+            let needs_rebind = match (
+                &current_port,
+                desired_port_option.as_ref().is_some_and(|p| !p.is_empty()),
+            ) {
+                (None, false) => false, // Not bound and no port desired - nothing to do
+                (None, true) => true,   // Not bound but should be - bind it
+                (Some(current), false) => {
+                    // Bound but no port desired - unbind it
+                    log::debug!(
+                        "Output '{}' has no last_port set, closing port '{}'",
+                        output_id_str,
+                        current
+                    );
+                    let _ = self.try_close_port(&output_id_str);
+                    false
+                }
+                (Some(current), true) => current != desired_port_option.as_ref().unwrap(), // Check if port changed
+            };
+
+            if let Some(desired_port) = desired_port_option
+                && !desired_port.is_empty()
+                && needs_rebind
             {
-                let output_id_str = output_id.to_string();
-                let current_port = self.get_bound_port_name(&output_id_str);
-
-                // Determine if we need to rebind
-                let needs_rebind = match (
-                    &current_port,
-                    desired_port_option.as_ref().is_some_and(|p| !p.is_empty()),
-                ) {
-                    (None, false) => false, // Not bound and no port desired - nothing to do
-                    (None, true) => true,   // Not bound but should be - bind it
-                    (Some(current), false) => {
-                        // Bound but no port desired - unbind it
+                // Check if the desired port is available
+                if available_port_names.contains(&desired_port) {
+                    // Close any existing port binding first
+                    if let Some(current) = current_port {
                         log::debug!(
-                            "Output '{}' has no last_port set, closing port '{}'",
+                            "Output '{}' changing port from '{}' to '{}'",
                             output_id_str,
-                            current
+                            current,
+                            desired_port
                         );
                         let _ = self.try_close_port(&output_id_str);
-                        false
                     }
-                    (Some(current), true) => current != desired_port_option.as_ref().unwrap(), // Check if port changed
-                };
 
-                if let Some(desired_port) = desired_port_option
-                    && !desired_port.is_empty()
-                    && needs_rebind
-                {
-                    // Check if the desired port is available
-                    if available_port_names.contains(desired_port) {
-                        // Close any existing port binding first
-                        if let Some(current) = current_port {
-                            log::debug!(
-                                "Output '{}' changing port from '{}' to '{}'",
+                    // Attempt to bind to the desired port
+                    match self.try_open_port(&output_id_str, &desired_port) {
+                        Ok(_) => {
+                            log::info!(
+                                "Successfully auto-bound output '{}' to port '{}'",
                                 output_id_str,
-                                current,
                                 desired_port
                             );
-                            let _ = self.try_close_port(&output_id_str);
                         }
-
-                        // Attempt to bind to the desired port
-                        match self.try_open_port(&output_id_str, desired_port) {
-                            Ok(_) => {
-                                log::info!(
-                                    "Successfully auto-bound output '{}' to port '{}'",
-                                    output_id_str,
-                                    desired_port
-                                );
-                            }
-                            Err(e) => {
-                                log::warn!(
-                                    "Failed to auto-bind output '{}' to port '{}': {}",
-                                    output_id_str,
-                                    desired_port,
-                                    e
-                                );
-                            }
+                        Err(e) => {
+                            log::warn!(
+                                "Failed to auto-bind output '{}' to port '{}': {}",
+                                output_id_str,
+                                desired_port,
+                                e
+                            );
                         }
-                    } else {
-                        log::debug!(
-                            "Desired port '{}' for output '{}' not available",
-                            desired_port,
-                            output_id_str
-                        );
-                        // Close port if it's open but the desired port is not available
-                        if current_port.is_some() {
-                            let _ = self.try_close_port(&output_id_str);
-                        }
+                    }
+                } else {
+                    log::debug!(
+                        "Desired port '{}' for output '{}' not available",
+                        desired_port,
+                        output_id_str
+                    );
+                    // Close port if it's open but the desired port is not available
+                    if current_port.is_some() {
+                        let _ = self.try_close_port(&output_id_str);
                     }
                 }
             }

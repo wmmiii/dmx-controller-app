@@ -1,14 +1,15 @@
 {
   "private": true,
   "scripts": {
-    "proto:generate": "buf generate",
+    "build": "pnpm run proto:generate && vite build",
     "css-vars:build": "sass src/vars-export.scss public/vars.css --no-source-map",
     "dev": "pnpm run proto:generate && vite",
-    "build": "pnpm run proto:generate && vite build",
+    "format": "npx prettier . --write",
     "preview": "vite preview",
+    "proto:generate": "buf generate",
     "tauri": "tauri",
-    "type-check": "tsc --noEmit",
-    "test": "jest && cd src-engine && cargo test"
+    "test": "jest && cd src-engine && cargo test",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@radix-ui/react-select": "^2.2.6",

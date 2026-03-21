@@ -20,20 +20,22 @@ import { getBlob, storeBlob } from '../system_interfaces/storage';
 import { downloadBlob, escapeForFilesystem } from '../util/fileUtils';
 import upgradeProject from '../util/projectUpgrader';
 
-import { updateProject } from '../system_interfaces/engine';
+import {
+  getUndoState,
+  loadProject as loadProjectCommand,
+  redoProject as redoProjectCommand,
+  saveProject as saveProjectCommand,
+  subscribeToProjectUpdates,
+  subscribeToUndoState,
+  undoProject as undoProjectCommand,
+  updateProject as updateProjectCommand,
+} from '../system_interfaces/project';
 import { createNewProject } from '../util/projectUtils';
 import { ShortcutContext } from './ShortcutContext';
 
-const PROJECT_KEY = 'tmp-project-1';
 const ASSETS_KEY = 'tmp-assets-1';
-const MAX_UNDO = 100;
 
 let globalOpened = false;
-
-interface Operation {
-  projectState: Uint8Array;
-  description: string;
-}
 
 export const ProjectContext = createContext({
   project: create(ProjectSchema, {}) as Project,
@@ -43,20 +45,34 @@ export const ProjectContext = createContext({
   saveAssets: () => {},
   downloadProject: () => {},
   openProject: (_project: Uint8Array) => {},
-  lastOperation: '',
+  lastOperation: null as string | null,
 });
 
 export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
   const { setShortcuts } = useContext(ShortcutContext);
   const [project, setProject] = useState<Project | null>(null);
   const projectRef = useRef(project);
+  const assetsRef = useRef<Project_Assets | undefined>(undefined);
+
+  const [lastLoad, setLastLoad] = useState(new Date());
+  const [lastOperation, setLastOperation] = useState<string | null>(null);
+
+  // Update coalescing: drop intermediate updates when updates are queued rapidly
+  const updateInFlightRef = useRef(false);
+  const updatePendingRef = useRef(false);
+
+  // Undo state from backend
+  const [undoState, setUndoState] = useState({
+    canUndo: false,
+    canRedo: false,
+    undoDescription: null as string | null,
+    redoDescription: null as string | null,
+  });
+
+  // Keep projectRef in sync with state
   useEffect(() => {
     projectRef.current = project;
   }, [project]);
-  const [lastLoad, setLastLoad] = useState(new Date());
-  const [lastOperation, setLastOperation] = useState('');
-  const operationStack = useRef<Operation[]>([]);
-  const operationIndexRef = useRef(-1);
 
   // Expose project globally for debugging purposes.
   useEffect(() => {
@@ -64,12 +80,29 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
     global['project'] = project;
   }, [project]);
 
+  // Subscribe to backend project updates
   useEffect(() => {
-    if (project) {
-      updateProject(project);
-    }
-  }, [project]);
+    return subscribeToProjectUpdates((newProject, description) => {
+      // Merge assets back (they're stored separately in frontend)
+      newProject.assets = assetsRef.current;
+      setProject(clone(ProjectSchema, newProject));
+      setLastOperation(description);
+    });
+  }, []);
 
+  // Subscribe to undo state changes from backend
+  useEffect(() => {
+    return subscribeToUndoState((state) => {
+      setUndoState({
+        canUndo: state.can_undo,
+        canRedo: state.can_redo,
+        undoDescription: state.undo_description,
+        redoDescription: state.redo_description,
+      });
+    });
+  }, []);
+
+  // Initial load - load project from storage and send to backend
   useEffect(() => {
     (async () => {
       if (globalOpened) {
@@ -77,104 +110,110 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
       }
       globalOpened = true;
       try {
-        const projectBlob = await getBlob(PROJECT_KEY);
+        const projectBlob = await getBlob('tmp-project-1');
         const assetsBlob = await getBlob(ASSETS_KEY);
+
+        // Load assets into ref
+        if (assetsBlob != null) {
+          assetsRef.current = fromBinary(
+            Project_AssetsSchema,
+            assetsBlob,
+          ) as Project_Assets;
+        }
+
         if (projectBlob == null) {
-          setProject(createNewProject());
-          return;
+          // Create new project
+          const newProject = createNewProject();
+          newProject.assets = assetsRef.current;
+          setProject(newProject);
+
+          // Send to backend (this will also persist)
+          const minProject = clone(ProjectSchema, newProject);
+          minProject.assets = undefined;
+          await loadProjectCommand(
+            toBinary(ProjectSchema, minProject, { writeUnknownFields: false }),
+          );
         } else {
+          // Load existing project
           const p = fromBinary(ProjectSchema, projectBlob) as Project;
-          if (assetsBlob != null) {
-            p.assets = fromBinary(
-              Project_AssetsSchema,
-              assetsBlob,
-            ) as Project_Assets;
-          }
+          p.assets = assetsRef.current;
           upgradeProject(p);
           setProject(p);
           setLastOperation('Open project.');
-          operationStack.current = [
-            {
-              projectState: projectBlob,
-              description: 'Open project.',
-            },
-          ];
-          operationIndexRef.current = 0;
+
+          // Send to backend to initialize state
+          await loadProjectCommand(projectBlob);
         }
+
+        // Get initial undo state
+        const initialUndoState = await getUndoState();
+        setUndoState({
+          canUndo: initialUndoState.can_undo,
+          canRedo: initialUndoState.can_redo,
+          undoDescription: initialUndoState.undo_description,
+          redoDescription: initialUndoState.redo_description,
+        });
       } catch (ex) {
         console.error('Could not open project!', ex);
-        setProject(createNewProject());
+        const newProject = createNewProject();
+        setProject(newProject);
       }
     })();
   }, []);
 
-  const saveImpl = useCallback(
-    async (project: Project, changeDescription: string) => {
-      console.time(changeDescription);
-      try {
-        const minProject = clone(ProjectSchema, project);
-        minProject.assets = undefined;
-        await storeBlob(
-          PROJECT_KEY,
-          toBinary(ProjectSchema, minProject, { writeUnknownFields: false }),
-        );
-      } catch (t) {
-        throw t;
-      } finally {
-        console.timeEnd(changeDescription);
-      }
-    },
-    [],
-  );
-
+  // Update - sends to backend for rendering, no persistence
+  // Uses coalescing: if updates come in while one is in flight,
+  // only the latest update executes when the current one completes.
   const update = useCallback(() => {
     if (projectRef.current == null) {
       throw new Error('Tried to update without project loaded!');
     }
-    setProject(clone(ProjectSchema, projectRef.current));
-  }, [projectRef, setProject]);
 
+    // If an update is already in flight, mark that we have a pending update
+    // (the latest state is always in projectRef.current)
+    if (updateInFlightRef.current) {
+      updatePendingRef.current = true;
+      return;
+    }
+
+    // Send update to backend
+    const sendUpdate = () => {
+      updateInFlightRef.current = true;
+      updateProjectCommand(projectRef.current!).then(() => {
+        updateInFlightRef.current = false;
+
+        // If another update came in while we were processing, send it now
+        if (updatePendingRef.current) {
+          updatePendingRef.current = false;
+          sendUpdate();
+        }
+      });
+    };
+
+    sendUpdate();
+  }, []);
+
+  // Save - sends to backend with undo support and persistence
   const save = useCallback(
     async (changeDescription: string, undoable?: boolean) => {
       if (projectRef.current == null) {
         throw new Error('Tried to save without project loaded!');
       }
-      await saveImpl(projectRef.current, changeDescription);
-      const minProject = clone(ProjectSchema, projectRef.current);
-      minProject.assets = undefined;
-
-      if (undoable !== false) {
-        // Remove all redo future operations & push current operation.
-        operationStack.current.splice(
-          operationIndexRef.current + 1,
-          operationStack.current.length - operationIndexRef.current - 1,
-        );
-
-        operationStack.current.push({
-          projectState: toBinary(ProjectSchema, minProject, {
-            writeUnknownFields: false,
-          }),
-          description: changeDescription,
-        });
-        // Truncate operation stack to MAX_UNDO length.
-        if (operationStack.current.length > MAX_UNDO) {
-          operationStack.current.splice(
-            0,
-            operationStack.current.length - MAX_UNDO,
-          );
-        }
-        operationIndexRef.current = operationStack.current.length - 1;
-      }
-
-      setProject(clone(ProjectSchema, projectRef.current));
-      setLastOperation(changeDescription);
+      // Send to backend
+      await saveProjectCommand(
+        projectRef.current,
+        changeDescription,
+        undoable !== false,
+      );
     },
-    [projectRef, operationStack, operationIndexRef, setProject],
+    [],
   );
 
+  // Save assets (still frontend-managed)
   const saveAssetsImpl = useCallback(async (project: Project) => {
     console.time('save assets');
     const assets = create(Project_AssetsSchema, project.assets);
+    assetsRef.current = project.assets;
     await storeBlob(
       ASSETS_KEY,
       toBinary(Project_AssetsSchema, assets, { writeUnknownFields: false }),
@@ -187,47 +226,11 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
       throw new Error('Tried to save assets without project loaded!');
     }
     await saveAssetsImpl(project);
-    await saveImpl(project, 'Updating assets.');
-  }, [project, save]);
+    // Trigger a save to ensure project is persisted
+    await save('Updating assets.');
+  }, [project, save, saveAssetsImpl]);
 
-  const undo = useCallback(async () => {
-    if (project == null) {
-      throw new Error('Tried to undo without project loaded!');
-    }
-    if (operationIndexRef.current > 0) {
-      const state =
-        operationStack.current[operationIndexRef.current - 1].projectState;
-      const description =
-        operationStack.current[operationIndexRef.current].description;
-      const p = fromBinary(ProjectSchema, state) as Project;
-      await saveImpl(p, `Undo: ${description}`);
-      operationIndexRef.current -= 1;
-      setProject(
-        create(ProjectSchema, { ...p, assets: project.assets }) as Project,
-      );
-      setLastOperation(`Undo: ${description}`);
-    }
-  }, [operationIndexRef, operationStack, project, setProject, saveImpl]);
-
-  const redo = useCallback(async () => {
-    if (project == null) {
-      throw new Error('Tried to redo without project loaded!');
-    }
-    if (operationIndexRef.current < operationStack.current.length - 1) {
-      const state =
-        operationStack.current[operationIndexRef.current + 1].projectState;
-      const description =
-        operationStack.current[operationIndexRef.current + 1].description;
-      const p = fromBinary(ProjectSchema, state) as Project;
-      await saveImpl(p, `Redo: ${description}`);
-      operationIndexRef.current += 1;
-      setProject(
-        create(ProjectSchema, { ...p, assets: project.assets }) as Project,
-      );
-      setLastOperation(`Redo: ${description}`);
-    }
-  }, [operationIndexRef, operationStack, project, setProject, saveImpl]);
-
+  // Download project
   const downloadProject = useCallback(() => {
     if (project == null) {
       throw new Error('Tried to download without project loaded!');
@@ -235,55 +238,60 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
     const blob = new Blob([toBinary(ProjectSchema, project)], {
       type: 'application/protobuf',
     });
-
     downloadBlob(blob, escapeForFilesystem(project.name) + '.dmxapp');
   }, [project]);
 
-  const openProject = useCallback(
-    async (projectBlob: Uint8Array) => {
-      const p = fromBinary(ProjectSchema, projectBlob) as Project;
-      upgradeProject(p);
-      await saveAssetsImpl(p);
-      await saveImpl(p, 'Open project.');
-      setProject(p);
-      setLastLoad(new Date());
-      operationIndexRef.current = 0;
-      operationStack.current = [
-        {
-          projectState: projectBlob,
-          description: 'Open project.',
-        },
-      ];
-      setLastOperation('Open project.');
-    },
-    [
-      saveAssetsImpl,
-      saveImpl,
-      setProject,
-      operationIndexRef,
-      operationStack,
-      setLastOperation,
-    ],
-  );
+  // Open project - load from file and send to backend
+  const openProject = useCallback(async (projectBlob: Uint8Array) => {
+    const p = fromBinary(ProjectSchema, projectBlob) as Project;
+    upgradeProject(p);
 
+    // Save assets separately
+    if (p.assets) {
+      assetsRef.current = p.assets;
+      await storeBlob(
+        ASSETS_KEY,
+        toBinary(Project_AssetsSchema, p.assets, {
+          writeUnknownFields: false,
+        }),
+      );
+    }
+
+    // Update local state
+    setProject(p);
+    setLastLoad(new Date());
+    setLastOperation('Open project.');
+
+    // Send to backend (will persist and reset undo stack)
+    const minProject = clone(ProjectSchema, p);
+    minProject.assets = undefined;
+    await loadProjectCommand(
+      toBinary(ProjectSchema, minProject, { writeUnknownFields: false }),
+    );
+  }, []);
+
+  // Keyboard shortcuts for undo/redo based on backend state
   useEffect(() => {
     const shortcuts: Parameters<typeof setShortcuts>[0] = [];
-    if (operationIndexRef.current > 0) {
+
+    if (undoState.canUndo) {
       shortcuts.push({
         shortcut: { key: 'KeyZ', modifiers: ['ctrl'] },
-        action: () => undo(),
-        description: `Undo ${operationStack.current[operationIndexRef.current].description}`,
+        action: () => undoProjectCommand(),
+        description: `Undo ${undoState.undoDescription ?? ''}`,
       });
     }
-    if (operationIndexRef.current < operationStack.current.length - 1) {
+
+    if (undoState.canRedo) {
       shortcuts.push({
         shortcut: { key: 'KeyZ', modifiers: ['ctrl', 'shift'] },
-        action: () => redo(),
-        description: `Redo ${operationStack.current[operationIndexRef.current + 1].description}`,
+        action: () => redoProjectCommand(),
+        description: `Redo ${undoState.redoDescription ?? ''}`,
       });
     }
+
     return setShortcuts(shortcuts);
-  }, [operationStack, operationIndexRef, redo, undo]);
+  }, [undoState, undoProjectCommand, redoProjectCommand, setShortcuts]);
 
   if (project == null) {
     return <>Loading...</>;

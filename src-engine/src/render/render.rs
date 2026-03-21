@@ -3,14 +3,14 @@ use std::sync::Mutex;
 use once_cell::sync::Lazy;
 
 use crate::{
-    project::PROJECT_REF,
+    project,
     proto::{
+        Color, ColorPalette, FixtureState, OutputTarget, Project, RenderMode, WledRenderTarget,
         fixture_state::LightColor,
         output::Output,
         output_target,
         render_mode::{GroupDebug, Mode, Scene},
         wled_render_target::Segment,
-        Color, ColorPalette, FixtureState, OutputTarget, Project, RenderMode, WledRenderTarget,
     },
     render::{
         dmx_render_target::DmxRenderTarget, render_target::RenderTarget, scene::render_scene,
@@ -24,83 +24,79 @@ pub static RENDER_MODE_REF: Lazy<Mutex<RenderMode>> =
     Lazy::new(|| Mutex::new(RenderMode::default()));
 
 pub fn render_dmx(output_id: u64, system_t: u64, frame: u32) -> Result<[u8; 512], String> {
-    let project = PROJECT_REF
-        .lock()
-        .map_err(|e| format!("Failed to lock project: {}", e))?;
+    project::with_project(|project| {
+        let fixtures = match project
+            .patches
+            .get(&project.active_patch)
+            .and_then(|p| p.outputs.get(&output_id))
+            .and_then(|o| o.output.as_ref())
+        {
+            Some(Output::SerialDmxOutput(serial)) => &serial.fixtures,
+            Some(Output::SacnDmxOutput(sacn)) => &sacn.fixtures,
+            Some(_) => return Err("Output specified not DMX!".to_string()),
+            None => {
+                return Err(format!(
+                    "Could not find output {} for patch {}",
+                    output_id, project.active_patch
+                ));
+            }
+        };
 
-    let fixtures = match project
-        .patches
-        .get(&project.active_patch)
-        .and_then(|p| p.outputs.get(&output_id))
-        .and_then(|o| o.output.as_ref())
-    {
-        Some(Output::SerialDmxOutput(serial)) => &serial.fixtures,
-        Some(Output::SacnDmxOutput(sacn)) => &sacn.fixtures,
-        Some(_) => return Err("Output specified not DMX!".to_string()),
-        None => {
-            return Err(format!(
-                "Could not find output {} for patch {}",
-                output_id, project.active_patch
-            ))
-        }
-    };
+        let fixture_definitions = match project
+            .fixture_definitions
+            .as_ref()
+            .map(|d| &d.dmx_fixture_definitions)
+        {
+            Some(fixture_definitions) => fixture_definitions,
+            None => return Err("Fixture definitions not defined!".to_string()),
+        };
 
-    let fixture_definitions = match project
-        .fixture_definitions
-        .as_ref()
-        .map(|d| &d.dmx_fixture_definitions)
-    {
-        Some(fixture_definitions) => fixture_definitions,
-        None => return Err("Fixture definitions not defined!".to_string()),
-    };
+        let mut render_target = DmxRenderTarget::new(fixtures, fixture_definitions);
 
-    let mut render_target = DmxRenderTarget::new(&fixtures, fixture_definitions);
-
-    render(output_id, &mut render_target, system_t, frame, &project)
-        .map(|_| render_target.get_universe())
+        render(output_id, &mut render_target, system_t, frame, project)
+            .map(|_| render_target.get_universe())
+    })
 }
 
 pub fn render_wled(output_id: u64, system_t: u64, frame: u32) -> Result<WledRenderTarget, String> {
-    let project = PROJECT_REF
-        .lock()
-        .map_err(|e| format!("Failed to lock project: {}", e))?;
+    project::with_project(|project| {
+        let wled_output = match project
+            .patches
+            .get(&project.active_patch)
+            .and_then(|p| p.outputs.get(&output_id))
+            .and_then(|o| o.output.as_ref())
+        {
+            Some(Output::WledOutput(output)) => output,
+            Some(_) => return Err("Output specified not WLED!".to_string()),
+            None => {
+                return Err(format!(
+                    "Could not find output {} for patch {}",
+                    output_id, project.active_patch
+                ));
+            }
+        };
 
-    let wled_output = match project
-        .patches
-        .get(&project.active_patch)
-        .and_then(|p| p.outputs.get(&output_id))
-        .and_then(|o| o.output.as_ref())
-    {
-        Some(Output::WledOutput(output)) => output,
-        Some(_) => return Err("Output specified not WLED!".to_string()),
-        None => {
-            return Err(format!(
-                "Could not find output {} for patch {}",
-                output_id, project.active_patch
-            ))
-        }
-    };
+        let mut render_target = WledRenderTarget {
+            id: output_id,
+            segments: wled_output
+                .segments
+                .iter()
+                .map(|_| Segment {
+                    effect: 0,
+                    palette: 0,
+                    primary_color: Some(crate::proto::wled_render_target::Color {
+                        red: 0.0,
+                        green: 0.0,
+                        blue: 0.0,
+                    }),
+                    speed: 1.0,
+                    brightness: 1.0,
+                })
+                .collect(),
+        };
 
-    let mut render_target = WledRenderTarget {
-        id: output_id,
-        segments: wled_output
-            .segments
-            .iter()
-            .map(|_| Segment {
-                effect: 0,
-                palette: 0,
-                primary_color: Some(crate::proto::wled_render_target::Color {
-                    red: 0.0,
-                    green: 0.0,
-                    blue: 0.0,
-                }),
-                speed: 1.0,
-                brightness: 1.0,
-            })
-            .collect(),
-    };
-
-    render(output_id, &mut render_target, system_t, frame, &project).map(|_| render_target)
+        render(output_id, &mut render_target, system_t, frame, project).map(|_| render_target)
+    })
 }
 
 fn render<T: RenderTarget<T>>(

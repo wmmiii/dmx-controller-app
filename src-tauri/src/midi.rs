@@ -1,4 +1,4 @@
-use dmx_engine::{midi::calculate_midi_output, project::PROJECT_REF};
+use dmx_engine::{midi::calculate_midi_output, project};
 use midir::{MidiInput, MidiInputConnection, MidiOutput, MidiOutputConnection};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -96,15 +96,13 @@ impl MidiState {
                     .collect();
 
                 // Use controller_to_binding keys as the auto-reconnect allowlist
-                let known_controller_names: Vec<String> = PROJECT_REF
-                    .lock()
-                    .ok()
-                    .and_then(|p| {
-                        p.controller_mapping
-                            .as_ref()
-                            .map(|cm| cm.controller_to_binding.keys().cloned().collect())
-                    })
-                    .unwrap_or_default();
+                let known_controller_names: Vec<String> = project::with_project(|p| {
+                    Ok(p.controller_mapping
+                        .as_ref()
+                        .map(|cm| cm.controller_to_binding.keys().cloned().collect())
+                        .unwrap_or_default())
+                })
+                .unwrap_or_default();
 
                 // Handle disconnections
                 for controller_name in &known_controller_names {
@@ -361,9 +359,12 @@ fn output_midi_state_for_device(
         .unwrap()
         .as_millis() as u64;
 
-    if let Ok(project) = PROJECT_REF.lock() {
-        let midi_output = calculate_midi_output(&project, device_name, t);
+    // Calculate MIDI output values from project state
+    let midi_output = project::with_project(|project| {
+        Ok(calculate_midi_output(project, device_name, t))
+    });
 
+    if let Ok(midi_output) = midi_output {
         if let Ok(mut output_conn) = output_conn.lock() {
             if let Some(connection) = output_conn.as_mut() {
                 for (channel, value) in midi_output {
