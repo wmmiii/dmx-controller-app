@@ -24,6 +24,7 @@ import {
   MidiPortCandidate,
   addMidiListener,
   connectMidi,
+  disconnectMidi,
   listMidiInputs,
   removeMidiListener,
   sendControllerUpdate,
@@ -35,17 +36,24 @@ import styles from './ControllerContext.module.scss';
 
 export type ControllerChannel = string;
 export type ControlCommandType = 'msb' | 'lsb' | null;
+
+export interface ConnectedDevice {
+  name: string;
+  bindingId: bigint;
+}
+
 type Listener = (
   _project: Project,
+  _bindingId: bigint,
   _channel: ControllerChannel,
   _value: number,
   _controlType: ControlCommandType,
 ) => void;
 
 export const ControllerContext = createContext({
-  controllerName: null as string | null,
-  bindingId: null as bigint | null,
+  connectedDevices: [] as ConnectedDevice[],
   connect: () => {},
+  disconnect: (_deviceName: string) => {},
   addListener: (_listener: Listener) => {},
   removeListener: (_listener: Listener) => {},
 });
@@ -66,10 +74,14 @@ export function ControllerProvider({
 
   const { addBeatSample, setBeat, setFirstBeat } = useContext(BeatContext);
 
-  const [controllerName, setControllerName] = useState<string | undefined>(
-    undefined,
+  const [connectedDevices, setConnectedDevices] = useState<ConnectedDevice[]>(
+    [],
   );
-  const [bindingId, setBindingId] = useState<bigint | undefined>(undefined);
+  const connectedDevicesRef = useRef<ConnectedDevice[]>([]);
+  useEffect(() => {
+    connectedDevicesRef.current = connectedDevices;
+  }, [connectedDevices]);
+
   const [candidateList, setCandidateList] = useState<
     MidiPortCandidate[] | null
   >(null);
@@ -79,37 +91,88 @@ export function ControllerProvider({
     setCandidateList(await listMidiInputs());
   }, []);
 
+  const disconnectDevice = useCallback(
+    async (deviceName: string) => {
+      await disconnectMidi({ id: '', name: deviceName });
+      setConnectedDevices((prev) => prev.filter((d) => d.name !== deviceName));
+
+      // Remove from lastControllerNames
+      const mapping = project.controllerMapping;
+      if (mapping) {
+        const idx = mapping.lastControllerNames.indexOf(deviceName);
+        if (idx >= 0) {
+          mapping.lastControllerNames.splice(idx, 1);
+        }
+        save('Disconnect MIDI controller.');
+      }
+    },
+    [project, save],
+  );
+
+  // Helper to get or create a bindingId for a controller name
+  const getOrCreateBindingId = useCallback(
+    (controllerMapping: NonNullable<Project['controllerMapping']>, name: string): bigint => {
+      const existingBindingId = controllerMapping.controllerToBinding[name];
+      if (existingBindingId !== undefined) {
+        return existingBindingId;
+      }
+      const newBindingId = randomUint64();
+      controllerMapping.controllerToBinding[name] = newBindingId;
+      controllerMapping.bindingNames[newBindingId.toString()] = name;
+      return newBindingId;
+    },
+    [],
+  );
+
+  // Auto-reconnect on load
   useEffect(() => {
     (async () => {
       const controllerMapping = project.controllerMapping;
-      // Try to reconnect if last controller is known.
-      if (controllerMapping?.lastControllerName) {
-        const candidate = (await listMidiInputs()).find(
-          (candidate) =>
-            candidate.name === controllerMapping.lastControllerName,
+      if (!controllerMapping) {
+        return;
+      }
+
+      // Migration: if lastControllerNames is empty but controllerToBinding
+      // has entries, populate from those keys
+      if (
+        controllerMapping.lastControllerNames.length === 0 &&
+        Object.keys(controllerMapping.controllerToBinding).length > 0
+      ) {
+        controllerMapping.lastControllerNames = Object.keys(
+          controllerMapping.controllerToBinding,
         );
+      }
+
+      if (controllerMapping.lastControllerNames.length === 0) {
+        return;
+      }
+
+      const availableDevices = await listMidiInputs();
+      const newConnected: ConnectedDevice[] = [];
+      let needsSave = false;
+
+      for (const name of controllerMapping.lastControllerNames) {
+        const candidate = availableDevices.find((c) => c.name === name);
         if (candidate) {
           await connectMidi(candidate);
-          setControllerName(candidate.name);
-
-          // Get or create binding ID for this controller
-          const existingBindingId =
-            controllerMapping.controllerToBinding[candidate.name];
-          if (existingBindingId !== undefined) {
-            setBindingId(existingBindingId);
-          } else {
-            const newBindingId = randomUint64();
-            controllerMapping.controllerToBinding[candidate.name] =
-              newBindingId;
-            controllerMapping.bindingNames[newBindingId.toString()] =
-              candidate.name;
-            setBindingId(newBindingId);
-            save('Created binding for controller.');
+          const bindingId = getOrCreateBindingId(controllerMapping, name);
+          if (
+            controllerMapping.controllerToBinding[name] === undefined
+          ) {
+            needsSave = true;
           }
+          newConnected.push({ name, bindingId });
         }
       }
+
+      if (newConnected.length > 0) {
+        setConnectedDevices(newConnected);
+      }
+      if (needsSave) {
+        save('Created bindings for controllers.');
+      }
     })();
-  }, [lastLoad, setControllerName, setBindingId, save]);
+  }, [lastLoad, save, getOrCreateBindingId]);
 
   // Listen for MIDI connection status changes from Tauri backend
   useEffect(() => {
@@ -125,20 +188,24 @@ export function ControllerProvider({
         (event: {
           payload: { controller_name: string; connected: boolean };
         }) => {
-          const { controller_name: controllerName, connected } = event.payload;
+          const { controller_name: deviceName, connected } = event.payload;
           const controllerMapping = project.controllerMapping;
 
           if (controllerMapping) {
             if (connected) {
-              // Update frontend state to reflect the connection
-              setControllerName(controllerName);
-              setBindingId(
-                controllerMapping.controllerToBinding[controllerName],
-              );
+              const bindingId = controllerMapping.controllerToBinding[deviceName];
+              if (bindingId !== undefined) {
+                setConnectedDevices((prev) => {
+                  if (prev.some((d) => d.name === deviceName)) {
+                    return prev;
+                  }
+                  return [...prev, { name: deviceName, bindingId }];
+                });
+              }
             } else {
-              // Clear frontend state when controller disconnects
-              setControllerName(undefined);
-              setBindingId(undefined);
+              setConnectedDevices((prev) =>
+                prev.filter((d) => d.name !== deviceName),
+              );
             }
           }
         },
@@ -146,12 +213,32 @@ export function ControllerProvider({
     })();
 
     return unlisten;
-  }, [project, setControllerName, setBindingId]);
+  }, [project]);
 
+  // Raw MIDI message processing with per-device MSB/LSB buffers
   useEffect(() => {
-    let msbBuffer: Map<number, number> = new Map();
-    let lsbBuffer: Map<number, number> = new Map();
-    const listener = (data: number[]) => {
+    const msbBuffers = new Map<string, Map<number, number>>();
+    const lsbBuffers = new Map<string, Map<number, number>>();
+
+    const listener = (deviceName: string, data: number[]) => {
+      // Resolve bindingId for this device
+      const device = connectedDevicesRef.current.find(
+        (d) => d.name === deviceName,
+      );
+      if (!device) {
+        return;
+      }
+
+      // Get or create per-device buffers
+      if (!msbBuffers.has(deviceName)) {
+        msbBuffers.set(deviceName, new Map());
+      }
+      if (!lsbBuffers.has(deviceName)) {
+        lsbBuffers.set(deviceName, new Map());
+      }
+      const msbBuffer = msbBuffers.get(deviceName)!;
+      const lsbBuffer = lsbBuffers.get(deviceName)!;
+
       const command = data[0];
 
       let value = data[2];
@@ -189,6 +276,7 @@ export function ControllerProvider({
       inputListeners.current.forEach((l) =>
         l(
           projectRef.current,
+          device.bindingId,
           `${command}, ${data[1]}`,
           value,
           controlCommandType,
@@ -199,17 +287,22 @@ export function ControllerProvider({
     addMidiListener(listener);
 
     return () => removeMidiListener(listener);
-  }, [inputListeners, projectRef]);
+  }, [inputListeners, projectRef, connectedDevicesRef]);
 
+  // MIDI output feedback for all connected devices
   useEffect(() => {
-    if (!bindingId) {
+    if (connectedDevices.length === 0) {
       return;
     }
 
-    return listenToTick((t) =>
-      sendControllerUpdate(() => outputValues(project, bindingId, t)),
-    );
-  }, [project, bindingId]);
+    return listenToTick((t) => {
+      for (const device of connectedDevices) {
+        sendControllerUpdate(device.name, () =>
+          outputValues(project, device.bindingId, t),
+        );
+      }
+    });
+  }, [project, connectedDevices]);
 
   const addListener = useCallback((listener: Listener) => {
     inputListeners.current.push(listener);
@@ -221,34 +314,32 @@ export function ControllerProvider({
     }
   }, []);
 
+  // performAction effect — receives bindingId from listener
   useEffect(() => {
-    const listener: Listener = (_p, channel, value, cct) => {
-      if (bindingId) {
-        const modified = performAction(
-          project,
-          bindingId,
-          channel,
-          value,
-          cct,
-          addBeatSample,
-          setFirstBeat,
-          setBeat,
-        );
-        if (modified) {
-          update();
-          // Debounce midi input.
-          clearTimeout(saveTimeout.current);
-          saveTimeout.current = setTimeout(() => {
-            save('Update via controller input.');
-          }, 500);
-        }
+    const listener: Listener = (_p, bindingId, channel, value, cct) => {
+      const modified = performAction(
+        project,
+        bindingId,
+        channel,
+        value,
+        cct,
+        addBeatSample,
+        setFirstBeat,
+        setBeat,
+      );
+      if (modified) {
+        update();
+        // Debounce midi input.
+        clearTimeout(saveTimeout.current);
+        saveTimeout.current = setTimeout(() => {
+          save('Update via controller input.');
+        }, 500);
       }
     };
     addListener(listener);
     return () => removeListener(listener);
   }, [
     project,
-    bindingId,
     saveTimeout,
     addBeatSample,
     update,
@@ -263,11 +354,11 @@ export function ControllerProvider({
     <>
       <ControllerContext.Provider
         value={{
-          controllerName: controllerName ?? null,
-          bindingId: bindingId ?? null,
-          connect: connect,
-          addListener: addListener,
-          removeListener: removeListener,
+          connectedDevices,
+          connect,
+          disconnect: disconnectDevice,
+          addListener,
+          removeListener,
         }}
       >
         {children}
@@ -275,31 +366,29 @@ export function ControllerProvider({
       {candidateList && (
         <ControllerSelectionDialog
           candidateList={candidateList}
+          connectedDevices={connectedDevices}
           setCandidate={async (candidate) => {
-            const name = candidate?.name || '';
-            project.controllerMapping!.lastControllerName = name;
             if (candidate) {
-              // Get or create binding ID for this controller
-              const existingBindingId =
-                project.controllerMapping!.controllerToBinding[name];
-              let newBindingId: bigint;
-              if (existingBindingId !== undefined) {
-                newBindingId = existingBindingId;
-              } else {
-                newBindingId = randomUint64();
-                project.controllerMapping!.controllerToBinding[name] =
-                  newBindingId;
-                project.controllerMapping!.bindingNames[
-                  newBindingId.toString()
-                ] = name;
+              const name = candidate.name;
+              const controllerMapping = project.controllerMapping!;
+
+              // Add to lastControllerNames if not already present
+              if (!controllerMapping.lastControllerNames.includes(name)) {
+                controllerMapping.lastControllerNames.push(name);
               }
-              setBindingId(newBindingId);
-              save('Enable auto-reconnect for midi controller.');
+
+              // Get or create binding ID
+              const bindingId = getOrCreateBindingId(controllerMapping, name);
+
+              save('Connect MIDI controller.');
               await connectMidi(candidate);
-              setControllerName(name);
-            } else {
-              setBindingId(undefined);
-              save('Disable auto-reconnect for midi controller.');
+
+              setConnectedDevices((prev) => {
+                if (prev.some((d) => d.name === name)) {
+                  return prev;
+                }
+                return [...prev, { name, bindingId }];
+              });
             }
             setCandidateList(null);
           }}
@@ -311,11 +400,13 @@ export function ControllerProvider({
 
 interface ControllerSelectionDialogProps {
   candidateList: MidiPortCandidate[];
+  connectedDevices: ConnectedDevice[];
   setCandidate: (portCandidate: MidiPortCandidate | null) => void;
 }
 
 function ControllerSelectionDialog({
   candidateList,
+  connectedDevices,
   setCandidate,
 }: ControllerSelectionDialogProps) {
   return (
@@ -325,8 +416,8 @@ function ControllerSelectionDialog({
       onClose={() => setCandidate(null)}
     >
       <div>
-        Please choose which MIDI device you'd like to attach to. If you want to
-        change which device you are using simply open this dialog again.
+        Select a MIDI device to connect. You can connect multiple devices
+        simultaneously.
       </div>
       <div>
         Once a device is selected you may map MIDI inputs to actions. Simply:
@@ -338,11 +429,19 @@ function ControllerSelectionDialog({
         To remove a mapping, just click on the MIDI button associated with the
         action again to unmap.
       </div>
-      {candidateList.map((c, i) => (
-        <Button key={i} onClick={() => setCandidate(c)}>
-          {c.name}
-        </Button>
-      ))}
+      {candidateList.map((c, i) => {
+        const isConnected = connectedDevices.some((d) => d.name === c.name);
+        return (
+          <Button
+            key={i}
+            onClick={() => setCandidate(c)}
+            disabled={isConnected}
+          >
+            {c.name}
+            {isConnected ? ' (connected)' : ''}
+          </Button>
+        );
+      })}
     </Modal>
   );
 }

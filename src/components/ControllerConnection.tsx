@@ -1,5 +1,5 @@
 import { type InputBinding } from '@dmx-controller/proto/controller_pb';
-import { useContext, useEffect, useMemo, useState } from 'react';
+import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   ControlCommandType,
@@ -40,18 +40,17 @@ export function ControllerConnection({
   requiredType,
 }: ControllerConnectionProps) {
   const { project } = useContext(ProjectContext);
-  const { bindingId } = useContext(ControllerContext);
+  const { connectedDevices } = useContext(ControllerContext);
 
   const [showModal, setShowModal] = useState(false);
 
   const hasControllerMapping = useMemo(() => {
-    if (bindingId) {
-      return hasAction(project, bindingId, action);
-    }
-    return false;
-  }, [project, bindingId, action]);
+    return connectedDevices.some((d) =>
+      hasAction(project, d.bindingId, action),
+    );
+  }, [project, connectedDevices, action]);
 
-  if (!bindingId) {
+  if (connectedDevices.length === 0) {
     return null;
   }
 
@@ -86,6 +85,7 @@ interface ControllerBindingModalProps {
 }
 
 interface ConflictInfo {
+  bindingId: bigint;
   channel: ControllerChannel;
   currentDescription: string;
 }
@@ -98,29 +98,45 @@ function ControllerBindingModal({
   onClose,
 }: ControllerBindingModalProps) {
   const { project, save } = useContext(ProjectContext);
-  const { bindingId, addListener, removeListener } =
+  const { connectedDevices, addListener, removeListener } =
     useContext(ControllerContext);
 
   const [bindings, setBindings] = useState<
-    ReturnType<typeof getAllBindingsForAction>
+    Array<{ bindingId: bigint; channel: ControllerChannel; context: BindingContext }>
   >([]);
   const [isAddingBinding, setIsAddingBinding] = useState(false);
   const [conflictInfo, setConflictInfo] = useState<ConflictInfo | null>(null);
   const [error, setError] = useState<string | undefined>();
   const [highlight, setHighlight] = useState<ControllerChannel | null>(null);
 
+  // Track the bindingId used during conflict resolution
+  const pendingConflictBindingId = useRef<bigint | null>(null);
+
   // Load bindings on mount and when project changes
   useEffect(() => {
-    if (bindingId) {
-      const allBindings = getAllBindingsForAction(project, bindingId, action);
-      setBindings(allBindings);
+    const allBindings: typeof bindings = [];
+    for (const device of connectedDevices) {
+      const deviceBindings = getAllBindingsForAction(
+        project,
+        device.bindingId,
+        action,
+      );
+      for (const b of deviceBindings) {
+        allBindings.push({
+          bindingId: device.bindingId,
+          channel: b.channel,
+          context: b.context,
+        });
+      }
     }
-  }, [project, bindingId, action]);
+    setBindings(allBindings);
+  }, [project, connectedDevices, action]);
 
   // Highlight effect when MIDI input is received
   useEffect(() => {
     const listener = (
       _project: Project,
+      _bindingId: bigint,
       channel: ControllerChannel,
       _value: number,
       _cct: ControlCommandType,
@@ -141,11 +157,12 @@ function ControllerBindingModal({
     setError(undefined);
   };
 
-  // Listener for MIDI input during mapping
+  // Listener for MIDI input during mapping — bindingId comes from the device
   useEffect(() => {
-    if (isAddingBinding && bindingId) {
+    if (isAddingBinding && connectedDevices.length > 0) {
       const listener = (
         project: Project,
+        bindingId: bigint,
         channel: ControllerChannel,
         _value: number,
         cct: ControlCommandType,
@@ -186,7 +203,9 @@ function ControllerBindingModal({
             bindingId,
             channel,
           )!;
+          pendingConflictBindingId.current = bindingId;
           setConflictInfo({
+            bindingId,
             channel,
             currentDescription: description,
           });
@@ -211,7 +230,7 @@ function ControllerBindingModal({
     return () => {};
   }, [
     isAddingBinding,
-    bindingId,
+    connectedDevices,
     action,
     requiredType,
     project,
@@ -221,24 +240,22 @@ function ControllerBindingModal({
   ]);
 
   // Handle removing a binding
-  const handleRemoveBinding = (channel: string) => {
-    if (bindingId) {
-      deleteAction(project, bindingId, channel);
-      save('Remove MIDI binding.');
-    }
+  const handleRemoveBinding = (bindingId: bigint, channel: string) => {
+    deleteAction(project, bindingId, channel);
+    save('Remove MIDI binding.');
   };
 
   // Handle conflict resolution
   const handleReassign = () => {
-    if (conflictInfo && bindingId) {
-      // Remove old binding and add new one
-      assignAction(project, bindingId, conflictInfo.channel, action);
+    if (conflictInfo) {
+      assignAction(project, conflictInfo.bindingId, conflictInfo.channel, action);
       save('Reassign MIDI binding.');
       setConflictInfo(null);
+      pendingConflictBindingId.current = null;
     }
   };
 
-  if (!bindingId) {
+  if (connectedDevices.length === 0) {
     return null;
   }
 
@@ -249,16 +266,16 @@ function ControllerBindingModal({
         onClose={onClose}
         footer={<Button onClick={onClose}>Done</Button>}
       >
-        {bindings.map(({ channel }) => (
+        {bindings.map(({ bindingId, channel }) => (
           <div
-            key={channel}
+            key={`${bindingId}-${channel}`}
             className={`${styles.bindingRow} ${highlight === channel ? styles.active : ''}`}
           >
             <span>{channel}</span>
             <IconButton
               title="Remove binding"
               variant="warning"
-              onClick={() => handleRemoveBinding(channel)}
+              onClick={() => handleRemoveBinding(bindingId, channel)}
             >
               <BiTrash />
             </IconButton>
@@ -283,7 +300,10 @@ function ControllerBindingModal({
         <ConflictModal
           currentAction={conflictInfo.currentDescription}
           onReassign={handleReassign}
-          onCancel={() => setConflictInfo(null)}
+          onCancel={() => {
+            setConflictInfo(null);
+            pendingConflictBindingId.current = null;
+          }}
         />
       )}
     </>

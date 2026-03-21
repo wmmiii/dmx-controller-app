@@ -266,7 +266,7 @@ interface TileEditorProps {
 
 function TileEditor({ tileMap, onClose }: TileEditorProps) {
   const { project, save } = useContext(ProjectContext);
-  const { controllerName } = useContext(ControllerContext);
+  const { connectedDevices } = useContext(ControllerContext);
   const [existingTile, setExistingTile] = useState<string | null>(null);
 
   const tile = tileMap.tile!;
@@ -341,7 +341,7 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
             onFinalize={(v) => save(`Set priority to ${v} for ${tile.name}.`)}
           />
         </div>
-        {controllerName != null && (
+        {connectedDevices.length > 0 && (
           <div className={styles.row}>
             <ControllerConnection
               action={action}

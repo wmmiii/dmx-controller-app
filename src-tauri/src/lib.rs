@@ -67,6 +67,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             midi::connect_midi,
+            midi::disconnect_midi,
             midi::list_midi_inputs,
             output_loop::rebuild_output_loops,
             output_loop::start_output_loop,
