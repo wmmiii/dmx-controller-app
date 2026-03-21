@@ -114,21 +114,9 @@ function ControllerBindingModal({
 
   // Load bindings on mount and when project changes
   useEffect(() => {
-    const allBindings: typeof bindings = [];
-    for (const device of connectedDevices) {
-      const deviceBindings = getAllBindingsForAction(
-        project,
-        device.bindingId,
-        action,
-      );
-      for (const b of deviceBindings) {
-        allBindings.push({
-          bindingId: device.bindingId,
-          channel: b.channel,
-          context: b.context,
-        });
-      }
-    }
+    const connectedBindingIds = new Set(connectedDevices.map((d) => d.bindingId));
+    const allBindings = getAllBindingsForAction(project, action)
+      .filter((b) => connectedBindingIds.has(b.bindingId));
     setBindings(allBindings);
   }, [project, connectedDevices, action]);
 
@@ -184,12 +172,8 @@ function ControllerBindingModal({
 
         if (existing) {
           // Check if it's the same action
-          const allBindings = getAllBindingsForAction(
-            project,
-            bindingId,
-            action,
-          );
-          if (allBindings.some((b) => b.channel === channel)) {
+          const allBindings = getAllBindingsForAction(project, action);
+          if (allBindings.some((b) => b.bindingId === bindingId && b.channel === channel)) {
             setError('This channel is already bound to this action!');
             setIsAddingBinding(false);
             removeListener(listener);

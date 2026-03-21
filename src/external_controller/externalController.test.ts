@@ -495,14 +495,16 @@ describe('externalController', () => {
         },
       });
 
-      const result = getAllBindingsForAction(project, BINDING_ID, action);
+      const result = getAllBindingsForAction(project, action);
 
       expect(result).toHaveLength(2);
       expect(result).toContainEqual({
+        bindingId: BINDING_ID,
         channel: CHANNEL_NAME,
         context: { type: 'live_page' },
       });
       expect(result).toContainEqual({
+        bindingId: BINDING_ID,
         channel: CHANNEL_NAME_2,
         context: { type: 'live_page' },
       });
@@ -561,15 +563,17 @@ describe('externalController', () => {
         },
       });
 
-      const result = getAllBindingsForAction(project, BINDING_ID, action);
+      const result = getAllBindingsForAction(project, action);
 
       expect(result).toHaveLength(2);
       const sceneId = project.activeScene;
       expect(result).toContainEqual({
+        bindingId: BINDING_ID,
         channel: CHANNEL_NAME,
         context: { type: 'live_page' },
       });
       expect(result).toContainEqual({
+        bindingId: BINDING_ID,
         channel: CHANNEL_NAME_2,
         context: { type: 'scene', sceneId },
       });
@@ -611,10 +615,11 @@ describe('externalController', () => {
         },
       });
 
-      const result = getAllBindingsForAction(project, BINDING_ID, action);
+      const result = getAllBindingsForAction(project, action);
 
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual({
+        bindingId: BINDING_ID,
         channel: CHANNEL_NAME,
         context: { type: 'live_page' },
       });
