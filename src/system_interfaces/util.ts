@@ -1,1 +1,1 @@
-export const isTauri = window.__TAURI__ != null;
+export const isTauri = (window as any).__TAURI__ != null;

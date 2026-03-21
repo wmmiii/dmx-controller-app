@@ -1,6 +1,9 @@
 import { clone, create } from '@bufbuild/protobuf';
 import { ColorPaletteSchema } from '@dmx-controller/proto/color_pb';
-import { ControllerMapping_ActionSchema } from '@dmx-controller/proto/controller_pb';
+import {
+  InputBindingSchema,
+  InputType,
+} from '@dmx-controller/proto/controller_pb';
 import { type Project } from '@dmx-controller/proto/project_pb';
 import {
   SceneSchema,
@@ -35,6 +38,7 @@ import { ControllerContext } from '../contexts/ControllerContext';
 import { PaletteContext } from '../contexts/PaletteContext';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { getAvailableChannels } from '../engine/fixtures/fixture';
+import { deleteBindings } from '../external_controller/externalController';
 
 import { BiPlus, BiTrash } from 'react-icons/bi';
 import { DurationInput } from '../components/Duration';
@@ -269,22 +273,14 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
 
   const action = useMemo(
     () =>
-      create(ControllerMapping_ActionSchema, {
+      create(InputBindingSchema, {
+        inputType: InputType.CONTINUOUS,
         action: {
-          case: 'sceneMapping',
-          value: {
-            actions: {
-              [project.activeScene.toString()]: {
-                action: {
-                  case: 'tileStrengthId',
-                  value: tileMap.id,
-                },
-              },
-            },
-          },
+          case: 'tileStrength',
+          value: { tileId: tileMap.id },
         },
       }),
-    [],
+    [tileMap.id],
   );
 
   return (
@@ -304,6 +300,14 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
               const tileMap = getActiveScene(project).tileMap;
               const index = tileMap.findIndex((c) => c.tile === tile);
               if (index > -1) {
+                // Clean up all controller bindings for this tile
+                deleteBindings(
+                  project,
+                  (action) =>
+                    action.case === 'tileStrength' &&
+                    action.value.tileId === tileMap[index].id,
+                );
+
                 tileMap.splice(index, 1);
 
                 onClose();
@@ -339,7 +343,11 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
         </div>
         {controllerName != null && (
           <div className={styles.row}>
-            <ControllerConnection action={action} title="Strength" />
+            <ControllerConnection
+              action={action}
+              context={{ type: 'scene', sceneId: project.activeScene }}
+              title="Strength"
+            />
           </div>
         )}
         <div className={styles.row}>

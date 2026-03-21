@@ -6,13 +6,14 @@ import { tileActiveAmount, toggleTile } from '../util/tile';
 
 export function performTileStrength(
   project: Project,
+  sceneId: bigint,
   tileId: bigint,
   value: number,
   cct: ControlCommandType,
 ) {
   let actionPerformed = false;
 
-  const tile = getActiveScene(project).tileMap.find(
+  const tile = project.scenes[sceneId.toString()]?.tileMap.find(
     (tile) => tile.id === tileId,
   );
 

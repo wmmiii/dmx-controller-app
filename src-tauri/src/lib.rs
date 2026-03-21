@@ -18,7 +18,16 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .setup(|app| {
             let midi_state = midi::MidiState::new(app.handle().clone());
-            app.manage(midi_state);
+            let midi_state_arc = Arc::new(Mutex::new(midi_state));
+
+            // Start the MIDI device watcher for auto-reconnect
+            {
+                let state_clone = midi_state_arc.clone();
+                let midi = midi_state_arc.blocking_lock();
+                midi.start_device_watcher(state_clone);
+            }
+
+            app.manage(midi_state_arc);
 
             let sacn_state = sacn::SacnState::new().map_err(|e| {
                 Box::new(std::io::Error::new(std::io::ErrorKind::Other, e))

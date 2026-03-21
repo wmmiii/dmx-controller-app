@@ -1,10 +1,12 @@
 import { clone, create, equals } from '@bufbuild/protobuf';
 import {
-  ControllerMappingSchema,
-  ControllerMapping_ActionSchema,
-  ControllerMapping_ControllerSchema,
-  ControllerMapping_SceneActionSchema,
-  type ControllerMapping_Action,
+  ControllerBindingsMap,
+  ControllerBindingsMapSchema,
+  ControllerBindingsMap_ControllerBindingsSchema,
+  InputBindingSchema,
+  InputType,
+  TileStrengthAction,
+  type InputBinding,
 } from '@dmx-controller/proto/controller_pb';
 import { type Project } from '@dmx-controller/proto/project_pb';
 
@@ -17,11 +19,194 @@ import { getActiveScene } from '../util/sceneUtils';
 import { outputTileStrength, performTileStrength } from './tileStrength';
 
 /**
+ * Represents a location in the binding hierarchy.
+ */
+export type BindingContext =
+  | { type: 'live_page' }
+  | { type: 'scene'; sceneId: bigint };
+
+export function contextName(project: Project, context: BindingContext) {
+  switch (context.type) {
+    case 'live_page':
+      return 'Live page';
+    case 'scene':
+      return `Scene "${project.scenes[context.sceneId.toString()].name}"`;
+    default:
+      throw Error('Unknown context type: ' + (context as any).type);
+  }
+}
+
+/**
+ * Gets or creates the ControllerBindingsMap for a given context.
+ */
+function getOrCreateBindingsMap(
+  project: Project,
+  context: BindingContext,
+): ControllerBindingsMap {
+  switch (context.type) {
+    case 'live_page':
+      if (!project.livePageControllerBindings) {
+        project.livePageControllerBindings = create(
+          ControllerBindingsMapSchema,
+          {
+            bindings: {},
+          },
+        );
+      }
+      return project.livePageControllerBindings;
+    case 'scene':
+      const scene = project.scenes[context.sceneId.toString()];
+      if (!scene) {
+        throw Error(`Scene ${context.sceneId} not found`);
+      }
+      if (!scene.controllerBindings) {
+        scene.controllerBindings = create(ControllerBindingsMapSchema, {
+          bindings: {},
+        });
+      }
+      return scene.controllerBindings;
+  }
+}
+
+/**
+ * Gets the bindings map for a given context or returns `undefined` if none is present yet.
+ */
+function getBindingsMap(
+  project: Project,
+  context: BindingContext,
+): ControllerBindingsMap['bindings'] | undefined {
+  switch (context.type) {
+    case 'live_page':
+      return project.livePageControllerBindings?.bindings;
+    case 'scene':
+      const scene = project.scenes[context.sceneId.toString()];
+      if (!scene) {
+        throw Error(`Scene ${context.sceneId} not found`);
+      }
+      return scene.controllerBindings?.bindings;
+  }
+}
+
+/**
+ * Gets the ControllerBindings for a given context, creating if necessary.
+ */
+function getOrCreateBindings(
+  project: Project,
+  context: BindingContext,
+  bindingId: bigint,
+): any {
+  const bindingsMap = getOrCreateBindingsMap(project, context).bindings;
+  const key = bindingId.toString();
+
+  if (!bindingsMap[key]) {
+    bindingsMap[key] = create(ControllerBindingsMap_ControllerBindingsSchema, {
+      bindings: {},
+    });
+  }
+  return bindingsMap[key];
+}
+
+/**
+ * Gets all ancestor contexts for a given context (for upward traversal).
+ * Returns contexts from immediate parent to root.
+ */
+function getAncestorContexts(context: BindingContext): BindingContext[] {
+  const ancestors: BindingContext[] = [];
+
+  switch (context.type) {
+    case 'live_page':
+      // Top of hierarchy - no ancestors
+      return [];
+    case 'scene':
+      // Scenes inherit from global
+      ancestors.push({ type: 'live_page' });
+      return ancestors;
+  }
+}
+
+/**
+ * Gets all child contexts for a given context (for downward traversal).
+ */
+function getAllChildContexts(
+  project: Project,
+  context: BindingContext,
+): BindingContext[] {
+  switch (context.type) {
+    case 'live_page':
+      // All scenes are children of global
+      return Object.keys(project.scenes).map((sceneId) => ({
+        type: 'scene' as const,
+        sceneId: BigInt(sceneId),
+      }));
+    case 'scene':
+      return []; // Scenes have no children (yet)
+  }
+}
+
+/**
+ * Determines the appropriate storage context for a binding based on its action type.
+ */
+function getStorageContext(
+  binding: InputBinding,
+  currentSceneId: bigint,
+): BindingContext {
+  switch (binding.action.case) {
+    case 'beatMatch':
+    case 'firstBeat':
+    case 'setTempo':
+      return { type: 'live_page' };
+    case 'colorPalette':
+    case 'tileStrength':
+      return { type: 'scene', sceneId: currentSceneId };
+    default:
+      throw Error(
+        'Unrecognized controller action binding: ' + binding.action.case,
+      );
+  }
+}
+
+/**
+ * Looks up a binding in the hierarchy, starting from current context and traversing up to parents.
+ */
+export function findBinding(
+  project: Project,
+  bindingId: bigint,
+  channel: ControllerChannel,
+  startContext: BindingContext,
+): InputBinding | null {
+  const key = bindingId.toString();
+
+  // Check current context first
+  const bindingsMap = getBindingsMap(project, startContext);
+  if (bindingsMap) {
+    const binding = bindingsMap[key]?.bindings[channel];
+    if (binding) {
+      return binding;
+    }
+  }
+
+  // Then check all ancestor contexts
+  const ancestors = getAncestorContexts(startContext);
+  for (const ancestorContext of ancestors) {
+    const ancestorBindingsMap = getBindingsMap(project, ancestorContext);
+    if (!ancestorBindingsMap) {
+      continue;
+    }
+    const ancestorBinding = ancestorBindingsMap[key]?.bindings[channel];
+    if (ancestorBinding) {
+      return ancestorBinding;
+    }
+  }
+
+  return null;
+}
+
+/**
  * Takes in details of a controller action and modifies the project accordingly.
  */
 export function performAction(
   project: Project,
-  controllerName: string,
+  bindingId: bigint,
   channel: ControllerChannel,
   value: number,
   cct: ControlCommandType,
@@ -29,18 +214,25 @@ export function performAction(
   setFirstBeat: (t: number) => void,
   setBeat: (durationMs: number) => void,
 ): boolean {
-  const action =
-    project.controllerMapping?.controllers[controllerName]?.actions[channel]
-      ?.action;
+  const currentContext: BindingContext = {
+    type: 'scene',
+    sceneId: project.activeScene,
+  };
 
-  switch (action?.case) {
+  const binding = findBinding(project, bindingId, channel, currentContext);
+  if (!binding) {
+    return false;
+  }
+
+  const action = binding.action;
+  switch (action.case) {
     case 'beatMatch':
-      if (cct === null && value > 0.5) {
+      if (binding.inputType === InputType.BINARY && value > 0.5) {
         addBeatSample(new Date().getTime());
       }
       return false;
     case 'firstBeat':
-      if (cct === null && value > 0.5) {
+      if (binding.inputType === InputType.BINARY && value > 0.5) {
         setFirstBeat(new Date().getTime());
       }
       return false;
@@ -48,25 +240,17 @@ export function performAction(
       const bpm = Math.floor(value * 127 + 80);
       setBeat(60_000 / bpm);
       return true;
-    case 'sceneMapping':
-      const sceneAction = action.value.actions[project.activeScene.toString()];
-      if (sceneAction) {
-        switch (sceneAction.action.case) {
-          case 'colorPaletteId':
-            getActiveScene(project).activeColorPalette =
-              sceneAction.action.value;
-            return true;
-          case 'tileStrengthId':
-            return performTileStrength(
-              project,
-              sceneAction.action.value,
-              value,
-              cct,
-            );
-          default:
-            throw Error('Unknown action type in sceneMapping!');
-        }
-      }
+    case 'tileStrength':
+      return performTileStrength(
+        project,
+        project.activeScene,
+        action.value.tileId,
+        value,
+        cct,
+      );
+    case 'colorPalette':
+      getActiveScene(project).activeColorPalette = action.value.paletteId;
+      return true;
     default:
       return false;
   }
@@ -74,117 +258,184 @@ export function performAction(
 
 /**
  * Assigns an action to a controller channel.
+ * Allows multiple channels to have the same action.
+ * Removes any existing binding on this specific channel from the active scene's context hierarchy.
  */
 export function assignAction(
   project: Project,
-  controllerName: string,
+  bindingId: bigint,
   channel: ControllerChannel,
-  a: ControllerMapping_Action,
+  binding: InputBinding,
 ) {
-  const action = clone(ControllerMapping_ActionSchema, a);
-  deleteAction(project, controllerName, action);
-  const actionMap = getActionMap(project, controllerName);
-  switch (action.action.case) {
-    case 'sceneMapping':
-      const existingAction = actionMap[channel];
-      if (existingAction?.action.case === 'sceneMapping') {
-        existingAction.action.value.actions[project.activeScene.toString()] =
-          action.action.value.actions[project.activeScene.toString()];
-      } else {
-        actionMap[channel] = action;
-      }
-      break;
-    default:
-      actionMap[channel] = action;
-  }
+  const clonedBinding = clone(InputBindingSchema, binding);
+
+  // Determine where to store the binding based on action type
+  const storageContext = getStorageContext(clonedBinding, project.activeScene);
+
+  // Delete the old binding
+  deleteAction(project, bindingId, channel);
+
+  // Assign the new binding
+  const bindings = getOrCreateBindings(project, storageContext, bindingId);
+  bindings.bindings[channel] = clonedBinding;
 }
 
 /**
  * Returns `true` if the supplied action already exists in the project mapped to any controller channel.
+ * Checks the context where the binding would be stored, plus all parent and child contexts.
  */
 export function hasAction(
   project: Project,
-  controllerName: string,
-  action: ControllerMapping_Action,
+  bindingId: bigint,
+  binding: InputBinding,
 ): boolean {
-  const actionMap = getActionMap(project, controllerName);
-  switch (action.action.case) {
-    case 'sceneMapping':
-      const newSceneAction =
-        action.action.value.actions[project.activeScene.toString()];
-      if (!newSceneAction) {
-        throw Error('Action passed to hasAction not in current scene!');
-      }
+  // Determine where this binding would be stored
+  const storageContext = getStorageContext(binding, project.activeScene);
 
-      for (const a of Object.values(actionMap)) {
-        if (a.action.case === 'sceneMapping') {
-          const existingSceneAction =
-            a.action.value.actions[project.activeScene.toString()];
-          if (existingSceneAction) {
-            if (
-              equals(
-                ControllerMapping_SceneActionSchema,
-                newSceneAction,
-                existingSceneAction,
-              )
-            ) {
-              return true;
-            }
-          }
+  const contextsToCheck = [
+    ...getAncestorContexts(storageContext),
+    storageContext,
+    ...getAllChildContexts(project, storageContext),
+  ];
+
+  // Check all collected contexts for conflicts
+  for (const context of contextsToCheck) {
+    const bindingsMap = getBindingsMap(project, context);
+    if (!bindingsMap) {
+      continue;
+    }
+    const bindings = bindingsMap[bindingId.toString()]?.bindings;
+
+    if (bindings) {
+      for (const existingBinding of Object.values(bindings) as InputBinding[]) {
+        // Compare bindings ignoring inputType field - only compare actions
+        if (
+          existingBinding.action.case === binding.action.case &&
+          equals(InputBindingSchema, existingBinding, binding)
+        ) {
+          return true;
         }
       }
-      return false;
-    default:
-      return (
-        Object.values(actionMap).find((a) =>
-          equals(ControllerMapping_ActionSchema, a, action),
-        ) != null
-      );
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Deletes a specific binding from a specific channel.
+ * leaving other channels with the same action intact.
+ */
+export function deleteAction(
+  project: Project,
+  bindingId: bigint,
+  channel: ControllerChannel,
+): void {
+  // Check global bindings
+  const globalBindingsMap = project.livePageControllerBindings?.bindings;
+  const globalBindings = globalBindingsMap?.[bindingId.toString()]?.bindings;
+  if (globalBindings && globalBindings[channel]) {
+    delete globalBindings[channel];
+    return;
+  }
+
+  // Check scene bindings
+  const scene = project.scenes[project.activeScene.toString()];
+  if (scene) {
+    const sceneBindingsMap = scene.controllerBindings?.bindings;
+    const sceneBindings = sceneBindingsMap?.[bindingId.toString()]?.bindings;
+    if (sceneBindings && sceneBindings[channel]) {
+      delete sceneBindings[channel];
+      return;
+    }
   }
 }
 
 /**
- * Finds an action on any controller channel and deletes it once found.
+ * Deletes all controller bindings given a specific predicate.
  */
-export function deleteAction(
+export function deleteBindings(
   project: Project,
-  controllerName: string,
-  action: ControllerMapping_Action,
-) {
-  const actionMap = getActionMap(project, controllerName);
+  predicate: (action: InputBinding['action']) => boolean,
+): void {
+  // Helper to clean bindings from a ControllerBindingsMap
+  const cleanBindingsMap = (bindingsMap: any) => {
+    if (!bindingsMap?.bindings) return;
 
-  if (action.action.case === 'sceneMapping') {
-    for (const [channel, existingAction] of Object.entries(actionMap)) {
-      if (existingAction.action.case === 'sceneMapping') {
-        const existingSceneAction =
-          existingAction.action.value.actions[project.activeScene.toString()];
-        const newSceneAction =
-          action.action.value.actions[project.activeScene.toString()];
-        if (existingSceneAction) {
-          if (
-            equals(
-              ControllerMapping_SceneActionSchema,
-              existingSceneAction,
-              newSceneAction,
-            )
-          ) {
-            delete existingAction.action.value.actions[
-              project.activeScene.toString()
-            ];
-            if (Object.keys(existingAction.action.value.actions).length === 0) {
-              delete actionMap[channel];
-            }
-          }
+    // Iterate through all controller IDs
+    for (const controllerBindings of Object.values(bindingsMap.bindings)) {
+      if (!controllerBindings || typeof controllerBindings !== 'object')
+        continue;
+
+      const bindings = (controllerBindings as any).bindings;
+      if (!bindings) continue;
+
+      // Find and delete channels with tileStrength actions matching this tileId
+      for (const [channel, binding] of Object.entries(bindings)) {
+        const inputBinding = binding as InputBinding;
+        if (predicate(inputBinding.action)) {
+          delete bindings[channel];
         }
       }
     }
-  } else {
-    for (const [channel, existingAction] of Object.entries(actionMap)) {
-      if (equals(ControllerMapping_ActionSchema, existingAction, action)) {
-        delete actionMap[channel];
+  };
+
+  // Clean global bindings
+  if (project.livePageControllerBindings) {
+    cleanBindingsMap(project.livePageControllerBindings);
+  }
+
+  // Clean bindings in all scenes
+  for (const scene of Object.values(project.scenes)) {
+    if (scene.controllerBindings) {
+      cleanBindingsMap(scene.controllerBindings);
+    }
+  }
+}
+
+/**
+ * Returns all channels that have the given action bound.
+ * Returns array of {channel, context} pairs.
+ */
+export function getAllBindingsForAction(
+  project: Project,
+  bindingId: bigint,
+  binding: InputBinding,
+) {
+  const results: Array<{
+    channel: ControllerChannel;
+    context: BindingContext;
+  }> = [];
+
+  const storageContext = getStorageContext(binding, project.activeScene);
+
+  // Get all contexts to check (same logic as hasAction)
+  const contextsToCheck: BindingContext[] = [
+    ...getAncestorContexts(storageContext),
+    storageContext,
+    ...getAllChildContexts(project, storageContext),
+  ];
+
+  for (const context of contextsToCheck) {
+    const bindingsMap = getBindingsMap(project, context);
+    if (!bindingsMap) {
+      continue;
+    }
+    const bindings = bindingsMap[bindingId.toString()]?.bindings;
+
+    if (bindings) {
+      for (const [channel, existingBinding] of Object.entries(bindings)) {
+        if (equals(InputBindingSchema, existingBinding, binding)) {
+          results.push({
+            channel,
+            context,
+          });
+        }
       }
     }
   }
+
+  return results;
 }
 
 /**
@@ -192,53 +443,63 @@ export function deleteAction(
  */
 export function outputValues(
   project: Project,
-  controllerName: string,
+  bindingId: bigint,
   t: bigint,
 ): Map<string, number> {
   const values = new Map<string, number>();
-  if (!controllerName) {
-    return values;
-  }
-  const actions = Object.entries(
-    project.controllerMapping?.controllers[controllerName]?.actions ?? {},
-  );
-  for (const [channel, action] of actions) {
-    let value = 0;
-    const beatMetadata = project.liveBeat!;
-    const beatT = Number(t - beatMetadata.offsetMs);
-    switch (action.action.case) {
-      case 'beatMatch':
-        value = 1 - Math.round((beatT / beatMetadata.lengthMs) % 1);
-        break;
-      case 'firstBeat':
-        value = 1 - Math.round(((beatT / beatMetadata.lengthMs) % 4) / 4);
-        break;
-      case 'setTempo':
-        value = Math.floor((60_000 / beatMetadata.lengthMs - 80) / 127);
-        break;
-      case 'sceneMapping':
-        const sceneAction =
-          action.action.value.actions[project.activeScene.toString()]?.action;
-        if (sceneAction) {
-          switch (sceneAction.case) {
-            case 'colorPaletteId':
-              value = 1;
-              break;
-            case 'tileStrengthId':
-              value = outputTileStrength(project, sceneAction.value, t);
-              break;
-            default:
-              throw Error('Unknown action type in sceneMapping!');
-          }
-        }
-        break;
-      case undefined:
-        break;
-      default:
-        throw Error('Unknown action type!');
+
+  const beatMetadata = project.liveBeat!;
+  const beatT = Number(t - beatMetadata.offsetMs);
+
+  // Collect all channels that have bindings, starting from global and overriding with scene-specific
+  const currentContext: BindingContext = {
+    type: 'scene',
+    sceneId: project.activeScene,
+  };
+
+  // Get all contexts in hierarchy (ancestors first, then current)
+  const ancestors = getAncestorContexts(currentContext);
+  const contexts: BindingContext[] = [...ancestors.reverse(), currentContext];
+
+  // Process bindings from ancestor to current (so children can override)
+  for (const context of contexts) {
+    const bindingsMap = getBindingsMap(project, context);
+    if (!bindingsMap) {
+      continue;
     }
-    values.set(channel, Math.max(Math.min(value, 1), 0));
+    const bindings = bindingsMap[bindingId.toString()]?.bindings;
+
+    if (bindings) {
+      for (const [channel, binding] of Object.entries(bindings)) {
+        let value = 0;
+        const action = (binding as InputBinding).action;
+
+        switch (action.case) {
+          case 'beatMatch':
+            value = 1 - Math.round((beatT / beatMetadata.lengthMs) % 1);
+            break;
+          case 'firstBeat':
+            value = 1 - Math.round(((beatT / beatMetadata.lengthMs) % 4) / 4);
+            break;
+          case 'setTempo':
+            value = Math.floor((60_000 / beatMetadata.lengthMs - 80) / 127);
+            break;
+          case 'tileStrength':
+            value = outputTileStrength(project, action.value.tileId, t);
+            break;
+          case 'colorPalette':
+            value = 1;
+            break;
+          case undefined:
+            break;
+          default:
+            throw Error('Unknown action type!');
+        }
+        values.set(channel, Math.max(Math.min(value, 1), 0));
+      }
+    }
   }
+
   return values;
 }
 
@@ -248,57 +509,44 @@ export function outputValues(
 export function getActionDescription(
   project: Project,
   sceneId: bigint,
-  controllerName: string,
+  bindingId: bigint,
   channel: ControllerChannel,
 ) {
-  const actionMapping = getActionMap(project, controllerName)[channel];
-  switch (actionMapping?.action.case) {
-    case 'beatMatch':
-      return 'Samples the beat during beat-matching.';
-    case 'firstBeat':
-      return 'Sets the first beat in a bar.';
-    case 'setTempo':
-      return 'Sets the absolute BPM.';
-    case 'sceneMapping':
-      const sceneMapping = actionMapping.action.value;
-      const sceneAction = sceneMapping.actions[sceneId.toString()]?.action;
-      switch (sceneAction?.case) {
-        case 'colorPaletteId':
-          const colorPaletteName =
-            getActiveScene(project).colorPalettes[sceneAction.value.toString()]
-              .name;
-          return `Sets the color palette to ${colorPaletteName}.`;
-        case 'tileStrengthId':
-          const tileName = getActiveScene(project).tileMap.find(
-            (t) => t.id === sceneAction.value,
-          )?.tile?.name;
-          return `Modifies the strength of tile "${tileName}".`;
-        case undefined:
-          return null;
-        default:
-          throw Error('Unknown type in sceneMapping!');
-      }
-    case undefined:
-      return null;
-    default:
-      throw Error('Unknown action type!');
+  const scene = project.scenes[sceneId.toString()];
+  if (!scene) {
+    return null;
   }
-}
 
-/**
- * Utility to get the action map for the current project and scene.
- */
-export function getActionMap(project: Project, controllerName: string) {
-  if (project.controllerMapping == null) {
-    project.controllerMapping = create(ControllerMappingSchema, {});
+  // Use the context hierarchy to find the binding
+  const context: BindingContext = { type: 'scene', sceneId };
+  const binding = findBinding(project, bindingId, channel, context);
+
+  if (binding) {
+    switch (binding.action.case) {
+      case 'beatMatch':
+        return 'Samples the beat during beat-matching.';
+      case 'firstBeat':
+        return 'Sets the first beat in a bar.';
+      case 'setTempo':
+        return 'Sets the absolute BPM.';
+      case 'colorPalette':
+        const colorPaletteName =
+          scene.colorPalettes[binding.action.value.paletteId.toString()]?.name;
+        return `Sets the color palette to ${colorPaletteName}.`;
+      case 'tileStrength':
+        const tileName = scene.tileMap.find(
+          (t: any) =>
+            t.id === (binding!.action.value as TileStrengthAction).tileId,
+        )?.tile?.name;
+        return `Modifies the strength of tile "${tileName}".`;
+      case undefined:
+        return null;
+      default:
+        throw Error('Unknown action type!');
+    }
   }
-  if (project.controllerMapping.controllers[controllerName] == null) {
-    project.controllerMapping.controllers[controllerName] = create(
-      ControllerMapping_ControllerSchema,
-      { actions: {} },
-    );
-  }
-  return project.controllerMapping.controllers[controllerName].actions;
+
+  return null;
 }
 
 let timeoutHandle: any;
@@ -311,7 +559,7 @@ export function debounceInput(cct: ControlCommandType, action: () => void) {
     action();
   } else if (cct === 'msb') {
     // Wait for lsb to see if this channel supports it.
-    timeoutHandle = setTimeout(() => action, 100);
+    timeoutHandle = setTimeout(action, 100);
   } else {
     throw Error(`Unknown control command type ${cct}!`);
   }

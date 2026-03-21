@@ -3,6 +3,7 @@ syntax = "proto3";
 package dmx_controller;
 
 import "proto/color.proto";
+import "proto/controller.proto";
 import "proto/duration.proto";
 import "proto/effect.proto";
 import "proto/output.proto";
@@ -81,6 +82,9 @@ message Scene {
   uint32 color_palette_transition_duration_ms = 5;
   uint64 color_palette_start_transition = 6;
   reserved 10;
+
+  // Controller bindings for this scene
+  ControllerBindingsMap controller_bindings = 14;
 
   reserved 11; // repeated Tile components = 11 [deprecated = true];
   reserved 12; // repeated ComponentRow rows = 12 [deprecated = true];

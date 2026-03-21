@@ -20,7 +20,10 @@ import { tileTileDetails } from '../util/projectUtils';
 import { tileActiveAmount, toggleTile } from '../util/tile';
 
 import { BeatMetadataSchema } from '@dmx-controller/proto/beat_pb';
-import { ControllerMapping_ActionSchema } from '@dmx-controller/proto/controller_pb';
+import {
+  InputBindingSchema,
+  InputType,
+} from '@dmx-controller/proto/controller_pb';
 import { hasAction } from '../external_controller/externalController';
 import { rgbwToHex } from '../util/colorUtil';
 import { listenToTick } from '../util/time';
@@ -38,7 +41,7 @@ interface TileProps {
 
 export function Tile({ tileId, tile, onSelect, x, y, priority }: TileProps) {
   const { project, save } = useContext(ProjectContext);
-  const { controllerName } = useContext(ControllerContext);
+  const { bindingId } = useContext(ControllerContext);
   const { palette } = useContext(PaletteContext);
   const activeRef = createRef<HTMLDivElement>();
 
@@ -65,23 +68,15 @@ export function Tile({ tileId, tile, onSelect, x, y, priority }: TileProps) {
   );
 
   const hasControllerMapping = useMemo(() => {
-    if (controllerName) {
+    if (bindingId) {
       const hasMapping = hasAction(
         project,
-        controllerName,
-        create(ControllerMapping_ActionSchema, {
+        bindingId,
+        create(InputBindingSchema, {
+          inputType: InputType.CONTINUOUS,
           action: {
-            case: 'sceneMapping',
-            value: {
-              actions: {
-                [project.activeScene.toString()]: {
-                  action: {
-                    case: 'tileStrengthId',
-                    value: tileId,
-                  },
-                },
-              },
-            },
+            case: 'tileStrength',
+            value: { tileId },
           },
         }),
       );
@@ -89,7 +84,7 @@ export function Tile({ tileId, tile, onSelect, x, y, priority }: TileProps) {
     } else {
       return false;
     }
-  }, [project, controllerName, tileId]);
+  }, [project, bindingId, tileId]);
 
   const background = useMemo(() => {
     if (details.colors.length === 0) {

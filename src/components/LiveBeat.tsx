@@ -1,6 +1,9 @@
 import { create } from '@bufbuild/protobuf';
-import { ControllerMapping_ActionSchema } from '@dmx-controller/proto/controller_pb';
-import { createRef, JSX, useContext, useEffect, useMemo } from 'react';
+import {
+  InputBindingSchema,
+  InputType,
+} from '@dmx-controller/proto/controller_pb';
+import { JSX, createRef, useContext, useEffect, useMemo } from 'react';
 
 import { BeatContext } from '../contexts/BeatContext';
 import { ShortcutContext } from '../contexts/ShortcutContext';
@@ -56,7 +59,8 @@ export function LiveBeat({ className }: LiveBeatProps): JSX.Element {
 
   const beatMatchAction = useMemo(
     () =>
-      create(ControllerMapping_ActionSchema, {
+      create(InputBindingSchema, {
+        inputType: InputType.BINARY,
         action: {
           case: 'beatMatch',
           value: {},
@@ -67,7 +71,8 @@ export function LiveBeat({ className }: LiveBeatProps): JSX.Element {
 
   const setTempoAction = useMemo(
     () =>
-      create(ControllerMapping_ActionSchema, {
+      create(InputBindingSchema, {
+        inputType: InputType.CONTINUOUS,
         action: {
           case: 'setTempo',
           value: {},
@@ -78,7 +83,8 @@ export function LiveBeat({ className }: LiveBeatProps): JSX.Element {
 
   const firstBeatAction = useMemo(
     () =>
-      create(ControllerMapping_ActionSchema, {
+      create(InputBindingSchema, {
+        inputType: InputType.BINARY,
         action: {
           case: 'firstBeat',
           value: {},
@@ -114,18 +120,21 @@ export function LiveBeat({ className }: LiveBeatProps): JSX.Element {
       <ControllerConnection
         title="Set BPM"
         iconOnly={false}
+        context={{ type: 'live_page' }}
         action={setTempoAction}
         requiredType="slider"
       />
       <ControllerConnection
         title="Set first beat"
         iconOnly={false}
+        context={{ type: 'live_page' }}
         action={firstBeatAction}
         requiredType="button"
       />
       <ControllerConnection
         title="Tap to learn"
         iconOnly={false}
+        context={{ type: 'live_page' }}
         action={beatMatchAction}
         requiredType="button"
       />

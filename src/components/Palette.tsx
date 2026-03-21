@@ -5,7 +5,10 @@ import { ColorPicker, IColor, useColor } from 'react-color-palette';
 
 import { ProjectContext } from '../contexts/ProjectContext';
 
-import { ControllerMapping_ActionSchema } from '@dmx-controller/proto/controller_pb';
+import {
+  InputBindingSchema,
+  InputType,
+} from '@dmx-controller/proto/controller_pb';
 import { BiCog, BiTrash } from 'react-icons/bi';
 import { stringifyColor } from '../util/colorUtil';
 import { IconButton } from './Button';
@@ -121,19 +124,11 @@ function EditPaletteDialog({
 
   const action = useMemo(
     () =>
-      create(ControllerMapping_ActionSchema, {
+      create(InputBindingSchema, {
+        inputType: InputType.BINARY,
         action: {
-          case: 'sceneMapping',
-          value: {
-            actions: {
-              [sceneId.toString()]: {
-                action: {
-                  case: 'colorPaletteId',
-                  value: paletteId,
-                },
-              },
-            },
-          },
+          case: 'colorPalette',
+          value: { paletteId },
         },
       }),
     [paletteId],
@@ -166,7 +161,11 @@ function EditPaletteDialog({
             }}
           />
         </div>
-        <ControllerConnection title="Switch to color palette" action={action} />
+        <ControllerConnection
+          title="Switch to color palette"
+          context={{ type: 'scene', sceneId: sceneId }}
+          action={action}
+        />
       </div>
       <div className={styles.colorSelectors}>
         <ColorPicker

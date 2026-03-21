@@ -3,42 +3,58 @@ syntax = "proto3";
 package dmx_controller;
 
 message ControllerMapping {
-  message Controller {
-    map<string, Action> actions = 1;
-  }
-
-  message Action {
-    oneof action {
-      BeatMatch beat_match = 1;
-      FirstBeat first_beat = 3;
-      SetTempo set_tempo = 4;
-      SceneMapping scene_mapping = 2;
-    }
-  }
-
-  message BeatMatch {
-
-  }
-
-  message FirstBeat {
-
-  }
-
-  message SetTempo {
-
-  }
-
-  message SceneMapping {
-    map<uint64, SceneAction> actions = 1;
-  }
-
-  message SceneAction {
-    oneof action {
-      uint64 tile_strength_id = 1;
-      uint64 color_palette_id = 3;
-    }
-  }
-
-  map<string, Controller> controllers = 1;
   string last_controller_name = 2;
+
+  // Map from controller name (as reported by OS) to a stable controller ID
+  map<string, uint64> controller_to_binding = 3;
+
+  map<uint64, string> binding_names = 4;
+
+  reserved 1; // map<string, Controller> controllers = 1;
 }
+
+// Map from controller ID to bindings for all controllers in a context
+// This abstracts the common pattern of map<uint64, ControllerBindings>
+message ControllerBindingsMap {
+  // Controller input bindings for a specific controller in a specific context
+  message ControllerBindings {
+    // Map from MIDI channel string (e.g., "176, 1") to binding
+    map<string, InputBinding> bindings = 1;
+  }
+
+  // Map from controller ID (stable identifier) to that controller's bindings
+  map<uint64, ControllerBindings> bindings = 1;
+}
+
+// Binding of a MIDI input to an action
+message InputBinding {
+  InputType input_type = 1;
+
+  oneof action {
+    // Global actions (typically in live_page_global)
+    BeatMatchAction beat_match = 2;
+    FirstBeatAction first_beat = 3;
+    SetTempoAction set_tempo = 4;
+
+    // Scene-specific actions (typically in live_page_scenes)
+    TileStrengthAction tile_strength = 5;
+    ColorPaletteAction color_palette = 6;
+
+    // Future: show-specific, patch-specific, etc.
+  }
+}
+
+// Type of MIDI input for behavior differentiation
+enum InputType {
+  UNSPECIFIED = 0;
+  BINARY = 1;     // Binary on/off, for toggling
+  CONTINUOUS = 2; // Continuous value, for direct control
+}
+
+message BeatMatchAction {}
+message FirstBeatAction {}
+message SetTempoAction {}
+
+message TileStrengthAction { uint64 tile_id = 1; }
+
+message ColorPaletteAction { uint64 palette_id = 1; }

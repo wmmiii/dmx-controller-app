@@ -19,6 +19,7 @@ import {
 import { BeatContext } from './BeatContext';
 import { ProjectContext } from './ProjectContext';
 
+import { listen } from '@tauri-apps/api/event';
 import {
   MidiPortCandidate,
   addMidiListener,
@@ -27,6 +28,8 @@ import {
   removeMidiListener,
   sendControllerUpdate,
 } from '../system_interfaces/midi';
+import { isTauri } from '../system_interfaces/util';
+import { randomUint64 } from '../util/numberUtils';
 import { listenToTick } from '../util/time';
 import styles from './ControllerContext.module.scss';
 
@@ -41,6 +44,7 @@ type Listener = (
 
 export const ControllerContext = createContext({
   controllerName: null as string | null,
+  bindingId: null as bigint | null,
   connect: () => {},
   addListener: (_listener: Listener) => {},
   removeListener: (_listener: Listener) => {},
@@ -65,6 +69,7 @@ export function ControllerProvider({
   const [controllerName, setControllerName] = useState<string | undefined>(
     undefined,
   );
+  const [bindingId, setBindingId] = useState<bigint | undefined>(undefined);
   const [candidateList, setCandidateList] = useState<
     MidiPortCandidate[] | null
   >(null);
@@ -86,10 +91,62 @@ export function ControllerProvider({
         if (candidate) {
           await connectMidi(candidate);
           setControllerName(candidate.name);
+
+          // Get or create binding ID for this controller
+          const existingBindingId =
+            controllerMapping.controllerToBinding[candidate.name];
+          if (existingBindingId !== undefined) {
+            setBindingId(existingBindingId);
+          } else {
+            const newBindingId = randomUint64();
+            controllerMapping.controllerToBinding[candidate.name] =
+              newBindingId;
+            controllerMapping.bindingNames[newBindingId.toString()] =
+              candidate.name;
+            setBindingId(newBindingId);
+            save('Created binding for controller.');
+          }
         }
       }
     })();
-  }, [lastLoad, setControllerName]);
+  }, [lastLoad, setControllerName, setBindingId, save]);
+
+  // Listen for MIDI connection status changes from Tauri backend
+  useEffect(() => {
+    if (!isTauri) {
+      return;
+    }
+
+    let unlisten = () => {};
+
+    (async () => {
+      unlisten = await listen(
+        'midi-connection-status',
+        (event: {
+          payload: { controller_name: string; connected: boolean };
+        }) => {
+          const { controller_name: controllerName, connected } = event.payload;
+          const controllerMapping = project.controllerMapping;
+
+          if (controllerMapping) {
+            if (connected) {
+              // Update frontend state to reflect the connection
+              setControllerName(controllerName);
+              setBindingId(
+                controllerMapping.controllerToBinding[controllerName],
+              );
+            } else {
+              // Clear frontend state when controller disconnects
+              setControllerName(undefined);
+              setBindingId(undefined);
+            }
+          }
+        },
+      );
+    })();
+
+    return unlisten;
+  }, [project, setControllerName, setBindingId]);
 
   useEffect(() => {
     let msbBuffer: Map<number, number> = new Map();
@@ -145,28 +202,31 @@ export function ControllerProvider({
   }, [inputListeners, projectRef]);
 
   useEffect(() => {
-    if (!controllerName) {
+    if (!bindingId) {
       return;
     }
 
     return listenToTick((t) =>
-      sendControllerUpdate(() => outputValues(project, controllerName, t)),
+      sendControllerUpdate(() => outputValues(project, bindingId, t)),
     );
-  }, [project, controllerName]);
+  }, [project, bindingId]);
 
   const addListener = useCallback((listener: Listener) => {
     inputListeners.current.push(listener);
   }, []);
   const removeListener = useCallback((listener: Listener) => {
-    inputListeners.current.splice(inputListeners.current.indexOf(listener), 1);
+    const index = inputListeners.current.indexOf(listener);
+    if (index >= 0) {
+      inputListeners.current.splice(index, 1);
+    }
   }, []);
 
   useEffect(() => {
     const listener: Listener = (_p, channel, value, cct) => {
-      if (controllerName) {
+      if (bindingId) {
         const modified = performAction(
           project,
-          controllerName,
+          bindingId,
           channel,
           value,
           cct,
@@ -188,10 +248,13 @@ export function ControllerProvider({
     return () => removeListener(listener);
   }, [
     project,
-    controllerName,
+    bindingId,
     saveTimeout,
     addBeatSample,
     update,
+    setBeat,
+    setFirstBeat,
+    save,
     addListener,
     removeListener,
   ]);
@@ -201,6 +264,7 @@ export function ControllerProvider({
       <ControllerContext.Provider
         value={{
           controllerName: controllerName ?? null,
+          bindingId: bindingId ?? null,
           connect: connect,
           addListener: addListener,
           removeListener: removeListener,
@@ -215,10 +279,26 @@ export function ControllerProvider({
             const name = candidate?.name || '';
             project.controllerMapping!.lastControllerName = name;
             if (candidate) {
+              // Get or create binding ID for this controller
+              const existingBindingId =
+                project.controllerMapping!.controllerToBinding[name];
+              let newBindingId: bigint;
+              if (existingBindingId !== undefined) {
+                newBindingId = existingBindingId;
+              } else {
+                newBindingId = randomUint64();
+                project.controllerMapping!.controllerToBinding[name] =
+                  newBindingId;
+                project.controllerMapping!.bindingNames[
+                  newBindingId.toString()
+                ] = name;
+              }
+              setBindingId(newBindingId);
               save('Enable auto-reconnect for midi controller.');
               await connectMidi(candidate);
               setControllerName(name);
             } else {
+              setBindingId(undefined);
               save('Disable auto-reconnect for midi controller.');
             }
             setCandidateList(null);

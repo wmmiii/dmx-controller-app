@@ -1,0 +1,54 @@
+@use '../_vars';
+
+.binding-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  padding: vars.spacing(1);
+  background-color: transparent;
+  transition: background-color 1s;
+
+  &.active {
+    background-color: vars.$col-bg-active;
+    transition: background-color 0s;
+  }
+
+  button {
+    flex-shrink: 0;
+  }
+
+  span {
+    flex: 1;
+  }
+}
+
+.no-bindings,
+.warning {
+  box-sizing: border-box;
+  width: 100%;
+  padding: vars.spacing(1);
+}
+
+.warning {
+  color: vars.$col-warning;
+}
+
+.add-binding {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 100%;
+  margin: vars.spacing(2) 0;
+}
+
+.button-row {
+  display: flex;
+  flex-direction: row;
+  gap: vars.spacing(2);
+  align-items: center;
+  justify-content: space-between;
+  margin: vars.spacing(1) 0;
+}

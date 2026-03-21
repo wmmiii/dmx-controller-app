@@ -10,6 +10,8 @@ import {
 } from '../contexts/ControllerContext';
 import { ProjectContext } from '../contexts/ProjectContext';
 import {
+  BindingContext,
+  contextName,
   deleteAction,
   getActionDescription,
 } from '../external_controller/externalController';
@@ -17,7 +19,7 @@ import styles from './ControllerPage.module.scss';
 
 export function ControllerPage(): JSX.Element {
   const { project, save } = useContext(ProjectContext);
-  const { controllerName, connect, addListener, removeListener } =
+  const { controllerName, bindingId, connect, addListener, removeListener } =
     useContext(ControllerContext);
 
   const [lastPressed, setLastPressed] = useState<{
@@ -26,7 +28,7 @@ export function ControllerPage(): JSX.Element {
     cct: ControlCommandType;
   } | null>(null);
 
-  const [highlight, setHighlight] = useState<string | null>(null);
+  const [highlight, setHighlight] = useState<ControllerChannel | null>(null);
 
   useEffect(() => {
     const listener = (
@@ -51,7 +53,7 @@ export function ControllerPage(): JSX.Element {
     return () => removeListener(listener);
   });
 
-  if (!controllerName) {
+  if (!controllerName || !bindingId) {
     return (
       <div className={styles.wrapper}>
         <ControllerButton
@@ -61,6 +63,50 @@ export function ControllerPage(): JSX.Element {
         />
       </div>
     );
+  }
+
+  // Collect all bindings (global and scene-specific)
+  const allBindings: Array<{
+    title: string | null;
+    channel: string;
+    context: BindingContext;
+  }> = [];
+
+  // Add global bindings
+  const globalBindings =
+    project.livePageControllerBindings?.bindings[bindingId.toString()];
+  if (globalBindings) {
+    Object.keys(globalBindings.bindings).forEach((channel) => {
+      allBindings.push({
+        title: getActionDescription(project, 0n, bindingId, channel),
+        channel,
+        context: { type: 'live_page' },
+      });
+    });
+  }
+
+  for (const [sceneId, scene] of Object.entries(project.scenes)) {
+    if (scene) {
+      const sceneBindings =
+        scene.controllerBindings?.bindings[bindingId.toString()];
+      if (sceneBindings) {
+        Object.keys(sceneBindings.bindings).forEach((channel) => {
+          allBindings.push({
+            title: getActionDescription(
+              project,
+              BigInt(sceneId),
+              bindingId,
+              channel,
+            ),
+            channel,
+            context: {
+              type: 'scene',
+              sceneId: BigInt(sceneId),
+            },
+          });
+        });
+      }
+    }
   }
 
   return (
@@ -77,78 +123,40 @@ export function ControllerPage(): JSX.Element {
         )}
       </div>
       <table className={styles.mappings}>
+        <thead>
+          <tr>
+            <th>MIDI Channel</th>
+            <th>Location</th>
+            <th>Description</th>
+            <th></th>
+          </tr>
+        </thead>
         <tbody>
-          {Object.entries(
-            project.controllerMapping!.controllers[controllerName]?.actions ??
-              {},
-          )
-            .sort(([a], [b]) => a.localeCompare(b))
-            .map(([channel, action]) => {
-              const name = getActionDescription(
-                project,
-                project.activeScene,
-                controllerName,
-                channel,
-              );
-              switch (action.action.case) {
-                case 'beatMatch':
-                  return (
-                    <tr
-                      key={channel}
-                      className={highlight === channel ? styles.active : ''}
+          {allBindings
+            .sort((a, b) => a.channel.localeCompare(b.channel))
+            .map(({ channel, title, context }) => {
+              return (
+                <tr
+                  key={channel + context}
+                  className={highlight === channel ? styles.active : ''}
+                >
+                  <td>{channel}</td>
+                  <td>{contextName(project, context)}</td>
+                  <td>{title}</td>
+                  <td>
+                    <IconButton
+                      title="Remove mapping"
+                      variant="warning"
+                      onClick={() => {
+                        deleteAction(project, bindingId, channel);
+                        save(`Delete controller mapping for "${name}".`);
+                      }}
                     >
-                      <td>{channel}</td>
-                      <td>Global</td>
-                      <td>{name}</td>
-                      <td>
-                        <IconButton
-                          title="Remove mapping"
-                          variant="warning"
-                          onClick={() => {
-                            deleteAction(project, controllerName, action);
-                            save(`Delete controller mapping for "${name}".`);
-                          }}
-                        >
-                          <BiX />
-                        </IconButton>
-                      </td>
-                    </tr>
-                  );
-                case 'sceneMapping':
-                  return Object.keys(action.action.value.actions).map(
-                    (sceneId) => (
-                      <tr
-                        key={sceneId}
-                        className={highlight === channel ? styles.active : ''}
-                      >
-                        <td>{channel}</td>
-                        <td>{project.scenes[sceneId.toString()].name}</td>
-                        <td>
-                          {getActionDescription(
-                            project,
-                            BigInt(sceneId),
-                            controllerName,
-                            channel,
-                          )}
-                        </td>
-                        <td>
-                          <IconButton
-                            title="Remove mapping"
-                            variant="warning"
-                            onClick={() => {
-                              deleteAction(project, controllerName, action);
-                              save(`Delete controller mapping for "${name}".`);
-                            }}
-                          >
-                            <BiX />
-                          </IconButton>
-                        </td>
-                      </tr>
-                    ),
-                  );
-                default:
-                  throw Error('Unknown action type in controller page.');
-              }
+                      <BiX />
+                    </IconButton>
+                  </td>
+                </tr>
+              );
             })}
         </tbody>
       </table>

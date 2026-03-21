@@ -1,10 +1,11 @@
 use dmx_engine::{midi::calculate_midi_output, project::PROJECT_REF};
 use midir::{MidiInput, MidiInputConnection, MidiOutput, MidiOutputConnection};
 use serde::{Deserialize, Serialize};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use std::sync::Mutex as StdMutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, State};
-use tokio::sync::oneshot;
+use tokio::sync::{oneshot, Mutex};
 
 #[derive(Deserialize, Serialize, Clone)]
 pub struct MidiPortCandidate {
@@ -17,20 +18,143 @@ struct MidiMessage {
     data: Vec<u8>,
 }
 
+#[derive(Serialize, Clone)]
+struct MidiConnectionStatusEvent {
+    controller_name: String,
+    connected: bool,
+}
+
 pub struct MidiState {
-    input_connection: Mutex<Option<MidiInputConnection<AppHandle>>>,
-    output_connection: Arc<Mutex<Option<MidiOutputConnection>>>,
-    app_handle: Mutex<Option<AppHandle>>,
-    shutdown_tx: Mutex<Option<oneshot::Sender<()>>>,
+    input_connection: StdMutex<Option<MidiInputConnection<AppHandle>>>,
+    output_connection: Arc<StdMutex<Option<MidiOutputConnection>>>,
+    app_handle: StdMutex<Option<AppHandle>>,
+    shutdown_tx: StdMutex<Option<oneshot::Sender<()>>>,
+    watcher_cancel_tx: StdMutex<Option<tokio::sync::watch::Sender<bool>>>,
 }
 
 impl MidiState {
     pub fn new(app_handle: AppHandle) -> Self {
         MidiState {
-            input_connection: Mutex::new(None),
-            output_connection: Arc::new(Mutex::new(None)),
-            app_handle: Mutex::new(Some(app_handle)),
-            shutdown_tx: Mutex::new(None),
+            input_connection: StdMutex::new(None),
+            output_connection: Arc::new(StdMutex::new(None)),
+            app_handle: StdMutex::new(Some(app_handle)),
+            shutdown_tx: StdMutex::new(None),
+            watcher_cancel_tx: StdMutex::new(None),
+        }
+    }
+
+    /// Start watching for MIDI device connections and auto-reconnect
+    pub fn start_device_watcher(&self, state: Arc<Mutex<MidiState>>) {
+        let (cancel_tx, cancel_rx) = tokio::sync::watch::channel(false);
+
+        // Store the cancel sender
+        {
+            let mut watcher = self.watcher_cancel_tx.lock().unwrap();
+            *watcher = Some(cancel_tx);
+        }
+
+        // Spawn the watcher task using Tauri's async runtime
+        tauri::async_runtime::spawn(async move {
+            Self::device_watcher_loop(state, cancel_rx).await;
+        });
+
+        log::info!("MIDI device watcher started");
+    }
+
+    async fn device_watcher_loop(
+        state: Arc<Mutex<MidiState>>,
+        mut cancel_rx: tokio::sync::watch::Receiver<bool>,
+    ) {
+        let mut known_devices: Vec<String> = Vec::new();
+
+        loop {
+            // Check for cancellation
+            if *cancel_rx.borrow() {
+                break;
+            }
+
+            // Get current available MIDI inputs
+            if let Ok(current_devices) = list_midi_inputs() {
+                let current_device_names: Vec<String> =
+                    current_devices.iter().map(|d| d.name.clone()).collect();
+
+                // Find newly appeared and disappeared devices
+                let new_devices: Vec<MidiPortCandidate> = current_devices
+                    .into_iter()
+                    .filter(|device| !known_devices.contains(&device.name))
+                    .collect();
+
+                let disappeared_devices: Vec<String> = known_devices
+                    .iter()
+                    .filter(|device| !current_device_names.contains(device))
+                    .cloned()
+                    .collect();
+
+                // Get the last controller name once
+                let last_controller_name = PROJECT_REF
+                    .lock()
+                    .ok()
+                    .and_then(|p| p.controller_mapping.as_ref().map(|cm| cm.last_controller_name.clone()))
+                    .filter(|name| !name.is_empty());
+
+                // Handle disconnections
+                if let Some(ref controller_name) = last_controller_name {
+                    if disappeared_devices.contains(controller_name) {
+                        log::info!("MIDI controller disconnected: {}", controller_name);
+                        Self::emit_connection_status(&state, controller_name, false).await;
+                    }
+                }
+
+                // Handle new connections
+                if let Some(ref controller_name) = last_controller_name {
+                    if let Some(matching_device) = new_devices.iter().find(|d| &d.name == controller_name) {
+                        log::info!("Auto-reconnecting to MIDI controller: {}", controller_name);
+
+                        let result = {
+                            let midi_state = state.lock().await;
+                            connect_midi_internal(&midi_state, matching_device.clone())
+                        }; // Lock dropped here
+
+                        match result {
+                            Ok(_) => {
+                                Self::emit_connection_status(&state, controller_name, true).await;
+                            }
+                            Err(e) => {
+                                log::error!("Failed to auto-reconnect to MIDI controller '{}': {}", controller_name, e);
+                            }
+                        }
+                    }
+                }
+
+                known_devices = current_device_names;
+            }
+
+            // Sleep for a short interval before checking again
+            tokio::select! {
+                _ = tokio::time::sleep(tokio::time::Duration::from_secs(1)) => {},
+                _ = cancel_rx.changed() => {
+                    if *cancel_rx.borrow() {
+                        break;
+                    }
+                }
+            }
+        }
+
+        log::info!("MIDI device watcher loop exited");
+    }
+
+    async fn emit_connection_status(state: &Arc<Mutex<MidiState>>, controller_name: &str, connected: bool) {
+        let midi_state = state.lock().await;
+        if let Ok(app_handle_guard) = midi_state.app_handle.lock() {
+            if let Some(app_handle) = app_handle_guard.as_ref() {
+                let event = MidiConnectionStatusEvent {
+                    controller_name: controller_name.to_string(),
+                    connected,
+                };
+                if let Err(e) = app_handle.emit("midi-connection-status", &event) {
+                    log::error!("Failed to emit midi-connection-status event: {}", e);
+                }
+            }
         }
     }
 }
@@ -51,10 +175,10 @@ pub fn list_midi_inputs() -> Result<Vec<MidiPortCandidate>, String> {
         .collect()
 }
 
-#[tauri::command]
-pub fn connect_midi(state: State<MidiState>, candidate: MidiPortCandidate) -> Result<(), String> {
+/// Internal connection function used by both the command and the watcher
+fn connect_midi_internal(state: &MidiState, candidate: MidiPortCandidate) -> Result<(), String> {
     // First disconnect any existing connections
-    disconnect_midi(state.inner())?;
+    disconnect_midi(state)?;
 
     // Create MIDI input and find the port
     let midi_input = MidiInput::new("DMX Controller App MIDI Input").map_err(|e| e.to_string())?;
@@ -152,7 +276,13 @@ pub fn connect_midi(state: State<MidiState>, candidate: MidiPortCandidate) -> Re
     Ok(())
 }
 
-fn output_midi_state(output_conn: &Arc<Mutex<Option<MidiOutputConnection>>>) {
+#[tauri::command]
+pub async fn connect_midi(state: State<'_, Arc<Mutex<MidiState>>>, candidate: MidiPortCandidate) -> Result<(), String> {
+    let midi_state = state.lock().await;
+    connect_midi_internal(&midi_state, candidate)
+}
+
+fn output_midi_state(output_conn: &Arc<StdMutex<Option<MidiOutputConnection>>>) {
     let t = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
