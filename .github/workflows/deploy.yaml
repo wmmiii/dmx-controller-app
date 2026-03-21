@@ -53,6 +53,16 @@ jobs:
         run: |
           rm web/vars.css
           cp public/vars.css web/vars.css
+          rm web/icon.png
+          cp src-tauri/icons/icon.png web/icon.png
+
+      - name: Add cache-busting to assets
+        run: |
+          # Use short git SHA for cache busting
+          CACHE_BUST=$(git rev-parse --short HEAD)
+          sed -i "s/vars.css/vars.css?v=${CACHE_BUST}/g" web/index.html
+          sed -i "s/style.css/style.css?v=${CACHE_BUST}/g" web/index.html
+          sed -i "s/icon.png/icon.png?v=${CACHE_BUST}/g" web/index.html
 
       - name: Upload pages
         uses: actions/upload-pages-artifact@v3

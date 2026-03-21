@@ -59,13 +59,13 @@ This pattern exists in:
   - Include screenshots or demo content if available
   - Notes: Created `web/` directory with landing page. Includes app description with supported protocols (Serial DMX, sACN, WLED), 512-channel universes, GDTF support, beat detection, MIDI control. Added 5-step "Getting Started" guide for running a live show. Uses shared CSS variables via `pnpm run css-vars:build` (generated from `src/_vars.scss`). Icon symlinked. Footer includes "Made with ❤️ by Will Martin" and "free forever" note. Updated CLAUDE.md with instructions for agents to keep website copy consistent.
 
-- [ ] **1.2** Update `.github/workflows/deploy.yaml` to deploy the landing page instead of the full app
+- [x] **1.2** Update `.github/workflows/deploy.yaml` to deploy the landing page instead of the full app
   - Change the build step to build/copy the landing page
   - Update artifact upload path
-  - Notes: _Agent should add notes here_
+  - Notes: Workflow now deploys `web/` directory. Added symlink resolution for `icon.png` (in addition to existing `vars.css`). Added cache-busting via git SHA query strings on CSS and asset links to prevent stale cached assets from old Vite deployment.
 
-- [ ] **1.3** Consider adding a redirect or message for users who visit the old app URL
-  - Notes: _Agent should add notes here_
+- [x] **1.3** Consider adding a redirect or message for users who visit the old app URL
+  - Notes: The landing page at the same URL now explains the desktop app and provides download links. Cache-busting ensures returning users see the new content rather than cached WASM app.
 
 ### Considerations
 
@@ -343,9 +343,10 @@ _Agents should add questions or blockers here as they encounter them_
 
 _Agents should log major completions here with dates_
 
-| Date       | Phase | Task | Agent  | Notes                                                                                                              |
-| ---------- | ----- | ---- | ------ | ------------------------------------------------------------------------------------------------------------------ |
-| 2026-03-21 | 1     | 1.1  | Claude | Created `web/` directory with landing page, shared CSS vars build system, Getting Started guide, updated CLAUDE.md |
+| Date       | Phase | Task     | Agent  | Notes                                                                                                              |
+| ---------- | ----- | -------- | ------ | ------------------------------------------------------------------------------------------------------------------ |
+| 2026-03-21 | 1     | 1.1      | Claude | Created `web/` directory with landing page, shared CSS vars build system, Getting Started guide, updated CLAUDE.md |
+| 2026-03-21 | 1     | 1.2, 1.3 | Claude | Fixed deploy workflow: resolved icon.png symlink, added cache-busting with git SHA for all assets                  |
 
 ---
 
