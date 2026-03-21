@@ -107,3 +107,22 @@ This project uses **Vite** as its primary build system for the frontend. Key com
 - Effects can target individual fixtures or groups
 - Timing can be beat-synchronized or time-based
 - Color palettes provide dynamic color sources that interpolate during transitions
+
+## Code Style
+
+**Minimize Visibility and Mutability:**
+
+When writing or modifying code, prefer the most restrictive access level and avoid unnecessary mutability:
+
+_TypeScript:_
+
+- Use `private` for fields and methods not needed outside the class (prefer `private` over `#private`)
+- Use `readonly` for fields that should not be reassigned after initialization
+- Only export functions, classes, and types that are part of the module's public API
+
+_Rust:_
+
+- Keep items private by default; only add `pub`, `pub(crate)`, or `pub(super)` when needed
+- Prefer immutable bindings (`let`) over mutable (`let mut`) unless mutation is required
+
+This guidance applies only to code you are actively modifying—do not refactor unrelated code to adjust visibility. Run `pnpm run test` after changes to verify visibility restrictions didn't break anything.

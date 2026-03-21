@@ -35,7 +35,7 @@ import { getActivePatch } from './util/projectUtils';
 
 export default function Index(): JSX.Element {
   const { port, connect, disconnect } = useContext(SerialContext);
-  const { controllerName, connect: connectMidi } =
+  const { connectedDevices, connect: connectMidi } =
     useContext(ControllerContext);
   const { project, downloadProject, openProject, lastOperation } =
     useContext(ProjectContext);
@@ -96,7 +96,7 @@ export default function Index(): JSX.Element {
                   onSelect: () => navigate('/patch'),
                 },
                 {
-                  title: 'Midi Inspector',
+                  title: 'MIDI',
                   onSelect: () => navigate('/controller'),
                 },
                 {
@@ -176,7 +176,7 @@ export default function Index(): JSX.Element {
         <ControllerButton
           title="Midi Controller"
           iconOnly={true}
-          midiState={controllerName ? 'active' : 'inactive'}
+          midiState={connectedDevices.length > 0 ? 'active' : 'inactive'}
           onClick={connectMidi}
         />
       </header>

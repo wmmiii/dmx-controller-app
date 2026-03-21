@@ -41,7 +41,7 @@ interface TileProps {
 
 export function Tile({ tileId, tile, onSelect, x, y, priority }: TileProps) {
   const { project, save } = useContext(ProjectContext);
-  const { bindingId } = useContext(ControllerContext);
+  const { connectedDevices } = useContext(ControllerContext);
   const { palette } = useContext(PaletteContext);
   const activeRef = createRef<HTMLDivElement>();
 
@@ -68,23 +68,17 @@ export function Tile({ tileId, tile, onSelect, x, y, priority }: TileProps) {
   );
 
   const hasControllerMapping = useMemo(() => {
-    if (bindingId) {
-      const hasMapping = hasAction(
-        project,
-        bindingId,
-        create(InputBindingSchema, {
-          inputType: InputType.CONTINUOUS,
-          action: {
-            case: 'tileStrength',
-            value: { tileId },
-          },
-        }),
-      );
-      return hasMapping;
-    } else {
-      return false;
-    }
-  }, [project, bindingId, tileId]);
+    const binding = create(InputBindingSchema, {
+      inputType: InputType.CONTINUOUS,
+      action: {
+        case: 'tileStrength',
+        value: { tileId },
+      },
+    });
+    return connectedDevices.some((d) =>
+      hasAction(project, d.bindingId, binding),
+    );
+  }, [project, connectedDevices, tileId]);
 
   const background = useMemo(() => {
     if (details.colors.length === 0) {

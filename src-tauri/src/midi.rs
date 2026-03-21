@@ -1,6 +1,7 @@
 use dmx_engine::{midi::calculate_midi_output, project::PROJECT_REF};
 use midir::{MidiInput, MidiInputConnection, MidiOutput, MidiOutputConnection};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::Mutex as StdMutex;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -15,6 +16,7 @@ pub struct MidiPortCandidate {
 
 #[derive(Serialize, Clone)]
 struct MidiMessage {
+    device_name: String,
     data: Vec<u8>,
 }
 
@@ -24,21 +26,24 @@ struct MidiConnectionStatusEvent {
     connected: bool,
 }
 
-pub struct MidiState {
-    input_connection: StdMutex<Option<MidiInputConnection<AppHandle>>>,
+/// Per-device connection state.
+struct DeviceConnection {
+    input_connection: MidiInputConnection<AppHandle>,
     output_connection: Arc<StdMutex<Option<MidiOutputConnection>>>,
+    shutdown_tx: Option<oneshot::Sender<()>>,
+}
+
+pub struct MidiState {
+    connections: StdMutex<HashMap<String, DeviceConnection>>,
     app_handle: StdMutex<Option<AppHandle>>,
-    shutdown_tx: StdMutex<Option<oneshot::Sender<()>>>,
     watcher_cancel_tx: StdMutex<Option<tokio::sync::watch::Sender<bool>>>,
 }
 
 impl MidiState {
     pub fn new(app_handle: AppHandle) -> Self {
         MidiState {
-            input_connection: StdMutex::new(None),
-            output_connection: Arc::new(StdMutex::new(None)),
+            connections: StdMutex::new(HashMap::new()),
             app_handle: StdMutex::new(Some(app_handle)),
-            shutdown_tx: StdMutex::new(None),
             watcher_cancel_tx: StdMutex::new(None),
         }
     }
@@ -90,25 +95,41 @@ impl MidiState {
                     .cloned()
                     .collect();
 
-                // Get the last controller name once
-                let last_controller_name = PROJECT_REF
+                // Use controller_to_binding keys as the auto-reconnect allowlist
+                let known_controller_names: Vec<String> = PROJECT_REF
                     .lock()
                     .ok()
-                    .and_then(|p| p.controller_mapping.as_ref().map(|cm| cm.last_controller_name.clone()))
-                    .filter(|name| !name.is_empty());
+                    .and_then(|p| {
+                        p.controller_mapping
+                            .as_ref()
+                            .map(|cm| cm.controller_to_binding.keys().cloned().collect())
+                    })
+                    .unwrap_or_default();
 
                 // Handle disconnections
-                if let Some(ref controller_name) = last_controller_name {
+                for controller_name in &known_controller_names {
                     if disappeared_devices.contains(controller_name) {
                         log::info!("MIDI controller disconnected: {}", controller_name);
+
+                        // Remove the connection from state
+                        {
+                            let midi_state = state.lock().await;
+                            disconnect_device(&midi_state, controller_name);
+                        }
+
                         Self::emit_connection_status(&state, controller_name, false).await;
                     }
                 }
 
-                // Handle new connections
-                if let Some(ref controller_name) = last_controller_name {
-                    if let Some(matching_device) = new_devices.iter().find(|d| &d.name == controller_name) {
-                        log::info!("Auto-reconnecting to MIDI controller: {}", controller_name);
+                // Handle new connections - auto-reconnect any known device
+                for controller_name in &known_controller_names {
+                    if let Some(matching_device) =
+                        new_devices.iter().find(|d| &d.name == controller_name)
+                    {
+                        log::info!(
+                            "Auto-reconnecting to MIDI controller: {}",
+                            controller_name
+                        );
 
                         let result = {
                             let midi_state = state.lock().await;
@@ -120,7 +141,11 @@ impl MidiState {
                                 Self::emit_connection_status(&state, controller_name, true).await;
                             }
                             Err(e) => {
-                                log::error!("Failed to auto-reconnect to MIDI controller '{}': {}", controller_name, e);
+                                log::error!(
+                                    "Failed to auto-reconnect to MIDI controller '{}': {}",
+                                    controller_name,
+                                    e
+                                );
                             }
                         }
                     }
@@ -143,7 +168,11 @@ impl MidiState {
         log::info!("MIDI device watcher loop exited");
     }
 
-    async fn emit_connection_status(state: &Arc<Mutex<MidiState>>, controller_name: &str, connected: bool) {
+    async fn emit_connection_status(
+        state: &Arc<Mutex<MidiState>>,
+        controller_name: &str,
+        connected: bool,
+    ) {
         let midi_state = state.lock().await;
         if let Ok(app_handle_guard) = midi_state.app_handle.lock() {
             if let Some(app_handle) = app_handle_guard.as_ref() {
@@ -161,7 +190,8 @@ impl MidiState {
 
 #[tauri::command]
 pub fn list_midi_inputs() -> Result<Vec<MidiPortCandidate>, String> {
-    let midi_input = MidiInput::new("DMX Controller App MIDI Input").map_err(|e| e.to_string())?;
+    let midi_input =
+        MidiInput::new("DMX Controller App MIDI Input").map_err(|e| e.to_string())?;
 
     midi_input
         .ports()
@@ -175,13 +205,18 @@ pub fn list_midi_inputs() -> Result<Vec<MidiPortCandidate>, String> {
         .collect()
 }
 
-/// Internal connection function used by both the command and the watcher
-fn connect_midi_internal(state: &MidiState, candidate: MidiPortCandidate) -> Result<(), String> {
-    // First disconnect any existing connections
-    disconnect_midi(state)?;
+/// Internal connection function used by both the command and the watcher.
+/// Adds a device connection without closing other existing connections.
+fn connect_midi_internal(
+    state: &MidiState,
+    candidate: MidiPortCandidate,
+) -> Result<(), String> {
+    // Disconnect this specific device if already connected
+    disconnect_device(state, &candidate.name);
 
     // Create MIDI input and find the port
-    let midi_input = MidiInput::new("DMX Controller App MIDI Input").map_err(|e| e.to_string())?;
+    let midi_input =
+        MidiInput::new("DMX Controller App MIDI Input").map_err(|e| e.to_string())?;
 
     let input_ports = midi_input.ports();
     let input_port = input_ports
@@ -204,12 +239,16 @@ fn connect_midi_internal(state: &MidiState, candidate: MidiPortCandidate) -> Res
         .ok_or("App handle not initialized")?
         .clone();
 
+    // Capture device name for the MIDI callback
+    let device_name_for_callback = candidate.name.clone();
+
     let input_connection = midi_input
         .connect(
             &input_port,
             "dmx-controller-input",
-            |_timestamp, message, app_handle| {
+            move |_timestamp, message, app_handle| {
                 let midi_msg = MidiMessage {
+                    device_name: device_name_for_callback.clone(),
                     data: message.to_vec(),
                 };
 
@@ -221,14 +260,12 @@ fn connect_midi_internal(state: &MidiState, candidate: MidiPortCandidate) -> Res
         )
         .map_err(|e| e.to_string())?;
 
-    *state
-        .input_connection
-        .lock()
-        .map_err(|e| format!("Failed to lock input connection: {}", e))? = Some(input_connection);
-
     // Try to find and connect to matching output port
     let midi_output =
         MidiOutput::new("DMX Controller App MIDI Output").map_err(|e| e.to_string())?;
+
+    let output_connection: Arc<StdMutex<Option<MidiOutputConnection>>> =
+        Arc::new(StdMutex::new(None));
 
     let output_ports = midi_output.ports();
     if let Some(output_port) = output_ports.iter().find(|p| {
@@ -238,20 +275,20 @@ fn connect_midi_internal(state: &MidiState, candidate: MidiPortCandidate) -> Res
             .unwrap_or(false)
     }) {
         match midi_output.connect(output_port, "dmx-controller-output") {
-            Ok(output_connection) => {
-                let mut conn = state
-                    .output_connection
+            Ok(conn) => {
+                let mut out = output_connection
                     .lock()
                     .map_err(|e| format!("Failed to lock output connection: {}", e))?;
-                *conn = Some(output_connection);
+                *out = Some(conn);
             }
             Err(_) => (),
         }
     }
 
-    // Spawn MIDI output loop
+    // Spawn MIDI output loop for this device
     let (shutdown_tx, mut shutdown_rx) = oneshot::channel();
-    let output_conn_clone = Arc::clone(&state.output_connection);
+    let output_conn_clone = Arc::clone(&output_connection);
+    let device_name_for_output = candidate.name.clone();
 
     tauri::async_runtime::spawn(async move {
         let mut interval = tokio::time::interval(tokio::time::Duration::from_millis(33));
@@ -259,7 +296,7 @@ fn connect_midi_internal(state: &MidiState, candidate: MidiPortCandidate) -> Res
         loop {
             tokio::select! {
                 _ = interval.tick() => {
-                    output_midi_state(&output_conn_clone);
+                    output_midi_state_for_device(&device_name_for_output, &output_conn_clone);
                 }
                 _ = &mut shutdown_rx => {
                     break;
@@ -268,46 +305,82 @@ fn connect_midi_internal(state: &MidiState, candidate: MidiPortCandidate) -> Res
         }
     });
 
-    *state
-        .shutdown_tx
+    // Store the device connection
+    let device_conn = DeviceConnection {
+        input_connection,
+        output_connection,
+        shutdown_tx: Some(shutdown_tx),
+    };
+
+    let mut connections = state
+        .connections
         .lock()
-        .map_err(|e| format!("Failed to lock shutdown_tx: {}", e))? = Some(shutdown_tx);
+        .map_err(|e| format!("Failed to lock connections: {}", e))?;
+    connections.insert(candidate.name, device_conn);
 
     Ok(())
 }
 
 #[tauri::command]
-pub async fn connect_midi(state: State<'_, Arc<Mutex<MidiState>>>, candidate: MidiPortCandidate) -> Result<(), String> {
+pub async fn connect_midi(
+    state: State<'_, Arc<Mutex<MidiState>>>,
+    candidate: MidiPortCandidate,
+) -> Result<(), String> {
     let midi_state = state.lock().await;
     connect_midi_internal(&midi_state, candidate)
 }
 
-fn output_midi_state(output_conn: &Arc<StdMutex<Option<MidiOutputConnection>>>) {
+#[tauri::command]
+pub async fn disconnect_midi(
+    state: State<'_, Arc<Mutex<MidiState>>>,
+    device_name: String,
+) -> Result<(), String> {
+    let midi_state = state.lock().await;
+    disconnect_device(&midi_state, &device_name);
+    Ok(())
+}
+
+/// Disconnect a single device by name, leaving other devices connected.
+fn disconnect_device(state: &MidiState, device_name: &str) {
+    let mut connections = match state.connections.lock() {
+        Ok(c) => c,
+        Err(e) => {
+            log::error!("Failed to lock connections: {}", e);
+            return;
+        }
+    };
+
+    if let Some(mut device_conn) = connections.remove(device_name) {
+        // Signal the output loop to stop
+        if let Some(tx) = device_conn.shutdown_tx.take() {
+            let _ = tx.send(());
+        }
+        // Dropping input_connection and output_connection closes them
+    }
+}
+
+/// Output MIDI state for a specific device.
+fn output_midi_state_for_device(
+    device_name: &str,
+    output_conn: &Arc<StdMutex<Option<MidiOutputConnection>>>,
+) {
     let t = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
         .as_millis() as u64;
 
     if let Ok(project) = PROJECT_REF.lock() {
-        let controller_name = project
-            .controller_mapping
-            .as_ref()
-            .map(|cm| cm.last_controller_name.as_str())
-            .unwrap_or("");
+        let midi_output = calculate_midi_output(&project, device_name, t);
 
-        if !controller_name.is_empty() {
-            let midi_output = calculate_midi_output(&project, controller_name, t);
+        if let Ok(mut output_conn) = output_conn.lock() {
+            if let Some(connection) = output_conn.as_mut() {
+                for (channel, value) in midi_output {
+                    let channel_address: Vec<u8> = channel
+                        .split(", ")
+                        .map(|s| s.parse().expect("Parse error"))
+                        .collect();
 
-            if let Ok(mut output_conn) = output_conn.lock() {
-                if let Some(connection) = output_conn.as_mut() {
-                    for (channel, value) in midi_output {
-                        let channel_address: Vec<u8> = channel
-                            .split(", ")
-                            .map(|s| s.parse().expect("Parse error"))
-                            .collect();
-
-                        output_value(connection, channel_address, value);
-                    }
+                    output_value(connection, channel_address, value);
                 }
             }
         }
@@ -323,33 +396,4 @@ pub fn output_value(conn: &mut MidiOutputConnection, channel: Vec<u8>, value: f6
         let lsb = ((value * 127.0).fract() * 127.0).floor() as u8;
         let _ = conn.send(&[channel[0], channel[1] + 32, lsb]);
     }
-}
-
-pub fn disconnect_midi(state: &MidiState) -> Result<(), String> {
-    // Shutdown the MIDI output loop
-    let mut shutdown_tx = state
-        .shutdown_tx
-        .lock()
-        .map_err(|e| format!("Failed to lock shutdown_tx: {}", e))?;
-    if let Some(tx) = shutdown_tx.take() {
-        let _ = tx.send(()); // Signal shutdown, ignore if receiver already dropped
-    }
-
-    // Disconnect input
-    let mut input_conn = state
-        .input_connection
-        .lock()
-        .map_err(|e| format!("Failed to lock input connection: {}", e))?;
-    if input_conn.is_some() {
-        *input_conn = None; // Dropping the connection closes it
-    }
-
-    // Disconnect output
-    let mut output_conn = state
-        .output_connection
-        .lock()
-        .map_err(|e| format!("Failed to lock output connection: {}", e))?;
-    *output_conn = None; // Dropping the connection closes it
-
-    Ok(())
 }

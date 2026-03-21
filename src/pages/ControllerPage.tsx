@@ -1,7 +1,7 @@
 import { JSX, useContext, useEffect, useState } from 'react';
 
 import { Project } from '@dmx-controller/proto/project_pb';
-import { BiX } from 'react-icons/bi';
+import { BiTrash } from 'react-icons/bi';
 import { ControllerButton, IconButton } from '../components/Button';
 import {
   ControlCommandType,
@@ -19,10 +19,11 @@ import styles from './ControllerPage.module.scss';
 
 export function ControllerPage(): JSX.Element {
   const { project, save } = useContext(ProjectContext);
-  const { controllerName, bindingId, connect, addListener, removeListener } =
+  const { connectedDevices, connect, disconnect, addListener, removeListener } =
     useContext(ControllerContext);
 
   const [lastPressed, setLastPressed] = useState<{
+    deviceName: string;
     channel: ControllerChannel;
     value: number;
     cct: ControlCommandType;
@@ -33,11 +34,14 @@ export function ControllerPage(): JSX.Element {
   useEffect(() => {
     const listener = (
       _project: Project,
+      bindingId: bigint,
       channel: ControllerChannel,
       value: number,
       cct: ControlCommandType,
     ) => {
+      const device = connectedDevices.find((d) => d.bindingId === bindingId);
       setLastPressed({
+        deviceName: device?.name ?? 'Unknown',
         channel,
         value,
         cct,
@@ -53,113 +57,144 @@ export function ControllerPage(): JSX.Element {
     return () => removeListener(listener);
   });
 
-  if (!controllerName || !bindingId) {
-    return (
-      <div className={styles.wrapper}>
-        <ControllerButton
-          title="Connect to controller"
-          midiState="inactive"
-          onClick={connect}
-        />
-      </div>
-    );
-  }
-
-  // Collect all bindings (global and scene-specific)
+  // Collect all bindings from all connected devices
   const allBindings: Array<{
+    deviceName: string;
+    bindingId: bigint;
     title: string | null;
     channel: string;
     context: BindingContext;
   }> = [];
 
-  // Add global bindings
-  const globalBindings =
-    project.livePageControllerBindings?.bindings[bindingId.toString()];
-  if (globalBindings) {
-    Object.keys(globalBindings.bindings).forEach((channel) => {
-      allBindings.push({
-        title: getActionDescription(project, 0n, bindingId, channel),
-        channel,
-        context: { type: 'live_page' },
-      });
-    });
-  }
-
-  for (const [sceneId, scene] of Object.entries(project.scenes)) {
-    if (scene) {
-      const sceneBindings =
-        scene.controllerBindings?.bindings[bindingId.toString()];
-      if (sceneBindings) {
-        Object.keys(sceneBindings.bindings).forEach((channel) => {
-          allBindings.push({
-            title: getActionDescription(
-              project,
-              BigInt(sceneId),
-              bindingId,
-              channel,
-            ),
-            channel,
-            context: {
-              type: 'scene',
-              sceneId: BigInt(sceneId),
-            },
-          });
+  for (const device of connectedDevices) {
+    // Add global bindings
+    const globalBindings =
+      project.livePageControllerBindings?.bindings[device.bindingId.toString()];
+    if (globalBindings) {
+      Object.keys(globalBindings.bindings).forEach((channel) => {
+        allBindings.push({
+          deviceName: device.name,
+          bindingId: device.bindingId,
+          title: getActionDescription(project, 0n, device.bindingId, channel),
+          channel,
+          context: { type: 'live_page' },
         });
+      });
+    }
+
+    for (const [sceneId, scene] of Object.entries(project.scenes)) {
+      if (scene) {
+        const sceneBindings =
+          scene.controllerBindings?.bindings[device.bindingId.toString()];
+        if (sceneBindings) {
+          Object.keys(sceneBindings.bindings).forEach((channel) => {
+            allBindings.push({
+              deviceName: device.name,
+              bindingId: device.bindingId,
+              title: getActionDescription(
+                project,
+                BigInt(sceneId),
+                device.bindingId,
+                channel,
+              ),
+              channel,
+              context: {
+                type: 'scene',
+                sceneId: BigInt(sceneId),
+              },
+            });
+          });
+        }
       }
     }
   }
 
   return (
     <div className={styles.wrapper}>
-      <h2>{controllerName}</h2>
+      <ControllerButton
+        title="Connect a controller"
+        midiState={connectedDevices.length > 0 ? 'active' : 'inactive'}
+        onClick={connect}
+      />
+      {connectedDevices.length > 0 ? (
+        <div>
+          <h3>Connected Devices</h3>
+          {connectedDevices.map((device) => (
+            <div key={device.name}>
+              <strong>{device.name}</strong>
+              <IconButton
+                title={`Disconnect ${device.name}`}
+                variant="warning"
+                onClick={() => disconnect(device.name)}
+              >
+                <BiTrash />
+              </IconButton>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <>No connected devices</>
+      )}
       <div>
-        Last input:&nbsp;
+        <h3>Last input</h3>
         {lastPressed && (
           <>
-            {lastPressed.channel} {lastPressed.cct && `(${lastPressed.cct})`}
+            [{lastPressed.deviceName}] {lastPressed.channel}{' '}
+            {lastPressed.cct && `(${lastPressed.cct})`}
             &nbsp;
             {lastPressed.value}
           </>
         )}
       </div>
-      <table className={styles.mappings}>
-        <thead>
-          <tr>
-            <th>MIDI Channel</th>
-            <th>Location</th>
-            <th>Description</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {allBindings
-            .sort((a, b) => a.channel.localeCompare(b.channel))
-            .map(({ channel, title, context }) => {
-              return (
-                <tr
-                  key={channel + context}
-                  className={highlight === channel ? styles.active : ''}
-                >
-                  <td>{channel}</td>
-                  <td>{contextName(project, context)}</td>
-                  <td>{title}</td>
-                  <td>
-                    <IconButton
-                      title="Remove mapping"
-                      variant="warning"
-                      onClick={() => {
-                        deleteAction(project, bindingId, channel);
-                        save(`Delete controller mapping for "${name}".`);
-                      }}
+      <div>
+        <h3>Bindings</h3>
+        {allBindings.length > 0 ? (
+          <table className={styles.mappings}>
+            <thead>
+              <tr>
+                <th>Device</th>
+                <th>MIDI Channel</th>
+                <th>Location</th>
+                <th>Description</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {allBindings
+                .sort((a, b) => a.channel.localeCompare(b.channel))
+                .map(({ deviceName, bindingId, channel, title, context }) => {
+                  return (
+                    <tr
+                      key={`${bindingId}-${channel}-${context.type}`}
+                      className={highlight === channel ? styles.active : ''}
                     >
-                      <BiX />
-                    </IconButton>
-                  </td>
-                </tr>
-              );
-            })}
-        </tbody>
-      </table>
+                      <td>{deviceName}</td>
+                      <td>{channel}</td>
+                      <td>{contextName(project, context)}</td>
+                      <td>{title}</td>
+                      <td>
+                        <IconButton
+                          title="Remove mapping"
+                          variant="warning"
+                          onClick={() => {
+                            deleteAction(project, bindingId, channel);
+                            save(
+                              `Delete controller mapping for "${deviceName}".`,
+                            );
+                          }}
+                        >
+                          <BiTrash />
+                        </IconButton>
+                      </td>
+                    </tr>
+                  );
+                })}
+            </tbody>
+          </table>
+        ) : (
+          <>No bindings</>
+        )}
+      </div>
     </div>
   );
 }

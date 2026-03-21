@@ -394,15 +394,15 @@ export function deleteBindings(
 }
 
 /**
- * Returns all channels that have the given action bound.
- * Returns array of {channel, context} pairs.
+ * Returns all channels across all controllers that have the given action bound.
+ * Returns array of {bindingId, channel, context} triples.
  */
 export function getAllBindingsForAction(
   project: Project,
-  bindingId: bigint,
   binding: InputBinding,
 ) {
   const results: Array<{
+    bindingId: bigint;
     channel: ControllerChannel;
     context: BindingContext;
   }> = [];
@@ -421,12 +421,17 @@ export function getAllBindingsForAction(
     if (!bindingsMap) {
       continue;
     }
-    const bindings = bindingsMap[bindingId.toString()]?.bindings;
 
-    if (bindings) {
-      for (const [channel, existingBinding] of Object.entries(bindings)) {
+    for (const [id, controllerBindings] of Object.entries(bindingsMap)) {
+      if (!controllerBindings?.bindings) {
+        continue;
+      }
+      for (const [channel, existingBinding] of Object.entries(
+        controllerBindings.bindings,
+      )) {
         if (equals(InputBindingSchema, existingBinding, binding)) {
           results.push({
+            bindingId: BigInt(id),
             channel,
             context,
           });
