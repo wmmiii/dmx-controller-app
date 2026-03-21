@@ -17,13 +17,13 @@ The browser-WASM approach is no longer feasible due to limitations with Web APIs
 
 ### Key Directories
 
-| Directory                | Purpose                                                | Fate                       |
-| ------------------------ | ------------------------------------------------------ | -------------------------- |
-| `src/wasm-engine/`       | WASM bindings wrapping `src-engine`                    | **DELETE**                 |
-| `src-engine/`            | Shared Rust rendering engine                           | **KEEP** (Tauri uses this) |
-| `src-tauri/`             | Tauri backend with hardware I/O                        | **KEEP**                   |
-| `src/system_interfaces/` | Frontend abstraction layer with `isTauri` multiplexing | **SIMPLIFY**               |
-| `pkg/`                   | WASM build output directory                            | **DELETE**                 |
+| Directory                | Purpose                                                | Fate                          |
+| ------------------------ | ------------------------------------------------------ | ----------------------------- |
+| `src/wasm-engine/`       | WASM bindings wrapping `src-engine`                    | **DEPRECATE** (add CLAUDE.md) |
+| `src-engine/`            | Shared Rust rendering engine                           | **KEEP** (Tauri uses this)    |
+| `src-tauri/`             | Tauri backend with hardware I/O                        | **KEEP**                      |
+| `src/system_interfaces/` | Frontend abstraction layer with `isTauri` multiplexing | **SIMPLIFY**                  |
+| `pkg/`                   | WASM build output directory                            | **DELETE** (generated output) |
 
 ### Multiplexing Pattern
 
@@ -80,18 +80,22 @@ This pattern exists in:
 
 ---
 
-## Phase 2: Remove WASM Engine Code
+## Phase 2: Deprecate WASM Engine Code
 
-**Goal**: Delete the WASM engine crate and all related build infrastructure.
+**Goal**: Mark WASM engine code as deprecated and remove it from build infrastructure, keeping the source code for reference.
+
+> **Note**: We are NOT deleting `src/wasm-engine/`. Instead, we're adding a deprecation notice via CLAUDE.md and removing the code from the build/import system. This preserves the source code for historical reference while ensuring it's not used. The `pkg/` directory is generated output and can be deleted.
 
 ### Tasks
 
-- [ ] **2.1** Delete `src/wasm-engine/` directory entirely
-  - This contains `Cargo.toml`, `src/lib.rs`, and WASM bindings
+- [ ] **2.1** Add deprecation CLAUDE.md to `src/wasm-engine/`
+  - Create `src/wasm-engine/CLAUDE.md` with clear deprecation notice
+  - Instruct agents not to import from this directory
+  - Instruct agents not to use code style from this directory as precedent
   - Notes: _Agent should add notes here_
 
 - [ ] **2.2** Delete `pkg/` directory (WASM build output)
-  - May be gitignored but verify
+  - This is generated output, safe to delete
   - Notes: _Agent should add notes here_
 
 - [ ] **2.3** Remove WASM build step from `package.json`
@@ -115,11 +119,15 @@ This pattern exists in:
 
 - The `src-engine/` crate should remain untouched - it's shared with Tauri
 - The `getrandom` crate in `src-engine` has a `wasm_js` feature that may no longer be needed after this change, but leave it for now to avoid breaking Tauri
+- `src/wasm-engine/` source code is being kept for historical reference, not deleted
+
+### Files to Create
+
+- `src/wasm-engine/CLAUDE.md` (deprecation notice)
 
 ### Files to Delete
 
-- `src/wasm-engine/` (entire directory)
-- `pkg/` (entire directory, if exists)
+- `pkg/` (entire directory, if exists - this is generated output)
 
 ### Files to Modify
 
@@ -305,7 +313,7 @@ export const someFunction = tauriImpl;
 ## Dependency Graph
 
 ```
-Phase 1 (GitHub Pages)     Phase 2 (Remove WASM)
+Phase 1 (GitHub Pages)     Phase 2 (Deprecate WASM)
          \                      /
           \                    /
            v                  v
