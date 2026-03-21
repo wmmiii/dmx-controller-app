@@ -88,32 +88,32 @@ This pattern exists in:
 
 ### Tasks
 
-- [ ] **2.1** Add deprecation CLAUDE.md to `src/wasm-engine/`
+- [x] **2.1** Add deprecation CLAUDE.md to `src/wasm-engine/`
   - Create `src/wasm-engine/CLAUDE.md` with clear deprecation notice
   - Instruct agents not to import from this directory
   - Instruct agents not to use code style from this directory as precedent
-  - Notes: _Agent should add notes here_
+  - Notes: Created CLAUDE.md with deprecation warning, instructions for agents to not import or use as precedent, and pointers to src-engine/ and src-tauri/ as authoritative code.
 
-- [ ] **2.2** Delete `pkg/` directory (WASM build output)
+- [x] **2.2** Delete `pkg/` directory (WASM build output)
   - This is generated output, safe to delete
-  - Notes: _Agent should add notes here_
+  - Notes: Deleted the entire pkg/ directory containing wasm_engine.js, wasm_engine.d.ts, wasm_engine_bg.wasm, and related files.
 
-- [ ] **2.3** Remove WASM build step from `package.json`
+- [x] **2.3** Remove WASM build step from `package.json`
   - Remove: `"wasm:build": "cd src/wasm-engine && wasm-pack build --target web --out-dir ../../pkg"`
   - Update `"build"` script to remove `pnpm run wasm:build` step
-  - Notes: _Agent should add notes here_
+  - Notes: Removed wasm:build script. Updated dev and build scripts to remove wasm:build dependency.
 
-- [ ] **2.4** Remove WASM import alias from `vite.config.ts`
+- [x] **2.4** Remove WASM import alias from `vite.config.ts`
   - Remove: `'@dmx-controller/wasm-engine'` alias pointing to `./pkg`
-  - Notes: _Agent should add notes here_
+  - Notes: Removed the @dmx-controller/wasm-engine alias. Also removed pkg/ from the watch.ignored list since the directory no longer exists.
 
-- [ ] **2.5** Update root `Cargo.toml` workspace members (if applicable)
+- [x] **2.5** Update root `Cargo.toml` workspace members (if applicable)
   - Remove `wasm-engine` from workspace members list
-  - Notes: _Agent should add notes here_
+  - Notes: N/A - No root Cargo.toml exists. The wasm-engine has its own Cargo.toml in src/wasm-engine/ which remains for historical reference.
 
-- [ ] **2.6** Remove any WASM-related dependencies from root project
+- [x] **2.6** Remove any WASM-related dependencies from root project
   - Check for `wasm-pack` in dev dependencies or tooling
-  - Notes: _Agent should add notes here_
+  - Notes: Removed wasm-pack from devDependencies in package.json.
 
 ### Considerations
 
@@ -351,10 +351,11 @@ _Agents should add questions or blockers here as they encounter them_
 
 _Agents should log major completions here with dates_
 
-| Date       | Phase | Task     | Agent  | Notes                                                                                                              |
-| ---------- | ----- | -------- | ------ | ------------------------------------------------------------------------------------------------------------------ |
-| 2026-03-21 | 1     | 1.1      | Claude | Created `web/` directory with landing page, shared CSS vars build system, Getting Started guide, updated CLAUDE.md |
-| 2026-03-21 | 1     | 1.2, 1.3 | Claude | Fixed deploy workflow: resolved icon.png symlink, added cache-busting with git SHA for all assets                  |
+| Date       | Phase | Task     | Agent  | Notes                                                                                                                         |
+| ---------- | ----- | -------- | ------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| 2026-03-21 | 1     | 1.1      | Claude | Created `web/` directory with landing page, shared CSS vars build system, Getting Started guide, updated CLAUDE.md            |
+| 2026-03-21 | 1     | 1.2, 1.3 | Claude | Fixed deploy workflow: resolved icon.png symlink, added cache-busting with git SHA for all assets                             |
+| 2026-03-21 | 2     | 2.1-2.6  | Claude | Deprecated WASM engine: added CLAUDE.md notice, deleted pkg/, removed wasm:build script and wasm-pack dep, removed Vite alias |
 
 ---
 

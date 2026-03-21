@@ -21,7 +21,6 @@ export default defineConfig({
   resolve: {
     alias: {
       '@dmx-controller/proto': path.resolve(__dirname, 'proto/generated/proto'),
-      '@dmx-controller/wasm-engine': path.resolve(__dirname, 'pkg'),
     },
   },
   css: {
@@ -50,7 +49,6 @@ export default defineConfig({
       ignored: [
         '**/core/**',
         '**/dist/**',
-        '**/pkg/**',
         '**/src-engine/target/**',
         '**/src-tauri/target/**',
       ],

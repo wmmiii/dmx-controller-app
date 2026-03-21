@@ -3,9 +3,8 @@
   "scripts": {
     "proto:generate": "buf generate",
     "css-vars:build": "sass src/vars-export.scss public/vars.css --no-source-map",
-    "wasm:build": "cd src/wasm-engine && wasm-pack build --target web --out-dir ../../pkg",
-    "dev": "pnpm run proto:generate && pnpm run wasm:build && vite",
-    "build": "pnpm run proto:generate && pnpm run wasm:build && vite build",
+    "dev": "pnpm run proto:generate && vite",
+    "build": "pnpm run proto:generate && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
     "type-check": "tsc --noEmit",
@@ -58,7 +57,6 @@
     "sass": "1.98.0",
     "ts-jest": "29.4.6",
     "typescript": "5.9.3",
-    "vite": "8.0.1",
-    "wasm-pack": "^0.14.0"
+    "vite": "8.0.1"
   }
 }
