@@ -96,12 +96,13 @@ export function ControllerProvider({
       await disconnectMidi({ id: '', name: deviceName });
       setConnectedDevices((prev) => prev.filter((d) => d.name !== deviceName));
 
-      // Remove from lastControllerNames
+      // Remove from controllerToBinding so it won't auto-reconnect
       const mapping = project.controllerMapping;
       if (mapping) {
-        const idx = mapping.lastControllerNames.indexOf(deviceName);
-        if (idx >= 0) {
-          mapping.lastControllerNames.splice(idx, 1);
+        const bindingId = mapping.controllerToBinding[deviceName];
+        delete mapping.controllerToBinding[deviceName];
+        if (bindingId !== undefined) {
+          delete mapping.bindingNames[bindingId.toString()];
         }
         save('Disconnect MIDI controller.');
       }
@@ -124,7 +125,7 @@ export function ControllerProvider({
     [],
   );
 
-  // Auto-reconnect on load
+  // Auto-reconnect on load: any device in controllerToBinding is eligible
   useEffect(() => {
     (async () => {
       const controllerMapping = project.controllerMapping;
@@ -132,35 +133,19 @@ export function ControllerProvider({
         return;
       }
 
-      // Migration: if lastControllerNames is empty but controllerToBinding
-      // has entries, populate from those keys
-      if (
-        controllerMapping.lastControllerNames.length === 0 &&
-        Object.keys(controllerMapping.controllerToBinding).length > 0
-      ) {
-        controllerMapping.lastControllerNames = Object.keys(
-          controllerMapping.controllerToBinding,
-        );
-      }
-
-      if (controllerMapping.lastControllerNames.length === 0) {
+      const knownNames = Object.keys(controllerMapping.controllerToBinding);
+      if (knownNames.length === 0) {
         return;
       }
 
       const availableDevices = await listMidiInputs();
       const newConnected: ConnectedDevice[] = [];
-      let needsSave = false;
 
-      for (const name of controllerMapping.lastControllerNames) {
+      for (const name of knownNames) {
         const candidate = availableDevices.find((c) => c.name === name);
         if (candidate) {
           await connectMidi(candidate);
-          const bindingId = getOrCreateBindingId(controllerMapping, name);
-          if (
-            controllerMapping.controllerToBinding[name] === undefined
-          ) {
-            needsSave = true;
-          }
+          const bindingId = controllerMapping.controllerToBinding[name];
           newConnected.push({ name, bindingId });
         }
       }
@@ -168,11 +153,8 @@ export function ControllerProvider({
       if (newConnected.length > 0) {
         setConnectedDevices(newConnected);
       }
-      if (needsSave) {
-        save('Created bindings for controllers.');
-      }
     })();
-  }, [lastLoad, save, getOrCreateBindingId]);
+  }, [lastLoad]);
 
   // Listen for MIDI connection status changes from Tauri backend
   useEffect(() => {
@@ -372,12 +354,7 @@ export function ControllerProvider({
               const name = candidate.name;
               const controllerMapping = project.controllerMapping!;
 
-              // Add to lastControllerNames if not already present
-              if (!controllerMapping.lastControllerNames.includes(name)) {
-                controllerMapping.lastControllerNames.push(name);
-              }
-
-              // Get or create binding ID
+              // Get or create binding ID (also adds to controllerToBinding)
               const bindingId = getOrCreateBindingId(controllerMapping, name);
 
               save('Connect MIDI controller.');

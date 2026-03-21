@@ -95,19 +95,19 @@ impl MidiState {
                     .cloned()
                     .collect();
 
-                // Get the list of controller names to auto-reconnect
-                let last_controller_names: Vec<String> = PROJECT_REF
+                // Use controller_to_binding keys as the auto-reconnect allowlist
+                let known_controller_names: Vec<String> = PROJECT_REF
                     .lock()
                     .ok()
                     .and_then(|p| {
                         p.controller_mapping
                             .as_ref()
-                            .map(|cm| cm.last_controller_names.clone())
+                            .map(|cm| cm.controller_to_binding.keys().cloned().collect())
                     })
                     .unwrap_or_default();
 
                 // Handle disconnections
-                for controller_name in &last_controller_names {
+                for controller_name in &known_controller_names {
                     if disappeared_devices.contains(controller_name) {
                         log::info!("MIDI controller disconnected: {}", controller_name);
 
@@ -122,7 +122,7 @@ impl MidiState {
                 }
 
                 // Handle new connections - auto-reconnect any known device
-                for controller_name in &last_controller_names {
+                for controller_name in &known_controller_names {
                     if let Some(matching_device) =
                         new_devices.iter().find(|d| &d.name == controller_name)
                     {

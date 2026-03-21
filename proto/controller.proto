@@ -3,16 +3,15 @@ syntax = "proto3";
 package dmx_controller;
 
 message ControllerMapping {
-  // Names of controllers to auto-reconnect on startup
-  repeated string last_controller_names = 5;
-
-  // Map from controller name (as reported by OS) to a stable controller ID
+  // Map from controller name (as reported by OS) to a stable controller ID.
+  // Devices present in this map will auto-reconnect when plugged in.
   map<string, uint64> controller_to_binding = 3;
 
   map<uint64, string> binding_names = 4;
 
   reserved 1; // map<string, Controller> controllers = 1;
   reserved 2; // was: string last_controller_name = 2;
+  reserved 5; // was: repeated string last_controller_names = 5;
 }
 
 // Map from controller ID to bindings for all controllers in a context
