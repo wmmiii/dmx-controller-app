@@ -11,27 +11,22 @@ import {
 
 import { Button } from '../components/Button';
 import { Modal } from '../components/Modal';
-import {
-  outputValues,
-  performAction,
-} from '../external_controller/externalController';
+import { performAction } from '../external_controller/externalController';
 
 import { BeatContext } from './BeatContext';
 import { ProjectContext } from './ProjectContext';
 
-import { listen } from '@tauri-apps/api/event';
 import {
   MidiPortCandidate,
+  addConnectionStatusListener,
   addMidiListener,
   connectMidi,
   disconnectMidi,
   listMidiInputs,
+  removeConnectionStatusListener,
   removeMidiListener,
-  sendControllerUpdate,
 } from '../system_interfaces/midi';
-import { isTauri } from '../system_interfaces/util';
 import { randomUint64 } from '../util/numberUtils';
-import { listenToTick } from '../util/time';
 import styles from './ControllerContext.module.scss';
 
 export type ControllerChannel = string;
@@ -161,44 +156,30 @@ export function ControllerProvider({
 
   // Listen for MIDI connection status changes from Tauri backend
   useEffect(() => {
-    if (!isTauri) {
-      return;
-    }
+    const listener = (deviceName: string, connected: boolean) => {
+      const controllerMapping = project.controllerMapping;
 
-    let unlisten = () => {};
-
-    (async () => {
-      unlisten = await listen(
-        'midi-connection-status',
-        (event: {
-          payload: { controller_name: string; connected: boolean };
-        }) => {
-          const { controller_name: deviceName, connected } = event.payload;
-          const controllerMapping = project.controllerMapping;
-
-          if (controllerMapping) {
-            if (connected) {
-              const bindingId =
-                controllerMapping.controllerToBinding[deviceName];
-              if (bindingId !== undefined) {
-                setConnectedDevices((prev) => {
-                  if (prev.some((d) => d.name === deviceName)) {
-                    return prev;
-                  }
-                  return [...prev, { name: deviceName, bindingId }];
-                });
+      if (controllerMapping) {
+        if (connected) {
+          const bindingId = controllerMapping.controllerToBinding[deviceName];
+          if (bindingId !== undefined) {
+            setConnectedDevices((prev) => {
+              if (prev.some((d) => d.name === deviceName)) {
+                return prev;
               }
-            } else {
-              setConnectedDevices((prev) =>
-                prev.filter((d) => d.name !== deviceName),
-              );
-            }
+              return [...prev, { name: deviceName, bindingId }];
+            });
           }
-        },
-      );
-    })();
+        } else {
+          setConnectedDevices((prev) =>
+            prev.filter((d) => d.name !== deviceName),
+          );
+        }
+      }
+    };
 
-    return unlisten;
+    addConnectionStatusListener(listener);
+    return () => removeConnectionStatusListener(listener);
   }, [project]);
 
   // Raw MIDI message processing with per-device MSB/LSB buffers
@@ -274,21 +255,6 @@ export function ControllerProvider({
 
     return () => removeMidiListener(listener);
   }, [inputListeners, projectRef, connectedDevicesRef]);
-
-  // MIDI output feedback for all connected devices
-  useEffect(() => {
-    if (connectedDevices.length === 0) {
-      return;
-    }
-
-    return listenToTick((t) => {
-      for (const device of connectedDevices) {
-        sendControllerUpdate(device.name, () =>
-          outputValues(project, device.bindingId, t),
-        );
-      }
-    });
-  }, [project, connectedDevices]);
 
   const addListener = useCallback((listener: Listener) => {
     inputListeners.current.push(listener);

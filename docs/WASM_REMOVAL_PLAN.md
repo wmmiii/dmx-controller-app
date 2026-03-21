@@ -143,48 +143,48 @@ This pattern exists in:
 
 ### Tasks
 
-- [ ] **3.1** Simplify `src/system_interfaces/engine.ts`
+- [x] **3.1** Simplify `src/system_interfaces/engine.ts`
   - Remove `isTauri` check
   - Remove all `webXxx` functions (they call WASM)
   - Keep only Tauri implementations
   - Remove WASM imports: `import { init, init_engine, ... } from '@dmx-controller/wasm-engine'`
-  - Notes: _Agent should add notes here_
+  - Notes: Removed WASM imports, isTauri conditional exports, all webXxx functions, and the isTauri initialization block. Functions are now direct exports calling Tauri invoke. initRenderListeners() called unconditionally at module load.
 
-- [ ] **3.2** Simplify `src/system_interfaces/serial.ts`
+- [x] **3.2** Simplify `src/system_interfaces/serial.ts`
   - Remove web-specific serial port handling (Web Serial API code)
   - Keep only Tauri invoke calls
-  - Notes: _Agent should add notes here_
+  - Notes: Removed isTauri checks, Web Serial API code, port/writer state variables. serialSupported is now constant true. All functions directly call Tauri invoke. File reduced from 88 to 36 lines.
 
-- [ ] **3.3** Simplify `src/system_interfaces/output_loop.ts`
+- [x] **3.3** Simplify `src/system_interfaces/output_loop.ts`
   - Remove `outputLoopSupported` check (always true now)
   - Remove web no-op implementations
-  - Notes: _Agent should add notes here_
+  - Notes: Removed isTauri checks and web no-op functions. outputLoopSupported is now constant true. All functions directly call Tauri invoke. File reduced from 59 to 32 lines.
 
-- [ ] **3.4** Simplify `src/system_interfaces/midi.ts`
+- [x] **3.4** Simplify `src/system_interfaces/midi.ts`
   - Remove Web MIDI API fallback code
   - Keep only Tauri invoke calls
-  - Notes: _Agent should add notes here_
+  - Notes: Removed isTauri checks, Web MIDI API code, webMidiConnections map, and all webXxx functions. MIDI listener initialization is now unconditional. File reduced from 139 to 47 lines.
 
-- [ ] **3.5** Update React contexts that have `isTauri` checks
+- [x] **3.5** Update React contexts that have `isTauri` checks
   - `src/contexts/SerialContext.tsx`
   - `src/contexts/SacnRendererContext.tsx` (if exists)
   - `src/contexts/WledRendererContext.tsx` (if exists)
   - Remove web-specific rendering loops
-  - Notes: _Agent should add notes here_
+  - Notes: Deleted SacnRendererContext.tsx and WledRendererContext.tsx entirely - they were dead code since outputLoopSupported is always true (Tauri handles output loops). No component consumed their warnings state. Removed imports and providers from app.tsx. SerialContext.tsx still needed (handles serial port UI state).
 
-- [ ] **3.6** Clean up `src/system_interfaces/renderRouter.ts`
+- [x] **3.6** Clean up `src/system_interfaces/renderRouter.ts`
   - Remove web-specific subscription logic
   - Keep Tauri event subscriptions
-  - Notes: _Agent should add notes here_
+  - Notes: No changes needed - renderRouter.ts had no isTauri references, already clean.
 
-- [ ] **3.7** Search for and remove any remaining `isTauri` references
+- [x] **3.7** Search for and remove any remaining `isTauri` references
   - Run: `grep -r "isTauri" src/`
-  - Notes: _Agent should add notes here_
+  - Notes: Simplified storage.ts (removed IndexedDB web fallback), wled.ts (removed fetch web fallback), sacn.ts (sacnSupported=true). Changed util.ts to export `isTauri = true`. Removed isTauri check from ControllerContext.tsx. Remaining uses in Index.tsx and ShortcutContext.tsx are for Tauri-specific menu items (exit, etc.) which will now always render.
 
-- [ ] **3.8** Remove any web-specific initialization code
+- [x] **3.8** Remove any web-specific initialization code
   - Look for WASM `init()` calls
   - Look for `init_engine()` calls
-  - Notes: _Agent should add notes here_
+  - Notes: Already removed in task 3.1 when simplifying engine.ts.
 
 ### Considerations
 
@@ -308,6 +308,12 @@ export const someFunction = tauriImpl;
   - Remove WASM-related build steps
   - Notes: _Agent should add notes here_
 
+- [ ] **5.8** Re-evaluate `src/contexts/SerialContext.tsx`
+  - May no longer need to be a React context
+  - Currently provides: `port` state, `connect`/`disconnect` callbacks, port selection modal, keyboard shortcut
+  - Consider moving serial port UI logic elsewhere or simplifying
+  - Notes: _Agent should add notes here_
+
 ---
 
 ## Dependency Graph
@@ -351,11 +357,12 @@ _Agents should add questions or blockers here as they encounter them_
 
 _Agents should log major completions here with dates_
 
-| Date       | Phase | Task     | Agent  | Notes                                                                                                                         |
-| ---------- | ----- | -------- | ------ | ----------------------------------------------------------------------------------------------------------------------------- |
-| 2026-03-21 | 1     | 1.1      | Claude | Created `web/` directory with landing page, shared CSS vars build system, Getting Started guide, updated CLAUDE.md            |
-| 2026-03-21 | 1     | 1.2, 1.3 | Claude | Fixed deploy workflow: resolved icon.png symlink, added cache-busting with git SHA for all assets                             |
-| 2026-03-21 | 2     | 2.1-2.6  | Claude | Deprecated WASM engine: added CLAUDE.md notice, deleted pkg/, removed wasm:build script and wasm-pack dep, removed Vite alias |
+| Date       | Phase | Task     | Agent  | Notes                                                                                                                                                                |
+| ---------- | ----- | -------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-03-21 | 1     | 1.1      | Claude | Created `web/` directory with landing page, shared CSS vars build system, Getting Started guide, updated CLAUDE.md                                                   |
+| 2026-03-21 | 1     | 1.2, 1.3 | Claude | Fixed deploy workflow: resolved icon.png symlink, added cache-busting with git SHA for all assets                                                                    |
+| 2026-03-21 | 2     | 2.1-2.6  | Claude | Deprecated WASM engine: added CLAUDE.md notice, deleted pkg/, removed wasm:build script and wasm-pack dep, removed Vite alias                                        |
+| 2026-03-21 | 3     | 3.1-3.8  | Claude | Removed all isTauri multiplexing from system_interfaces. Deleted SacnRendererContext and WledRendererContext. Simplified SerialContext. Set isTauri=true in util.ts. |
 
 ---
 

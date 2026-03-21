@@ -30,7 +30,6 @@ import { LivePage } from './pages/LivePage';
 import ProjectPage from './pages/ProjectPage';
 import ShowPage from './pages/ShowPage';
 import PatchPage from './pages/patch/PatchPage';
-import { isTauri } from './system_interfaces/util';
 import { getActivePatch } from './util/projectUtils';
 
 export default function Index(): JSX.Element {
@@ -130,23 +129,19 @@ export default function Index(): JSX.Element {
                       '_blank',
                     ),
                 },
-                ...(isTauri
-                  ? [
-                      {
-                        type: 'separator' as 'separator', // Type-madness.
-                      },
-                      {
-                        title: 'Exit',
-                        onSelect: async () => {
-                          try {
-                            await exit(0);
-                          } catch (e) {
-                            console.error(e);
-                          }
-                        },
-                      },
-                    ]
-                  : []),
+                {
+                  type: 'separator' as 'separator', // Type-madness.
+                },
+                {
+                  title: 'Exit',
+                  onSelect: async () => {
+                    try {
+                      await exit(0);
+                    } catch (e) {
+                      console.error(e);
+                    }
+                  },
+                },
               ]}
             />
           )}

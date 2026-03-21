@@ -7,10 +7,8 @@ import { BeatProvider } from './contexts/BeatContext';
 import { ControllerProvider } from './contexts/ControllerContext';
 import { DialogProvider } from './contexts/DialogContext';
 import { ProjectProvider } from './contexts/ProjectContext';
-import { SacnRendererProvider } from './contexts/SacnRendererContext';
 import { SerialProvider } from './contexts/SerialContext';
 import { ShortcutProvider } from './contexts/ShortcutContext';
-import { WledRendererProvider } from './contexts/WledRendererContext';
 
 const root = createRoot(document.getElementById('root')!);
 root.render(
@@ -22,11 +20,7 @@ root.render(
             <SerialProvider>
               <BeatProvider>
                 <ControllerProvider>
-                  <SacnRendererProvider>
-                    <WledRendererProvider>
-                      <Index />
-                    </WledRendererProvider>
-                  </SacnRendererProvider>
+                  <Index />
                 </ControllerProvider>
               </BeatProvider>
             </SerialProvider>

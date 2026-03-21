@@ -5,6 +5,7 @@ This directory contains the **deprecated** browser-WASM engine bindings. This co
 ## Why This Is Deprecated
 
 The browser-WASM approach has been removed due to:
+
 - Limitations with Web Serial and Web MIDI APIs
 - Inability to maintain reliable render loops at required frame rates
 - The Tauri desktop application now handles all rendering and hardware I/O
@@ -12,12 +13,14 @@ The browser-WASM approach has been removed due to:
 ## Instructions for Agents
 
 **DO NOT:**
+
 - Import from this directory or `@dmx-controller/wasm-engine`
 - Use code patterns from this directory as precedent
 - Attempt to build or run this code
 - Reference this code when implementing new features
 
 **The authoritative engine code is in:**
+
 - `src-engine/` - Shared Rust rendering engine (used by Tauri)
 - `src-tauri/` - Tauri backend with hardware I/O
 

@@ -11,24 +11,10 @@ import {
 
 import { Modal } from '../components/Modal';
 
-import { BiErrorAlt } from 'react-icons/bi';
-import {
-  DmxRenderOutput,
-  RenderError,
-  triggerDmxSubscriptions,
-  triggerErrorSubscriptions,
-} from '../engine/renderRouter';
 import { renderDmx } from '../system_interfaces/engine';
-import { outputLoopSupported } from '../system_interfaces/output_loop';
-import {
-  listPorts,
-  outputDmx,
-  serialInit,
-  serialSupported,
-} from '../system_interfaces/serial';
+import { listPorts } from '../system_interfaces/serial';
 import { getOutput, getSerialOutputId } from '../util/projectUtils';
 import { listenToTick } from '../util/time';
-import { DialogContext } from './DialogContext';
 import { ProjectContext } from './ProjectContext';
 import { ShortcutContext } from './ShortcutContext';
 
@@ -39,56 +25,19 @@ const EMPTY_CONTEXT = {
 };
 
 export const SerialContext = createContext(EMPTY_CONTEXT);
-const SERIAL_MISSING_KEY = 'serial-missing';
 
 export function SerialProvider({ children }: PropsWithChildren): JSX.Element {
-  const dialogContext = useContext(DialogContext);
   const { project } = useContext(ProjectContext);
-  const [open, setOpen] = useState(
-    !dialogContext.isDismissed(SERIAL_MISSING_KEY),
-  );
 
-  if (!serialSupported) {
+  const outputId = getSerialOutputId(project);
+  if (outputId) {
+    return <SerialProviderImpl>{children}</SerialProviderImpl>;
+  } else {
     return (
       <SerialContext.Provider value={EMPTY_CONTEXT}>
         {children}
-        {open && (
-          <Modal
-            title="Unsupported Browser"
-            icon={<BiErrorAlt />}
-            onClose={() => setOpen(false)}
-          >
-            <p>
-              This browser does not support the <code>navigator.serial</code>
-              &nbsp;api required for this app to function.
-            </p>
-            <p>
-              You can modify project data but you will be unable to link this
-              software to any DMX universe and visualize any output.
-            </p>
-            <p>
-              Please download&nbsp;
-              <a href="https://www.google.com/chrome/" target="_blank">
-                Google Chrome
-              </a>{' '}
-              or another Chromium based browser that supports the &nbsp;
-              <code>navigator.serial</code> api.
-            </p>
-          </Modal>
-        )}
       </SerialContext.Provider>
     );
-  } else {
-    const outputId = getSerialOutputId(project);
-    if (outputId) {
-      return <SerialProviderImpl>{children}</SerialProviderImpl>;
-    } else {
-      return (
-        <SerialContext.Provider value={EMPTY_CONTEXT}>
-          {children}
-        </SerialContext.Provider>
-      );
-    }
   }
 }
 
@@ -99,7 +48,7 @@ interface SerialProviderImplProps {
 function SerialProviderImpl({
   children,
 }: SerialProviderImplProps): JSX.Element {
-  const { project, save, update } = useContext(ProjectContext);
+  const { project, save } = useContext(ProjectContext);
   const { setShortcuts } = useContext(ShortcutContext);
   const frameRef = useRef(0);
   const [selectPort, setSelectPort] = useState<{
@@ -140,10 +89,6 @@ function SerialProviderImpl({
   }, [output]);
 
   useEffect(() => {
-    serialInit(connect, disconnect);
-  }, [connect, disconnect]);
-
-  useEffect(() => {
     return setShortcuts([
       {
         shortcut: { key: 'KeyC' },
@@ -154,6 +99,8 @@ function SerialProviderImpl({
   });
 
   useEffect(() => {
+    // When no port is selected and no fixtures are configured, keep rendering
+    // to ensure the engine state stays updated (for visualizers, etc.)
     if (output.case !== 'serialDmxOutput' || output.value.lastPort == null) {
       if (
         output.case === 'serialDmxOutput' &&
@@ -168,71 +115,9 @@ function SerialProviderImpl({
       }
     }
 
-    // On Tauri, output loops are automatically managed by the backend
-    // when the project is updated, so we don't need to start/stop them here.
-    if (outputLoopSupported) {
-      return () => {};
-    }
-
-    // Web fallback: run the loop in JavaScript
-    let closed = false;
-    const latencySamples: number[] = [];
-    (async () => {
-      while (!closed) {
-        const startMs = new Date().getTime();
-        let dmxOutput: DmxRenderOutput;
-
-        try {
-          dmxOutput = await renderDmx(
-            outputId,
-            BigInt(startMs),
-            frameRef.current++,
-          );
-          // Trigger render subscriptions for visualizers
-          triggerDmxSubscriptions(outputId, dmxOutput);
-          // Clear any previous render errors
-          triggerErrorSubscriptions(outputId, null);
-        } catch (e) {
-          const error: RenderError = {
-            outputId,
-            message: e instanceof Error ? e.message : String(e),
-          };
-          triggerErrorSubscriptions(outputId, error);
-          console.error('Could not render DMX:', e);
-          continue;
-        }
-
-        try {
-          await outputDmx(outputId, dmxOutput);
-          latencySamples.push(new Date().getTime() - startMs);
-          // Clear any previous output errors
-          triggerErrorSubscriptions(outputId, null);
-        } catch (e) {
-          const error: RenderError = {
-            outputId,
-            message: e instanceof Error ? e.message : String(e),
-          };
-          triggerErrorSubscriptions(outputId, error);
-          console.error('Could not write to serial port!', e);
-          closed = true;
-          disconnect();
-        }
-
-        if (latencySamples.length >= 40) {
-          const total = latencySamples.reduce((a, b) => a + b);
-          // Added latency for decoding and sending the packet down the DMX line.
-          const latency = Math.floor(total / latencySamples.length) + 50;
-          getOutput(project, outputId).latencyMs = latency;
-          latencySamples.length = 0;
-          update();
-        }
-      }
-    })();
-
-    return () => {
-      closed = true;
-    };
-  }, [disconnect, output, outputId, update]);
+    // Tauri handles output loops automatically when the project is updated
+    return () => {};
+  }, [disconnect, output, outputId]);
 
   return (
     <SerialContext.Provider
