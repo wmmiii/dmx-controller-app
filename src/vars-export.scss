@@ -1,0 +1,56 @@
+/*
+ * Exports SCSS variables as CSS custom properties
+ * Generated file: public/vars.css
+ * Run: pnpm run css-vars:build
+ */
+
+@use 'vars' as v;
+
+:root {
+  /* Primary colors */
+  --col-accent: #{v.$col-accent};
+  --col-warning: #{v.$col-warning};
+  --col-midi: #{v.$col-midi};
+
+  /* Backgrounds */
+  --col-bg: #{v.$col-bg};
+  --col-bg-higher: #{v.$col-bg-higher};
+  --col-bg-higher-hover: #{v.$col-bg-higher-hover};
+  --col-bg-active: #{v.$col-bg-active};
+  --col-bg-active-lower: #{v.$col-bg-active-lower};
+  --col-bg-tile: #{v.$col-bg-tile};
+  --col-bg-tile-hover: #{v.$col-bg-tile-hover};
+  --col-bg-gage: #{v.$col-bg-gage};
+  --col-bg-triangle: #{v.$col-bg-triangle};
+  --col-bg-triangle-hover: #{v.$col-bg-triangle-hover};
+
+  /* Text */
+  --col-text: #{v.$col-text};
+  --col-text-dim: #{v.$col-text-dim};
+
+  /* Borders */
+  --col-border: #{v.$col-border};
+  --col-border-higher: #{v.$col-border-higher};
+  --col-border-lower: #{v.$col-border-lower};
+  --col-border-disabled: #{v.$col-border-disabled};
+
+  /* Scrollbars */
+  --col-scroll-thumb: #{v.$col-scroll-thumb};
+  --col-scroll-track: #{v.$col-scroll-track};
+
+  /* Interactive */
+  --col-interactive: #{v.$col-interactive};
+  --col-interactive-hover: #{v.$col-interactive-hover};
+  --col-warning-hover: #{v.$col-warning-hover};
+
+  /* Dimensions */
+  --dim-border-radius: #{v.$dim-border-radius};
+
+  /* Spacing (8px grid) */
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --space-5: 40px;
+  --space-6: 48px;
+}

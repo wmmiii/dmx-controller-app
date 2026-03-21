@@ -1,0 +1,46 @@
+/*
+ * Exports SCSS variables as CSS custom properties
+ * Generated file: public/vars.css
+ * Run: pnpm run css-vars:build
+ */
+:root {
+  /* Primary colors */
+  --col-accent: #11a2ca;
+  --col-warning: #b02461;
+  --col-midi: #7216c8;
+  /* Backgrounds */
+  --col-bg: #111;
+  --col-bg-higher: #1a1a1a;
+  --col-bg-higher-hover: rgb(51.5, 51.5, 51.5);
+  --col-bg-active: rgb(9.8739726027, 94.0931506849, 117.3260273973);
+  --col-bg-active-lower: rgb(7.102739726, 67.6849315068, 84.397260274);
+  --col-bg-tile: #1a1a1a;
+  --col-bg-tile-hover: rgb(51.5, 51.5, 51.5);
+  --col-bg-gage: #000;
+  --col-bg-triangle: #4d4d4d;
+  --col-bg-triangle-hover: rgb(102.5, 102.5, 102.5);
+  /* Text */
+  --col-text: #ffffff;
+  --col-text-dim: #8f8f8f;
+  /* Borders */
+  --col-border: #333333;
+  --col-border-higher: #555555;
+  --col-border-lower: #222222;
+  --col-border-disabled: #333333;
+  /* Scrollbars */
+  --col-scroll-thumb: #666666;
+  --col-scroll-track: #333333;
+  /* Interactive */
+  --col-interactive: rgb(80.6712328767, 205.8082191781, 240.3287671233);
+  --col-interactive-hover: rgb(221.7945205479, 245.6301369863, 252.2054794521);
+  --col-warning-hover: rgb(226.0471698113, 113.4528301887, 162.5117924528);
+  /* Dimensions */
+  --dim-border-radius: 8px;
+  /* Spacing (8px grid) */
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --space-5: 40px;
+  --space-6: 48px;
+}

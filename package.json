@@ -2,6 +2,7 @@
   "private": true,
   "scripts": {
     "proto:generate": "buf generate",
+    "css-vars:build": "sass src/vars-export.scss public/vars.css --no-source-map",
     "wasm:build": "cd src/wasm-engine && wasm-pack build --target web --out-dir ../../pkg",
     "dev": "pnpm run proto:generate && pnpm run wasm:build && vite",
     "build": "pnpm run proto:generate && pnpm run wasm:build && vite build",

@@ -1,4 +1,4 @@
-name: Deploy App
+name: Deploy Website
 
 on:
   push:
@@ -8,8 +8,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    name: Build
+  test:
+    name: Test
     runs-on: ubuntu-latest
 
     steps:
@@ -20,19 +20,15 @@ jobs:
         uses: ./.github/setup
 
       - name: Build
-        env:
-          NODE_ENV: production
         run: pnpm run build
 
-      - name: Upload pages
-        uses: actions/upload-pages-artifact@master
-        with:
-          path: dist
+      - name: Test
+        run: pnpm test
 
   deploy:
     name: Deploy
 
-    needs: build
+    needs: test
 
     permissions:
       pages: write
@@ -44,6 +40,25 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repo
+        uses: actions/checkout@v5
+
+      - name: Setup
+        uses: ./.github/setup
+
+      - name: Generate CSS variables
+        run: pnpm run css-vars:build
+
+      - name: Resolve symlinks for deployment
+        run: |
+          rm web/vars.css
+          cp public/vars.css web/vars.css
+
+      - name: Upload pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

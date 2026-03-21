@@ -6,7 +6,7 @@ use std::sync::Arc;
 use std::sync::Mutex as StdMutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, State};
-use tokio::sync::{oneshot, Mutex};
+use tokio::sync::{Mutex, oneshot};
 
 #[derive(Deserialize, Serialize, Clone)]
 pub struct MidiPortCandidate {
@@ -126,10 +126,7 @@ impl MidiState {
                     if let Some(matching_device) =
                         new_devices.iter().find(|d| &d.name == controller_name)
                     {
-                        log::info!(
-                            "Auto-reconnecting to MIDI controller: {}",
-                            controller_name
-                        );
+                        log::info!("Auto-reconnecting to MIDI controller: {}", controller_name);
 
                         let result = {
                             let midi_state = state.lock().await;
@@ -190,8 +187,7 @@ impl MidiState {
 
 #[tauri::command]
 pub fn list_midi_inputs() -> Result<Vec<MidiPortCandidate>, String> {
-    let midi_input =
-        MidiInput::new("DMX Controller App MIDI Input").map_err(|e| e.to_string())?;
+    let midi_input = MidiInput::new("DMX Controller App MIDI Input").map_err(|e| e.to_string())?;
 
     midi_input
         .ports()
@@ -207,16 +203,12 @@ pub fn list_midi_inputs() -> Result<Vec<MidiPortCandidate>, String> {
 
 /// Internal connection function used by both the command and the watcher.
 /// Adds a device connection without closing other existing connections.
-fn connect_midi_internal(
-    state: &MidiState,
-    candidate: MidiPortCandidate,
-) -> Result<(), String> {
+fn connect_midi_internal(state: &MidiState, candidate: MidiPortCandidate) -> Result<(), String> {
     // Disconnect this specific device if already connected
     disconnect_device(state, &candidate.name);
 
     // Create MIDI input and find the port
-    let midi_input =
-        MidiInput::new("DMX Controller App MIDI Input").map_err(|e| e.to_string())?;
+    let midi_input = MidiInput::new("DMX Controller App MIDI Input").map_err(|e| e.to_string())?;
 
     let input_ports = midi_input.ports();
     let input_port = input_ports

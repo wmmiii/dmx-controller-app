@@ -1,0 +1,338 @@
+/*
+ * DMX Controller Landing Page
+ * Uses shared design tokens from vars.css (generated from src/_vars.scss)
+ * Note: vars.css is loaded directly in index.html to prevent flash of unstyled content
+ */
+
+:root {
+  /* Landing page aliases */
+  --radius: var(--dim-border-radius);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+}
+
+body {
+  min-height: 100vh;
+  color: var(--col-text);
+  font-weight: 300;
+  font-family: 'Roboto', sans-serif;
+  line-height: 1.6;
+  background-color: var(--col-bg);
+}
+
+strong {
+  font-weight: 500;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: var(--space-4);
+}
+
+/* Header */
+header {
+  margin-bottom: var(--space-5);
+  padding: var(--space-6) 0;
+  text-align: center;
+  border-bottom: 1px solid var(--col-border);
+}
+
+.logo {
+  width: 96px;
+  height: 96px;
+  margin-bottom: var(--space-3);
+  border-radius: var(--radius);
+}
+
+h1 {
+  margin-bottom: var(--space-1);
+  font-weight: 800;
+  font-size: 2.5rem;
+  font-family: 'Tomorrow', sans-serif;
+  letter-spacing: 0.02em;
+}
+
+.tagline {
+  color: var(--col-text-dim);
+  font-weight: 300;
+  font-size: 1.1rem;
+  font-family: 'Montserrat', sans-serif;
+}
+
+/* Hero section */
+.hero {
+  margin-bottom: var(--space-6);
+  text-align: center;
+}
+
+.hero > p {
+  max-width: 700px;
+  margin: 0 auto var(--space-3);
+  color: var(--col-text-dim);
+  font-size: 1.1rem;
+  text-align: left;
+}
+
+.hero > p.free-note {
+  margin-bottom: var(--space-4);
+  color: var(--col-text);
+  font-weight: 600;
+  font-family: 'Montserrat', sans-serif;
+  text-align: center;
+}
+
+/* Buttons */
+.cta-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: center;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: var(--space-1) var(--space-2);
+  font-weight: 600;
+  font-size: 18px;
+  font-family: 'Montserrat', sans-serif;
+  text-decoration: none;
+  background-color: transparent;
+  border: 1px solid;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.btn-primary {
+  color: var(--col-interactive);
+  border-color: var(--col-interactive);
+}
+
+.btn-primary:hover {
+  color: var(--col-interactive-hover);
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: var(--col-interactive-hover);
+}
+
+.btn-secondary {
+  color: var(--col-text);
+  border-color: var(--col-border);
+}
+
+.btn-secondary:hover,
+.btn-secondary:active,
+.btn-secondary:focus {
+  color: var(--col-interactive-hover);
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: var(--col-interactive-hover);
+}
+
+/* Notice */
+.notice {
+  margin-bottom: var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  color: var(--col-text-dim);
+  font-size: 0.9rem;
+  border: 1px solid var(--col-warning);
+  border-radius: var(--radius);
+}
+
+.notice a {
+  color: var(--col-warning);
+  text-decoration: none;
+}
+
+.notice a:hover {
+  color: var(--col-warning-hover);
+}
+
+/* Getting Started */
+.getting-started {
+  margin-bottom: var(--space-6);
+}
+
+.getting-started h2 {
+  margin-bottom: var(--space-2);
+  color: var(--col-text);
+  font-weight: 600;
+  font-size: 1.5rem;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.section-intro {
+  margin-bottom: var(--space-4);
+  color: var(--col-text-dim);
+}
+
+.steps {
+  list-style: none;
+  counter-reset: step;
+}
+
+.steps > li {
+  position: relative;
+  margin-bottom: var(--space-4);
+  padding-left: var(--space-6);
+  counter-increment: step;
+}
+
+.steps > li::before {
+  content: counter(step);
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  color: var(--col-interactive);
+  font-weight: 600;
+  font-size: 0.9rem;
+  font-family: 'Montserrat', sans-serif;
+  background-color: transparent;
+  border: 2px solid var(--col-interactive);
+  border-radius: 50%;
+}
+
+.steps h3 {
+  margin-bottom: var(--space-1);
+  color: var(--col-text);
+  font-weight: 600;
+  font-size: 1.1rem;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.steps p {
+  margin-bottom: var(--space-2);
+  color: var(--col-text-dim);
+  font-size: 0.95rem;
+}
+
+.steps a {
+  color: var(--col-accent);
+  text-decoration: none;
+}
+
+.steps a:hover {
+  color: var(--col-interactive);
+}
+
+.substeps {
+  margin: var(--space-2) 0;
+  padding-left: var(--space-2);
+  list-style: none;
+  border-left: 2px solid var(--col-border);
+}
+
+.substeps li {
+  padding: var(--space-1) 0 var(--space-1) var(--space-2);
+  color: var(--col-text-dim);
+  font-size: 0.9rem;
+}
+
+/* Requirements */
+.requirements {
+  margin-bottom: var(--space-6);
+  padding: var(--space-4);
+  background-color: var(--col-bg-higher);
+}
+
+.requirements h2 {
+  margin-bottom: var(--space-2);
+  font-weight: 600;
+  font-size: 1.1rem;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.requirements ul {
+  color: var(--col-text-dim);
+  list-style: none;
+}
+
+.requirements li {
+  position: relative;
+  padding: var(--space-1) 0;
+  padding-left: var(--space-3);
+}
+
+.requirements li::before {
+  content: '•';
+  position: absolute;
+  left: var(--space-1);
+  color: var(--col-accent);
+}
+
+/* Footer */
+footer {
+  padding: var(--space-4) 0;
+  color: var(--col-text-dim);
+  font-size: 0.9rem;
+  text-align: center;
+  border-top: 1px solid var(--col-border);
+}
+
+footer .made-by {
+  margin-bottom: var(--space-2);
+  color: var(--col-text);
+}
+
+footer a {
+  color: var(--col-text-dim);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+footer .made-by a {
+  color: var(--col-accent);
+}
+
+footer a:hover {
+  color: var(--col-accent);
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .container {
+    padding: var(--space-2);
+  }
+
+  header {
+    padding: var(--space-4) 0;
+  }
+
+  h1 {
+    font-size: 2rem;
+  }
+
+  .logo {
+    width: 72px;
+    height: 72px;
+  }
+
+  .cta-group {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .btn {
+    width: 100%;
+    max-width: 280px;
+    text-align: center;
+  }
+}

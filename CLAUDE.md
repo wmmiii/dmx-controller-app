@@ -126,3 +126,14 @@ _Rust:_
 - Prefer immutable bindings (`let`) over mutable (`let mut`) unless mutation is required
 
 This guidance applies only to code you are actively modifying—do not refactor unrelated code to adjust visibility. Run `pnpm run test` after changes to verify visibility restrictions didn't break anything.
+
+## Website & Documentation
+
+The `web/` directory contains a static landing page deployed to GitHub Pages. When making changes that affect user-facing features, supported protocols, or workflows:
+
+- **Review `web/index.html`** to ensure the landing page copy remains accurate
+- Update the "Getting Started" steps if the workflow changes
+- Update protocol/feature descriptions if capabilities are added or removed
+- The landing page describes: Serial DMX, sACN/E1.31, WLED outputs; GDTF fixture support; tap tempo; MIDI control
+
+The landing page uses shared CSS variables generated from `src/_vars.scss`. Run `pnpm run css-vars:build` after modifying SCSS variables to regenerate `public/vars.css`.
