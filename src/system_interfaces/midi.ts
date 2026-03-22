@@ -70,3 +70,33 @@ export async function connectMidi(candidate: MidiPortCandidate) {
 export async function disconnectMidi(candidate: MidiPortCandidate) {
   return invoke('disconnect_midi', { deviceName: candidate.name });
 }
+
+// Beat sampling state listener
+type BeatSamplingStateListener = (sampling: boolean) => void;
+const beatSamplingListeners: Array<BeatSamplingStateListener> = [];
+
+export function subscribeToBeatSamplingState(
+  listener: BeatSamplingStateListener,
+): () => void {
+  beatSamplingListeners.push(listener);
+  return () => {
+    const index = beatSamplingListeners.indexOf(listener);
+    if (index > -1) {
+      beatSamplingListeners.splice(index, 1);
+    }
+  };
+}
+
+// Initialize beat sampling state listener
+listen<{ sampling: boolean }>('beat-sampling-state', (event) => {
+  beatSamplingListeners.forEach((l) => l(event.payload.sampling));
+});
+
+// Beat sampling commands for keyboard shortcuts
+export async function addBeatSample(): Promise<void> {
+  return invoke('add_beat_sample');
+}
+
+export async function setFirstBeat(): Promise<void> {
+  return invoke('set_first_beat');
+}

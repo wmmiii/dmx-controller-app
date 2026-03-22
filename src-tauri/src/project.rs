@@ -1,8 +1,9 @@
 use dmx_engine::project::{self, UndoState};
+use dmx_engine::tile::toggle_tile as engine_toggle_tile;
 use serde::Serialize;
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Manager, State};
 use tokio::sync::Mutex as TokioMutex;
 use tokio::task::JoinHandle;
@@ -132,10 +133,7 @@ async fn queue_project_persist(
 }
 
 /// Queues assets binary for debounced persistence
-async fn queue_assets_persist(
-    assets_binary: &[u8],
-    persist_state: &Arc<TokioMutex<PersistState>>,
-) {
+async fn queue_assets_persist(assets_binary: &[u8], persist_state: &Arc<TokioMutex<PersistState>>) {
     let mut state = persist_state.lock().await;
     state.pending_assets = Some(assets_binary.to_vec());
 
@@ -156,7 +154,6 @@ struct ProjectUpdatedPayload {
     description: String,
 }
 
-
 /// Payload for the undo-state-changed event
 #[derive(Clone, Serialize)]
 pub struct UndoStatePayload {
@@ -176,7 +173,6 @@ impl From<UndoState> for UndoStatePayload {
         }
     }
 }
-
 
 /// Emits project-updated event and optionally undo-state-changed event to the frontend
 fn emit_project_events(
@@ -220,11 +216,7 @@ pub async fn rebuild_outputs(
     // Rebuild output loops
     let manager = output_loop_manager.lock().await;
     manager
-        .rebuild_all_loops(
-            serial_state.clone(),
-            sacn_state.clone(),
-            wled_state.clone(),
-        )
+        .rebuild_all_loops(serial_state.clone(), sacn_state.clone(), wled_state.clone())
         .await?;
 
     Ok(())
@@ -401,7 +393,12 @@ pub fn request_update(app: AppHandle) -> Result<(), String> {
     let project_binary = project::get()?;
 
     // Emit project-updated event (undo state only if project exists)
-    emit_project_events(&app, &project_binary, "Open project", !project_binary.is_empty())?;
+    emit_project_events(
+        &app,
+        &project_binary,
+        "Open project",
+        !project_binary.is_empty(),
+    )?;
 
     Ok(())
 }
@@ -414,4 +411,70 @@ pub async fn save_assets(
 ) -> Result<(), String> {
     queue_assets_persist(&assets_binary, persist_state.inner()).await;
     Ok(())
+}
+
+/// Toggles a tile on/off based on its current state.
+/// Returns whether the tile was enabled (true) or disabled (false).
+#[tauri::command]
+pub async fn toggle_tile(
+    scene_id: String,
+    tile_id: String,
+    app: AppHandle,
+    persist_state: State<'_, Arc<TokioMutex<PersistState>>>,
+) -> Result<bool, String> {
+    let scene_id: u64 = scene_id.parse().map_err(|_| "Invalid scene_id")?;
+    let tile_id: u64 = tile_id.parse().map_err(|_| "Invalid tile_id")?;
+
+    let t = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|e| e.to_string())?
+        .as_millis() as u64;
+
+    let (modified, enabled, description) = project::with_project_mut(|project| {
+        let beat = match &project.live_beat {
+            Some(b) => b.clone(),
+            None => return Ok((false, false, String::new())),
+        };
+
+        let scene = project.scenes.get_mut(&scene_id).ok_or("Scene not found")?;
+
+        let tile_entry = scene
+            .tile_map
+            .iter_mut()
+            .find(|tm| tm.id == tile_id)
+            .ok_or("Tile not found")?;
+
+        let tile = tile_entry.tile.as_mut().ok_or("Tile entry has no tile")?;
+
+        let tile_name = tile.name.clone();
+
+        engine_toggle_tile(tile, &beat, t);
+
+        // Determine if tile is now enabled based on transition state
+        let enabled = matches!(
+            tile.transition,
+            Some(dmx_engine::proto::scene::tile::Transition::StartFadeInMs(_))
+        );
+
+        let description = format!(
+            "{} tile {}.",
+            if enabled { "Enable" } else { "Disable" },
+            tile_name
+        );
+
+        Ok((true, enabled, description))
+    })?;
+
+    if modified {
+        // Get updated project binary
+        let project_binary = project::get()?;
+
+        // Emit events to frontend
+        emit_project_events(&app, &project_binary, &description, false)?;
+
+        // Queue debounced persist to disk
+        queue_project_persist(&project_binary, persist_state.inner()).await;
+    }
+
+    Ok(enabled)
 }

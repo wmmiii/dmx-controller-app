@@ -261,6 +261,22 @@ pub fn get() -> Result<Vec<u8>, String> {
     Ok(state.project.encode_to_vec())
 }
 
+/// Executes a closure with mutable access to the project.
+/// Returns the result of the closure along with whether the project was modified.
+///
+/// The closure should return a tuple of (result, modified) where modified indicates
+/// whether the project state changed and needs to be broadcast.
+pub fn with_project_mut<T, F>(f: F) -> Result<T, String>
+where
+    F: FnOnce(&mut Project) -> Result<T, String>,
+{
+    let mut state = PROJECT_STATE
+        .lock()
+        .map_err(|e| format!("Failed to lock state: {}", e))?;
+
+    f(&mut state.project)
+}
+
 /// Creates and loads a default project if none exists.
 /// Returns true if a new project was created, false if one already existed.
 pub fn ensure_project_exists() -> Result<bool, String> {

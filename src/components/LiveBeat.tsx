@@ -50,7 +50,7 @@ export function LiveBeat({ className }: LiveBeatProps): JSX.Element {
           shortcut: {
             key: 'Space',
           },
-          action: () => addBeatSample(new Date().getTime()),
+          action: () => addBeatSample(),
           description: 'Sample beat.',
         },
       ]),

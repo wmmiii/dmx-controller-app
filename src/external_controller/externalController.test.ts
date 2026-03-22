@@ -1,5 +1,4 @@
 import { create } from '@bufbuild/protobuf';
-import { BeatMetadataSchema } from '@dmx-controller/proto/beat_pb';
 import {
   ControllerBindingsMapSchema,
   ControllerBindingsMap_ControllerBindingsSchema,
@@ -20,7 +19,6 @@ import {
   getActionDescription,
   getAllBindingsForAction,
   hasAction,
-  outputValues,
   performAction,
   type BindingContext,
 } from './externalController';
@@ -1321,136 +1319,6 @@ describe('externalController', () => {
       );
 
       expect(beatSample).toBeNull();
-    });
-  });
-
-  describe('outputValues', () => {
-    it('should output values for all bindings in hierarchy', () => {
-      const project = createNewProject();
-      project.liveBeat = create(BeatMetadataSchema, {
-        offsetMs: 0n,
-        lengthMs: 500,
-      });
-
-      project.livePageControllerBindings = create(ControllerBindingsMapSchema, {
-        bindings: {
-          [BINDING_ID.toString()]: create(
-            ControllerBindingsMap_ControllerBindingsSchema,
-            {
-              bindings: {
-                [CHANNEL_NAME]: create(InputBindingSchema, {
-                  inputType: InputType.BINARY,
-                  action: {
-                    case: 'beatMatch',
-                    value: {},
-                  },
-                }),
-              },
-            },
-          ),
-        },
-      });
-
-      const values = outputValues(project, BINDING_ID, 250n);
-
-      expect(values.size).toBe(1);
-      expect(values.has(CHANNEL_NAME)).toBe(true);
-      // At t=250ms, offsetMs=0, lengthMs=500ms:
-      // beatT = 250, (250/500) % 1 = 0.5, Math.round(0.5) = 1, 1 - 1 = 0 (mid-beat)
-      expect(values.get(CHANNEL_NAME)).toBe(0);
-    });
-
-    it('should override global bindings with scene bindings', () => {
-      const paletteId1 = randomUint64();
-      const paletteId2 = randomUint64();
-      const project = createNewProject();
-      project.liveBeat = create(BeatMetadataSchema, {
-        offsetMs: 0n,
-        lengthMs: 500,
-      });
-
-      const scene = getActiveScene(project);
-
-      // Global binding
-      project.livePageControllerBindings = create(ControllerBindingsMapSchema, {
-        bindings: {
-          [BINDING_ID.toString()]: create(
-            ControllerBindingsMap_ControllerBindingsSchema,
-            {
-              bindings: {
-                [CHANNEL_NAME]: create(InputBindingSchema, {
-                  inputType: InputType.BINARY,
-                  action: {
-                    case: 'colorPalette',
-                    value: { paletteId: paletteId1 },
-                  },
-                }),
-              },
-            },
-          ),
-        },
-      });
-
-      // Scene binding (should override)
-      scene.controllerBindings = create(ControllerBindingsMapSchema, {
-        bindings: {
-          [BINDING_ID.toString()]: create(
-            ControllerBindingsMap_ControllerBindingsSchema,
-            {
-              bindings: {
-                [CHANNEL_NAME]: create(InputBindingSchema, {
-                  inputType: InputType.BINARY,
-                  action: {
-                    case: 'colorPalette',
-                    value: { paletteId: paletteId2 },
-                  },
-                }),
-              },
-            },
-          ),
-        },
-      });
-
-      const values = outputValues(project, BINDING_ID, 0n);
-
-      expect(values.size).toBe(1);
-      // Both would output 1, but we're testing that scene binding takes precedence
-      expect(values.get(CHANNEL_NAME)).toBe(1);
-    });
-
-    it('should clamp output values to [0, 1]', () => {
-      const project = createNewProject();
-      project.liveBeat = create(BeatMetadataSchema, {
-        offsetMs: 0n,
-        lengthMs: 500,
-      });
-
-      project.livePageControllerBindings = create(ControllerBindingsMapSchema, {
-        bindings: {
-          [BINDING_ID.toString()]: create(
-            ControllerBindingsMap_ControllerBindingsSchema,
-            {
-              bindings: {
-                [CHANNEL_NAME]: create(InputBindingSchema, {
-                  inputType: InputType.BINARY,
-                  action: {
-                    case: 'beatMatch',
-                    value: {},
-                  },
-                }),
-              },
-            },
-          ),
-        },
-      });
-
-      const values = outputValues(project, BINDING_ID, 0n);
-
-      // All values should be clamped to [0, 1]
-      values.forEach((value) => {
-        expect(value).toBeGreaterThanOrEqual(0);
-        expect(value).toBeLessThanOrEqual(1);
-      });
     });
   });
 

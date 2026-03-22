@@ -16,7 +16,7 @@ import {
 } from '../contexts/ControllerContext';
 
 import { getActiveScene } from '../util/sceneUtils';
-import { outputTileStrength, performTileStrength } from './tileStrength';
+import { performTileStrength } from './tileStrength';
 
 /**
  * Represents a location in the binding hierarchy.
@@ -441,71 +441,6 @@ export function getAllBindingsForAction(
   }
 
   return results;
-}
-
-/**
- * Outputs the current state of the project to the controller.
- */
-export function outputValues(
-  project: Project,
-  bindingId: bigint,
-  t: bigint,
-): Map<string, number> {
-  const values = new Map<string, number>();
-
-  const beatMetadata = project.liveBeat!;
-  const beatT = Number(t - beatMetadata.offsetMs);
-
-  // Collect all channels that have bindings, starting from global and overriding with scene-specific
-  const currentContext: BindingContext = {
-    type: 'scene',
-    sceneId: project.activeScene,
-  };
-
-  // Get all contexts in hierarchy (ancestors first, then current)
-  const ancestors = getAncestorContexts(currentContext);
-  const contexts: BindingContext[] = [...ancestors.reverse(), currentContext];
-
-  // Process bindings from ancestor to current (so children can override)
-  for (const context of contexts) {
-    const bindingsMap = getBindingsMap(project, context);
-    if (!bindingsMap) {
-      continue;
-    }
-    const bindings = bindingsMap[bindingId.toString()]?.bindings;
-
-    if (bindings) {
-      for (const [channel, binding] of Object.entries(bindings)) {
-        let value = 0;
-        const action = (binding as InputBinding).action;
-
-        switch (action.case) {
-          case 'beatMatch':
-            value = 1 - Math.round((beatT / beatMetadata.lengthMs) % 1);
-            break;
-          case 'firstBeat':
-            value = 1 - Math.round(((beatT / beatMetadata.lengthMs) % 4) / 4);
-            break;
-          case 'setTempo':
-            value = Math.floor((60_000 / beatMetadata.lengthMs - 80) / 127);
-            break;
-          case 'tileStrength':
-            value = outputTileStrength(project, action.value.tileId, t);
-            break;
-          case 'colorPalette':
-            value = 1;
-            break;
-          case undefined:
-            break;
-          default:
-            throw Error('Unknown action type!');
-        }
-        values.set(channel, Math.max(Math.min(value, 1), 0));
-      }
-    }
-  }
-
-  return values;
 }
 
 /**

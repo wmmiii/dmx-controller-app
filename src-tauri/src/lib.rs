@@ -82,12 +82,8 @@ pub fn run() {
                 app.state::<Arc<Mutex<serial::SerialState>>>()
                     .inner()
                     .clone(),
-                app.state::<Arc<Mutex<sacn::SacnState>>>()
-                    .inner()
-                    .clone(),
-                app.state::<Arc<Mutex<wled::WledState>>>()
-                    .inner()
-                    .clone(),
+                app.state::<Arc<Mutex<sacn::SacnState>>>().inner().clone(),
+                app.state::<Arc<Mutex<wled::WledState>>>().inner().clone(),
             );
 
             if cfg!(debug_assertions) {
@@ -100,9 +96,11 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            midi::add_beat_sample,
             midi::connect_midi,
             midi::disconnect_midi,
             midi::list_midi_inputs,
+            midi::set_first_beat,
             output_loop::rebuild_output_loops,
             output_loop::start_output_loop,
             output_loop::stop_output_loop,
@@ -114,6 +112,7 @@ pub fn run() {
             project::get_undo_state,
             project::request_update,
             project::save_assets,
+            project::toggle_tile,
             render::render_dmx,
             render::render_wled,
             render::set_render_mode,

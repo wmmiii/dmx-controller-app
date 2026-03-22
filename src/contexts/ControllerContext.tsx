@@ -11,9 +11,7 @@ import {
 
 import { Button } from '../components/Button';
 import { Modal } from '../components/Modal';
-import { performAction } from '../external_controller/externalController';
 
-import { BeatContext } from './BeatContext';
 import { ProjectContext } from './ProjectContext';
 
 import {
@@ -60,14 +58,11 @@ interface ControllerProviderImplProps {
 export function ControllerProvider({
   children,
 }: ControllerProviderImplProps): JSX.Element {
-  const { project, lastLoad, save, update } = useContext(ProjectContext);
+  const { project, lastLoad, save } = useContext(ProjectContext);
   const projectRef = useRef<Project>(project);
   useEffect(() => {
     projectRef.current = project;
   }, [project]);
-  const saveTimeout = useRef<any>(null);
-
-  const { addBeatSample, setBeat, setFirstBeat } = useContext(BeatContext);
 
   const [connectedDevices, setConnectedDevices] = useState<ConnectedDevice[]>(
     [],
@@ -265,42 +260,6 @@ export function ControllerProvider({
       inputListeners.current.splice(index, 1);
     }
   }, []);
-
-  // performAction effect — receives bindingId from listener
-  useEffect(() => {
-    const listener: Listener = (_p, bindingId, channel, value, cct) => {
-      const modified = performAction(
-        project,
-        bindingId,
-        channel,
-        value,
-        cct,
-        addBeatSample,
-        setFirstBeat,
-        setBeat,
-      );
-      if (modified) {
-        update();
-        // Debounce midi input.
-        clearTimeout(saveTimeout.current);
-        saveTimeout.current = setTimeout(() => {
-          save('Update via controller input.');
-        }, 500);
-      }
-    };
-    addListener(listener);
-    return () => removeListener(listener);
-  }, [
-    project,
-    saveTimeout,
-    addBeatSample,
-    update,
-    setBeat,
-    setFirstBeat,
-    save,
-    addListener,
-    removeListener,
-  ]);
 
   return (
     <>

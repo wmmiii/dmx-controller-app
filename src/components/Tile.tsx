@@ -16,10 +16,10 @@ import { SiMidi } from 'react-icons/si';
 import { ControllerContext } from '../contexts/ControllerContext';
 import { PaletteContext } from '../contexts/PaletteContext';
 import { ProjectContext } from '../contexts/ProjectContext';
+import { toggleTile } from '../system_interfaces/project';
 import { tileTileDetails } from '../util/projectUtils';
-import { tileActiveAmount, toggleTile } from '../util/tile';
+import { tileActiveAmount } from '../util/tile';
 
-import { BeatMetadataSchema } from '@dmx-controller/proto/beat_pb';
 import {
   InputBindingSchema,
   InputType,
@@ -46,11 +46,8 @@ export function Tile({ tileId, tile, onSelect, x, y, priority }: TileProps) {
   const activeRef = createRef<HTMLDivElement>();
 
   const toggle = useCallback(() => {
-    const [modified, enabled] = toggleTile(tile, project.liveBeat!);
-    if (modified) {
-      save(`${enabled ? 'Enable' : 'Disable'} tile ${tile.name}.`);
-    }
-  }, [tile, toJsonString(BeatMetadataSchema, project.liveBeat!), save]);
+    toggleTile(project.activeScene, tileId);
+  }, [project.activeScene, tileId]);
 
   useEffect(() => {
     return listenToTick((t) => {

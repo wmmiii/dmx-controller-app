@@ -1,10 +1,13 @@
-use dmx_engine::{midi::calculate_midi_output, project};
+use dmx_engine::{
+    midi::{ActionResult, ControlCommandType, calculate_midi_output, perform_action},
+    project, proto,
+};
 use midir::{MidiInput, MidiInputConnection, MidiOutput, MidiOutputConnection};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::Mutex as StdMutex;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, State};
 use tokio::sync::{Mutex, oneshot};
 
@@ -26,6 +29,127 @@ struct MidiConnectionStatusEvent {
     connected: bool,
 }
 
+/// Event payload for beat sampling state
+#[derive(Serialize, Clone)]
+struct BeatSamplingEvent {
+    sampling: bool,
+}
+
+/// Event payload for project updates
+#[derive(Serialize, Clone)]
+struct ProjectUpdatedPayload {
+    project_binary: Vec<u8>,
+    description: String,
+}
+
+const MAX_BEAT_SAMPLES: usize = 16;
+
+/// Shared state for MIDI input processing across all devices
+pub struct MidiInputState {
+    /// MSB buffers per device: device_name -> (channel -> value)
+    msb_buffers: HashMap<String, HashMap<u8, u8>>,
+    /// LSB buffers per device: device_name -> (channel -> value)
+    lsb_buffers: HashMap<String, HashMap<u8, u8>>,
+    /// Beat sample timestamps for tempo detection
+    beat_samples: Vec<u64>,
+    /// Number of beats counted in current sampling session
+    beat_count: u32,
+    /// Whether we're currently sampling beats
+    sampling: bool,
+    /// Handle to cancel the beat finalization timeout
+    beat_timeout_cancel: Option<tokio::sync::oneshot::Sender<()>>,
+}
+
+impl MidiInputState {
+    fn new() -> Self {
+        Self {
+            msb_buffers: HashMap::new(),
+            lsb_buffers: HashMap::new(),
+            beat_samples: Vec::new(),
+            beat_count: 0,
+            sampling: false,
+            beat_timeout_cancel: None,
+        }
+    }
+
+    fn get_msb_buffer(&mut self, device_name: &str) -> &mut HashMap<u8, u8> {
+        self.msb_buffers
+            .entry(device_name.to_string())
+            .or_insert_with(HashMap::new)
+    }
+
+    fn get_lsb_buffer(&mut self, device_name: &str) -> &mut HashMap<u8, u8> {
+        self.lsb_buffers
+            .entry(device_name.to_string())
+            .or_insert_with(HashMap::new)
+    }
+
+    /// Calculate beat duration from samples
+    fn calculate_beat_duration(&self) -> Option<f64> {
+        if self.beat_samples.len() < 2 {
+            return None;
+        }
+
+        let total_length = self.beat_samples[self.beat_samples.len() - 1] - self.beat_samples[0];
+        let mut length_ms = total_length as f64 / (self.beat_samples.len() - 1) as f64;
+        let bpm = 60_000.0 / length_ms;
+
+        // Try to snap to nearest whole BPM
+        let nearest_whole_bpm = bpm.round();
+        if (nearest_whole_bpm - bpm).abs() < 0.1 {
+            length_ms = 60_000.0 / nearest_whole_bpm;
+        }
+
+        Some(length_ms)
+    }
+
+    /// Add a beat sample
+    fn add_beat_sample(&mut self, t: u64) {
+        self.beat_samples.push(t);
+        if self.beat_samples.len() > MAX_BEAT_SAMPLES {
+            self.beat_samples.remove(0);
+        }
+        self.beat_count += 1;
+        self.sampling = true;
+    }
+
+    /// Set first beat (resets beat count)
+    fn set_first_beat(&mut self, t: u64) {
+        if self.beat_samples.is_empty() {
+            // Direct set - handled in project update
+        } else {
+            // Check if this is close to the last sample
+            let last = self.beat_samples[self.beat_samples.len() - 1];
+            let beat_length = self.calculate_beat_duration().unwrap_or(500.0);
+            if ((last as f64) - (t as f64)).abs() < beat_length / 2.0 {
+                self.beat_count = 0;
+            } else {
+                self.beat_count = 1;
+            }
+        }
+    }
+
+    /// Finalize beat sampling and update project
+    fn finalize_sampling(&mut self) -> Option<(f64, u64)> {
+        if let Some(length_ms) = self.calculate_beat_duration() {
+            let last_sample = self.beat_samples[self.beat_samples.len() - 1];
+            let first_beat = last_sample as f64 - (self.beat_count as f64 - 1.0) * length_ms;
+            let offset = first_beat.round() as u64;
+
+            self.beat_samples.clear();
+            self.beat_count = 0;
+            self.sampling = false;
+
+            Some((length_ms, offset))
+        } else {
+            self.beat_samples.clear();
+            self.beat_count = 0;
+            self.sampling = false;
+            None
+        }
+    }
+}
+
 /// Per-device connection state.
 struct DeviceConnection {
     input_connection: MidiInputConnection<AppHandle>,
@@ -37,6 +161,8 @@ pub struct MidiState {
     connections: StdMutex<HashMap<String, DeviceConnection>>,
     app_handle: StdMutex<Option<AppHandle>>,
     watcher_cancel_tx: StdMutex<Option<tokio::sync::watch::Sender<bool>>>,
+    /// Shared state for MIDI input processing (Arc for sharing with callbacks)
+    input_state: Arc<StdMutex<MidiInputState>>,
 }
 
 impl MidiState {
@@ -45,6 +171,7 @@ impl MidiState {
             connections: StdMutex::new(HashMap::new()),
             app_handle: StdMutex::new(Some(app_handle)),
             watcher_cancel_tx: StdMutex::new(None),
+            input_state: Arc::new(StdMutex::new(MidiInputState::new())),
         }
     }
 
@@ -229,22 +356,31 @@ fn connect_midi_internal(state: &MidiState, candidate: MidiPortCandidate) -> Res
         .ok_or("App handle not initialized")?
         .clone();
 
-    // Capture device name for the MIDI callback
+    // Capture device name and input state for the MIDI callback
     let device_name_for_callback = candidate.name.clone();
+    let input_state_for_callback = Arc::clone(&state.input_state);
 
     let input_connection = midi_input
         .connect(
             &input_port,
             "dmx-controller-input",
             move |_timestamp, message, app_handle| {
+                // Emit midi-message event for debugging (ControllerPage)
                 let midi_msg = MidiMessage {
                     device_name: device_name_for_callback.clone(),
                     data: message.to_vec(),
                 };
-
                 if let Err(e) = app_handle.emit("midi-message", &midi_msg) {
                     eprintln!("Failed to emit MIDI event: {}", e);
                 }
+
+                // Process the MIDI input
+                process_midi_input(
+                    app_handle,
+                    &device_name_for_callback,
+                    message,
+                    &input_state_for_callback,
+                );
             },
             app_handle,
         )
@@ -360,9 +496,7 @@ fn output_midi_state_for_device(
         .as_millis() as u64;
 
     // Calculate MIDI output values from project state
-    let midi_output = project::with_project(|project| {
-        Ok(calculate_midi_output(project, device_name, t))
-    });
+    let midi_output = calculate_midi_output(device_name, t);
 
     if let Ok(midi_output) = midi_output {
         if let Ok(mut output_conn) = output_conn.lock() {
@@ -389,4 +523,358 @@ pub fn output_value(conn: &mut MidiOutputConnection, channel: Vec<u8>, value: f6
         let lsb = ((value * 127.0).fract() * 127.0).floor() as u8;
         let _ = conn.send(&[channel[0], channel[1] + 32, lsb]);
     }
+}
+
+/// Process incoming MIDI input and perform actions
+fn process_midi_input(
+    app_handle: &AppHandle,
+    device_name: &str,
+    message: &[u8],
+    input_state: &Arc<StdMutex<MidiInputState>>,
+) {
+    if message.len() < 3 {
+        return;
+    }
+
+    let command = message[0];
+    let data1 = message[1];
+    let data2 = message[2];
+
+    // Get binding ID for this device
+    let binding_id = match project::with_project(|p| {
+        Ok(p.controller_mapping
+            .as_ref()
+            .and_then(|cm| cm.controller_to_binding.get(device_name).copied()))
+    }) {
+        Ok(Some(id)) => id,
+        _ => return,
+    };
+
+    // Parse MIDI message and calculate value
+    let (value, cct) = {
+        let mut input_state_guard = match input_state.lock() {
+            Ok(g) => g,
+            Err(_) => return,
+        };
+
+        parse_midi_message(command, data1, data2, device_name, &mut input_state_guard)
+    };
+
+    let channel = format!("{}, {}", command, data1);
+    let t = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_millis() as u64;
+
+    // Perform the action
+    match perform_action(binding_id, &channel, value, cct, t) {
+        Ok(action_result) => {
+            handle_action_result(app_handle, action_result, input_state, t);
+        }
+        Err(e) => {
+            log::error!("Failed to perform MIDI action: {}", e);
+        }
+    }
+}
+
+/// Parse MIDI message and return normalized value and control command type
+fn parse_midi_message(
+    command: u8,
+    data1: u8,
+    data2: u8,
+    device_name: &str,
+    input_state: &mut MidiInputState,
+) -> (f64, Option<ControlCommandType>) {
+    let mut value = data2 as f64;
+    let mut cct: Option<ControlCommandType> = None;
+
+    // MIDI command reference:
+    // 128-143: Note Off
+    // 144-159: Note On
+    // 160-175: Polyphonic Aftertouch
+    // 176-191: Control Change
+    // 192-207: Program Change
+    // 208-223: Channel Aftertouch
+    // 224-239: Pitch Bend
+
+    if command >= 128 && command < 144 {
+        // Note off
+        value /= 127.0;
+    } else if command >= 144 && command < 160 {
+        // Note on
+        value /= 127.0;
+    } else if command >= 160 && command < 176 {
+        // Polyphonic aftertouch/pressure
+        value /= 127.0;
+    } else if command >= 176 && command < 192 {
+        // Control Change - handle MSB/LSB for 14-bit values
+        if data1 < 32 {
+            // MSB (0-31)
+            let msb_buffer = input_state.get_msb_buffer(device_name);
+            msb_buffer.insert(data1, data2);
+
+            let lsb_buffer = input_state.get_lsb_buffer(device_name);
+            let lsb = lsb_buffer.get(&(data1 + 32)).copied().unwrap_or(0);
+
+            value = data2 as f64 + lsb as f64 / 127.0;
+            cct = Some(ControlCommandType::Msb);
+        } else if data1 >= 32 && data1 < 64 {
+            // LSB (32-63)
+            let lsb_buffer = input_state.get_lsb_buffer(device_name);
+            lsb_buffer.insert(data1, data2);
+
+            let msb_buffer = input_state.get_msb_buffer(device_name);
+            let msb = msb_buffer.get(&(data1 - 32)).copied().unwrap_or(0);
+
+            value = msb as f64 + data2 as f64 / 127.0;
+            cct = Some(ControlCommandType::Lsb);
+        }
+        value /= 127.0;
+    } else {
+        // Unsupported command type
+        return (0.0, None);
+    }
+
+    (value, cct)
+}
+
+/// Handle the result of a MIDI action
+fn handle_action_result(
+    app_handle: &AppHandle,
+    result: ActionResult,
+    input_state: &Arc<StdMutex<MidiInputState>>,
+    t: u64,
+) {
+    // Handle beat actions
+    if let Some(action) = result.action {
+        let mut input_state_guard = match input_state.lock() {
+            Ok(g) => g,
+            Err(_) => return,
+        };
+
+        match action {
+            proto::input_binding::Action::BeatMatch(_) => {
+                let was_sampling = input_state_guard.sampling;
+                input_state_guard.add_beat_sample(t);
+
+                // Emit sampling state if it changed
+                if !was_sampling {
+                    let _ = app_handle
+                        .emit("beat-sampling-state", BeatSamplingEvent { sampling: true });
+                }
+
+                // Schedule beat finalization timeout
+                let input_state_clone = Arc::clone(input_state);
+                let app_handle_clone = app_handle.clone();
+                let beat_duration = input_state_guard
+                    .calculate_beat_duration()
+                    .unwrap_or(2000.0);
+
+                // Cancel any existing timeout
+                if let Some(cancel_tx) = input_state_guard.beat_timeout_cancel.take() {
+                    let _ = cancel_tx.send(());
+                }
+
+                let (cancel_tx, mut cancel_rx) = tokio::sync::oneshot::channel();
+                input_state_guard.beat_timeout_cancel = Some(cancel_tx);
+
+                drop(input_state_guard); // Release lock before spawning
+
+                tauri::async_runtime::spawn(async move {
+                    tokio::select! {
+                        _ = tokio::time::sleep(Duration::from_millis(beat_duration as u64)) => {
+                            finalize_beat_sampling(&app_handle_clone, &input_state_clone);
+                        }
+                        _ = &mut cancel_rx => {
+                            // Cancelled, do nothing
+                        }
+                    }
+                });
+            }
+            proto::input_binding::Action::FirstBeat(_) => {
+                // Handle first beat
+                let has_samples = !input_state_guard.beat_samples.is_empty();
+                input_state_guard.set_first_beat(t);
+
+                if !has_samples {
+                    // Directly set the offset in the project
+                    drop(input_state_guard);
+                    let _ = project::with_project_mut(|project| {
+                        if let Some(ref mut beat) = project.live_beat {
+                            beat.offset_ms = t;
+                        }
+                        Ok(true)
+                    });
+
+                    // Emit project update
+                    emit_project_update(app_handle, "Manually set first beat.");
+                }
+            }
+            _ => {}
+        }
+    }
+
+    // Emit project update if modified
+    if result.modified {
+        emit_project_update(app_handle, "");
+    }
+}
+
+/// Finalize beat sampling and update the project
+fn finalize_beat_sampling(app_handle: &AppHandle, input_state: &Arc<StdMutex<MidiInputState>>) {
+    let beat_data = {
+        let mut input_state_guard = match input_state.lock() {
+            Ok(g) => g,
+            Err(_) => return,
+        };
+        input_state_guard.finalize_sampling()
+    };
+
+    if let Some((length_ms, offset_ms)) = beat_data {
+        // Update project with new beat data
+        let _ = project::with_project_mut(|project| {
+            if let Some(ref mut beat) = project.live_beat {
+                beat.length_ms = length_ms;
+                beat.offset_ms = offset_ms;
+            }
+            Ok(true)
+        });
+
+        let bpm = (60_000.0 / length_ms).round() as u32;
+        emit_project_update(app_handle, &format!("Set beat to {} BPM.", bpm));
+    }
+
+    // Emit sampling state change
+    let _ = app_handle.emit("beat-sampling-state", BeatSamplingEvent { sampling: false });
+}
+
+/// Emit a project-updated event
+fn emit_project_update(app_handle: &AppHandle, description: &str) {
+    match project::get() {
+        Ok(project_binary) => {
+            let _ = app_handle.emit(
+                "project-updated",
+                ProjectUpdatedPayload {
+                    project_binary,
+                    description: description.to_string(),
+                },
+            );
+        }
+        Err(e) => {
+            log::error!("Failed to get project for update: {}", e);
+        }
+    }
+}
+
+/// Add a beat sample for tempo detection (called from keyboard shortcut)
+#[tauri::command]
+pub async fn add_beat_sample(
+    app: AppHandle,
+    state: State<'_, Arc<Mutex<MidiState>>>,
+) -> Result<(), String> {
+    let t = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|e| e.to_string())?
+        .as_millis() as u64;
+
+    let midi_state = state.lock().await;
+    let input_state = Arc::clone(&midi_state.input_state);
+    drop(midi_state);
+
+    let was_sampling = {
+        let mut input_state_guard = input_state
+            .lock()
+            .map_err(|e| format!("Failed to lock input state: {}", e))?;
+
+        let was_sampling = input_state_guard.sampling;
+        input_state_guard.add_beat_sample(t);
+        was_sampling
+    };
+
+    // Emit sampling state if it changed
+    if !was_sampling {
+        let _ = app.emit("beat-sampling-state", BeatSamplingEvent { sampling: true });
+    }
+
+    // Schedule beat finalization timeout
+    let input_state_clone = Arc::clone(&input_state);
+    let app_clone = app.clone();
+
+    let beat_duration = {
+        let input_state_guard = input_state
+            .lock()
+            .map_err(|e| format!("Failed to lock input state: {}", e))?;
+        input_state_guard
+            .calculate_beat_duration()
+            .unwrap_or(2000.0)
+    };
+
+    // Cancel any existing timeout
+    {
+        let mut input_state_guard = input_state
+            .lock()
+            .map_err(|e| format!("Failed to lock input state: {}", e))?;
+
+        if let Some(cancel_tx) = input_state_guard.beat_timeout_cancel.take() {
+            let _ = cancel_tx.send(());
+        }
+
+        let (cancel_tx, mut cancel_rx) = tokio::sync::oneshot::channel();
+        input_state_guard.beat_timeout_cancel = Some(cancel_tx);
+
+        drop(input_state_guard);
+
+        tauri::async_runtime::spawn(async move {
+            tokio::select! {
+                _ = tokio::time::sleep(Duration::from_millis(beat_duration as u64)) => {
+                    finalize_beat_sampling(&app_clone, &input_state_clone);
+                }
+                _ = &mut cancel_rx => {
+                    // Cancelled, do nothing
+                }
+            }
+        });
+    }
+
+    Ok(())
+}
+
+/// Set the first beat position (called from keyboard shortcut)
+#[tauri::command]
+pub async fn set_first_beat(
+    app: AppHandle,
+    state: State<'_, Arc<Mutex<MidiState>>>,
+) -> Result<(), String> {
+    let t = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|e| e.to_string())?
+        .as_millis() as u64;
+
+    let midi_state = state.lock().await;
+    let input_state = Arc::clone(&midi_state.input_state);
+    drop(midi_state);
+
+    let has_samples = {
+        let mut input_state_guard = input_state
+            .lock()
+            .map_err(|e| format!("Failed to lock input state: {}", e))?;
+        let has_samples = !input_state_guard.beat_samples.is_empty();
+        input_state_guard.set_first_beat(t);
+        has_samples
+    };
+
+    if !has_samples {
+        // Directly set the offset in the project
+        project::with_project_mut(|project| {
+            if let Some(ref mut beat) = project.live_beat {
+                beat.offset_ms = t;
+            }
+            Ok(true)
+        })?;
+
+        // Emit project update
+        emit_project_update(&app, "Manually set first beat.");
+    }
+
+    Ok(())
 }

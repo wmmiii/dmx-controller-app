@@ -134,6 +134,20 @@ export async function saveAssets(assetsBinary: Uint8Array): Promise<void> {
   });
 }
 
+/**
+ * Toggles a tile on/off based on its current state.
+ * Returns whether the tile is now enabled (true) or disabled (false).
+ */
+export async function toggleTile(
+  sceneId: bigint,
+  tileId: bigint,
+): Promise<boolean> {
+  return invoke('toggle_tile', {
+    sceneId: sceneId.toString(),
+    tileId: tileId.toString(),
+  });
+}
+
 // Initialize Tauri event listeners at module load
 initProjectListeners();
 
