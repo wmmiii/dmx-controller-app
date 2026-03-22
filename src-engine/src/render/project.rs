@@ -1,8 +1,9 @@
 use crate::proto::{
-    output::Output, Project, QualifiedFixtureId, SacnDmxOutput, SerialDmxOutput, WledOutput,
+    Project, QualifiedFixtureId, SacnDmxOutput, SerialDmxOutput, WledOutput, output::Output,
 };
 
 impl Project {
+    #[must_use]
     pub fn get_all_qualified_ids(&self) -> Vec<QualifiedFixtureId> {
         let patch_id = self.active_patch;
 
@@ -43,7 +44,7 @@ impl Project {
                                 .map(|(segment_id, _)| QualifiedFixtureId {
                                     patch: patch_id,
                                     output: *output_id,
-                                    fixture: *segment_id as u64,
+                                    fixture: u64::from(*segment_id),
                                 })
                                 .collect::<Vec<_>>()
                         }

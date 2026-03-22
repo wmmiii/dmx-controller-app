@@ -59,8 +59,10 @@ fn main() {
         .collect();
 
     // Compile all proto files with include path set to project root
+    // Disable clippy warnings on generated protobuf code
     prost_build::Config::new()
         .protoc_arg("--experimental_allow_proto3_optional")
+        .type_attribute(".", "#[allow(clippy::all, clippy::pedantic)]")
         .compile_protos(&proto_path_refs, &[project_root.to_str().unwrap()])
         .expect("Failed to compile protos");
 }

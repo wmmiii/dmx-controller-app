@@ -78,7 +78,7 @@ impl OutputLoopManager {
                 .rebuild_all_loops(serial_state, sacn_state, wled_state)
                 .await
             {
-                log::error!("Failed to start output loops on startup: {}", e);
+                log::error!("Failed to start output loops on startup: {e}");
             }
         });
     }
@@ -111,7 +111,7 @@ impl OutputLoopManager {
             )
             .await
             {
-                log::error!("Output loop {} failed: {}", output_id, e);
+                log::error!("Output loop {output_id} failed: {e}");
             }
 
             // Remove self from the map when done
@@ -139,13 +139,10 @@ impl OutputLoopManager {
             let _ = handle.cancel_tx.send(true);
 
             // Wait for task to finish (with timeout)
-            match tokio::time::timeout(Duration::from_millis(500), handle.task).await {
-                Ok(_) => Ok(()),
-                Err(_) => {
-                    log::warn!("Output loop {} did not stop within timeout", output_id);
-                    Ok(())
-                }
+            if (tokio::time::timeout(Duration::from_millis(500), handle.task).await).is_err() {
+                log::warn!("Output loop {output_id} did not stop within timeout");
             }
+            Ok(())
         } else {
             Ok(()) // Already stopped
         }
@@ -171,6 +168,7 @@ impl OutputLoopManager {
                     continue;
                 }
 
+                #[allow(clippy::cast_possible_truncation)]
                 let output_type = match &output.output {
                     Some(ProtoOutput::SerialDmxOutput(_)) => OutputType::Serial,
                     Some(ProtoOutput::SacnDmxOutput(sacn)) => OutputType::Sacn {
@@ -228,7 +226,7 @@ impl OutputLoopManager {
 
         // Stop loops that need to be stopped
         for output_id in to_stop {
-            log::info!("Stopping output loop {} (removed or changed)", output_id);
+            log::info!("Stopping output loop {output_id} (removed or changed)");
             self.stop_loop(output_id).await?;
         }
 
@@ -253,18 +251,18 @@ impl OutputLoopManager {
             message,
         };
         if let Err(e) = app.emit("render-error", event) {
-            log::error!("Failed to emit render error event: {}", e);
+            log::error!("Failed to emit render error event: {e}");
         }
     }
 
     fn clear_error(output_id: u64, app: &AppHandle) {
         // Emit output_id string to signal clearing the error
         if let Err(e) = app.emit("render-error-clear", output_id.to_string()) {
-            log::error!("Failed to emit render error clear event: {}", e);
+            log::error!("Failed to emit render error clear event: {e}");
         }
     }
 
-    async fn render_and_emit_dmx(
+    fn render_and_emit_dmx(
         output_id: u64,
         system_t: u64,
         frame: u32,
@@ -280,7 +278,7 @@ impl OutputLoopManager {
                     data: dmx_vec.clone(),
                 };
                 if let Err(e) = app.emit("dmx-render", event) {
-                    log::error!("Failed to emit DMX render event: {}", e);
+                    log::error!("Failed to emit DMX render event: {e}");
                 }
 
                 Ok(dmx_vec)
@@ -304,26 +302,24 @@ impl OutputLoopManager {
             OutputType::Wled { .. } => WLED_FPS,
         };
 
-        let frame_duration = Duration::from_millis(1000 / target_fps as u64);
+        let frame_duration = Duration::from_millis(1000 / u64::from(target_fps));
         let mut frame = 0u32;
 
         log::info!(
-            "Starting output loop {} ({:?}) at {} FPS",
-            output_id,
-            output_type,
-            target_fps
+            "Starting output loop {output_id} ({output_type:?}) at {target_fps} FPS"
         );
 
         loop {
             // Check for cancellation
             if *cancel_rx.borrow() {
-                log::info!("Output loop {} cancelled", output_id);
+                log::info!("Output loop {output_id} cancelled");
                 break;
             }
 
             let loop_start = Instant::now();
 
             // Render the frame
+            #[allow(clippy::cast_possible_truncation)]
             let system_t = std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap()
@@ -331,7 +327,7 @@ impl OutputLoopManager {
 
             let result = match &output_type {
                 OutputType::Serial => {
-                    match Self::render_and_emit_dmx(output_id, system_t, frame, &app).await {
+                    match Self::render_and_emit_dmx(output_id, system_t, frame, &app) {
                         Ok(dmx_vec) => {
                             // Output via serial
                             let serial = serial_state.lock().await;
@@ -344,7 +340,7 @@ impl OutputLoopManager {
                     universe,
                     ip_address,
                 } => {
-                    match Self::render_and_emit_dmx(output_id, system_t, frame, &app).await {
+                    match Self::render_and_emit_dmx(output_id, system_t, frame, &app) {
                         Ok(dmx_vec) => {
                             // Output via sACN
                             let sacn = sacn_state.lock().await;
@@ -363,7 +359,7 @@ impl OutputLoopManager {
                                 data: wled_data.encode_to_vec(),
                             };
                             if let Err(e) = app.emit("wled-render", event) {
-                                log::error!("Failed to emit WLED render event: {}", e);
+                                log::error!("Failed to emit WLED render event: {e}");
                             }
 
                             // Output via WLED
@@ -378,7 +374,7 @@ impl OutputLoopManager {
             };
 
             match result {
-                Ok(_) => Self::clear_error(output_id, &app),
+                Ok(()) => Self::clear_error(output_id, &app),
                 Err(e) => Self::emit_error(output_id, e, &app),
             }
 

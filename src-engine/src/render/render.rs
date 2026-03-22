@@ -40,19 +40,18 @@ pub fn render_dmx(output_id: u64, system_t: u64, frame: u32) -> Result<[u8; 512]
             }
         };
 
-        let fixture_definitions = match project
+        let Some(fixture_definitions) = project
             .fixture_definitions
             .as_ref()
             .map(|d| &d.dmx_fixture_definitions)
-        {
-            Some(fixture_definitions) => fixture_definitions,
-            None => return Err("Fixture definitions not defined!".to_string()),
+        else {
+            return Err("Fixture definitions not defined!".to_string());
         };
 
         let mut render_target = DmxRenderTarget::new(fixtures, fixture_definitions);
 
         render(output_id, &mut render_target, system_t, frame, project)
-            .map(|_| render_target.get_universe())
+            .map(|()| render_target.get_universe())
     })
 }
 
@@ -93,7 +92,7 @@ pub fn render_wled(output_id: u64, system_t: u64, frame: u32) -> Result<WledRend
                 .collect(),
         };
 
-        render(output_id, &mut render_target, system_t, frame, project).map(|_| render_target)
+        render(output_id, &mut render_target, system_t, frame, project).map(|()| render_target)
     })
 }
 
@@ -117,7 +116,8 @@ fn render<T: RenderTarget<T>>(
             Ok(())
         }
         Some(Mode::GroupDebug(GroupDebug { group_id })) => {
-            render_group_debug(render_target, project, group_id)
+            render_group_debug(render_target, project, *group_id);
+            Ok(())
         }
         Some(Mode::Scene(Scene { scene_id })) => {
             render_scene(*scene_id, render_target, system_t, frame, project)
@@ -126,23 +126,21 @@ fn render<T: RenderTarget<T>>(
     }
 }
 
-fn render_group_debug<T: RenderTarget<T>>(
-    render_target: &mut T,
-    project: &Project,
-    group_id: &u64,
-) -> Result<(), String> {
+fn render_group_debug<T: RenderTarget<T>>(render_target: &mut T, project: &Project, group_id: u64) {
     let group_target = OutputTarget {
-        output: Some(output_target::Output::Group(*group_id)),
+        output: Some(output_target::Output::Group(group_id)),
     };
     let fixtures = get_fixtures(project, &group_target);
     for (index, fixture) in fixtures.iter().enumerate() {
         // Normalize hue to [0, 1) range (handle wraparound)
+        #[allow(clippy::cast_precision_loss)]
         let h = index as f64 / fixtures.len() as f64;
 
         // Scale to [0, 6) to represent the 6 segments of the color wheel
         let h_scaled = h * 6.0;
+        #[allow(clippy::cast_possible_truncation)]
         let segment = h_scaled.floor() as i32;
-        let f = h_scaled - segment as f64;
+        let f = h_scaled - f64::from(segment);
 
         let color = match segment {
             0 => (1.0, f, 0.0),       // Red to Yellow
@@ -165,6 +163,4 @@ fn render_group_debug<T: RenderTarget<T>>(
 
         render_target.apply_state(fixture, &state, &ColorPalette::default());
     }
-
-    Ok(())
 }

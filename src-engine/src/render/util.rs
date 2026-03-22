@@ -1,3 +1,5 @@
+#![allow(clippy::cast_precision_loss)]
+
 use crate::{
     proto::{
         ColorPalette, EffectTiming, FixtureState, OutputTarget, Project, QualifiedFixtureId,
@@ -17,10 +19,10 @@ pub fn apply_effect<T: RenderTarget<T>>(
     project: &Project,
     render_target: &mut T,
     output_target: &OutputTarget,
-    system_t: &u64,
-    effect_t: &Option<f64>,
-    beat_t: &f64,
-    frame: &u32,
+    system_t: u64,
+    effect_t: Option<&f64>,
+    beat_t: f64,
+    frame: u32,
     effect: &Effect,
     color_palette: &ColorPalette,
 ) {
@@ -81,9 +83,8 @@ pub fn apply_state<T: RenderTarget<T>>(
     state: &FixtureState,
     color_palette: &ColorPalette,
 ) {
-    let output = match &output_target.output {
-        Some(o) => o,
-        None => return,
+    let Some(output) = &output_target.output else {
+        return;
     };
 
     match output {
@@ -118,13 +119,12 @@ pub fn apply_state<T: RenderTarget<T>>(
                 }
             }
         }
-    };
+    }
 }
 
 pub fn get_fixtures(project: &Project, output_target: &OutputTarget) -> Vec<QualifiedFixtureId> {
-    let output = match &output_target.output {
-        Some(o) => o,
-        None => return vec![],
+    let Some(output) = &output_target.output else {
+        return vec![];
     };
 
     match output {
@@ -146,7 +146,7 @@ pub fn get_fixtures(project: &Project, output_target: &OutputTarget) -> Vec<Qual
 
             let mut groups = vec![id];
             while let Some(gid) = groups.pop() {
-                for target in project.groups[gid].targets.iter() {
+                for target in &project.groups[gid].targets {
                     match &target.output {
                         Some(Output::Group(id)) => groups.push(id),
                         Some(Output::Fixtures(fixtures)) => {
@@ -168,16 +168,18 @@ pub fn get_fixtures(project: &Project, output_target: &OutputTarget) -> Vec<Qual
 
 pub fn calculate_timing(
     effect_timing: &EffectTiming,
-    system_t: &u64,
-    effect_t: &Option<f64>,
-    beat_t: &f64,
+    system_t: u64,
+    effect_t: Option<&f64>,
+    beat_t: f64,
     phase_index: f64,
 ) -> f64 {
     // Calculate based on timing mode.
     let mut t = match effect_timing.timing {
-        Some(Timing::Absolute(Absolute { duration_ms })) => *system_t as f64 / duration_ms as f64,
-        Some(Timing::Beat(Beat { multiplier })) => beat_t / multiplier as f64,
-        Some(Timing::OneShot(_)) => effect_t.unwrap_or(*beat_t),
+        Some(Timing::Absolute(Absolute { duration_ms })) => {
+            system_t as f64 / f64::from(duration_ms)
+        }
+        Some(Timing::Beat(Beat { multiplier })) => beat_t / f64::from(multiplier),
+        Some(Timing::OneShot(_)) => *effect_t.unwrap_or(&beat_t),
         None => panic!("Timing type not specified when trying to calculate timing!"),
     };
 
@@ -197,12 +199,12 @@ pub fn calculate_timing(
         Ok(EasingFunction::EaseIn) => t * t * t,
         Ok(EasingFunction::EaseOut) => 1.0 - (1.0 - t).powf(3.0),
         Ok(EasingFunction::EaseInOut) => t * t * (3.0 - 2.0 * t),
-        Ok(EasingFunction::Sine) => (-(PI * t).cos() + 1.0) / 2.0,
+        Ok(EasingFunction::Sine) => f64::midpoint(-(PI * t).cos(), 1.0),
         _ => panic!("Unknown easing type!"),
     }
 }
 
-pub fn interpolate_palettes(a: ColorPalette, b: ColorPalette, t: f64) -> ColorPalette {
+pub fn interpolate_palettes(a: &ColorPalette, b: &ColorPalette, t: f64) -> ColorPalette {
     use crate::proto::{Color, ColorPalette, color_palette::ColorDescription};
 
     let interpolate_color = |a: &Color, b: &Color, t: f64| -> Color {

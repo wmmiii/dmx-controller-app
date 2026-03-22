@@ -46,7 +46,7 @@ pub enum ControlCommandType {
 /// Looks up a binding in the hierarchy, starting from scene and falling back to global.
 fn find_binding<'a>(
     project: &'a proto::Project,
-    binding_context: BindingContext,
+    binding_context: &BindingContext,
     binding_id: u64,
     channel: &str,
 ) -> Option<&'a InputBinding> {
@@ -54,7 +54,7 @@ fn find_binding<'a>(
     if let BindingContext::Scene { scene_id } = binding_context
         && let Some(binding) = project
             .scenes
-            .get(&scene_id)
+            .get(scene_id)
             .and_then(|scene| scene.controller_bindings.as_ref())
             .and_then(|map| map.bindings.get(&binding_id))
             .and_then(|bindings| bindings.bindings.get(channel))
@@ -92,7 +92,7 @@ pub fn perform_action(
             scene_id: project.active_scene,
         };
 
-        let Some(&binding) = find_binding(project, binding_context, binding_id, channel) else {
+        let Some(&binding) = find_binding(project, &binding_context, binding_id, channel) else {
             return Ok(ActionResult::unchanged());
         };
 
@@ -147,6 +147,7 @@ fn perform_tile_strength(
         && let Some(tile_entry) = scene.tile_map.iter_mut().find(|tm| tm.id == tile_id)
         && let Some(tile) = tile_entry.tile.as_mut()
     {
+        #[allow(clippy::cast_possible_truncation)]
         if cct.is_some() {
             // Fader input - set absolute strength
             tile.transition = Some(proto::scene::tile::Transition::AbsoluteStrength(
@@ -190,6 +191,7 @@ pub fn calculate_midi_output(
             return Ok(output);
         };
 
+        #[allow(clippy::cast_precision_loss)]
         let beat_t = (t - beat_metadata.offset_ms) as f64 / beat_metadata.length_ms;
 
         // Collect bindings from both global and scene contexts

@@ -78,11 +78,11 @@ pub fn load_from_disk(app: &AppHandle) -> Result<(), String> {
     let app_data_dir = app
         .path()
         .app_data_dir()
-        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
+        .map_err(|e| format!("Failed to get app data dir: {e}"))?;
 
     // Ensure directory exists
     std::fs::create_dir_all(&app_data_dir)
-        .map_err(|e| format!("Failed to create app data dir: {}", e))?;
+        .map_err(|e| format!("Failed to create app data dir: {e}"))?;
 
     // Read project binary (empty vec if doesn't exist)
     let project_path = app_data_dir.join(PROJECT_KEY);
@@ -100,7 +100,7 @@ pub fn load_from_disk(app: &AppHandle) -> Result<(), String> {
 }
 
 /// Schedules a debounced flush of pending writes
-fn schedule_flush(persist_state: Arc<TokioMutex<PersistState>>) {
+fn schedule_flush(persist_state: &Arc<TokioMutex<PersistState>>) {
     let persist_state_clone = persist_state.clone();
     tokio::spawn(async move {
         // Wait for debounce period
@@ -113,7 +113,7 @@ fn schedule_flush(persist_state: Arc<TokioMutex<PersistState>>) {
         if let Some(data) = state.pending_project.take() {
             let path = state.app_data_dir.join(PROJECT_KEY);
             if let Err(e) = std::fs::write(&path, &data) {
-                log::error!("Failed to write project: {}", e);
+                log::error!("Failed to write project: {e}");
             }
         }
 
@@ -121,7 +121,7 @@ fn schedule_flush(persist_state: Arc<TokioMutex<PersistState>>) {
         if let Some(data) = state.pending_assets.take() {
             let path = state.app_data_dir.join(ASSETS_KEY);
             if let Err(e) = std::fs::write(&path, &data) {
-                log::error!("Failed to write assets: {}", e);
+                log::error!("Failed to write assets: {e}");
             }
         }
 
@@ -145,7 +145,7 @@ async fn queue_project_persist(
 
     // Schedule new flush
     drop(state); // Release lock before spawning
-    schedule_flush(persist_state.clone());
+    schedule_flush(persist_state);
 }
 
 /// Queues assets binary for debounced persistence
@@ -160,7 +160,7 @@ async fn queue_assets_persist(assets_binary: &[u8], persist_state: &Arc<TokioMut
 
     // Schedule new flush
     drop(state); // Release lock before spawning
-    schedule_flush(persist_state.clone());
+    schedule_flush(persist_state);
 }
 
 /// Payload for the project-updated event
@@ -435,6 +435,7 @@ pub fn get_undo_state() -> Result<UndoStatePayload, String> {
 /// Emits project-updated event with the current project state.
 /// TODO: Add lazy asset fetching - frontend will request assets on-demand as needed.
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value, clippy::unnecessary_wraps)]
 pub fn request_update(app: AppHandle) -> Result<(), String> {
     // Emit project update (flow-controlled) and undo state (immediate)
     emit_project_update(&app, None);
@@ -465,6 +466,7 @@ pub async fn toggle_tile(
     let scene_id: u64 = scene_id.parse().map_err(|_| "Invalid scene_id")?;
     let tile_id: u64 = tile_id.parse().map_err(|_| "Invalid tile_id")?;
 
+    #[allow(clippy::cast_possible_truncation)]
     let t = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map_err(|e| e.to_string())?
@@ -472,7 +474,7 @@ pub async fn toggle_tile(
 
     let (modified, enabled, description) = project::with_project_mut(|project| {
         let beat = match &project.live_beat {
-            Some(b) => b.clone(),
+            Some(b) => *b,
             None => return Ok((false, false, String::new())),
         };
 

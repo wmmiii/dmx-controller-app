@@ -14,7 +14,7 @@ impl SacnState {
         );
 
         let source = SacnSource::with_ip("DMX Controller App", local_addr)
-            .map_err(|e| format!("Failed to create sACN source: {}", e))?;
+            .map_err(|e| format!("Failed to create sACN source: {e}"))?;
 
         Ok(SacnState {
             source: std::sync::Mutex::new(source),
@@ -36,20 +36,20 @@ impl SacnState {
         let mut source = self
             .source
             .lock()
-            .map_err(|e| format!("Failed to lock sACN source: {}", e))?;
+            .map_err(|e| format!("Failed to lock sACN source: {e}"))?;
 
         let ip_addr: IpAddr = ip_address
             .parse()
-            .map_err(|e| format!("Invalid IP address '{}': {}", ip_address, e))?;
+            .map_err(|e| format!("Invalid IP address '{ip_address}': {e}"))?;
         let socket_addr = SocketAddr::new(ip_addr, ACN_SDT_MULTICAST_PORT);
 
         source
             .register_universe(universe)
-            .map_err(|e| format!("Failed to register sACN DMX universe: {}", e))?;
+            .map_err(|e| format!("Failed to register sACN DMX universe: {e}"))?;
 
         let result = source.send(&[universe], &dmx_data, Some(100), Some(socket_addr), None);
 
-        result.map_err(|e| format!("Failed to send sACN DMX data: {}", e))?;
+        result.map_err(|e| format!("Failed to send sACN DMX data: {e}"))?;
 
         Ok(())
     }

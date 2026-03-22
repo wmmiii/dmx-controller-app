@@ -20,17 +20,12 @@ pub fn run() {
             let app_data_dir = app
                 .path()
                 .app_data_dir()
-                .map_err(|e| format!("Failed to get app data dir: {}", e))
-                .map_err(|e| {
-                    Box::new(std::io::Error::new(std::io::ErrorKind::Other, e))
-                        as Box<dyn std::error::Error>
-                })?;
+                .map_err(|e| format!("Failed to get app data dir: {e}"))
+                .map_err(|e| Box::new(std::io::Error::other(e)) as Box<dyn std::error::Error>)?;
 
             // Load project from disk into engine
-            project::load_from_disk(app.handle()).map_err(|e| {
-                Box::new(std::io::Error::new(std::io::ErrorKind::Other, e))
-                    as Box<dyn std::error::Error>
-            })?;
+            project::load_from_disk(app.handle())
+                .map_err(|e| Box::new(std::io::Error::other(e)) as Box<dyn std::error::Error>)?;
 
             // Create and manage PersistState for debounced writes
             let persist_state = project::PersistState::new(app_data_dir);
@@ -48,10 +43,8 @@ pub fn run() {
 
             app.manage(midi_state_arc);
 
-            let sacn_state = sacn::SacnState::new().map_err(|e| {
-                Box::new(std::io::Error::new(std::io::ErrorKind::Other, e))
-                    as Box<dyn std::error::Error>
-            })?;
+            let sacn_state = sacn::SacnState::new()
+                .map_err(|e| Box::new(std::io::Error::other(e)) as Box<dyn std::error::Error>)?;
             app.manage(Arc::new(Mutex::new(sacn_state)));
 
             let serial_state = serial::SerialState::new();
@@ -66,10 +59,8 @@ pub fn run() {
 
             app.manage(serial_state_arc);
 
-            let wled_state = wled::WledState::new().map_err(|e| {
-                Box::new(std::io::Error::new(std::io::ErrorKind::Other, e))
-                    as Box<dyn std::error::Error>
-            })?;
+            let wled_state = wled::WledState::new()
+                .map_err(|e| Box::new(std::io::Error::other(e)) as Box<dyn std::error::Error>)?;
             app.manage(Arc::new(Mutex::new(wled_state)));
 
             let output_loop_manager = output_loop::OutputLoopManager::new(app.handle().clone());

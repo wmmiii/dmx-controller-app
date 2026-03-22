@@ -5,7 +5,6 @@ use open_dmx::DMXSerial;
 use serialport::available_ports;
 use std::collections::HashMap;
 use std::sync::Arc;
-use tauri::State;
 use tokio::sync::Mutex;
 
 pub struct SerialState {
@@ -73,8 +72,7 @@ impl SerialState {
                 // Close ports that have disappeared
                 if !disappeared_ports.is_empty() {
                     log::info!(
-                        "Detected disconnected serial ports: {:?}",
-                        disappeared_ports
+                        "Detected disconnected serial ports: {disappeared_ports:?}"
                     );
 
                     let serial = state.lock().await;
@@ -84,11 +82,11 @@ impl SerialState {
 
                 // If there are new ports, try to auto-bind
                 if !new_ports.is_empty() {
-                    log::info!("Detected new serial ports: {:?}", new_ports);
+                    log::info!("Detected new serial ports: {new_ports:?}");
 
                     let serial = state.lock().await;
                     if let Err(e) = serial.auto_bind_serial_outputs() {
-                        log::error!("Failed to auto-bind after port detection: {}", e);
+                        log::error!("Failed to auto-bind after port detection: {e}");
                     }
                     drop(serial);
                 }
@@ -98,7 +96,7 @@ impl SerialState {
 
             // Sleep for a short interval before checking again
             tokio::select! {
-                _ = tokio::time::sleep(tokio::time::Duration::from_secs(1)) => {},
+                () = tokio::time::sleep(tokio::time::Duration::from_secs(1)) => {},
                 _ = cancel_rx.changed() => {
                     if *cancel_rx.borrow() {
                         break;
@@ -115,7 +113,7 @@ impl SerialState {
         let mut ports = self
             .dmx_ports
             .lock()
-            .map_err(|e| format!("Failed to lock DMX ports: {}", e))?;
+            .map_err(|e| format!("Failed to lock DMX ports: {e}"))?;
         match ports.get_mut(output_id) {
             Some((_port_name, dmx_serial)) => {
                 let mut dmx_data = [0u8; 512];
@@ -136,19 +134,19 @@ impl SerialState {
                 let mut ports = self
                     .dmx_ports
                     .lock()
-                    .map_err(|e| format!("Failed to lock DMX ports: {}", e))?;
+                    .map_err(|e| format!("Failed to lock DMX ports: {e}"))?;
 
                 ports.insert(output_id.to_string(), (port_name.to_string(), dmx_port));
-                log::info!("Bound output '{}' to port '{}'", output_id, port_name);
+                log::info!("Bound output '{output_id}' to port '{port_name}'");
                 Ok(())
             }
-            Err(e) => Err(format!("Failed to open DMX port '{}': {}", port_name, e)),
+            Err(e) => Err(format!("Failed to open DMX port '{port_name}': {e}")),
         }
     }
 
     /// Get the port name that the output is currently bound to
     pub fn get_bound_port_name(&self, output_id: &str) -> Option<String> {
-        let ports = self.dmx_ports.lock().unwrap_or_else(|e| e.into_inner());
+        let ports = self.dmx_ports.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         ports.get(output_id).map(|(port_name, _)| port_name.clone())
     }
 
@@ -157,10 +155,10 @@ impl SerialState {
         let mut ports = self
             .dmx_ports
             .lock()
-            .map_err(|e| format!("Failed to lock DMX ports: {}", e))?;
+            .map_err(|e| format!("Failed to lock DMX ports: {e}"))?;
 
         if ports.remove(output_id).is_some() {
-            log::info!("Closed port for output '{}'", output_id);
+            log::info!("Closed port for output '{output_id}'");
         }
         Ok(())
     }
@@ -169,12 +167,10 @@ impl SerialState {
     fn close_disconnected_ports(&self, disconnected_port_names: &[String]) {
         // Extract outputs to close from project (avoid holding lock during I/O)
         let outputs_to_close: Vec<(String, String)> = match project::with_project(|project| {
-            let active_patch = match project.patches.get(&project.active_patch) {
-                Some(patch) => patch,
-                None => {
-                    log::warn!("Active patch {} not found", project.active_patch);
-                    return Ok(Vec::new());
-                }
+            let Some(active_patch) = project.patches.get(&project.active_patch) else {
+                let active_patch_id = project.active_patch;
+                log::warn!("Active patch {active_patch_id} not found");
+                return Ok(Vec::new());
             };
 
             let mut to_close = Vec::new();
@@ -193,10 +189,7 @@ impl SerialState {
         }) {
             Ok(outputs) => outputs,
             Err(e) => {
-                log::error!(
-                    "Failed to get project while closing disconnected ports: {}",
-                    e
-                );
+                log::error!("Failed to get project while closing disconnected ports: {e}");
                 return;
             }
         };
@@ -204,16 +197,10 @@ impl SerialState {
         // Close ports outside the project lock
         for (output_id_str, last_port) in outputs_to_close {
             if let Err(e) = self.try_close_port(&output_id_str) {
-                log::error!(
-                    "Failed to close disconnected port for output '{}': {}",
-                    output_id_str,
-                    e
-                );
+                log::error!("Failed to close disconnected port for output '{output_id_str}': {e}");
             } else {
                 log::info!(
-                    "Closed port '{}' for output '{}' due to disconnection",
-                    last_port,
-                    output_id_str
+                    "Closed port '{last_port}' for output '{output_id_str}' due to disconnection"
                 );
             }
         }
@@ -225,7 +212,7 @@ impl SerialState {
         let available_port_names: Vec<String> = match available_ports() {
             Ok(ports) => ports.into_iter().map(|p| p.port_name).collect(),
             Err(e) => {
-                log::warn!("Failed to list available ports for auto-binding: {}", e);
+                log::warn!("Failed to list available ports for auto-binding: {e}");
                 return Ok(()); // Don't fail the whole operation
             }
         };
@@ -233,15 +220,10 @@ impl SerialState {
         // Extract serial output configurations from project (avoid holding lock during I/O)
         // Returns: Vec<(output_id, desired_port)>
         let serial_outputs: Vec<(String, Option<String>)> = project::with_project(|project| {
-            let active_patch = match project.patches.get(&project.active_patch) {
-                Some(patch) => patch,
-                None => {
-                    log::warn!(
-                        "Active patch {} not found, skipping auto-bind",
-                        project.active_patch
-                    );
-                    return Ok(Vec::new());
-                }
+            let Some(active_patch) = project.patches.get(&project.active_patch) else {
+                let active_patch_id = project.active_patch;
+                log::warn!("Active patch {active_patch_id} not found, skipping auto-bind");
+                return Ok(Vec::new());
             };
 
             let mut outputs = Vec::new();
@@ -271,9 +253,7 @@ impl SerialState {
                 (Some(current), false) => {
                     // Bound but no port desired - unbind it
                     log::debug!(
-                        "Output '{}' has no last_port set, closing port '{}'",
-                        output_id_str,
-                        current
+                        "Output '{output_id_str}' has no last_port set, closing port '{current}'"
                     );
                     let _ = self.try_close_port(&output_id_str);
                     false
@@ -290,37 +270,27 @@ impl SerialState {
                     // Close any existing port binding first
                     if let Some(current) = current_port {
                         log::debug!(
-                            "Output '{}' changing port from '{}' to '{}'",
-                            output_id_str,
-                            current,
-                            desired_port
+                            "Output '{output_id_str}' changing port from '{current}' to '{desired_port}'"
                         );
                         let _ = self.try_close_port(&output_id_str);
                     }
 
                     // Attempt to bind to the desired port
                     match self.try_open_port(&output_id_str, &desired_port) {
-                        Ok(_) => {
+                        Ok(()) => {
                             log::info!(
-                                "Successfully auto-bound output '{}' to port '{}'",
-                                output_id_str,
-                                desired_port
+                                "Successfully auto-bound output '{output_id_str}' to port '{desired_port}'"
                             );
                         }
                         Err(e) => {
                             log::warn!(
-                                "Failed to auto-bind output '{}' to port '{}': {}",
-                                output_id_str,
-                                desired_port,
-                                e
+                                "Failed to auto-bind output '{output_id_str}' to port '{desired_port}': {e}"
                             );
                         }
                     }
                 } else {
                     log::debug!(
-                        "Desired port '{}' for output '{}' not available",
-                        desired_port,
-                        output_id_str
+                        "Desired port '{desired_port}' for output '{output_id_str}' not available"
                     );
                     // Close port if it's open but the desired port is not available
                     if current_port.is_some() {

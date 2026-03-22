@@ -1,5 +1,7 @@
+#![allow(clippy::cast_precision_loss)]
+
 use crate::{
-    proto::{effect::SequenceEffect, ColorPalette, OutputTarget, Project},
+    proto::{ColorPalette, OutputTarget, Project, effect::SequenceEffect},
     render::{
         render_target::RenderTarget,
         util::{apply_effect, calculate_timing, get_fixtures},
@@ -12,10 +14,10 @@ pub fn apply_sequence_effect<T: RenderTarget<T>>(
     project: &Project,
     render_target: &mut T,
     output_target: &OutputTarget,
-    system_t: &u64,
-    effect_t: &Option<f64>,
-    beat_t: &f64,
-    frame: &u32,
+    system_t: u64,
+    effect_t: Option<&f64>,
+    beat_t: f64,
+    frame: u32,
     sequence_effect: &SequenceEffect,
     color_palette: &ColorPalette,
 ) {
@@ -35,21 +37,23 @@ pub fn apply_sequence_effect<T: RenderTarget<T>>(
             &sequence_effect.timing_mode.unwrap(),
             system_t,
             effect_t,
-            &(beat_t / sequence.native_beats as f64),
+            beat_t / f64::from(sequence.native_beats),
             fixture_index as f64 / fixtures.len() as f64,
         );
 
-        let sequence_t = (t * SEQUENCE_BEAT_RESOLUTION * (sequence.native_beats as f64)) as u64;
+        #[allow(clippy::cast_lossless)]
+        #[allow(clippy::cast_possible_truncation)]
+        #[allow(clippy::cast_sign_loss)]
+        let sequence_t = (t * SEQUENCE_BEAT_RESOLUTION * f64::from(sequence.native_beats)) as u64;
 
         for layer in &sequence.layers {
             // This is super expensive to do per fixture per layer. Consider optimizing by creating a BST for each layer per sequence apply.
-            let effect_option = layer
-                .effects
-                .iter()
-                .find(|e| (e.start_ms < sequence_t as u32) && (e.end_ms >= sequence_t as u32));
-            let effect = match effect_option {
-                Some(e) => e,
-                None => continue,
+            let effect_option = layer.effects.iter().find(|e| {
+                (e.start_ms < u32::try_from(sequence_t).unwrap())
+                    && (e.end_ms >= u32::try_from(sequence_t).unwrap())
+            });
+            let Some(effect) = effect_option else {
+                continue;
             };
 
             let single_target = &OutputTarget {
@@ -64,10 +68,10 @@ pub fn apply_sequence_effect<T: RenderTarget<T>>(
                 project,
                 render_target,
                 single_target,
-                &sequence_t,
-                &Some(
-                    (sequence_t as u32 - effect.start_ms) as f64
-                        / (effect.end_ms - effect.start_ms) as f64,
+                sequence_t,
+                Some(
+                    &(f64::from(u32::try_from(sequence_t).unwrap() - effect.start_ms)
+                        / f64::from(effect.end_ms - effect.start_ms)),
                 ),
                 beat_t,
                 frame,

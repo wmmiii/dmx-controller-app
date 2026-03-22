@@ -41,9 +41,9 @@ const MAX_BEAT_SAMPLES: usize = 16;
 
 /// Shared state for MIDI input processing across all devices
 pub struct MidiInputState {
-    /// MSB buffers per device: device_name -> (channel -> value)
+    /// `MSB` buffers per device: `device_name` -> (channel -> value)
     msb_buffers: HashMap<String, HashMap<u8, u8>>,
-    /// LSB buffers per device: device_name -> (channel -> value)
+    /// `LSB` buffers per device: `device_name` -> (channel -> value)
     lsb_buffers: HashMap<String, HashMap<u8, u8>>,
     /// Beat sample timestamps for tempo detection
     beat_samples: Vec<u64>,
@@ -70,16 +70,17 @@ impl MidiInputState {
     fn get_msb_buffer(&mut self, device_name: &str) -> &mut HashMap<u8, u8> {
         self.msb_buffers
             .entry(device_name.to_string())
-            .or_insert_with(HashMap::new)
+            .or_default()
     }
 
     fn get_lsb_buffer(&mut self, device_name: &str) -> &mut HashMap<u8, u8> {
         self.lsb_buffers
             .entry(device_name.to_string())
-            .or_insert_with(HashMap::new)
+            .or_default()
     }
 
     /// Calculate beat duration from samples
+    #[allow(clippy::cast_precision_loss)]
     fn calculate_beat_duration(&self) -> Option<f64> {
         if self.beat_samples.len() < 2 {
             return None;
@@ -109,6 +110,7 @@ impl MidiInputState {
     }
 
     /// Set first beat (resets beat count)
+    #[allow(clippy::cast_precision_loss)]
     fn set_first_beat(&mut self, t: u64) {
         if self.beat_samples.is_empty() {
             // Direct set - handled in project update
@@ -124,7 +126,7 @@ impl MidiInputState {
         }
     }
 
-    /// Performs the first beat action. Returns true if beat_samples was empty
+    /// Performs the first beat action. Returns true if `beat_samples` was empty
     /// (meaning the offset was set directly in project).
     fn perform_first_beat(&mut self, t: u64) -> bool {
         let was_empty = self.beat_samples.is_empty();
@@ -133,10 +135,11 @@ impl MidiInputState {
     }
 
     /// Finalize beat sampling and update project
+    #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     fn finalize_sampling(&mut self) -> Option<(f64, u64)> {
         if let Some(length_ms) = self.calculate_beat_duration() {
             let last_sample = self.beat_samples[self.beat_samples.len() - 1];
-            let first_beat = last_sample as f64 - (self.beat_count as f64 - 1.0) * length_ms;
+            let first_beat = last_sample as f64 - (f64::from(self.beat_count) - 1.0) * length_ms;
             let offset = first_beat.round() as u64;
 
             self.beat_samples.clear();
@@ -154,6 +157,7 @@ impl MidiInputState {
 }
 
 /// Per-device connection state.
+#[allow(dead_code)]
 struct DeviceConnection {
     input_connection: MidiInputConnection<AppHandle>,
     output_connection: Arc<StdMutex<Option<MidiOutputConnection>>>,
@@ -237,7 +241,7 @@ impl MidiState {
                 // Handle disconnections
                 for controller_name in &known_controller_names {
                     if disappeared_devices.contains(controller_name) {
-                        log::info!("MIDI controller disconnected: {}", controller_name);
+                        log::info!("MIDI controller disconnected: {controller_name}");
 
                         // Remove the connection from state
                         {
@@ -254,7 +258,7 @@ impl MidiState {
                     if let Some(matching_device) =
                         new_devices.iter().find(|d| &d.name == controller_name)
                     {
-                        log::info!("Auto-reconnecting to MIDI controller: {}", controller_name);
+                        log::info!("Auto-reconnecting to MIDI controller: {controller_name}");
 
                         let result = {
                             let midi_state = state.lock().await;
@@ -262,14 +266,12 @@ impl MidiState {
                         }; // Lock dropped here
 
                         match result {
-                            Ok(_) => {
+                            Ok(()) => {
                                 Self::emit_connection_status(&state, controller_name, true).await;
                             }
                             Err(e) => {
                                 log::error!(
-                                    "Failed to auto-reconnect to MIDI controller '{}': {}",
-                                    controller_name,
-                                    e
+                                    "Failed to auto-reconnect to MIDI controller '{controller_name}': {e}"
                                 );
                             }
                         }
@@ -281,7 +283,7 @@ impl MidiState {
 
             // Sleep for a short interval before checking again
             tokio::select! {
-                _ = tokio::time::sleep(tokio::time::Duration::from_secs(1)) => {},
+                () = tokio::time::sleep(tokio::time::Duration::from_secs(1)) => {},
                 _ = cancel_rx.changed() => {
                     if *cancel_rx.borrow() {
                         break;
@@ -306,7 +308,7 @@ impl MidiState {
                     connected,
                 };
                 if let Err(e) = app_handle.emit("midi-connection-status", &event) {
-                    log::error!("Failed to emit midi-connection-status event: {}", e);
+                    log::error!("Failed to emit midi-connection-status event: {e}");
                 }
             }
         }
@@ -347,14 +349,17 @@ fn connect_midi_internal(state: &MidiState, candidate: MidiPortCandidate) -> Res
                 .map(|name| name == candidate.name)
                 .unwrap_or(false)
         })
-        .ok_or_else(|| format!("Input port '{}' not found", candidate.name))?
+        .ok_or_else(|| {
+            let name = &candidate.name;
+            format!("Input port '{name}' not found")
+        })?
         .clone();
 
     // Get app handle for event emission
     let app_handle = state
         .app_handle
         .lock()
-        .map_err(|e| format!("Failed to lock app handle: {}", e))?
+        .map_err(|e| format!("Failed to lock app handle: {e}"))?
         .as_ref()
         .ok_or("App handle not initialized")?
         .clone();
@@ -374,7 +379,7 @@ fn connect_midi_internal(state: &MidiState, candidate: MidiPortCandidate) -> Res
                     data: message.to_vec(),
                 };
                 if let Err(e) = app_handle.emit("midi-message", &midi_msg) {
-                    eprintln!("Failed to emit MIDI event: {}", e);
+                    eprintln!("Failed to emit MIDI event: {e}");
                 }
 
                 // Process the MIDI input
@@ -403,14 +408,11 @@ fn connect_midi_internal(state: &MidiState, candidate: MidiPortCandidate) -> Res
             .map(|name| name == candidate.name)
             .unwrap_or(false)
     }) {
-        match midi_output.connect(output_port, "dmx-controller-output") {
-            Ok(conn) => {
-                let mut out = output_connection
-                    .lock()
-                    .map_err(|e| format!("Failed to lock output connection: {}", e))?;
-                *out = Some(conn);
-            }
-            Err(_) => (),
+        if let Ok(conn) = midi_output.connect(output_port, "dmx-controller-output") {
+            let mut out = output_connection
+                .lock()
+                .map_err(|e| format!("Failed to lock output connection: {e}"))?;
+            *out = Some(conn);
         }
     }
 
@@ -444,7 +446,7 @@ fn connect_midi_internal(state: &MidiState, candidate: MidiPortCandidate) -> Res
     let mut connections = state
         .connections
         .lock()
-        .map_err(|e| format!("Failed to lock connections: {}", e))?;
+        .map_err(|e| format!("Failed to lock connections: {e}"))?;
     connections.insert(candidate.name, device_conn);
 
     Ok(())
@@ -474,7 +476,7 @@ fn disconnect_device(state: &MidiState, device_name: &str) {
     let mut connections = match state.connections.lock() {
         Ok(c) => c,
         Err(e) => {
-            log::error!("Failed to lock connections: {}", e);
+            log::error!("Failed to lock connections: {e}");
             return;
         }
     };
@@ -489,6 +491,7 @@ fn disconnect_device(state: &MidiState, device_name: &str) {
 }
 
 /// Output MIDI state for a specific device.
+#[allow(clippy::cast_possible_truncation)]
 fn output_midi_state_for_device(
     device_name: &str,
     output_conn: &Arc<StdMutex<Option<MidiOutputConnection>>>,
@@ -510,14 +513,15 @@ fn output_midi_state_for_device(
                         .map(|s| s.parse().expect("Parse error"))
                         .collect();
 
-                    output_value(connection, channel_address, value);
+                    output_value(connection, &channel_address, value);
                 }
             }
         }
     }
 }
 
-pub fn output_value(conn: &mut MidiOutputConnection, channel: Vec<u8>, value: f64) {
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+pub fn output_value(conn: &mut MidiOutputConnection, channel: &[u8], value: f64) {
     let msb = (value * 127.0).round() as u8;
 
     let _ = conn.send(&[channel[0], channel[1], msb]);
@@ -544,26 +548,25 @@ fn process_midi_input(
     let data2 = message[2];
 
     // Get binding ID for this device
-    let binding_id = match project::with_project(|p| {
+    let Ok(Some(binding_id)) = project::with_project(|p| {
         Ok(p.controller_mapping
             .as_ref()
             .and_then(|cm| cm.controller_to_binding.get(device_name).copied()))
-    }) {
-        Ok(Some(id)) => id,
-        _ => return,
+    }) else {
+        return;
     };
 
     // Parse MIDI message and calculate value
     let (value, cct) = {
-        let mut input_state_guard = match input_state.lock() {
-            Ok(g) => g,
-            Err(_) => return,
+        let Ok(mut input_state_guard) = input_state.lock() else {
+            return;
         };
 
         parse_midi_message(command, data1, data2, device_name, &mut input_state_guard)
     };
 
-    let channel = format!("{}, {}", command, data1);
+    let channel = format!("{command}, {data1}");
+    #[allow(clippy::cast_possible_truncation)]
     let t = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
@@ -572,10 +575,10 @@ fn process_midi_input(
     // Perform the action
     match perform_action(binding_id, &channel, value, cct, t) {
         Ok(action_result) => {
-            handle_action_result(app_handle, action_result, input_state, t);
+            handle_action_result(app_handle, &action_result, input_state, t);
         }
         Err(e) => {
-            log::error!("Failed to perform MIDI action: {}", e);
+            log::error!("Failed to perform MIDI action: {e}");
         }
     }
 }
@@ -588,7 +591,7 @@ fn parse_midi_message(
     device_name: &str,
     input_state: &mut MidiInputState,
 ) -> (f64, Option<ControlCommandType>) {
-    let mut value = data2 as f64;
+    let mut value = f64::from(data2);
     let mut cct: Option<ControlCommandType> = None;
 
     // MIDI command reference:
@@ -600,16 +603,16 @@ fn parse_midi_message(
     // 208-223: Channel Aftertouch
     // 224-239: Pitch Bend
 
-    if command >= 128 && command < 144 {
+    if (128..144).contains(&command) {
         // Note off
         value /= 127.0;
-    } else if command >= 144 && command < 160 {
+    } else if (144..160).contains(&command) {
         // Note on
         value /= 127.0;
-    } else if command >= 160 && command < 176 {
+    } else if (160..176).contains(&command) {
         // Polyphonic aftertouch/pressure
         value /= 127.0;
-    } else if command >= 176 && command < 192 {
+    } else if (176..192).contains(&command) {
         // Control Change - handle MSB/LSB for 14-bit values
         if data1 < 32 {
             // MSB (0-31)
@@ -619,9 +622,9 @@ fn parse_midi_message(
             let lsb_buffer = input_state.get_lsb_buffer(device_name);
             let lsb = lsb_buffer.get(&(data1 + 32)).copied().unwrap_or(0);
 
-            value = data2 as f64 + lsb as f64 / 127.0;
+            value = f64::from(data2) + f64::from(lsb) / 127.0;
             cct = Some(ControlCommandType::Msb);
-        } else if data1 >= 32 && data1 < 64 {
+        } else if (32..64).contains(&data1) {
             // LSB (32-63)
             let lsb_buffer = input_state.get_lsb_buffer(device_name);
             lsb_buffer.insert(data1, data2);
@@ -629,7 +632,7 @@ fn parse_midi_message(
             let msb_buffer = input_state.get_msb_buffer(device_name);
             let msb = msb_buffer.get(&(data1 - 32)).copied().unwrap_or(0);
 
-            value = msb as f64 + data2 as f64 / 127.0;
+            value = f64::from(msb) + f64::from(data2) / 127.0;
             cct = Some(ControlCommandType::Lsb);
         }
         value /= 127.0;
@@ -644,15 +647,14 @@ fn parse_midi_message(
 /// Handle the result of a MIDI action
 fn handle_action_result(
     app_handle: &AppHandle,
-    result: ActionResult,
+    result: &ActionResult,
     input_state: &Arc<StdMutex<MidiInputState>>,
     t: u64,
 ) {
     // Handle beat actions
     if let Some(action) = result.action {
-        let mut input_state_guard = match input_state.lock() {
-            Ok(g) => g,
-            Err(_) => return,
+        let Ok(mut input_state_guard) = input_state.lock() else {
+            return;
         };
 
         match action {
@@ -684,8 +686,10 @@ fn handle_action_result(
                 drop(input_state_guard); // Release lock before spawning
 
                 tauri::async_runtime::spawn(async move {
+                    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+                    let duration_ms = beat_duration.round() as u64;
                     tokio::select! {
-                        _ = tokio::time::sleep(Duration::from_millis(beat_duration as u64)) => {
+                        () = tokio::time::sleep(Duration::from_millis(duration_ms)) => {
                             finalize_beat_sampling(&app_handle_clone, &input_state_clone);
                         }
                         _ = &mut cancel_rx => {
@@ -716,9 +720,8 @@ fn handle_first_beat_action(
     t: u64,
 ) {
     let was_empty = {
-        let mut input_state_guard = match input_state.lock() {
-            Ok(g) => g,
-            Err(_) => return,
+        let Ok(mut input_state_guard) = input_state.lock() else {
+            return;
         };
         input_state_guard.perform_first_beat(t)
     };
@@ -737,11 +740,11 @@ fn handle_first_beat_action(
 }
 
 /// Finalize beat sampling and update the project
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
 fn finalize_beat_sampling(app_handle: &AppHandle, input_state: &Arc<StdMutex<MidiInputState>>) {
     let beat_data = {
-        let mut input_state_guard = match input_state.lock() {
-            Ok(g) => g,
-            Err(_) => return,
+        let Ok(mut input_state_guard) = input_state.lock() else {
+            return;
         };
         input_state_guard.finalize_sampling()
     };
@@ -757,7 +760,7 @@ fn finalize_beat_sampling(app_handle: &AppHandle, input_state: &Arc<StdMutex<Mid
         });
 
         let bpm = (60_000.0 / length_ms).round() as u32;
-        emit_project_update(app_handle, Some(format!("Set beat to {} BPM.", bpm)));
+        emit_project_update(app_handle, Some(format!("Set beat to {bpm} BPM.")));
     }
 
     // Emit sampling state change
@@ -766,6 +769,7 @@ fn finalize_beat_sampling(app_handle: &AppHandle, input_state: &Arc<StdMutex<Mid
 
 /// Add a beat sample for tempo detection (called from keyboard shortcut)
 #[tauri::command]
+#[allow(clippy::cast_possible_truncation)]
 pub async fn add_beat_sample(
     app: AppHandle,
     state: State<'_, Arc<Mutex<MidiState>>>,
@@ -782,7 +786,7 @@ pub async fn add_beat_sample(
     let was_sampling = {
         let mut input_state_guard = input_state
             .lock()
-            .map_err(|e| format!("Failed to lock input state: {}", e))?;
+            .map_err(|e| format!("Failed to lock input state: {e}"))?;
 
         let was_sampling = input_state_guard.sampling;
         input_state_guard.add_beat_sample(t);
@@ -801,7 +805,7 @@ pub async fn add_beat_sample(
     let beat_duration = {
         let input_state_guard = input_state
             .lock()
-            .map_err(|e| format!("Failed to lock input state: {}", e))?;
+            .map_err(|e| format!("Failed to lock input state: {e}"))?;
         input_state_guard
             .calculate_beat_duration()
             .unwrap_or(2000.0)
@@ -811,7 +815,7 @@ pub async fn add_beat_sample(
     {
         let mut input_state_guard = input_state
             .lock()
-            .map_err(|e| format!("Failed to lock input state: {}", e))?;
+            .map_err(|e| format!("Failed to lock input state: {e}"))?;
 
         if let Some(cancel_tx) = input_state_guard.beat_timeout_cancel.take() {
             let _ = cancel_tx.send(());
@@ -823,8 +827,10 @@ pub async fn add_beat_sample(
         drop(input_state_guard);
 
         tauri::async_runtime::spawn(async move {
+            #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+            let duration_ms = beat_duration.round() as u64;
             tokio::select! {
-                _ = tokio::time::sleep(Duration::from_millis(beat_duration as u64)) => {
+                () = tokio::time::sleep(Duration::from_millis(duration_ms)) => {
                     finalize_beat_sampling(&app_clone, &input_state_clone);
                 }
                 _ = &mut cancel_rx => {

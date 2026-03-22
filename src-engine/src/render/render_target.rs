@@ -31,6 +31,7 @@ pub trait RenderTarget<T: RenderTarget<T>>: Clone + Debug {
 }
 
 impl FixtureState {
+    #[must_use]
     pub fn get_color(&self, color_palette: &ColorPalette) -> Option<Color> {
         match self.light_color {
             Some(LightColor::Color(c)) => Some(c),

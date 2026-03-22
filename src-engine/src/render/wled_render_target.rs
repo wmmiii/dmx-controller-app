@@ -1,3 +1,5 @@
+#![allow(clippy::cast_possible_truncation)]
+
 use crate::proto::ColorPalette;
 use crate::proto::WledRenderTarget;
 use crate::proto::wled_render_target::Color;
@@ -36,13 +38,13 @@ impl RenderTarget<WledRenderTarget> for WledRenderTarget {
                     red: (color.red + white) as f32,
                     green: (color.green + white) as f32,
                     blue: (color.blue + white) as f32,
-                })
+                });
             } else {
                 segment.primary_color = Some(Color {
                     red: color.red as f32,
                     green: color.green as f32,
                     blue: color.blue as f32,
-                })
+                });
             }
         }
 
@@ -50,7 +52,7 @@ impl RenderTarget<WledRenderTarget> for WledRenderTarget {
             segment.brightness = dimmer as f32;
         }
 
-        self.segments[qualified_fixture_id.fixture as usize] = segment;
+        self.segments[usize::from(qualified_fixture_id.fixture as u16)] = segment;
     }
 
     fn interpolate(&mut self, a: &WledRenderTarget, b: &WledRenderTarget, t: f64) {

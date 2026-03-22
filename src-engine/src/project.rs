@@ -102,6 +102,7 @@ pub fn save(project_binary: &[u8], description: &str, undoable: bool) -> Result<
     // Add to undo stack if undoable
     if undoable {
         // Remove any redo operations (everything after current index)
+        #[allow(clippy::cast_sign_loss)]
         let current_idx = (state.operation_index + 1) as usize;
         if current_idx < state.operation_stack.len() {
             state.operation_stack.truncate(current_idx);
@@ -154,12 +155,14 @@ pub fn undo() -> Result<UndoRedoResult, String> {
     }
 
     // Get the description of what we're undoing
+    #[allow(clippy::cast_sign_loss)]
     let undo_description = state.operation_stack[state.operation_index as usize]
         .description
         .clone();
 
     // Move index back and get previous state
     state.operation_index -= 1;
+    #[allow(clippy::cast_sign_loss)]
     let prev_state = &state.operation_stack[state.operation_index as usize];
 
     // Decode and update current project
@@ -183,12 +186,14 @@ pub fn redo() -> Result<UndoRedoResult, String> {
         .lock()
         .map_err(|e| format!("Failed to lock state: {e}"))?;
 
-    if state.operation_index >= (state.operation_stack.len() as i32) - 1 {
+    #[allow(clippy::cast_possible_wrap)]
+    if state.operation_index >= (i32::try_from(state.operation_stack.len()).unwrap()) - 1 {
         return Err("Nothing to redo".to_string());
     }
 
     // Move index forward
     state.operation_index += 1;
+    #[allow(clippy::cast_sign_loss)]
     let next_state = &state.operation_stack[state.operation_index as usize];
 
     // Decode and update current project
@@ -238,9 +243,13 @@ pub fn get_undo_state() -> Result<UndoState, String> {
         .map_err(|e| format!("Failed to lock state: {e}"))?;
 
     let can_undo = state.operation_index > 0;
-    let can_redo = state.operation_index < (state.operation_stack.len() as i32) - 1;
+
+    #[allow(clippy::cast_possible_truncation)]
+    let can_redo =
+        state.operation_index < (i32::try_from(state.operation_stack.len()).unwrap()) - 1;
 
     let undo_description = if can_undo {
+        #[allow(clippy::cast_sign_loss)]
         Some(
             state.operation_stack[state.operation_index as usize]
                 .description
@@ -251,6 +260,7 @@ pub fn get_undo_state() -> Result<UndoState, String> {
     };
 
     let redo_description = if can_redo {
+        #[allow(clippy::cast_sign_loss)]
         Some(
             state.operation_stack[(state.operation_index + 1) as usize]
                 .description
@@ -392,5 +402,8 @@ fn rand_id() -> u64 {
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default();
     // Combine time with a simple counter for uniqueness
-    duration.as_nanos() as u64 ^ (duration.as_micros() as u64).wrapping_mul(31)
+    u64::try_from(duration.as_nanos()).unwrap()
+        ^ u64::try_from(duration.as_micros())
+            .unwrap()
+            .wrapping_mul(31)
 }

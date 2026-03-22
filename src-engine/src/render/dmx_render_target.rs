@@ -31,6 +31,7 @@ pub struct DmxRenderTarget<'a> {
 }
 
 impl<'a> DmxRenderTarget<'a> {
+    #[must_use]
     pub fn new(
         fixtures: &'a HashMap<u64, PhysicalDmxFixture>,
         fixture_definitions: &'a HashMap<u64, DmxFixtureDefinition>,
@@ -45,7 +46,7 @@ impl<'a> DmxRenderTarget<'a> {
 
             for (channel_index, channel) in &mode.channels {
                 universe[(channel_index + fixture.channel_offset - 1) as usize] =
-                    channel.default_value as f64 / 255.0;
+                    f64::from(channel.default_value) / 255.0;
             }
         }
 
@@ -86,11 +87,13 @@ impl<'a> DmxRenderTarget<'a> {
             }
         }
 
+        #[allow(clippy::cast_possible_truncation)]
+        #[allow(clippy::cast_sign_loss)]
         universe.map(|v| (v * 255.0).clamp(0.0, 255.0) as u8)
     }
 
-    fn get_fixture_mode(&self, fixture_id: &u64) -> Option<&Mode> {
-        self.fixtures.get(fixture_id).and_then(|f| {
+    fn get_fixture_mode(&self, fixture_id: u64) -> Option<&Mode> {
+        self.fixtures.get(&fixture_id).and_then(|f| {
             self.fixture_definitions
                 .get(&f.fixture_definition_id)
                 .and_then(|d| d.modes.get(&f.fixture_mode))
@@ -101,21 +104,18 @@ impl<'a> DmxRenderTarget<'a> {
         self.non_interpolated_indices.get_or_init(|| {
             let mut indices: Vec<u16> = Vec::new();
             for (fixture_id, fixture) in self.fixtures {
-                let mode = match self.get_fixture_mode(fixture_id) {
-                    Some(m) => m,
-                    None => continue,
+                let Some(mode) = self.get_fixture_mode(*fixture_id) else {
+                    continue;
                 };
 
                 for (index, channel) in &mode.channels {
-                    match channel.mapping {
-                        Some(crate::proto::dmx_fixture_definition::channel::Mapping::ColorWheelMapping(_)) => indices.push((index + fixture.channel_offset - 1) as u16),
-                        Some(_) => (),
-                        None => (),
+                    if let Some(crate::proto::dmx_fixture_definition::channel::Mapping::ColorWheelMapping(_)) = channel.mapping {
+                        indices.push(u16::try_from(index + fixture.channel_offset - 1).unwrap());
                     }
                 }
             }
             indices
-        }).to_vec()
+        }).clone()
     }
 
     fn compute_color_channel_updates(
@@ -154,19 +154,19 @@ impl<'a> DmxRenderTarget<'a> {
                     "color_wheel" => {
                         match &channel.mapping {
                             Some(crate::proto::dmx_fixture_definition::channel::Mapping::ColorWheelMapping(color_wheel_mapping)) => {
-                                let mut min_dist = std::f64::MAX;
+                                let mut min_dist = f64::MAX;
                                 let mut update = None;
                                 for c in &color_wheel_mapping.colors {
                                     let color = c.color?; 
                                     let dist = (color.red - red).powf(2.0) + (color.green - green).powf(2.0) + (color.blue - blue).powf(2.0);
                                     if dist < min_dist {
                                         min_dist = dist;
-                                        update = Some((channel_index, c.value as f64 / 255.0));
+                                        update = Some((channel_index, f64::from(c.value) / 255.0));
                                     }
                                 }
                                 update
                             },
-                            _ => return None,
+                            _ => None,
                         }
                     }
                     _ => None,
@@ -185,17 +185,16 @@ impl<'a> DmxRenderTarget<'a> {
             .iter()
             .filter(|(_, channel)| channel.r#type == channel_type)
             .filter_map(|(index, channel)| {
-                let mapping = match &channel.mapping {
-                    Some(
-                        crate::proto::dmx_fixture_definition::channel::Mapping::AmountMapping(m),
-                    ) => m,
-                    _ => return None,
+                let Some(
+                        crate::proto::dmx_fixture_definition::channel::Mapping::AmountMapping(mapping),
+                    ) = &channel.mapping else {
+                        return None;
                 };
 
                 let channel_index = (index + fixture_offset) as usize;
 
-                let min = mapping.min_value as f64 / 255.0;
-                let max = mapping.max_value as f64 / 255.0;
+                let min = f64::from(mapping.min_value) / 255.0;
+                let max = f64::from(mapping.max_value) / 255.0;
                 let mapped_value: f64 = min + value * (max - min);
 
                 Some((channel_index, mapped_value))
@@ -213,17 +212,14 @@ impl<'a> DmxRenderTarget<'a> {
             .iter()
             .filter(|(_, channel)| channel.r#type == channel_type)
             .filter_map(|(index, channel)| {
-                let mapping = match &channel.mapping {
-                    Some(crate::proto::dmx_fixture_definition::channel::Mapping::AngleMapping(
-                        m,
-                    )) => m,
-                    _ => return None,
+                let Some(crate::proto::dmx_fixture_definition::channel::Mapping::AngleMapping(mapping)) = &channel.mapping else {
+                    return None;
                 };
 
                 let channel_index = (index + fixture_offset) as usize;
 
-                let min = mapping.min_degrees as f64;
-                let max = mapping.max_degrees as f64;
+                let min = f64::from(mapping.min_degrees);
+                let max = f64::from(mapping.max_degrees);
 
                 let mapped_value: f64 = (degrees - min) / (max - min);
 
@@ -246,14 +242,13 @@ impl<'a> RenderTarget<DmxRenderTarget<'a>> for DmxRenderTarget<'a> {
         state: &crate::proto::FixtureState,
         color_palette: &ColorPalette,
     ) {
-        let fixture = match self.fixtures.get(&qualified_fixture_id.fixture) {
-            Some(f) => f,
-            None => return,
+
+        let Some(fixture) = self.fixtures.get(&qualified_fixture_id.fixture)  else {
+            return;
         };
 
-        let mode = match self.get_fixture_mode(&qualified_fixture_id.fixture) {
-            Some(d) => d,
-            None => return,
+        let Some(mode) = self.get_fixture_mode(qualified_fixture_id.fixture) else {
+            return;
         };
 
         let mut all_updates = Vec::new();
@@ -283,7 +278,7 @@ impl<'a> RenderTarget<DmxRenderTarget<'a>> for DmxRenderTarget<'a> {
             ]
         );
 
-        let channels: Vec<(usize, f64)> = state.channels.iter().map(|c| ((c.index + fixture.channel_offset) as usize, c.value as f64 / 255.0)).collect();
+        let channels: Vec<(usize, f64)> = state.channels.iter().map(|c| ((c.index + fixture.channel_offset) as usize, f64::from(c.value) / 255.0)).collect();
         all_updates.extend(channels);
 
         self.apply_updates(all_updates);
@@ -311,12 +306,13 @@ impl<'a> RenderTarget<DmxRenderTarget<'a>> for DmxRenderTarget<'a> {
 
     fn apply_fixture_debug(&mut self, fixture_debug: &crate::proto::render_mode::FixtureDebug) {
         for (index, &value) in fixture_debug.channel_values.iter().enumerate() {
-            self.universe[fixture_debug.channel_offset as usize + index] = value as f64 / 255.0;
+            self.universe[fixture_debug.channel_offset as usize + index] = f64::from(value) / 255.0;
         }
     }
 }
 
 #[cfg(test)]
+#[allow(clippy::field_reassign_with_default, clippy::needless_range_loop)]
 mod tests {
     use super::*;
     use crate::proto::dmx_fixture_definition::channel::Mapping;
@@ -394,7 +390,7 @@ mod tests {
 
         // All other channels should be 0
         for i in 1..512 {
-            assert_eq!(universe[i], 0, "Channel {} should be 0", i);
+            assert_eq!(universe[i], 0, "Channel {i} should be 0");
         }
     }
 
@@ -487,10 +483,10 @@ mod tests {
 
         // All other channels should be 0
         for i in 0..10 {
-            assert_eq!(universe[i], 0, "Channel {} should be 0", i);
+            assert_eq!(universe[i], 0, "Channel {i} should be 0");
         }
         for i in 12..512 {
-            assert_eq!(universe[i], 0, "Channel {} should be 0", i);
+            assert_eq!(universe[i], 0, "Channel {i} should be 0");
         }
     }
 }

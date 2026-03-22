@@ -6,7 +6,7 @@
     "css-vars:build": "sass src/vars-export.scss public/vars.css --no-source-map",
     "dev": "pnpm run proto:generate && vite",
     "format": "npx prettier . --write",
-    "lint": "pnpm run lint:ts && pnpm run lint:dead && pnpm run lint:rust",
+    "lint": "pnpm run lint:rust && pnpm run lint:ts && pnpm run lint:dead",
     "lint:dead": "knip",
     "lint:rust": "cargo clippy --manifest-path src-engine/Cargo.toml -- -D warnings && cargo clippy --manifest-path src-tauri/Cargo.toml -- -D warnings",
     "lint:ts": "eslint .",

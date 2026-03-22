@@ -1,5 +1,5 @@
 use crate::{
-    proto::{effect::StrobeEffect, ColorPalette, OutputTarget, Project},
+    proto::{ColorPalette, OutputTarget, Project, effect::StrobeEffect},
     render::{render_target::RenderTarget, util::apply_state},
 };
 
@@ -7,7 +7,7 @@ pub fn apply_strobe_effect<T: RenderTarget<T>>(
     project: &Project,
     render_target: &mut T,
     output_target: &OutputTarget,
-    frame: &u32,
+    frame: u32,
     strobe_effect: &StrobeEffect,
     color_palette: &ColorPalette,
 ) {

@@ -10,11 +10,13 @@ export function useRenderMode(
   deps: unknown[],
 ) {
   useEffect(() => {
-    let release: () => void;
-    modeLock = new Promise((r) => (release = r));
+    // IMPORTANT: Must wait on current modeLock BEFORE replacing it
+    // Otherwise the render mode will never be set (waits on pending promise forever)
     const next = modeLock.then(() =>
       setRenderMode(create(RenderModeSchema, renderMode)),
     );
+    let release: () => void;
+    modeLock = new Promise((r) => (release = r));
 
     return () => {
       next

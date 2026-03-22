@@ -34,9 +34,10 @@ impl Ord for TileMap {
 }
 
 impl Duration {
+    #[must_use]
     pub fn as_ms(&self, beat_metadata: &BeatMetadata) -> f64 {
         match self.amount {
-            Some(crate::proto::duration::Amount::Ms(ms)) => ms as f64,
+            Some(crate::proto::duration::Amount::Ms(ms)) => f64::from(ms),
             Some(crate::proto::duration::Amount::Beat(b)) => b * beat_metadata.length_ms,
             None => panic!("Unknown duration type!"),
         }
@@ -50,32 +51,36 @@ pub fn render_scene<T: RenderTarget<T>>(
     frame: u32,
     project: &Project,
 ) -> Result<(), String> {
-    let scene = match project.scenes.get(&scene_id) {
-        Some(scene) => scene,
-        None => return Err(format!("Could not find scene {}", scene_id)),
+    let Some(scene) = project.scenes.get(&scene_id) else {
+        return Err(format!("Could not find scene {scene_id}"));
     };
 
     let Some(beat_metadata) = project.live_beat else {
         return Err("Live beat not set!".to_string());
     };
 
+    #[allow(clippy::cast_precision_loss)]
     let beat_t = (system_t - beat_metadata.offset_ms) as f64 / beat_metadata.length_ms;
 
     // Interpolate color palette
     let color_palette_t = {
+        #[allow(clippy::cast_sign_loss)]
+        #[allow(clippy::cast_possible_wrap)]
         let since = (system_t as i64) - (scene.color_palette_start_transition as i64);
+        #[allow(clippy::cast_sign_loss)]
         let since = if since < 0 { 0 } else { since as u64 };
-        (since as f64 / scene.color_palette_transition_duration_ms as f64).min(1.0)
+        #[allow(clippy::cast_precision_loss)]
+        (since as f64 / f64::from(scene.color_palette_transition_duration_ms)).min(1.0)
     };
 
     let color_palette = interpolate_palettes(
-        scene
+        &scene
             .color_palettes
             .iter()
             .find(|p| p.id == scene.last_active_color_palette)
             .cloned()
             .unwrap_or(DEFAULT_COLOR_PALETTE.clone()),
-        scene
+        &scene
             .color_palettes
             .iter()
             .find(|p| p.id == scene.active_color_palette)
@@ -90,18 +95,20 @@ pub fn render_scene<T: RenderTarget<T>>(
     tile_map.reverse();
 
     for tile_map_entry in &tile_map {
-        let tile = match &tile_map_entry.tile {
-            Some(t) => t,
-            None => continue,
+        let Some(tile) = &tile_map_entry.tile else {
+            continue;
         };
 
         // Calculate amount (fade in/out)
         let amount: f64 = match &tile.transition {
-            Some(Transition::AbsoluteStrength(a)) => *a as f64,
+            Some(Transition::AbsoluteStrength(a)) => f64::from(*a),
             Some(Transition::StartFadeInMs(fade_in_time)) => match &tile.timing_details {
                 Some(TimingDetails::OneShot(OneShotDetails {
                     duration: Some(duration),
-                })) => {
+                })) =>
+                {
+                    #[allow(clippy::cast_sign_loss)]
+                    #[allow(clippy::cast_possible_truncation)]
                     if system_t - fade_in_time > duration.as_ms(&beat_metadata) as u64 {
                         0.0
                     } else {
@@ -111,18 +118,25 @@ pub fn render_scene<T: RenderTarget<T>>(
                 Some(TimingDetails::Loop(LoopDetails {
                     fade_in: Some(fade_in_duration),
                     fade_out: _,
-                })) => ((system_t - *fade_in_time) as f64 / fade_in_duration.as_ms(&beat_metadata))
-                    .clamp(0.0, 1.0),
+                })) =>
+                {
+                    #[allow(clippy::cast_precision_loss)]
+                    ((system_t - *fade_in_time) as f64 / fade_in_duration.as_ms(&beat_metadata))
+                        .clamp(0.0, 1.0)
+                }
                 _ => 0.0,
             },
             Some(Transition::StartFadeOutMs(fade_out_time)) => match &tile.timing_details {
                 Some(TimingDetails::Loop(LoopDetails {
                     fade_in: _,
                     fade_out: Some(fade_out_duration),
-                })) => (1.0
-                    - ((system_t - *fade_out_time) as f64
+                })) =>
+                {
+                    #[allow(clippy::cast_precision_loss)]
+                    (1.0 - ((system_t - *fade_out_time) as f64
                         / fade_out_duration.as_ms(&beat_metadata)))
-                .clamp(0.0, 1.0),
+                    .clamp(0.0, 1.0)
+                }
                 _ => 0.0,
             },
             _ => panic!("Unknown transition type!"),
@@ -140,6 +154,7 @@ pub fn render_scene<T: RenderTarget<T>>(
                 })),
                 Some(Transition::StartFadeInMs(fade_in_time)),
             ) => Some(
+                #[allow(clippy::cast_precision_loss)]
                 ((system_t - fade_in_time) as f64 / duration.as_ms(&beat_metadata)).clamp(0.0, 1.0),
             ),
             _ => None,
@@ -163,10 +178,10 @@ pub fn render_scene<T: RenderTarget<T>>(
                     project,
                     &mut after,
                     output_target,
-                    &system_t,
-                    &effect_t,
-                    &beat_t,
-                    &frame,
+                    system_t,
+                    effect_t.as_ref(),
+                    beat_t,
+                    frame,
                     effect,
                     &color_palette,
                 );

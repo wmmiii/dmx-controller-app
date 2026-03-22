@@ -1,5 +1,5 @@
 use crate::{
-    proto::{effect::RampEffect, ColorPalette, OutputTarget, Project},
+    proto::{ColorPalette, OutputTarget, Project, effect::RampEffect},
     render::{
         render_target::RenderTarget,
         util::{apply_state, calculate_timing, get_fixtures},
@@ -10,15 +10,16 @@ pub fn apply_ramp_effect<T: RenderTarget<T>>(
     project: &Project,
     render_target: &mut T,
     output_target: &OutputTarget,
-    system_t: &u64,
-    effect_t: &Option<f64>,
-    beat_t: &f64,
+    system_t: u64,
+    effect_t: Option<&f64>,
+    beat_t: f64,
     ramp_effect: &RampEffect,
     color_palette: &ColorPalette,
 ) {
     let fixtures = get_fixtures(project, output_target);
 
     for (i, fixture) in fixtures.iter().enumerate() {
+        #[allow(clippy::cast_precision_loss)]
         let t = calculate_timing(
             &ramp_effect.timing_mode.unwrap(),
             system_t,
