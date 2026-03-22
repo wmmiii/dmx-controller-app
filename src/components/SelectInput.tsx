@@ -13,7 +13,7 @@ export interface SelectCategory<T> {
   options: SelectOption<T>[];
 }
 
-export type SelectItems<T> = SelectOption<T>[] | SelectCategory<T>[];
+type SelectItems<T> = SelectOption<T>[] | SelectCategory<T>[];
 
 interface SelectValueInputProps<T> {
   value: T | undefined;

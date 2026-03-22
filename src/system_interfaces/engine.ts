@@ -1,10 +1,6 @@
 import { fromBinary, toBinary } from '@bufbuild/protobuf';
-import { Project, ProjectSchema } from '@dmx-controller/proto/project_pb';
 import { RenderMode, RenderModeSchema } from '@dmx-controller/proto/render_pb';
-import {
-  WledRenderTarget,
-  WledRenderTargetSchema,
-} from '@dmx-controller/proto/wled_pb';
+import { WledRenderTargetSchema } from '@dmx-controller/proto/wled_pb';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import {
@@ -30,13 +26,6 @@ interface RenderErrorEvent {
   message: string;
 }
 
-export async function updateProject(project: Project) {
-  const projectBinary = toBinary(ProjectSchema, project);
-  await invoke<number[]>('update_project', {
-    projectBinary: Array.from(projectBinary),
-  });
-}
-
 export async function setRenderMode(renderMode: RenderMode) {
   const renderModeBytes = toBinary(RenderModeSchema, renderMode);
   await invoke<number[]>('set_render_mode', {
@@ -55,20 +44,6 @@ export async function renderDmx(
     frame,
   });
   return new Uint8Array(result);
-}
-
-// DEAD CODE
-export async function renderWled(
-  outputId: bigint,
-  systemT: bigint,
-  frame: number,
-): Promise<WledRenderTarget> {
-  const renderTargetBin = await invoke<number[]>('render_wled', {
-    outputId: outputId.toString(),
-    systemT: Number(systemT),
-    frame,
-  });
-  return fromBinary(WledRenderTargetSchema, new Uint8Array(renderTargetBin));
 }
 
 // Initialize Tauri render event listeners at module load

@@ -130,7 +130,7 @@ export default function Index(): JSX.Element {
                     ),
                 },
                 {
-                  type: 'separator' as 'separator', // Type-madness.
+                  type: 'separator' as const, // Type-madness.
                 },
                 {
                   title: 'Exit',

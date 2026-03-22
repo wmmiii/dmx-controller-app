@@ -10,7 +10,7 @@ export async function getUuidByString(str: string): Promise<string> {
   const namespaceBytes = new Uint8Array(16);
   const nsHex = namespace.replace(/-/g, '');
   for (let i = 0; i < 16; i++) {
-    namespaceBytes[i] = parseInt(nsHex.substr(i * 2, 2), 16);
+    namespaceBytes[i] = parseInt(nsHex.substring(i * 2, i * 2 + 2), 16);
   }
 
   // Combine namespace bytes with string bytes

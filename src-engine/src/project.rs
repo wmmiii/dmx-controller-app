@@ -1,7 +1,5 @@
-use std::sync::Mutex;
-
-use once_cell::sync::Lazy;
 use prost::Message;
+use std::sync::{LazyLock, Mutex};
 
 use crate::proto::{
     BeatMetadata, Color, ColorPalette, Patch, Project, Scene, color_palette::ColorDescription,
@@ -10,7 +8,7 @@ use crate::proto::{
 const MAX_UNDO: usize = 100;
 
 /// Default color palette used as a fallback when a palette cannot be found.
-pub static DEFAULT_COLOR_PALETTE: Lazy<ColorPalette> = Lazy::new(|| ColorPalette {
+pub static DEFAULT_COLOR_PALETTE: LazyLock<ColorPalette> = LazyLock::new(|| ColorPalette {
     id: 0,
     name: "Default".to_string(),
     primary: Some(ColorDescription {
@@ -76,7 +74,7 @@ struct ProjectState {
 }
 
 /// Global project state - the authoritative source of truth
-static PROJECT_STATE: Lazy<Mutex<ProjectState>> = Lazy::new(|| {
+static PROJECT_STATE: LazyLock<Mutex<ProjectState>> = LazyLock::new(|| {
     Mutex::new(ProjectState {
         project: Project::default(),
         operation_stack: Vec::new(),
@@ -92,11 +90,11 @@ static PROJECT_STATE: Lazy<Mutex<ProjectState>> = Lazy::new(|| {
 /// * `undoable` - Whether this operation should be added to the undo stack
 pub fn save(project_binary: &[u8], description: &str, undoable: bool) -> Result<(), String> {
     let project =
-        Project::decode(project_binary).map_err(|e| format!("Failed to decode project: {}", e))?;
+        Project::decode(project_binary).map_err(|e| format!("Failed to decode project: {e}"))?;
 
     let mut state = PROJECT_STATE
         .lock()
-        .map_err(|e| format!("Failed to lock state: {}", e))?;
+        .map_err(|e| format!("Failed to lock state: {e}"))?;
 
     // Update the current project state
     state.project = project;
@@ -133,11 +131,11 @@ pub fn save(project_binary: &[u8], description: &str, undoable: bool) -> Result<
 /// * `project_binary` - Binary protobuf representation of the project
 pub fn update(project_binary: &[u8]) -> Result<(), String> {
     let project =
-        Project::decode(project_binary).map_err(|e| format!("Failed to decode project: {}", e))?;
+        Project::decode(project_binary).map_err(|e| format!("Failed to decode project: {e}"))?;
 
     let mut state = PROJECT_STATE
         .lock()
-        .map_err(|e| format!("Failed to lock state: {}", e))?;
+        .map_err(|e| format!("Failed to lock state: {e}"))?;
 
     state.project = project;
 
@@ -149,7 +147,7 @@ pub fn update(project_binary: &[u8]) -> Result<(), String> {
 pub fn undo() -> Result<UndoRedoResult, String> {
     let mut state = PROJECT_STATE
         .lock()
-        .map_err(|e| format!("Failed to lock state: {}", e))?;
+        .map_err(|e| format!("Failed to lock state: {e}"))?;
 
     if state.operation_index <= 0 {
         return Err("Nothing to undo".to_string());
@@ -166,11 +164,11 @@ pub fn undo() -> Result<UndoRedoResult, String> {
 
     // Decode and update current project
     let project = Project::decode(&prev_state.project_state[..])
-        .map_err(|e| format!("Failed to decode project: {}", e))?;
+        .map_err(|e| format!("Failed to decode project: {e}"))?;
 
     let result = UndoRedoResult {
         project_binary: prev_state.project_state.clone(),
-        description: format!("Undo: {}", undo_description),
+        description: format!("Undo: {undo_description}"),
     };
 
     state.project = project;
@@ -183,7 +181,7 @@ pub fn undo() -> Result<UndoRedoResult, String> {
 pub fn redo() -> Result<UndoRedoResult, String> {
     let mut state = PROJECT_STATE
         .lock()
-        .map_err(|e| format!("Failed to lock state: {}", e))?;
+        .map_err(|e| format!("Failed to lock state: {e}"))?;
 
     if state.operation_index >= (state.operation_stack.len() as i32) - 1 {
         return Err("Nothing to redo".to_string());
@@ -195,11 +193,11 @@ pub fn redo() -> Result<UndoRedoResult, String> {
 
     // Decode and update current project
     let project = Project::decode(&next_state.project_state[..])
-        .map_err(|e| format!("Failed to decode project: {}", e))?;
+        .map_err(|e| format!("Failed to decode project: {e}"))?;
 
     let result = UndoRedoResult {
         project_binary: next_state.project_state.clone(),
-        description: format!("Redo: {}", next_state.description),
+        description: format!("Redo: {}", &next_state.description),
     };
 
     state.project = project;
@@ -214,11 +212,11 @@ pub fn redo() -> Result<UndoRedoResult, String> {
 /// * `project_binary` - Binary protobuf representation of the project
 pub fn load(project_binary: &[u8]) -> Result<(), String> {
     let project =
-        Project::decode(project_binary).map_err(|e| format!("Failed to decode project: {}", e))?;
+        Project::decode(project_binary).map_err(|e| format!("Failed to decode project: {e}"))?;
 
     let mut state = PROJECT_STATE
         .lock()
-        .map_err(|e| format!("Failed to lock state: {}", e))?;
+        .map_err(|e| format!("Failed to lock state: {e}"))?;
 
     state.project = project;
 
@@ -237,7 +235,7 @@ pub fn load(project_binary: &[u8]) -> Result<(), String> {
 pub fn get_undo_state() -> Result<UndoState, String> {
     let state = PROJECT_STATE
         .lock()
-        .map_err(|e| format!("Failed to lock state: {}", e))?;
+        .map_err(|e| format!("Failed to lock state: {e}"))?;
 
     let can_undo = state.operation_index > 0;
     let can_redo = state.operation_index < (state.operation_stack.len() as i32) - 1;
@@ -281,7 +279,7 @@ where
 {
     let state = PROJECT_STATE
         .lock()
-        .map_err(|e| format!("Failed to lock state: {}", e))?;
+        .map_err(|e| format!("Failed to lock state: {e}"))?;
     f(&state.project)
 }
 
@@ -289,7 +287,7 @@ where
 pub fn get() -> Result<Vec<u8>, String> {
     let state = PROJECT_STATE
         .lock()
-        .map_err(|e| format!("Failed to lock state: {}", e))?;
+        .map_err(|e| format!("Failed to lock state: {e}"))?;
     Ok(state.project.encode_to_vec())
 }
 
@@ -304,7 +302,7 @@ where
 {
     let mut state = PROJECT_STATE
         .lock()
-        .map_err(|e| format!("Failed to lock state: {}", e))?;
+        .map_err(|e| format!("Failed to lock state: {e}"))?;
 
     f(&mut state.project)
 }
@@ -314,7 +312,7 @@ where
 pub fn ensure_project_exists() -> Result<bool, String> {
     let mut state = PROJECT_STATE
         .lock()
-        .map_err(|e| format!("Failed to lock state: {}", e))?;
+        .map_err(|e| format!("Failed to lock state: {e}"))?;
 
     // Check if project already has a name (meaning it was loaded)
     if !state.project.name.is_empty() {

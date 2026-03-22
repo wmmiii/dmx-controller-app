@@ -516,11 +516,3 @@ pub async fn toggle_tile(
 
     Ok(enabled)
 }
-
-/// Returns the default color palette as binary protobuf.
-/// This is the single source of truth for the default palette.
-#[tauri::command]
-pub fn get_default_color_palette() -> Vec<u8> {
-    use prost::Message;
-    project::DEFAULT_COLOR_PALETTE.encode_to_vec()
-}

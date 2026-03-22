@@ -365,7 +365,9 @@ function EditFixtureDialog({
       </label>
       {definition != null &&
         ANGLE_CHANNELS.filter((t) =>
-          Object.values(definition.channels).some((c) => c.type === t),
+          Object.values(definition.modes[fixture.fixtureMode].channels).some(
+            (c) => c.type === t,
+          ),
         ).map((t, i) => (
           <label key={i}>
             <span>{t.charAt(0).toUpperCase() + t.slice(1)} Offset</span>

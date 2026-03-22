@@ -4,19 +4,19 @@ import styles from './VersatileElement.module.scss';
 
 const EMULATED_POINTER_EVENT = 'emulatedPointerEvent';
 
-interface VersatileElementProps {
+interface VersatileElementProps<T> {
   className?: string;
-  id: any;
+  id: unknown;
   style?: CSSProperties;
-  element?: any;
+  element?: T;
   onClick?: () => void;
   onPress?: () => void;
-  onDragOver?: (element: any) => void;
+  onDragOver?: (element: T) => void;
   onDragComplete?: () => void;
   children: React.ReactNode;
 }
 
-export function VersatileElement({
+export function VersatileElement<T>({
   className,
   id,
   style,
@@ -26,7 +26,7 @@ export function VersatileElement({
   onDragOver,
   onDragComplete,
   children,
-}: VersatileElementProps) {
+}: VersatileElementProps<T>) {
   const elementRef = createRef<HTMLDivElement>();
   const {
     id: activeId,

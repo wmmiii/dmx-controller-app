@@ -25,21 +25,11 @@ impl PartialOrd for TileMap {
 
 impl Ord for TileMap {
     fn cmp(&self, other: &Self) -> Ordering {
-        if self.priority > other.priority {
-            return Ordering::Less;
-        } else if self.priority < other.priority {
-            return Ordering::Greater;
-        } else if self.x < other.x {
-            return Ordering::Less;
-        } else if self.x > other.x {
-            return Ordering::Greater;
-        } else if self.y < other.y {
-            return Ordering::Less;
-        } else if self.y > other.y {
-            return Ordering::Greater;
-        } else {
-            return Ordering::Equal;
-        }
+        other
+            .priority
+            .cmp(&self.priority)
+            .then_with(|| self.x.cmp(&other.x))
+            .then_with(|| self.y.cmp(&other.y))
     }
 }
 
@@ -47,7 +37,7 @@ impl Duration {
     pub fn as_ms(&self, beat_metadata: &BeatMetadata) -> f64 {
         match self.amount {
             Some(crate::proto::duration::Amount::Ms(ms)) => ms as f64,
-            Some(crate::proto::duration::Amount::Beat(b)) => (b * beat_metadata.length_ms) as f64,
+            Some(crate::proto::duration::Amount::Beat(b)) => b * beat_metadata.length_ms,
             None => panic!("Unknown duration type!"),
         }
     }
@@ -160,26 +150,26 @@ pub fn render_scene<T: RenderTarget<T>>(
 
         // Process tile based on description type
         for channel in &tile.channels {
-            match &channel {
-                EffectChannel {
-                    effect:
-                        Some(Effect {
-                            effect: Some(effect),
-                            ..
-                        }),
-                    output_target: Some(output_target),
-                } => apply_effect(
+            if let EffectChannel {
+                effect:
+                    Some(Effect {
+                        effect: Some(effect),
+                        ..
+                    }),
+                output_target: Some(output_target),
+            } = channel
+            {
+                apply_effect(
                     project,
                     &mut after,
-                    &output_target,
+                    output_target,
                     &system_t,
                     &effect_t,
                     &beat_t,
                     &frame,
                     effect,
                     &color_palette,
-                ),
-                _ => continue,
+                );
             }
         }
 

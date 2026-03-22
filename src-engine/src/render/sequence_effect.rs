@@ -71,7 +71,7 @@ pub fn apply_sequence_effect<T: RenderTarget<T>>(
                 ),
                 beat_t,
                 frame,
-                &effect.effect.as_ref().unwrap().effect.as_ref().unwrap(),
+                effect.effect.as_ref().unwrap().effect.as_ref().unwrap(),
                 color_palette,
             );
         }

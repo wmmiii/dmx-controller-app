@@ -7,14 +7,14 @@ let modeLock = Promise.resolve();
 
 export function useRenderMode(
   renderMode: MessageInitShape<typeof RenderModeSchema>,
-  deps: any[],
+  deps: unknown[],
 ) {
   useEffect(() => {
+    let release: () => void;
+    modeLock = new Promise((r) => (release = r));
     const next = modeLock.then(() =>
       setRenderMode(create(RenderModeSchema, renderMode)),
     );
-    let release: (_: any) => void;
-    modeLock = new Promise((r) => (release = r));
 
     return () => {
       next

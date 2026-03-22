@@ -100,10 +100,6 @@ pub fn run() {
             midi::connect_midi,
             midi::disconnect_midi,
             midi::list_midi_inputs,
-            midi::set_first_beat,
-            output_loop::rebuild_output_loops,
-            output_loop::start_output_loop,
-            output_loop::stop_output_loop,
             project::save_project,
             project::update_project,
             project::undo_project,
@@ -113,17 +109,10 @@ pub fn run() {
             project::request_update,
             project::save_assets,
             project::toggle_tile,
-            project::get_default_color_palette,
             render::render_dmx,
-            render::render_wled,
             render::set_render_mode,
-            sacn::output_sacn_dmx,
-            serial::close_port,
             serial::list_ports,
-            serial::open_port,
-            serial::output_serial_dmx,
             project::frontend_ready_for_update,
-            wled::output_wled,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");

@@ -42,7 +42,7 @@ pub fn apply_ramp_effect<T: RenderTarget<T>>(
             project,
             &mut start,
             single_target,
-            &ramp_effect.state_start.clone().unwrap(),
+            ramp_effect.state_start.as_ref().unwrap(),
             color_palette,
         );
 
@@ -50,7 +50,7 @@ pub fn apply_ramp_effect<T: RenderTarget<T>>(
             project,
             &mut end,
             single_target,
-            &ramp_effect.state_end.clone().unwrap(),
+            ramp_effect.state_end.as_ref().unwrap(),
             color_palette,
         );
 

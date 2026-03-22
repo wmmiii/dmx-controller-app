@@ -14,6 +14,18 @@ jobs:
       - name: Setup
         uses: ./.github/setup
 
+      - name: Type check
+        run: pnpm run type-check
+
+      - name: Lint TypeScript (ESLint)
+        run: pnpm run lint:ts
+
+      - name: Check for dead code (Knip)
+        run: pnpm run lint:dead
+
+      - name: Lint Rust (Clippy)
+        run: pnpm run lint:rust
+
       - name: Build
         run: pnpm build
 

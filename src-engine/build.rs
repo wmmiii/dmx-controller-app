@@ -53,7 +53,10 @@ fn main() {
         })
         .collect();
 
-    let proto_path_refs: Vec<&str> = proto_files.iter().map(|s| s.as_str()).collect();
+    let proto_path_refs: Vec<&str> = proto_files
+        .iter()
+        .map(std::string::String::as_str)
+        .collect();
 
     // Compile all proto files with include path set to project root
     prost_build::Config::new()

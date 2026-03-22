@@ -21,7 +21,7 @@ interface DropdownProps {
 export function Dropdown({ className, onClose, items }: DropdownProps) {
   useEffect(() => {
     document.addEventListener('click', onClose);
-    () => document.removeEventListener('click', onClose);
+    return () => document.removeEventListener('click', onClose);
   }, []);
 
   const classes = [styles.dropdown];

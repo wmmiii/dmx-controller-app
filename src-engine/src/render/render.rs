@@ -1,6 +1,4 @@
-use std::sync::Mutex;
-
-use once_cell::sync::Lazy;
+use std::sync::{LazyLock, Mutex};
 
 use crate::{
     project,
@@ -20,8 +18,8 @@ use crate::{
 
 /// Global static render mode instance
 /// Can be accessed from both WASM and Tauri contexts
-pub static RENDER_MODE_REF: Lazy<Mutex<RenderMode>> =
-    Lazy::new(|| Mutex::new(RenderMode::default()));
+pub static RENDER_MODE_REF: LazyLock<Mutex<RenderMode>> =
+    LazyLock::new(|| Mutex::new(RenderMode::default()));
 
 pub fn render_dmx(output_id: u64, system_t: u64, frame: u32) -> Result<[u8; 512], String> {
     project::with_project(|project| {
@@ -108,13 +106,13 @@ fn render<T: RenderTarget<T>>(
 ) -> Result<(), String> {
     let render_mode = RENDER_MODE_REF
         .lock()
-        .map_err(|e| format!("Failed to lock render mode: {}", e))?;
+        .map_err(|e| format!("Failed to lock render mode: {e}"))?;
 
     match &render_mode.mode {
         None | Some(Mode::Blackout(_)) => Ok(()),
         Some(Mode::FixtureDebug(fixture_debug)) => {
             if output_id == fixture_debug.output_id {
-                render_target.apply_fixture_debug(&fixture_debug);
+                render_target.apply_fixture_debug(fixture_debug);
             }
             Ok(())
         }
@@ -155,13 +153,15 @@ fn render_group_debug<T: RenderTarget<T>>(
             _ => (1.0, 0.0, 1.0 - f), // Magenta to Red (segment 5 or wraparound)
         };
 
-        let mut state = FixtureState::default();
-        state.light_color = Some(LightColor::Color(Color {
-            red: color.0,
-            green: color.1,
-            blue: color.2,
-            white: None,
-        }));
+        let state = FixtureState {
+            light_color: Some(LightColor::Color(Color {
+                red: color.0,
+                green: color.1,
+                blue: color.2,
+                white: None,
+            })),
+            ..Default::default()
+        };
 
         render_target.apply_state(fixture, &state, &ColorPalette::default());
     }

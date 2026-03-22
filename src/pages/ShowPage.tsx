@@ -48,7 +48,7 @@ export default function ShowPage(): JSX.Element {
   const { project, save } = useContext(ProjectContext);
   const { setShortcuts } = useContext(ShortcutContext);
 
-  let t = useRef<number>(0);
+  const t = useRef<number>(0);
   const [audioDuration, setAudioDuration] = useState(1);
   const [beatSubdivisions, setBeatSubdivisions] = useState(1);
 

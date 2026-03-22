@@ -81,7 +81,7 @@ export function AudioTrackVisualizer({
       ws.on('pause', () => setPlaying(false));
       ws.on('decode', (seconds: number) => {
         const ms = seconds * 1000;
-        setVisible && setVisible(0, ms);
+        setVisible?.(0, ms);
         if (setTotalDuration) {
           setTotalDuration(ms);
         }
@@ -122,7 +122,7 @@ export function AudioTrackVisualizer({
       };
       ws.on('scroll', callback);
 
-      () => ws.un('scroll', callback);
+      return () => ws.un('scroll', callback);
     }
   }, [ws, setVisible]);
 

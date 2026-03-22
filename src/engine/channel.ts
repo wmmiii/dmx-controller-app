@@ -4,7 +4,7 @@ interface ChannelDescription {
   description: string;
 }
 
-export const COLOR_CHANNEL_DESCRIPTIONS: {
+const COLOR_CHANNEL_DESCRIPTIONS: {
   [channel: string]: ChannelDescription;
 } = {
   red: {
@@ -31,14 +31,9 @@ export const COLOR_CHANNEL_DESCRIPTIONS: {
 } as const;
 export const COLOR_CHANNELS = Object.keys(COLOR_CHANNEL_DESCRIPTIONS);
 export type ColorChannel = (typeof COLOR_CHANNELS)[number];
-export function isColorChannel(type: string): type is ColorChannel {
-  return COLOR_CHANNELS.includes(type as ColorChannel);
-}
 
-export const ANGLE_CHANNEL_DESCRIPTIONS: Map<
-  keyof FixtureState,
-  ChannelDescription
-> = new Map();
+const ANGLE_CHANNEL_DESCRIPTIONS: Map<keyof FixtureState, ChannelDescription> =
+  new Map();
 ANGLE_CHANNEL_DESCRIPTIONS.set('pan', {
   description: 'The pan angle of a moving fixture.',
 });
@@ -52,7 +47,7 @@ export type AngleChannel = (typeof ANGLE_CHANNELS)[number];
 export function isAngleChannel(type: string): type is AngleChannel {
   return ANGLE_CHANNELS.includes(type as AngleChannel);
 }
-export const AMOUNT_CHANNEL_DESCRIPTION: Map<
+const AMOUNT_CHANNEL_DESCRIPTION: Map<
   keyof FixtureState | 'speed',
   ChannelDescription
 > = new Map();

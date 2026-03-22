@@ -1,0 +1,11 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": ["src/Index.tsx"],
+  "project": ["src/**/*.{ts,tsx}"],
+  "ignore": ["src/wasm-engine/**"],
+  "ignoreDependencies": [
+    "@bufbuild/protoc-gen-connect-es",
+    "@bufbuild/protoc-gen-es",
+    "protoc"
+  ]
+}

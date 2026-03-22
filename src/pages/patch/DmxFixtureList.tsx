@@ -272,9 +272,9 @@ function EditDefinitionDialog({
   );
 
   const definition = useMemo(() => {
-    return project.fixtureDefinitions?.dmxFixtureDefinitions[
+    return project.fixtureDefinitions!.dmxFixtureDefinitions[
       id.definition.toString()
-    ]!;
+    ];
   }, [project, id]);
 
   const mode = definition.modes[id.mode];

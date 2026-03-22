@@ -1,7 +1,7 @@
-use once_cell::sync::Lazy;
+use std::sync::LazyLock;
 
 use crate::{
-    proto::{effect::RandomEffect, ColorPalette, OutputTarget, Project},
+    proto::{ColorPalette, OutputTarget, Project, effect::RandomEffect},
     render::{
         render_target::RenderTarget,
         util::{apply_effect, get_fixtures},
@@ -80,7 +80,7 @@ fn apply_random_effect_impl<T: RenderTarget<T>>(
     let effect_t = system_t.wrapping_add(
         LARGE_PRIME.wrapping_mul(
             LARGE_PRIME
-                .wrapping_mul(*seed as u64)
+                .wrapping_mul(*seed)
                 .wrapping_add(random_effect.seed as u64),
         ),
     ) % window_size as u64;
@@ -116,12 +116,12 @@ fn apply_random_effect_impl<T: RenderTarget<T>>(
                 sub_effect.unwrap().effect.as_ref().unwrap(),
                 color_palette,
             );
-            return;
+            break;
         }
     }
 }
 
-pub const LARGE_PRIME: u64 = 4294967291;
+pub const LARGE_PRIME: u64 = 4_294_967_291;
 
 fn generate_random_numbers() -> (Vec<f64>, f64, f64) {
     use rand::Rng;
@@ -150,7 +150,7 @@ fn generate_random_numbers() -> (Vec<f64>, f64, f64) {
 }
 
 // Lazy-initialized random numbers
-static RANDOM_DATA: Lazy<(Vec<f64>, f64, f64)> = Lazy::new(|| generate_random_numbers());
+static RANDOM_DATA: LazyLock<(Vec<f64>, f64, f64)> = LazyLock::new(generate_random_numbers);
 
 fn get_random_numbers() -> &'static Vec<f64> {
     &RANDOM_DATA.0

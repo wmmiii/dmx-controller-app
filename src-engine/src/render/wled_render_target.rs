@@ -9,7 +9,7 @@ macro_rules! lerp {
     };
 }
 
-impl<'a> RenderTarget<WledRenderTarget> for WledRenderTarget {
+impl RenderTarget<WledRenderTarget> for WledRenderTarget {
     fn apply_state(
         &mut self,
         qualified_fixture_id: &crate::proto::QualifiedFixtureId,

@@ -26,7 +26,7 @@ import styles from './SequenceEditor.module.scss';
 import { EffectDetails } from './TimecodeEffect';
 
 // Good resolution, nice divisors (2^5 * 3^2 * 5^2.)
-export const SEQUENCE_BEAT_RESOLUTION = 7200;
+const SEQUENCE_BEAT_RESOLUTION = 7200;
 
 interface SequenceEditorProps {
   className?: string;
@@ -207,7 +207,7 @@ interface LayersProps {
   snapToBeat: (t: number) => number;
 }
 
-export function Layers({
+function Layers({
   layers,
   nativeBeats,
   beatSubdivisions,

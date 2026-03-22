@@ -74,6 +74,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
 
   // Expose project globally for debugging purposes.
   useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const global = (window || globalThis) as any;
     global['project'] = project;
   }, [project]);

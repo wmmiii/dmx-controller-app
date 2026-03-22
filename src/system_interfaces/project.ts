@@ -112,13 +112,6 @@ export async function loadProject(projectBinary: Uint8Array): Promise<void> {
 }
 
 /**
- * Returns the current undo/redo availability state.
- */
-export async function getUndoState(): Promise<UndoStateChangedEvent> {
-  return invoke('get_undo_state');
-}
-
-/**
  * Requests the backend to emit a project-updated event with the current project.
  */
 export async function requestUpdate(): Promise<void> {

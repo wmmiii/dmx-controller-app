@@ -96,7 +96,3 @@ listen<{ sampling: boolean }>('beat-sampling-state', (event) => {
 export async function addBeatSample(): Promise<void> {
   return invoke('add_beat_sample');
 }
-
-export async function setFirstBeat(): Promise<void> {
-  return invoke('set_first_beat');
-}

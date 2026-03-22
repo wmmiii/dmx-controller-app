@@ -6,7 +6,7 @@ use serde::Serialize;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tauri::{AppHandle, Emitter, State};
+use tauri::{AppHandle, Emitter};
 use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
 
@@ -393,73 +393,4 @@ impl OutputLoopManager {
 
         Ok(())
     }
-}
-
-#[tauri::command]
-pub async fn start_output_loop(
-    manager: State<'_, Arc<Mutex<OutputLoopManager>>>,
-    serial_state: State<'_, Arc<Mutex<SerialState>>>,
-    sacn_state: State<'_, Arc<Mutex<SacnState>>>,
-    wled_state: State<'_, Arc<Mutex<WledState>>>,
-    output_id: String,
-    output_type: String,
-    universe: Option<u16>,
-    ip_address: Option<String>,
-) -> Result<(), String> {
-    let output_id_u64 = output_id
-        .parse::<u64>()
-        .map_err(|e| format!("Invalid output_id: {}", e))?;
-
-    let output_type = match output_type.as_str() {
-        "serial" => OutputType::Serial,
-        "sacn" => OutputType::Sacn {
-            universe: universe.ok_or("universe required for sACN")?,
-            ip_address: ip_address.ok_or("ip_address required for sACN")?,
-        },
-        "wled" => OutputType::Wled {
-            ip_address: ip_address.ok_or("ip_address required for WLED")?,
-        },
-        _ => return Err(format!("Unknown output type: {}", output_type)),
-    };
-
-    let manager = manager.lock().await;
-    manager
-        .start_loop(
-            output_id_u64,
-            output_type,
-            serial_state.inner().clone(),
-            sacn_state.inner().clone(),
-            wled_state.inner().clone(),
-        )
-        .await
-}
-
-#[tauri::command]
-pub async fn stop_output_loop(
-    manager: State<'_, Arc<Mutex<OutputLoopManager>>>,
-    output_id: String,
-) -> Result<(), String> {
-    let output_id_u64 = output_id
-        .parse::<u64>()
-        .map_err(|e| format!("Invalid output_id: {}", e))?;
-
-    let manager = manager.lock().await;
-    manager.stop_loop(output_id_u64).await
-}
-
-#[tauri::command]
-pub async fn rebuild_output_loops(
-    manager: State<'_, Arc<Mutex<OutputLoopManager>>>,
-    serial_state: State<'_, Arc<Mutex<SerialState>>>,
-    sacn_state: State<'_, Arc<Mutex<SacnState>>>,
-    wled_state: State<'_, Arc<Mutex<WledState>>>,
-) -> Result<(), String> {
-    let manager = manager.lock().await;
-    manager
-        .rebuild_all_loops(
-            serial_state.inner().clone(),
-            sacn_state.inner().clone(),
-            wled_state.inner().clone(),
-        )
-        .await
 }

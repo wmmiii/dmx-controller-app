@@ -131,7 +131,8 @@ export function TimecodeEffect({
 
   // React makes the original style immutable so we clone it to modify it.
   const style = Object.assign({}, originalStyle);
-  const icons: Set<(props: any) => React.ReactNode> = new Set();
+  const icons: Set<(props: React.SVGProps<SVGSVGElement>) => React.ReactNode> =
+    new Set();
   switch (effect.case) {
     case 'staticEffect':
       if (effect.value.state) {
@@ -149,7 +150,9 @@ export function TimecodeEffect({
           width =
             beatWidthPx / (rampEffect.timingMode.timing.value.multiplier || 1);
         } else if (rampEffect.timingMode?.timing.case === 'absolute') {
-          width = msWidthToPxWidth(rampEffect.timingMode.timing.value.duration);
+          width = msWidthToPxWidth(
+            rampEffect.timingMode.timing.value.durationMs,
+          );
         } else {
           width = msWidthToPxWidth(
             timecodeEffect.endMs - timecodeEffect.startMs,
@@ -440,8 +443,10 @@ function effectColor(
 
 function effectIcons(
   effect: FixtureStateProto,
-): Array<(props: any) => React.ReactNode> {
-  const icons: Array<(props: any) => React.ReactNode> = [];
+): Array<(props: React.SVGProps<SVGSVGElement>) => React.ReactNode> {
+  const icons: Array<
+    (props: React.SVGProps<SVGSVGElement>) => React.ReactNode
+  > = [];
   if (effect.lightColor.case === 'color') {
     icons.push(IconRgb);
   } else if (effect.lightColor.case === 'paletteColor') {

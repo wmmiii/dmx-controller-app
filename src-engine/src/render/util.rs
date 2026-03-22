@@ -88,13 +88,12 @@ pub fn apply_state<T: RenderTarget<T>>(
 
     match output {
         Output::Fixtures(f) => {
-            match f
+            if let Some(qid) = f
                 .fixture_ids
                 .iter()
                 .find(|id| id.patch == project.active_patch)
             {
-                Some(qid) => render_target.apply_state(qid, state, color_palette),
-                None => return,
+                render_target.apply_state(qid, state, color_palette);
             }
         }
         Output::Group(0) => {
@@ -112,14 +111,13 @@ pub fn apply_state<T: RenderTarget<T>>(
                 );
             }
         }
-        Output::Group(id) => match project.groups.get(id) {
-            Some(g) => {
+        Output::Group(id) => {
+            if let Some(g) = project.groups.get(id) {
                 for target in &g.targets {
-                    apply_state(project, render_target, &target, state, color_palette);
+                    apply_state(project, render_target, target, state, color_palette);
                 }
             }
-            None => return,
-        },
+        }
     };
 }
 
@@ -150,7 +148,7 @@ pub fn get_fixtures(project: &Project, output_target: &OutputTarget) -> Vec<Qual
             while let Some(gid) = groups.pop() {
                 for target in project.groups[gid].targets.iter() {
                     match &target.output {
-                        Some(Output::Group(id)) => groups.push(&id),
+                        Some(Output::Group(id)) => groups.push(id),
                         Some(Output::Fixtures(fixtures)) => {
                             fixtures
                                 .fixture_ids
@@ -194,16 +192,14 @@ pub fn calculate_timing(
     }
 
     // Ease.
-    let eased_t = match EasingFunction::try_from(effect_timing.easing) {
+    match EasingFunction::try_from(effect_timing.easing) {
         Ok(EasingFunction::Linear) => t,
         Ok(EasingFunction::EaseIn) => t * t * t,
         Ok(EasingFunction::EaseOut) => 1.0 - (1.0 - t).powf(3.0),
         Ok(EasingFunction::EaseInOut) => t * t * (3.0 - 2.0 * t),
         Ok(EasingFunction::Sine) => (-(PI * t).cos() + 1.0) / 2.0,
         _ => panic!("Unknown easing type!"),
-    };
-
-    return eased_t;
+    }
 }
 
 pub fn interpolate_palettes(a: ColorPalette, b: ColorPalette, t: f64) -> ColorPalette {
@@ -234,14 +230,14 @@ pub fn interpolate_palettes(a: ColorPalette, b: ColorPalette, t: f64) -> ColorPa
                 }),
                 _ => None,
             },
-            (Some(a_desc), None) => Some(a_desc.clone()),
-            (None, Some(b_desc)) => Some(b_desc.clone()),
+            (Some(a_desc), None) => Some(*a_desc),
+            (None, Some(b_desc)) => Some(*b_desc),
             (None, None) => None,
         }
     };
 
     ColorPalette {
-        id: u64::max_value(),
+        id: u64::MAX,
         name: b.name.clone(),
         primary: interpolate_desc(a.primary.as_ref(), b.primary.as_ref(), t),
         secondary: interpolate_desc(a.secondary.as_ref(), b.secondary.as_ref(), t),

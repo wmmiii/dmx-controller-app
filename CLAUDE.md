@@ -13,6 +13,8 @@ This project uses **Vite** as its primary build system for the frontend. Key com
 - `pnpm run type-check` - Run TypeScript type checking
 - `pnpm run proto:generate` - Regenerate TypeScript bindings from .proto files (via buf)
 - `pnpm run format` - Auto-format all code with Prettier
+- `pnpm run lint` - Run all linters (ESLint, Knip dead code detection, Clippy)
+- `pnpm run cleanup` - Run linters then format (use this when finalizing changes)
 - `pnpm run css-vars:build` - Regenerate `public/vars.css` from `src/_vars.scss`
 - `pnpm run tauri` - Build/run the Tauri desktop app
 
@@ -170,6 +172,17 @@ This guidance applies only to code you are actively modifying—do not refactor 
 - Prefer `sed`, `pnpm`, and other shell tools for repetitive or mechanical changes rather than AI-guessing edits
 - Examples: `sed -i 's/oldName/newName/g' file.ts` for renames, `pnpm run format` to fix formatting, `pnpm run proto:generate` after proto changes
 - Ask the user to allowlist specific tools as needed rather than doing everything manually
+
+**Batch independent tool calls:**
+
+- When making multiple independent changes (e.g., editing several files, running parallel commands), batch them into a single message with multiple tool calls
+- Do not make sequential tool calls that could be parallelized — this wastes time and tokens
+- Example: editing three Cargo.toml files should be three Edit calls in one message, not three separate messages
+
+**Finalize changes with cleanup:**
+
+- Before completing a task, run `pnpm run cleanup` to catch dead code, deprecated usage, and formatting issues
+- Fix any issues found before marking the task complete
 
 ## Website & Documentation
 

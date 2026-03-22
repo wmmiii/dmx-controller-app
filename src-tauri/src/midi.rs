@@ -836,23 +836,3 @@ pub async fn add_beat_sample(
 
     Ok(())
 }
-
-/// Set the first beat position (called from keyboard shortcut)
-#[tauri::command]
-pub async fn set_first_beat(
-    app: AppHandle,
-    state: State<'_, Arc<Mutex<MidiState>>>,
-) -> Result<(), String> {
-    let t = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_err(|e| e.to_string())?
-        .as_millis() as u64;
-
-    let midi_state = state.lock().await;
-    let input_state = Arc::clone(&midi_state.input_state);
-    drop(midi_state);
-
-    handle_first_beat_action(&app, &input_state, t);
-
-    Ok(())
-}

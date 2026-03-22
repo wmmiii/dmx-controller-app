@@ -1,9 +1,6 @@
 use sacn::packet::ACN_SDT_MULTICAST_PORT;
 use sacn::source::SacnSource;
 use std::net::{IpAddr, SocketAddr};
-use std::sync::Arc;
-use tauri::State;
-use tokio::sync::Mutex;
 
 pub struct SacnState {
     source: std::sync::Mutex<SacnSource>,
@@ -56,15 +53,4 @@ impl SacnState {
 
         Ok(())
     }
-}
-
-#[tauri::command]
-pub async fn output_sacn_dmx(
-    state: State<'_, Arc<Mutex<SacnState>>>,
-    universe: u16,
-    ip_address: String,
-    data: Vec<u8>,
-) -> Result<(), String> {
-    let sacn_state = state.lock().await;
-    sacn_state.output_sacn_internal(universe, &ip_address, &data)
 }

@@ -25,7 +25,7 @@ export function contextName(project: Project, context: BindingContext) {
     case 'scene':
       return `Scene "${project.scenes[context.sceneId.toString()].name}"`;
     default:
-      throw Error('Unknown context type: ' + (context as any).type);
+      throw Error('Unknown context type: ' + JSON.stringify(context));
   }
 }
 
@@ -87,7 +87,7 @@ function getOrCreateBindings(
   project: Project,
   context: BindingContext,
   bindingId: bigint,
-): any {
+) {
   const bindingsMap = getOrCreateBindingsMap(project, context).bindings;
   const key = bindingId.toString();
 
@@ -297,7 +297,7 @@ export function deleteBindings(
   predicate: (action: InputBinding['action']) => boolean,
 ): void {
   // Helper to clean bindings from a ControllerBindingsMap
-  const cleanBindingsMap = (bindingsMap: any) => {
+  const cleanBindingsMap = (bindingsMap: ControllerBindingsMap) => {
     if (!bindingsMap?.bindings) return;
 
     // Iterate through all controller IDs
@@ -305,7 +305,7 @@ export function deleteBindings(
       if (!controllerBindings || typeof controllerBindings !== 'object')
         continue;
 
-      const bindings = (controllerBindings as any).bindings;
+      const bindings = controllerBindings.bindings;
       if (!bindings) continue;
 
       // Find and delete channels with tileStrength actions matching this tileId
@@ -415,8 +415,7 @@ export function getActionDescription(
         return `Sets the color palette to ${colorPaletteName}.`;
       case 'tileStrength':
         const tileName = scene.tileMap.find(
-          (t: any) =>
-            t.id === (binding!.action.value as TileStrengthAction).tileId,
+          (t) => t.id === (binding!.action.value as TileStrengthAction).tileId,
         )?.tile?.name;
         return `Modifies the strength of tile "${tileName}".`;
       case undefined:

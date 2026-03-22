@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// TODO: Enable safe type checking in this file.
 import { create } from '@bufbuild/protobuf';
 import {
   Color,
@@ -66,8 +68,7 @@ export function EffectState({
       ))}
       {availableChannels.findIndex(
         (channel) =>
-          COLOR_CHANNELS.indexOf(channel as any) > -1 ||
-          channel === 'color_wheel',
+          COLOR_CHANNELS.indexOf(channel) > -1 || channel === 'color_wheel',
       ) > -1 && <ColorChannel values={states.map((s) => s.state)} />}
       {availableChannels
         .filter((channel) => ANGLE_CHANNELS.indexOf(channel as any) > -1)

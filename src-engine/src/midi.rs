@@ -51,16 +51,15 @@ fn find_binding<'a>(
     channel: &str,
 ) -> Option<&'a InputBinding> {
     // Check scene bindings first
-    if let BindingContext::Scene { scene_id } = binding_context {
-        if let Some(binding) = project
+    if let BindingContext::Scene { scene_id } = binding_context
+        && let Some(binding) = project
             .scenes
             .get(&scene_id)
             .and_then(|scene| scene.controller_bindings.as_ref())
             .and_then(|map| map.bindings.get(&binding_id))
             .and_then(|bindings| bindings.bindings.get(channel))
-        {
-            return Some(binding);
-        }
+    {
+        return Some(binding);
     }
 
     // Fall back to global bindings
@@ -93,10 +92,9 @@ pub fn perform_action(
             scene_id: project.active_scene,
         };
 
-        let Some(binding) = find_binding(project, binding_context, binding_id, channel) else {
+        let Some(&binding) = find_binding(project, binding_context, binding_id, channel) else {
             return Ok(ActionResult::unchanged());
         };
-        let binding = binding.clone();
 
         let action = &binding.action.unwrap();
 
@@ -154,17 +152,17 @@ fn perform_tile_strength(
             tile.transition = Some(proto::scene::tile::Transition::AbsoluteStrength(
                 value as f32,
             ));
-            return true;
+            true
         } else if value > 0.5 {
             // Binary input - toggle tile
             let beat = match &project.live_beat {
-                Some(b) => b.clone(),
+                Some(b) => *b,
                 None => return false,
             };
             toggle_tile(tile, &beat, t);
-            return true;
+            true
         } else {
-            return false;
+            false
         }
     } else {
         false
@@ -192,7 +190,7 @@ pub fn calculate_midi_output(
             return Ok(output);
         };
 
-        let beat_t = (t - beat_metadata.offset_ms) as f64 / beat_metadata.length_ms as f64;
+        let beat_t = (t - beat_metadata.offset_ms) as f64 / beat_metadata.length_ms;
 
         // Collect bindings from both global and scene contexts
         let mut all_bindings = HashMap::new();
@@ -204,7 +202,7 @@ pub fn calculate_midi_output(
             .and_then(|map| map.bindings.get(binding_id))
         {
             for (channel, binding) in &global_bindings.bindings {
-                all_bindings.insert(channel.clone(), binding.clone());
+                all_bindings.insert(channel.clone(), *binding);
             }
         }
 
@@ -216,7 +214,7 @@ pub fn calculate_midi_output(
             .and_then(|map| map.bindings.get(binding_id))
         {
             for (channel, binding) in &scene_bindings.bindings {
-                all_bindings.insert(channel.clone(), binding.clone());
+                all_bindings.insert(channel.clone(), *binding);
             }
         }
 
@@ -238,7 +236,7 @@ pub fn calculate_midi_output(
             };
 
             // Clamp value between 0.0 and 1.0
-            output.insert(channel.clone(), value.max(0.0).min(1.0));
+            output.insert(channel.clone(), value.clamp(0.0, 1.0));
         }
 
         Ok(output)

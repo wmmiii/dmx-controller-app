@@ -1,10 +1,5 @@
-use std::sync::Arc;
-
 use dmx_engine::proto::WledRenderTarget;
-use prost::Message;
 use serde::{Deserialize, Serialize};
-use tauri::State;
-use tokio::sync::Mutex;
 
 pub struct WledState {
     client: reqwest::Client,
@@ -78,19 +73,4 @@ impl WledState {
             Err(e) => Err(format!("WLED device returned error: {}", e)),
         }
     }
-}
-
-#[tauri::command]
-pub async fn output_wled(
-    state: State<'_, Arc<Mutex<WledState>>>,
-    ip_address: String,
-    wled_render_target_bin: Vec<u8>,
-) -> Result<(), String> {
-    let wled_render_target = WledRenderTarget::decode(wled_render_target_bin.as_slice())
-        .map_err(|e| format!("Failed to deserialize WLED render target: {}", e))?;
-
-    let wled_state = state.lock().await;
-    wled_state
-        .output_wled_internal(&ip_address, &wled_render_target)
-        .await
 }

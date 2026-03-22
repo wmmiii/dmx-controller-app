@@ -28,7 +28,7 @@ import { Spacer } from './Spacer';
 import { HorizontalSplitPane } from './SplitPane';
 import { EffectDetails } from './TimecodeEffect';
 
-export const LEFT_WIDTH = 180;
+const LEFT_WIDTH = 180;
 
 export default function LightTimeline(props: TracksProps): JSX.Element {
   const { project } = useContext(ProjectContext);
@@ -102,7 +102,7 @@ interface TracksProps {
   swap?: (a: number, b: number) => void;
   addLayer?: () => void;
   audioToTrack?: (t: number) => number;
-  t: React.MutableRefObject<number>;
+  t: React.RefObject<number>;
 }
 
 function Tracks({

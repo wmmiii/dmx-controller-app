@@ -24,6 +24,7 @@ export function getStates(
       b: create(FixtureStateSchema, {}),
     };
   }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const e: any = effect;
   const a: FixtureState =
     e.state ??

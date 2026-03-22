@@ -67,7 +67,7 @@ export function ShortcutProvider({ children }: PropsWithChildren): JSX.Element {
   useEffect(() => {
     const defaultBundle: ShortcutBundle = [
       {
-        shortcut: { key: 'KeyW', modifiers: ['ctrl'] } as any,
+        shortcut: { key: 'KeyW', modifiers: ['ctrl'] },
         action: () => exit(0),
         description: 'Exits the application',
       },

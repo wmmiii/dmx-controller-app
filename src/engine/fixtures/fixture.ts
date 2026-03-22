@@ -68,7 +68,6 @@ export function getAvailableChannels(
       default:
         throw Error('Tried to get channels of unknown output type!');
     }
-    output.output.case;
   }
   return Array.from(channels);
 }

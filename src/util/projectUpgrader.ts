@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-deprecated */
 import { clone, create } from '@bufbuild/protobuf';
 import { ColorPaletteSchema } from '@dmx-controller/proto/color_pb';
 import { type Project } from '@dmx-controller/proto/project_pb';
@@ -62,7 +63,7 @@ export default function upgradeProject(p: Project): void {
         touchInterface: Boolean(window.ontouchstart),
       });
     } else {
-      p.settings.touchInterface === Boolean(window.ontouchstart);
+      p.settings.touchInterface = Boolean(window.ontouchstart);
     }
   }
 }

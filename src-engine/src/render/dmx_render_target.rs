@@ -37,7 +37,7 @@ impl<'a> DmxRenderTarget<'a> {
     ) -> Self {
         let mut universe = [0.0; 512];
 
-        for (_, fixture) in fixtures {
+        for fixture in fixtures.values() {
             let definition = fixture_definitions
                 .get(&fixture.fixture_definition_id)
                 .unwrap();
@@ -58,8 +58,8 @@ impl<'a> DmxRenderTarget<'a> {
     }
 
     pub fn get_universe(&self) -> [u8; 512] {
-        let mut universe = self.universe.clone();
-        for (_, fixture) in self.fixtures {
+        let mut universe = self.universe;
+        for fixture in self.fixtures.values() {
             let mode = self
                 .fixture_definitions
                 .get(&fixture.fixture_definition_id)
@@ -101,7 +101,7 @@ impl<'a> DmxRenderTarget<'a> {
         self.non_interpolated_indices.get_or_init(|| {
             let mut indices: Vec<u16> = Vec::new();
             for (fixture_id, fixture) in self.fixtures {
-                let mode = match self.get_fixture_mode(&fixture_id) {
+                let mode = match self.get_fixture_mode(fixture_id) {
                     Some(m) => m,
                     None => continue,
                 };
@@ -114,7 +114,7 @@ impl<'a> DmxRenderTarget<'a> {
                     }
                 }
             }
-            return indices;
+            indices
         }).to_vec()
     }
 
@@ -128,10 +128,7 @@ impl<'a> DmxRenderTarget<'a> {
         let blue: f64;
         let white: f64;
 
-        let w_value = match color.white {
-            Some(white) => white,
-            None => 0.0,
-        };
+        let w_value = color.white.unwrap_or(0.0);
         if mode.channels.iter().any(|(_, c)| c.r#type == "white") {
             red = color.red;
             green = color.green;
