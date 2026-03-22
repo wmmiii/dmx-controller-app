@@ -4,19 +4,12 @@ import {
   ControllerBindingsMapSchema,
   ControllerBindingsMap_ControllerBindingsSchema,
   InputBindingSchema,
-  InputType,
   TileStrengthAction,
   type InputBinding,
 } from '@dmx-controller/proto/controller_pb';
 import { type Project } from '@dmx-controller/proto/project_pb';
 
-import {
-  ControlCommandType,
-  ControllerChannel,
-} from '../contexts/ControllerContext';
-
-import { getActiveScene } from '../util/sceneUtils';
-import { performTileStrength } from './tileStrength';
+import { ControllerChannel } from '../contexts/ControllerContext';
 
 /**
  * Represents a location in the binding hierarchy.
@@ -199,61 +192,6 @@ export function findBinding(
   }
 
   return null;
-}
-
-/**
- * Takes in details of a controller action and modifies the project accordingly.
- */
-export function performAction(
-  project: Project,
-  bindingId: bigint,
-  channel: ControllerChannel,
-  value: number,
-  cct: ControlCommandType,
-  addBeatSample: (t: number) => void,
-  setFirstBeat: (t: number) => void,
-  setBeat: (durationMs: number) => void,
-): boolean {
-  const currentContext: BindingContext = {
-    type: 'scene',
-    sceneId: project.activeScene,
-  };
-
-  const binding = findBinding(project, bindingId, channel, currentContext);
-  if (!binding) {
-    return false;
-  }
-
-  const action = binding.action;
-  switch (action.case) {
-    case 'beatMatch':
-      if (binding.inputType === InputType.BINARY && value > 0.5) {
-        addBeatSample(new Date().getTime());
-      }
-      return false;
-    case 'firstBeat':
-      if (binding.inputType === InputType.BINARY && value > 0.5) {
-        setFirstBeat(new Date().getTime());
-      }
-      return false;
-    case 'setTempo':
-      const bpm = Math.floor(value * 127 + 80);
-      setBeat(60_000 / bpm);
-      return true;
-    case 'tileStrength':
-      return performTileStrength(
-        project,
-        project.activeScene,
-        action.value.tileId,
-        value,
-        cct,
-      );
-    case 'colorPalette':
-      getActiveScene(project).activeColorPalette = action.value.paletteId;
-      return true;
-    default:
-      return false;
-  }
 }
 
 /**
