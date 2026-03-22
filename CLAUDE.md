@@ -6,11 +6,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This project uses **Vite** as its primary build system for the frontend. Key commands:
 
-- `pnpm run dev` - Start the development server (serves on https://localhost:8080)
-- `pnpm run build` - Build the frontend for production
+- `pnpm run dev` - Generate protos and start the development server (serves on https://localhost:8080)
+- `pnpm run build` - Generate protos and build the frontend for production
 - `pnpm run preview` - Preview the production build
-- `pnpm run test` - Run all tests
+- `pnpm run test` - Run all tests (Jest + Rust cargo tests)
 - `pnpm run type-check` - Run TypeScript type checking
+- `pnpm run proto:generate` - Regenerate TypeScript bindings from .proto files (via buf)
+- `pnpm run format` - Auto-format all code with Prettier
+- `pnpm run css-vars:build` - Regenerate `public/vars.css` from `src/_vars.scss`
+- `pnpm run tauri` - Build/run the Tauri desktop app
 
 **Development Workflow:**
 
@@ -24,29 +28,35 @@ This project uses **Vite** as its primary build system for the frontend. Key com
 
 **Frontend (React/TypeScript)**
 
-- Located in `editor/src/`
-- Multi-page application with routing: Live performance (`LivePage`), Show editing (`ShowPage`), Patch configuration (`PatchPage`), Asset management (`AssetBrowserPage`)
-- Uses React Context for state management across: Project, Serial/DMX, Beat detection, Controller input, Shortcuts
+- Located in `src/`
+- Multi-page application with routing: Live performance (`LivePage`), Show editing (`ShowPage`), Patch configuration (`PatchPage`), Asset management (`AssetBrowserPage`), Controller configuration (`ControllerPage`), Project management (`ProjectPage`)
+- Uses React Context for state management across: Project, Serial/DMX, Beat detection, Controller input, Shortcuts, Dialog, Palette, Effect rendering
 
-**Backend/Server (Go)**
+**Rendering Engine (Rust)**
 
-- Development server in `dev/server/` serves static files and provides HTTPS endpoint
-- Real DMX output requires custom ESP32 hardware (SparkFun ESP32 Thing Plus DMX Shield)
+- Core rendering library in `src-engine/` (Rust) — handles DMX universe rendering, effects, scenes, output targets
+- Tauri desktop builds use the native Rust engine directly via `src-tauri/`
+- **Deprecated:** `src/wasm-engine/` — browser WASM bindings are no longer maintained; do not import from or reference this directory
+
+**Desktop App (Tauri)**
+
+- `src-tauri/` wraps the frontend as a native desktop app
+- Provides native MIDI, Serial DMX, sACN/E1.31, and WLED output via platform APIs
+- Development server in `dev/server/` serves static files and provides HTTPS for the frontend dev server
 
 **Protocol Definitions**
 
 - All data structures defined as Protocol Buffers in `proto/`
-- Generated TypeScript bindings used throughout frontend
+- Generated TypeScript bindings used throughout frontend (regenerated with `pnpm run proto:generate`)
 - Key types: Project, Universe, Effect, Scene, Show, DmxFixtureDefinition
 
 ### Data Flow & Engine
 
 **DMX Universe Rendering Pipeline:**
 
-1. `renderSceneToUniverse()` or `renderShowToUniverse()` in `engine/universe.ts` - core rendering entry points
-2. Effects are applied to fixtures via the `RenderContext`
-3. Color palettes provide dynamic color values that interpolate over time
-4. Final 512-channel DMX universe array is output to hardware
+- Rust engine (`src-engine/src/render/`) handles all rendering; `src/engine/renderRouter.ts` is the TypeScript entry point into the native Tauri engine
+- Effects are applied to fixtures via the `RenderContext`; color palettes interpolate over time to provide dynamic color values
+- Final 512-channel DMX universe array is output via Serial, sACN/E1.31, or WLED
 
 **Project Structure:**
 
@@ -63,23 +73,42 @@ This project uses **Vite** as its primary build system for the frontend. Key com
 
 ### Key Files to Understand
 
-**Engine Core:**
+**Engine Core (Rust):**
 
-- `engine/universe.ts` - Main rendering pipeline and scene/show execution
-- `engine/effect.ts` - Effect application logic
-- `engine/fixture.ts` - DMX fixture abstractions and channel mapping
-- `engine/group.ts` - Fixture grouping logic
+- `src-engine/src/render/render.rs` - Main render loop
+- `src-engine/src/render/scene.rs` - Scene rendering
+- `src-engine/src/render/dmx_render_target.rs` - DMX output target
+- `src-engine/src/render/wled_render_target.rs` - WLED output target
+- Effect renderers: `ramp_effect.rs`, `random_effect.rs`, `sequence_effect.rs`, `strobe_effect.rs`
 
-**UI Pages:**
+**Engine (TypeScript — browser glue):**
 
-- `pages/LivePage.tsx` - Live performance interface with tile grid
-- `pages/ShowPage.tsx` - Timeline-based show editor
-- `pages/PatchPage.tsx` - Fixture patching and universe configuration
+- `src/engine/renderRouter.ts` - Routes render calls to the native Tauri engine
+- `src/engine/channel.ts` - DMX channel abstractions
+- `src/engine/group.ts` - Fixture grouping logic
+- `src/engine/fixtures/fixture.ts` - Fixture abstractions and channel mapping
+- `src/engine/fixtures/dmxDevices.ts` - Built-in DMX device definitions
+
+**System Interfaces:**
+
+- `src/system_interfaces/` - Abstractions over browser vs. native (Tauri) APIs for engine, MIDI, project, serial, and WLED
+
+**UI Pages (all in `src/pages/`):**
+
+- `LivePage.tsx` - Live performance interface with tile grid
+- `ShowPage.tsx` - Timeline-based show editor
+- `patch/PatchPage.tsx` - Fixture patching and universe configuration
+- `ControllerPage.tsx` - MIDI/controller configuration
+- `ProjectPage.tsx` - Project management
+- `AssetBrowserPage.tsx` - Audio and GDTF fixture asset management
 
 **External Hardware:**
 
-- `external_controller/externalController.ts` - MIDI/controller input handling
-- `contexts/SerialContext.tsx` - DMX output via Web Serial API
+- `src/external_controller/externalController.ts` - Controller binding lookup and management (action processing is handled in Rust via `src-tauri/src/midi.rs`)
+- `src/contexts/SerialContext.tsx` - DMX output via Web Serial API (browser)
+- `src-tauri/src/serial.rs` - Native Serial DMX output (desktop)
+- `src-tauri/src/sacn.rs` - sACN/E1.31 output
+- `src-tauri/src/wled.rs` - WLED output
 
 ## Development Notes
 
@@ -87,7 +116,9 @@ This project uses **Vite** as its primary build system for the frontend. Key com
 
 - Uses strict TypeScript with `tsconfig.json` in root
 - React 19 with React Router for navigation
-- SCSS modules for styling with shared variables in `_vars.scss`
+- SCSS modules for styling with shared variables in `src/_vars.scss`
+- Path aliases: `@dmx-controller/proto/*` for generated protobuf types
+- **Deprecated alias:** `@dmx-controller/wasm-engine` — do not use; WASM engine has been removed
 
 **Protobuf Integration:**
 
@@ -97,8 +128,7 @@ This project uses **Vite** as its primary build system for the frontend. Key com
 
 **Hardware Integration:**
 
-- DMX output requires Web Serial API (Chrome-based browsers only)
-- External controllers (MIDI) supported via Web MIDI API
+- Desktop mode (Tauri): native Serial, MIDI, sACN, and WLED output
 - Audio beat detection uses real-time BPM analyzer for tempo sync
 
 **Effect System:**
@@ -126,6 +156,20 @@ _Rust:_
 - Prefer immutable bindings (`let`) over mutable (`let mut`) unless mutation is required
 
 This guidance applies only to code you are actively modifying—do not refactor unrelated code to adjust visibility. Run `pnpm run test` after changes to verify visibility restrictions didn't break anything.
+
+## Efficient Agent Workflows
+
+**Prefer bulk reads over many small reads:**
+
+- Read entire files or large sections in one operation rather than making many small reads
+- When exploring unfamiliar code, read whole files rather than hunting line by line
+- Write complete file contents in one Write operation rather than many small Edits
+
+**Use CLI tools instead of manual code manipulation:**
+
+- Prefer `sed`, `pnpm`, and other shell tools for repetitive or mechanical changes rather than AI-guessing edits
+- Examples: `sed -i 's/oldName/newName/g' file.ts` for renames, `pnpm run format` to fix formatting, `pnpm run proto:generate` after proto changes
+- Ask the user to allowlist specific tools as needed rather than doing everything manually
 
 ## Website & Documentation
 
