@@ -252,3 +252,128 @@ where
         .map_err(|e| format!("Failed to lock state: {}", e))?;
     f(&state.project)
 }
+
+/// Returns the current project as a binary protobuf.
+pub fn get() -> Result<Vec<u8>, String> {
+    let state = PROJECT_STATE
+        .lock()
+        .map_err(|e| format!("Failed to lock state: {}", e))?;
+    Ok(state.project.encode_to_vec())
+}
+
+/// Creates and loads a default project if none exists.
+/// Returns true if a new project was created, false if one already existed.
+pub fn ensure_project_exists() -> Result<bool, String> {
+    let mut state = PROJECT_STATE
+        .lock()
+        .map_err(|e| format!("Failed to lock state: {}", e))?;
+
+    // Check if project already has a name (meaning it was loaded)
+    if !state.project.name.is_empty() {
+        return Ok(false);
+    }
+
+    // Create default project with minimal required fields
+    let default_project = create_default_project();
+    let project_binary = default_project.encode_to_vec();
+
+    state.project = default_project;
+
+    // Initialize undo stack with this as the first state
+    state.operation_stack.clear();
+    state.operation_stack.push(Operation {
+        project_state: project_binary,
+        description: "New project".to_string(),
+    });
+    state.operation_index = 0;
+
+    Ok(true)
+}
+
+/// Creates a minimal default project.
+fn create_default_project() -> Project {
+    use crate::proto::{
+        BeatMetadata, Color, ColorPalette, Patch, Scene, color_palette::ColorDescription,
+    };
+    use std::collections::HashMap;
+
+    let default_id = rand_id();
+    let palette_id = rand_id();
+
+    let mut color_palettes = HashMap::new();
+    color_palettes.insert(
+        palette_id,
+        ColorPalette {
+            name: "Default".to_string(),
+            primary: Some(ColorDescription {
+                color: Some(Color {
+                    red: 1.0,
+                    green: 0.0,
+                    blue: 1.0,
+                    white: None,
+                }),
+            }),
+            secondary: Some(ColorDescription {
+                color: Some(Color {
+                    red: 0.0,
+                    green: 1.0,
+                    blue: 1.0,
+                    white: None,
+                }),
+            }),
+            tertiary: Some(ColorDescription {
+                color: Some(Color {
+                    red: 1.0,
+                    green: 1.0,
+                    blue: 0.0,
+                    white: None,
+                }),
+            }),
+        },
+    );
+
+    let mut scenes = HashMap::new();
+    scenes.insert(
+        default_id,
+        Scene {
+            name: "Default scene".to_string(),
+            color_palettes,
+            active_color_palette: palette_id,
+            last_active_color_palette: palette_id,
+            color_palette_transition_duration_ms: 3000,
+            ..Default::default()
+        },
+    );
+
+    let mut patches = HashMap::new();
+    patches.insert(
+        default_id,
+        Patch {
+            name: "Default Patch".to_string(),
+            ..Default::default()
+        },
+    );
+
+    Project {
+        name: "Untitled Project".to_string(),
+        active_scene: default_id,
+        scenes,
+        active_patch: default_id,
+        patches,
+        live_beat: Some(BeatMetadata {
+            length_ms: 500.0, // 120 BPM
+            offset_ms: 0,
+        }),
+        ..Default::default()
+    }
+}
+
+/// Generates a random u64 ID.
+fn rand_id() -> u64 {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let duration = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default();
+    // Combine time with a simple counter for uniqueness
+    duration.as_nanos() as u64 ^ (duration.as_micros() as u64).wrapping_mul(31)
+}

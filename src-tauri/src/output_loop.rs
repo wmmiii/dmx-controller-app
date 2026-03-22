@@ -64,6 +64,25 @@ impl OutputLoopManager {
         }
     }
 
+    /// Starts output loops for the currently loaded project.
+    /// Should be called after app startup to begin DMX output.
+    pub fn start_on_load(
+        manager: Arc<Mutex<Self>>,
+        serial_state: Arc<Mutex<SerialState>>,
+        sacn_state: Arc<Mutex<SacnState>>,
+        wled_state: Arc<Mutex<WledState>>,
+    ) {
+        tauri::async_runtime::spawn(async move {
+            let manager = manager.lock().await;
+            if let Err(e) = manager
+                .rebuild_all_loops(serial_state, sacn_state, wled_state)
+                .await
+            {
+                log::error!("Failed to start output loops on startup: {}", e);
+            }
+        });
+    }
+
     pub async fn start_loop(
         &self,
         output_id: u64,

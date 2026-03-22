@@ -16,24 +16,21 @@ import {
   useState,
 } from 'react';
 
-import { getBlob, storeBlob } from '../system_interfaces/storage';
 import { downloadBlob, escapeForFilesystem } from '../util/fileUtils';
 import upgradeProject from '../util/projectUpgrader';
 
 import {
-  getUndoState,
   loadProject as loadProjectCommand,
   redoProject as redoProjectCommand,
+  requestUpdate,
+  saveAssets as saveAssetsCommand,
   saveProject as saveProjectCommand,
   subscribeToProjectUpdates,
   subscribeToUndoState,
   undoProject as undoProjectCommand,
   updateProject as updateProjectCommand,
 } from '../system_interfaces/project';
-import { createNewProject } from '../util/projectUtils';
 import { ShortcutContext } from './ShortcutContext';
-
-const ASSETS_KEY = 'tmp-assets-1';
 
 let globalOpened = false;
 
@@ -85,6 +82,9 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
     return subscribeToProjectUpdates((newProject, description) => {
       // Merge assets back (they're stored separately in frontend)
       newProject.assets = assetsRef.current;
+
+      // Apply any project upgrades and set state
+      upgradeProject(newProject);
       setProject(clone(ProjectSchema, newProject));
       setLastOperation(description);
     });
@@ -102,63 +102,16 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
     });
   }, []);
 
-  // Initial load - load project from storage and send to backend
+  // Request initial project from backend
   useEffect(() => {
-    (async () => {
-      if (globalOpened) {
-        return;
-      }
-      globalOpened = true;
-      try {
-        const projectBlob = await getBlob('tmp-project-1');
-        const assetsBlob = await getBlob(ASSETS_KEY);
+    if (globalOpened) {
+      return;
+    }
+    globalOpened = true;
 
-        // Load assets into ref
-        if (assetsBlob != null) {
-          assetsRef.current = fromBinary(
-            Project_AssetsSchema,
-            assetsBlob,
-          ) as Project_Assets;
-        }
-
-        if (projectBlob == null) {
-          // Create new project
-          const newProject = createNewProject();
-          newProject.assets = assetsRef.current;
-          setProject(newProject);
-
-          // Send to backend (this will also persist)
-          const minProject = clone(ProjectSchema, newProject);
-          minProject.assets = undefined;
-          await loadProjectCommand(
-            toBinary(ProjectSchema, minProject, { writeUnknownFields: false }),
-          );
-        } else {
-          // Load existing project
-          const p = fromBinary(ProjectSchema, projectBlob) as Project;
-          p.assets = assetsRef.current;
-          upgradeProject(p);
-          setProject(p);
-          setLastOperation('Open project.');
-
-          // Send to backend to initialize state
-          await loadProjectCommand(projectBlob);
-        }
-
-        // Get initial undo state
-        const initialUndoState = await getUndoState();
-        setUndoState({
-          canUndo: initialUndoState.can_undo,
-          canRedo: initialUndoState.can_redo,
-          undoDescription: initialUndoState.undo_description,
-          redoDescription: initialUndoState.redo_description,
-        });
-      } catch (ex) {
-        console.error('Could not open project!', ex);
-        const newProject = createNewProject();
-        setProject(newProject);
-      }
-    })();
+    requestUpdate().catch((err) => {
+      console.error('Failed to request project update:', err);
+    });
   }, []);
 
   // Update - sends to backend for rendering, no persistence
@@ -209,13 +162,12 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
     [],
   );
 
-  // Save assets (still frontend-managed)
+  // Save assets via backend
   const saveAssetsImpl = useCallback(async (project: Project) => {
     console.time('save assets');
     const assets = create(Project_AssetsSchema, project.assets);
     assetsRef.current = project.assets;
-    await storeBlob(
-      ASSETS_KEY,
+    await saveAssetsCommand(
       toBinary(Project_AssetsSchema, assets, { writeUnknownFields: false }),
     );
     console.timeEnd('save assets');
@@ -246,11 +198,10 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
     const p = fromBinary(ProjectSchema, projectBlob) as Project;
     upgradeProject(p);
 
-    // Save assets separately
+    // Save assets via backend
     if (p.assets) {
       assetsRef.current = p.assets;
-      await storeBlob(
-        ASSETS_KEY,
+      await saveAssetsCommand(
         toBinary(Project_AssetsSchema, p.assets, {
           writeUnknownFields: false,
         }),

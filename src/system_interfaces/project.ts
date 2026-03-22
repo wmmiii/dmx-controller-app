@@ -118,6 +118,22 @@ export async function getUndoState(): Promise<UndoStateChangedEvent> {
   return invoke('get_undo_state');
 }
 
+/**
+ * Requests the backend to emit a project-updated event with the current project.
+ */
+export async function requestUpdate(): Promise<void> {
+  await invoke('request_update');
+}
+
+/**
+ * Saves assets binary to the backend for persistence.
+ */
+export async function saveAssets(assetsBinary: Uint8Array): Promise<void> {
+  await invoke('save_assets', {
+    assetsBinary: Array.from(assetsBinary),
+  });
+}
+
 // Initialize Tauri event listeners at module load
 initProjectListeners();
 

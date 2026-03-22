@@ -7,16 +7,35 @@ mod serial;
 mod wled;
 
 use std::sync::Arc;
-use tauri::Manager;
+use tauri::{Manager, RunEvent};
 use tokio::sync::Mutex;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
-        .plugin(tauri_plugin_fs::init())
+    let app = tauri::Builder::default()
         .plugin(tauri_plugin_keepawake::init())
         .plugin(tauri_plugin_process::init())
         .setup(|app| {
+            // Get app data dir for persistence
+            let app_data_dir = app
+                .path()
+                .app_data_dir()
+                .map_err(|e| format!("Failed to get app data dir: {}", e))
+                .map_err(|e| {
+                    Box::new(std::io::Error::new(std::io::ErrorKind::Other, e))
+                        as Box<dyn std::error::Error>
+                })?;
+
+            // Load project from disk into engine
+            project::load_from_disk(app.handle()).map_err(|e| {
+                Box::new(std::io::Error::new(std::io::ErrorKind::Other, e))
+                    as Box<dyn std::error::Error>
+            })?;
+
+            // Create and manage PersistState for debounced writes
+            let persist_state = project::PersistState::new(app_data_dir);
+            app.manage(Arc::new(Mutex::new(persist_state)));
+
             let midi_state = midi::MidiState::new(app.handle().clone());
             let midi_state_arc = Arc::new(Mutex::new(midi_state));
 
@@ -54,7 +73,22 @@ pub fn run() {
             app.manage(Arc::new(Mutex::new(wled_state)));
 
             let output_loop_manager = output_loop::OutputLoopManager::new(app.handle().clone());
-            app.manage(Arc::new(Mutex::new(output_loop_manager)));
+            let output_loop_manager_arc = Arc::new(Mutex::new(output_loop_manager));
+            app.manage(output_loop_manager_arc.clone());
+
+            // Start output loops for loaded project
+            output_loop::OutputLoopManager::start_on_load(
+                output_loop_manager_arc,
+                app.state::<Arc<Mutex<serial::SerialState>>>()
+                    .inner()
+                    .clone(),
+                app.state::<Arc<Mutex<sacn::SacnState>>>()
+                    .inner()
+                    .clone(),
+                app.state::<Arc<Mutex<wled::WledState>>>()
+                    .inner()
+                    .clone(),
+            );
 
             if cfg!(debug_assertions) {
                 app.handle().plugin(
@@ -78,6 +112,8 @@ pub fn run() {
             project::redo_project,
             project::load_project,
             project::get_undo_state,
+            project::request_update,
+            project::save_assets,
             render::render_dmx,
             render::render_wled,
             render::set_render_mode,
@@ -88,6 +124,18 @@ pub fn run() {
             serial::output_serial_dmx,
             wled::output_wled,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application");
+
+    // Run app with exit handler to flush pending writes
+    app.run(|app_handle, event| {
+        if let RunEvent::Exit = event {
+            // Flush any pending writes before exit
+            if let Some(persist_state) = app_handle.try_state::<Arc<Mutex<project::PersistState>>>()
+            {
+                let mut state = persist_state.blocking_lock();
+                state.flush_sync();
+            }
+        }
+    });
 }

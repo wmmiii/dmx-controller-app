@@ -1,8 +1,11 @@
 use dmx_engine::project::{self, UndoState};
 use serde::Serialize;
+use std::path::PathBuf;
 use std::sync::Arc;
+use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager, State};
 use tokio::sync::Mutex as TokioMutex;
+use tokio::task::JoinHandle;
 
 use crate::output_loop::OutputLoopManager;
 use crate::sacn::SacnState;
@@ -10,6 +13,141 @@ use crate::serial::SerialState;
 use crate::wled::WledState;
 
 const PROJECT_KEY: &str = "tmp-project-1";
+const ASSETS_KEY: &str = "tmp-assets-1";
+const DEBOUNCE_MS: u64 = 1000;
+
+/// Manages debounced disk persistence for project and assets
+pub struct PersistState {
+    pending_project: Option<Vec<u8>>,
+    pending_assets: Option<Vec<u8>>,
+    debounce_handle: Option<JoinHandle<()>>,
+    app_data_dir: PathBuf,
+}
+
+impl PersistState {
+    pub fn new(app_data_dir: PathBuf) -> Self {
+        Self {
+            pending_project: None,
+            pending_assets: None,
+            debounce_handle: None,
+            app_data_dir,
+        }
+    }
+
+    /// Flush any pending writes immediately (called on app exit)
+    pub fn flush_sync(&mut self) {
+        // Cancel any pending debounce
+        if let Some(handle) = self.debounce_handle.take() {
+            handle.abort();
+        }
+
+        // Write pending project
+        if let Some(data) = self.pending_project.take() {
+            let path = self.app_data_dir.join(PROJECT_KEY);
+            let _ = std::fs::write(&path, &data);
+        }
+
+        // Write pending assets
+        if let Some(data) = self.pending_assets.take() {
+            let path = self.app_data_dir.join(ASSETS_KEY);
+            let _ = std::fs::write(&path, &data);
+        }
+    }
+}
+
+/// Loads project from disk during app startup into the engine.
+/// If no project exists, creates a default project.
+pub fn load_from_disk(app: &AppHandle) -> Result<(), String> {
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
+
+    // Ensure directory exists
+    std::fs::create_dir_all(&app_data_dir)
+        .map_err(|e| format!("Failed to create app data dir: {}", e))?;
+
+    // Read project binary (empty vec if doesn't exist)
+    let project_path = app_data_dir.join(PROJECT_KEY);
+    let project_binary = std::fs::read(&project_path).unwrap_or_default();
+
+    // If project exists, load into engine state
+    if !project_binary.is_empty() {
+        project::load(&project_binary)?;
+    }
+
+    // Ensure a project exists (creates default if none was loaded)
+    project::ensure_project_exists()?;
+
+    Ok(())
+}
+
+/// Schedules a debounced flush of pending writes
+fn schedule_flush(persist_state: Arc<TokioMutex<PersistState>>) {
+    let persist_state_clone = persist_state.clone();
+    tokio::spawn(async move {
+        // Wait for debounce period
+        tokio::time::sleep(Duration::from_millis(DEBOUNCE_MS)).await;
+
+        // Perform the flush
+        let mut state = persist_state_clone.lock().await;
+
+        // Write pending project
+        if let Some(data) = state.pending_project.take() {
+            let path = state.app_data_dir.join(PROJECT_KEY);
+            if let Err(e) = std::fs::write(&path, &data) {
+                log::error!("Failed to write project: {}", e);
+            }
+        }
+
+        // Write pending assets
+        if let Some(data) = state.pending_assets.take() {
+            let path = state.app_data_dir.join(ASSETS_KEY);
+            if let Err(e) = std::fs::write(&path, &data) {
+                log::error!("Failed to write assets: {}", e);
+            }
+        }
+
+        // Clear the handle since we're done
+        state.debounce_handle = None;
+    });
+}
+
+/// Queues project binary for debounced persistence
+async fn queue_project_persist(
+    project_binary: &[u8],
+    persist_state: &Arc<TokioMutex<PersistState>>,
+) {
+    let mut state = persist_state.lock().await;
+    state.pending_project = Some(project_binary.to_vec());
+
+    // Cancel existing debounce if any
+    if let Some(handle) = state.debounce_handle.take() {
+        handle.abort();
+    }
+
+    // Schedule new flush
+    drop(state); // Release lock before spawning
+    schedule_flush(persist_state.clone());
+}
+
+/// Queues assets binary for debounced persistence
+async fn queue_assets_persist(
+    assets_binary: &[u8],
+    persist_state: &Arc<TokioMutex<PersistState>>,
+) {
+    let mut state = persist_state.lock().await;
+    state.pending_assets = Some(assets_binary.to_vec());
+
+    // Cancel existing debounce if any
+    if let Some(handle) = state.debounce_handle.take() {
+        handle.abort();
+    }
+
+    // Schedule new flush
+    drop(state); // Release lock before spawning
+    schedule_flush(persist_state.clone());
+}
 
 /// Payload for the project-updated event
 #[derive(Clone, Serialize)]
@@ -17,6 +155,7 @@ struct ProjectUpdatedPayload {
     project_binary: Vec<u8>,
     description: String,
 }
+
 
 /// Payload for the undo-state-changed event
 #[derive(Clone, Serialize)]
@@ -38,29 +177,13 @@ impl From<UndoState> for UndoStatePayload {
     }
 }
 
-/// Persists project to AppData directory
-async fn persist_to_disk(app: &AppHandle, project_binary: &[u8]) -> Result<(), String> {
-    let app_data_dir = app
-        .path()
-        .app_data_dir()
-        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
 
-    // Ensure directory exists
-    std::fs::create_dir_all(&app_data_dir)
-        .map_err(|e| format!("Failed to create app data dir: {}", e))?;
-
-    let file_path = app_data_dir.join(PROJECT_KEY);
-    std::fs::write(&file_path, project_binary)
-        .map_err(|e| format!("Failed to write project file: {}", e))?;
-
-    Ok(())
-}
-
-/// Emits project-updated and undo-state-changed events to the frontend
+/// Emits project-updated event and optionally undo-state-changed event to the frontend
 fn emit_project_events(
     app: &AppHandle,
     project_binary: &[u8],
     description: &str,
+    emit_undo_state: bool,
 ) -> Result<(), String> {
     // Emit project-updated event
     app.emit(
@@ -72,16 +195,18 @@ fn emit_project_events(
     )
     .map_err(|e| format!("Failed to emit project-updated: {}", e))?;
 
-    // Emit undo-state-changed event
-    let undo_state = project::get_undo_state()?;
-    app.emit("undo-state-changed", UndoStatePayload::from(undo_state))
-        .map_err(|e| format!("Failed to emit undo-state-changed: {}", e))?;
+    // Optionally emit undo-state-changed event
+    if emit_undo_state {
+        let undo_state = project::get_undo_state()?;
+        app.emit("undo-state-changed", UndoStatePayload::from(undo_state))
+            .map_err(|e| format!("Failed to emit undo-state-changed: {}", e))?;
+    }
 
     Ok(())
 }
 
 /// Rebuilds output loops after project changes
-async fn rebuild_outputs(
+pub async fn rebuild_outputs(
     serial_state: &Arc<TokioMutex<SerialState>>,
     output_loop_manager: &Arc<TokioMutex<OutputLoopManager>>,
     sacn_state: &Arc<TokioMutex<SacnState>>,
@@ -112,6 +237,7 @@ pub async fn save_project(
     description: String,
     undoable: bool,
     app: AppHandle,
+    persist_state: State<'_, Arc<TokioMutex<PersistState>>>,
     output_loop_manager: State<'_, Arc<TokioMutex<OutputLoopManager>>>,
     serial_state: State<'_, Arc<TokioMutex<SerialState>>>,
     sacn_state: State<'_, Arc<TokioMutex<SacnState>>>,
@@ -121,10 +247,10 @@ pub async fn save_project(
     project::save(&project_binary, &description, undoable)?;
 
     // 2. Emit events to frontend
-    emit_project_events(&app, &project_binary, &description)?;
+    emit_project_events(&app, &project_binary, &description, true)?;
 
-    // 3. Persist to disk
-    persist_to_disk(&app, &project_binary).await?;
+    // 3. Queue debounced persist to disk
+    queue_project_persist(&project_binary, persist_state.inner()).await;
 
     // 4. Rebuild output loops
     rebuild_outputs(
@@ -152,15 +278,8 @@ pub async fn update_project(
     // 1. Update engine state only (no undo, no persistence)
     project::update(&project_binary)?;
 
-    // 2. Emit project-updated event (no undo state change)
-    app.emit(
-        "project-updated",
-        ProjectUpdatedPayload {
-            project_binary: project_binary.clone(),
-            description: String::new(),
-        },
-    )
-    .map_err(|e| format!("Failed to emit project-updated: {}", e))?;
+    // 2. Emit project-updated event (no undo state change for live updates)
+    emit_project_events(&app, &project_binary, "", false)?;
 
     // 3. Rebuild output loops
     rebuild_outputs(
@@ -178,6 +297,7 @@ pub async fn update_project(
 #[tauri::command]
 pub async fn undo_project(
     app: AppHandle,
+    persist_state: State<'_, Arc<TokioMutex<PersistState>>>,
     output_loop_manager: State<'_, Arc<TokioMutex<OutputLoopManager>>>,
     serial_state: State<'_, Arc<TokioMutex<SerialState>>>,
     sacn_state: State<'_, Arc<TokioMutex<SacnState>>>,
@@ -187,10 +307,10 @@ pub async fn undo_project(
     let result = project::undo()?;
 
     // 2. Emit events to frontend
-    emit_project_events(&app, &result.project_binary, &result.description)?;
+    emit_project_events(&app, &result.project_binary, &result.description, true)?;
 
-    // 3. Persist the restored state
-    persist_to_disk(&app, &result.project_binary).await?;
+    // 3. Queue debounced persist to disk
+    queue_project_persist(&result.project_binary, persist_state.inner()).await;
 
     // 4. Rebuild output loops
     rebuild_outputs(
@@ -208,6 +328,7 @@ pub async fn undo_project(
 #[tauri::command]
 pub async fn redo_project(
     app: AppHandle,
+    persist_state: State<'_, Arc<TokioMutex<PersistState>>>,
     output_loop_manager: State<'_, Arc<TokioMutex<OutputLoopManager>>>,
     serial_state: State<'_, Arc<TokioMutex<SerialState>>>,
     sacn_state: State<'_, Arc<TokioMutex<SacnState>>>,
@@ -217,10 +338,10 @@ pub async fn redo_project(
     let result = project::redo()?;
 
     // 2. Emit events to frontend
-    emit_project_events(&app, &result.project_binary, &result.description)?;
+    emit_project_events(&app, &result.project_binary, &result.description, true)?;
 
-    // 3. Persist the restored state
-    persist_to_disk(&app, &result.project_binary).await?;
+    // 3. Queue debounced persist to disk
+    queue_project_persist(&result.project_binary, persist_state.inner()).await;
 
     // 4. Rebuild output loops
     rebuild_outputs(
@@ -239,6 +360,7 @@ pub async fn redo_project(
 pub async fn load_project(
     project_binary: Vec<u8>,
     app: AppHandle,
+    persist_state: State<'_, Arc<TokioMutex<PersistState>>>,
     output_loop_manager: State<'_, Arc<TokioMutex<OutputLoopManager>>>,
     serial_state: State<'_, Arc<TokioMutex<SerialState>>>,
     sacn_state: State<'_, Arc<TokioMutex<SacnState>>>,
@@ -248,10 +370,10 @@ pub async fn load_project(
     project::load(&project_binary)?;
 
     // 2. Emit events to frontend
-    emit_project_events(&app, &project_binary, "Open project")?;
+    emit_project_events(&app, &project_binary, "Open project", true)?;
 
-    // 3. Persist to disk
-    persist_to_disk(&app, &project_binary).await?;
+    // 3. Queue debounced persist to disk
+    queue_project_persist(&project_binary, persist_state.inner()).await;
 
     // 4. Rebuild output loops
     rebuild_outputs(
@@ -270,4 +392,26 @@ pub async fn load_project(
 pub fn get_undo_state() -> Result<UndoStatePayload, String> {
     let state = project::get_undo_state()?;
     Ok(UndoStatePayload::from(state))
+}
+
+/// Emits project-updated event with the current project state.
+/// TODO: Add lazy asset fetching - frontend will request assets on-demand as needed.
+#[tauri::command]
+pub fn request_update(app: AppHandle) -> Result<(), String> {
+    let project_binary = project::get()?;
+
+    // Emit project-updated event (undo state only if project exists)
+    emit_project_events(&app, &project_binary, "Open project", !project_binary.is_empty())?;
+
+    Ok(())
+}
+
+/// Saves assets binary to disk with debounced persistence.
+#[tauri::command]
+pub async fn save_assets(
+    assets_binary: Vec<u8>,
+    persist_state: State<'_, Arc<TokioMutex<PersistState>>>,
+) -> Result<(), String> {
+    queue_assets_persist(&assets_binary, persist_state.inner()).await;
+    Ok(())
 }
