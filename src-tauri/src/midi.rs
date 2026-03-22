@@ -11,6 +11,8 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, State};
 use tokio::sync::{Mutex, oneshot};
 
+use crate::project::emit_project_update;
+
 #[derive(Deserialize, Serialize, Clone)]
 pub struct MidiPortCandidate {
     id: String,
@@ -33,13 +35,6 @@ struct MidiConnectionStatusEvent {
 #[derive(Serialize, Clone)]
 struct BeatSamplingEvent {
     sampling: bool,
-}
-
-/// Event payload for project updates
-#[derive(Serialize, Clone)]
-struct ProjectUpdatedPayload {
-    project_binary: Vec<u8>,
-    description: String,
 }
 
 const MAX_BEAT_SAMPLES: usize = 16;
@@ -127,6 +122,14 @@ impl MidiInputState {
                 self.beat_count = 1;
             }
         }
+    }
+
+    /// Performs the first beat action. Returns true if beat_samples was empty
+    /// (meaning the offset was set directly in project).
+    fn perform_first_beat(&mut self, t: u64) -> bool {
+        let was_empty = self.beat_samples.is_empty();
+        self.set_first_beat(t);
+        was_empty
     }
 
     /// Finalize beat sampling and update project
@@ -692,31 +695,44 @@ fn handle_action_result(
                 });
             }
             proto::input_binding::Action::FirstBeat(_) => {
-                // Handle first beat
-                let has_samples = !input_state_guard.beat_samples.is_empty();
-                input_state_guard.set_first_beat(t);
-
-                if !has_samples {
-                    // Directly set the offset in the project
-                    drop(input_state_guard);
-                    let _ = project::with_project_mut(|project| {
-                        if let Some(ref mut beat) = project.live_beat {
-                            beat.offset_ms = t;
-                        }
-                        Ok(true)
-                    });
-
-                    // Emit project update
-                    emit_project_update(app_handle, "Manually set first beat.");
-                }
+                drop(input_state_guard);
+                handle_first_beat_action(app_handle, input_state, t);
             }
             _ => {}
         }
     }
 
-    // Emit project update if modified
+    // Mark project dirty if modified (will emit when frontend is ready)
     if result.modified {
-        emit_project_update(app_handle, "");
+        emit_project_update(app_handle, None);
+    }
+}
+
+/// Handle the first beat action - shared by MIDI input and keyboard shortcut.
+/// Sets the beat offset directly if no samples are being collected.
+fn handle_first_beat_action(
+    app_handle: &AppHandle,
+    input_state: &Arc<StdMutex<MidiInputState>>,
+    t: u64,
+) {
+    let was_empty = {
+        let mut input_state_guard = match input_state.lock() {
+            Ok(g) => g,
+            Err(_) => return,
+        };
+        input_state_guard.perform_first_beat(t)
+    };
+
+    if was_empty {
+        // Directly set the offset in the project
+        let _ = project::with_project_mut(|project| {
+            if let Some(ref mut beat) = project.live_beat {
+                beat.offset_ms = t;
+            }
+            Ok(true)
+        });
+
+        emit_project_update(app_handle, Some("Manually set first beat.".to_string()));
     }
 }
 
@@ -741,29 +757,11 @@ fn finalize_beat_sampling(app_handle: &AppHandle, input_state: &Arc<StdMutex<Mid
         });
 
         let bpm = (60_000.0 / length_ms).round() as u32;
-        emit_project_update(app_handle, &format!("Set beat to {} BPM.", bpm));
+        emit_project_update(app_handle, Some(format!("Set beat to {} BPM.", bpm)));
     }
 
     // Emit sampling state change
     let _ = app_handle.emit("beat-sampling-state", BeatSamplingEvent { sampling: false });
-}
-
-/// Emit a project-updated event
-fn emit_project_update(app_handle: &AppHandle, description: &str) {
-    match project::get() {
-        Ok(project_binary) => {
-            let _ = app_handle.emit(
-                "project-updated",
-                ProjectUpdatedPayload {
-                    project_binary,
-                    description: description.to_string(),
-                },
-            );
-        }
-        Err(e) => {
-            log::error!("Failed to get project for update: {}", e);
-        }
-    }
 }
 
 /// Add a beat sample for tempo detection (called from keyboard shortcut)
@@ -854,27 +852,7 @@ pub async fn set_first_beat(
     let input_state = Arc::clone(&midi_state.input_state);
     drop(midi_state);
 
-    let has_samples = {
-        let mut input_state_guard = input_state
-            .lock()
-            .map_err(|e| format!("Failed to lock input state: {}", e))?;
-        let has_samples = !input_state_guard.beat_samples.is_empty();
-        input_state_guard.set_first_beat(t);
-        has_samples
-    };
-
-    if !has_samples {
-        // Directly set the offset in the project
-        project::with_project_mut(|project| {
-            if let Some(ref mut beat) = project.live_beat {
-                beat.offset_ms = t;
-            }
-            Ok(true)
-        })?;
-
-        // Emit project update
-        emit_project_update(&app, "Manually set first beat.");
-    }
+    handle_first_beat_action(&app, &input_state, t);
 
     Ok(())
 }

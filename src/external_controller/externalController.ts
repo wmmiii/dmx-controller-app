@@ -488,19 +488,3 @@ export function getActionDescription(
 
   return null;
 }
-
-let timeoutHandle: any;
-/**
- * Debounces input based on the control command type of a controller input.
- */
-export function debounceInput(cct: ControlCommandType, action: () => void) {
-  if (cct === 'lsb' || cct === null) {
-    clearTimeout(timeoutHandle);
-    action();
-  } else if (cct === 'msb') {
-    // Wait for lsb to see if this channel supports it.
-    timeoutHandle = setTimeout(action, 100);
-  } else {
-    throw Error(`Unknown control command type ${cct}!`);
-  }
-}

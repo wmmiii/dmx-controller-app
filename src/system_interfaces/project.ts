@@ -135,6 +135,15 @@ export async function saveAssets(assetsBinary: Uint8Array): Promise<void> {
 }
 
 /**
+ * Signals to the backend that the frontend is ready for the next project update.
+ * This implements flow control for rapid updates (e.g., MIDI) - the backend will
+ * only send the next update after receiving this signal.
+ */
+export async function frontendReadyForUpdate(): Promise<void> {
+  await invoke('frontend_ready_for_update');
+}
+
+/**
  * Toggles a tile on/off based on its current state.
  * Returns whether the tile is now enabled (true) or disabled (false).
  */

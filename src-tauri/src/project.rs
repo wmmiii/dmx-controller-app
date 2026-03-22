@@ -3,6 +3,7 @@ use dmx_engine::tile::toggle_tile as engine_toggle_tile;
 use serde::Serialize;
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Manager, State};
 use tokio::sync::Mutex as TokioMutex;
@@ -12,6 +13,21 @@ use crate::output_loop::OutputLoopManager;
 use crate::sacn::SacnState;
 use crate::serial::SerialState;
 use crate::wled::WledState;
+
+// =============================================================================
+// Flow control for project updates to frontend
+// =============================================================================
+//
+// This prevents overwhelming the frontend with rapid updates (e.g., from MIDI).
+//
+// Protocol:
+// 1. Frontend signals "ready" when it can accept an update
+// 2. Backend sets "dirty" when project changes via mark_project_dirty_and_maybe_emit
+// 3. When both flags are set, we send an update and clear both
+// 4. Frontend signals "ready" again after processing
+
+static PROJECT_DIRTY: AtomicBool = AtomicBool::new(false);
+static FRONTEND_READY: AtomicBool = AtomicBool::new(true); // Start ready for initial update
 
 const PROJECT_KEY: &str = "tmp-project-1";
 const ASSETS_KEY: &str = "tmp-assets-1";
@@ -151,7 +167,7 @@ async fn queue_assets_persist(assets_binary: &[u8], persist_state: &Arc<TokioMut
 #[derive(Clone, Serialize)]
 struct ProjectUpdatedPayload {
     project_binary: Vec<u8>,
-    description: String,
+    description: Option<String>,
 }
 
 /// Payload for the undo-state-changed event
@@ -174,29 +190,55 @@ impl From<UndoState> for UndoStatePayload {
     }
 }
 
-/// Emits project-updated event and optionally undo-state-changed event to the frontend
-fn emit_project_events(
-    app: &AppHandle,
-    project_binary: &[u8],
-    description: &str,
-    emit_undo_state: bool,
-) -> Result<(), String> {
-    // Emit project-updated event
-    app.emit(
-        "project-updated",
-        ProjectUpdatedPayload {
-            project_binary: project_binary.to_vec(),
-            description: description.to_string(),
-        },
-    )
-    .map_err(|e| format!("Failed to emit project-updated: {}", e))?;
-
-    // Optionally emit undo-state-changed event
-    if emit_undo_state {
-        let undo_state = project::get_undo_state()?;
-        app.emit("undo-state-changed", UndoStatePayload::from(undo_state))
-            .map_err(|e| format!("Failed to emit undo-state-changed: {}", e))?;
+/// Emits a project-updated event (low-level, called when frontend is ready).
+fn emit_project_update_impl(app: &AppHandle, description: Option<String>) {
+    if let Ok(project_binary) = project::get() {
+        let _ = app.emit(
+            "project-updated",
+            ProjectUpdatedPayload {
+                project_binary,
+                description,
+            },
+        );
     }
+}
+
+/// Emits undo-state-changed event. Called separately from project updates
+/// since undo state changes are infrequent and should be immediate.
+fn emit_undo_state(app: &AppHandle) {
+    if let Ok(undo_state) = project::get_undo_state() {
+        let _ = app.emit("undo-state-changed", UndoStatePayload::from(undo_state));
+    }
+}
+
+/// Marks the project as dirty and emits update if frontend is ready.
+/// This is the single entry point for all project update emissions.
+pub fn emit_project_update(app_handle: &AppHandle, description: Option<String>) {
+    // Set dirty flag
+    PROJECT_DIRTY.store(true, Ordering::Release);
+
+    // Check if frontend is ready (and clear the flag atomically if so)
+    if FRONTEND_READY.swap(false, Ordering::AcqRel) {
+        // Frontend was ready - send update now
+        PROJECT_DIRTY.store(false, Ordering::Release);
+        emit_project_update_impl(app_handle, description);
+    }
+    // Otherwise, update will be sent when frontend signals ready
+}
+
+/// Called by frontend when it's ready for the next project update.
+#[tauri::command]
+pub async fn frontend_ready_for_update(app: AppHandle) -> Result<(), String> {
+    // Set ready flag
+    FRONTEND_READY.store(true, Ordering::Release);
+
+    // Check if project is dirty (and clear the flag atomically if so)
+    if PROJECT_DIRTY.swap(false, Ordering::AcqRel) {
+        // Project was dirty - send update now
+        FRONTEND_READY.store(false, Ordering::Release);
+        emit_project_update_impl(&app, None);
+    }
+    // Otherwise, update will be sent when project changes
 
     Ok(())
 }
@@ -238,8 +280,9 @@ pub async fn save_project(
     // 1. Update engine state + undo stack
     project::save(&project_binary, &description, undoable)?;
 
-    // 2. Emit events to frontend
-    emit_project_events(&app, &project_binary, &description, true)?;
+    // 2. Emit project update (flow-controlled) and undo state (immediate)
+    emit_project_update(&app, Some(description));
+    emit_undo_state(&app);
 
     // 3. Queue debounced persist to disk
     queue_project_persist(&project_binary, persist_state.inner()).await;
@@ -270,8 +313,8 @@ pub async fn update_project(
     // 1. Update engine state only (no undo, no persistence)
     project::update(&project_binary)?;
 
-    // 2. Emit project-updated event (no undo state change for live updates)
-    emit_project_events(&app, &project_binary, "", false)?;
+    // 2. Emit project update (flow-controlled)
+    emit_project_update(&app, None);
 
     // 3. Rebuild output loops
     rebuild_outputs(
@@ -298,8 +341,9 @@ pub async fn undo_project(
     // 1. Perform undo in engine
     let result = project::undo()?;
 
-    // 2. Emit events to frontend
-    emit_project_events(&app, &result.project_binary, &result.description, true)?;
+    // 2. Emit project update (flow-controlled) and undo state (immediate)
+    emit_project_update(&app, Some(result.description));
+    emit_undo_state(&app);
 
     // 3. Queue debounced persist to disk
     queue_project_persist(&result.project_binary, persist_state.inner()).await;
@@ -329,8 +373,9 @@ pub async fn redo_project(
     // 1. Perform redo in engine
     let result = project::redo()?;
 
-    // 2. Emit events to frontend
-    emit_project_events(&app, &result.project_binary, &result.description, true)?;
+    // 2. Emit project update (flow-controlled) and undo state (immediate)
+    emit_project_update(&app, Some(result.description));
+    emit_undo_state(&app);
 
     // 3. Queue debounced persist to disk
     queue_project_persist(&result.project_binary, persist_state.inner()).await;
@@ -361,8 +406,9 @@ pub async fn load_project(
     // 1. Load into engine (resets undo stack)
     project::load(&project_binary)?;
 
-    // 2. Emit events to frontend
-    emit_project_events(&app, &project_binary, "Open project", true)?;
+    // 2. Emit project update (flow-controlled) and undo state (immediate)
+    emit_project_update(&app, Some("Load project.".to_string()));
+    emit_undo_state(&app);
 
     // 3. Queue debounced persist to disk
     queue_project_persist(&project_binary, persist_state.inner()).await;
@@ -390,15 +436,9 @@ pub fn get_undo_state() -> Result<UndoStatePayload, String> {
 /// TODO: Add lazy asset fetching - frontend will request assets on-demand as needed.
 #[tauri::command]
 pub fn request_update(app: AppHandle) -> Result<(), String> {
-    let project_binary = project::get()?;
-
-    // Emit project-updated event (undo state only if project exists)
-    emit_project_events(
-        &app,
-        &project_binary,
-        "Open project",
-        !project_binary.is_empty(),
-    )?;
+    // Emit project update (flow-controlled) and undo state (immediate)
+    emit_project_update(&app, None);
+    emit_undo_state(&app);
 
     Ok(())
 }
@@ -466,13 +506,11 @@ pub async fn toggle_tile(
     })?;
 
     if modified {
-        // Get updated project binary
-        let project_binary = project::get()?;
-
-        // Emit events to frontend
-        emit_project_events(&app, &project_binary, &description, false)?;
+        // Emit project update (flow-controlled)
+        emit_project_update(&app, Some(description));
 
         // Queue debounced persist to disk
+        let project_binary = project::get()?;
         queue_project_persist(&project_binary, persist_state.inner()).await;
     }
 

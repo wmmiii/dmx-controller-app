@@ -12,7 +12,6 @@ import { getActiveScene } from '../util/sceneUtils';
 import {
   assignAction,
   contextName,
-  debounceInput,
   deleteAction,
   deleteBindings,
   findBinding,
@@ -1319,64 +1318,6 @@ describe('externalController', () => {
       );
 
       expect(beatSample).toBeNull();
-    });
-  });
-
-  describe('debounceInput', () => {
-    beforeEach(() => {
-      jest.clearAllTimers();
-    });
-
-    it('should execute immediately for lsb', () => {
-      let executed = false;
-      const action = () => {
-        executed = true;
-      };
-
-      debounceInput('lsb', action);
-
-      expect(executed).toBe(true);
-    });
-
-    it('should execute immediately for null', () => {
-      let executed = false;
-      const action = () => {
-        executed = true;
-      };
-
-      debounceInput(null, action);
-
-      expect(executed).toBe(true);
-    });
-
-    it('should delay execution for msb', () => {
-      let executed = false;
-      const action = () => {
-        executed = true;
-      };
-
-      debounceInput('msb', action);
-
-      expect(executed).toBe(false);
-
-      jest.advanceTimersByTime(100);
-
-      expect(executed).toBe(true);
-    });
-
-    it('should clear previous timeout when new lsb arrives', () => {
-      let executed = false;
-      const action = () => {
-        executed = true;
-      };
-
-      // First msb
-      debounceInput('msb', () => {});
-
-      // Then lsb should clear and execute immediately
-      debounceInput('lsb', action);
-
-      expect(executed).toBe(true);
     });
   });
 });

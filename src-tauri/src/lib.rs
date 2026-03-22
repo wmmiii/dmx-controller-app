@@ -121,6 +121,7 @@ pub fn run() {
             serial::list_ports,
             serial::open_port,
             serial::output_serial_dmx,
+            project::frontend_ready_for_update,
             wled::output_wled,
         ])
         .build(tauri::generate_context!())

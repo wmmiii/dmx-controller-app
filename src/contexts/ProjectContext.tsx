@@ -20,6 +20,7 @@ import { downloadBlob, escapeForFilesystem } from '../util/fileUtils';
 import upgradeProject from '../util/projectUpgrader';
 
 import {
+  frontendReadyForUpdate,
   loadProject as loadProjectCommand,
   redoProject as redoProjectCommand,
   requestUpdate,
@@ -77,17 +78,27 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
     global['project'] = project;
   }, [project]);
 
-  // Subscribe to backend project updates
+  // Subscribe to backend project updates with flow control.
+  // The backend only sends updates when we signal ready, preventing MIDI
+  // sliders from overwhelming the UI. We use RAF to sync with the display.
   useEffect(() => {
-    return subscribeToProjectUpdates((newProject, description) => {
-      // Merge assets back (they're stored separately in frontend)
-      newProject.assets = assetsRef.current;
+    const unsubscribe = subscribeToProjectUpdates((newProject, description) => {
+      // Use RAF to sync state update with display refresh
+      requestAnimationFrame(() => {
+        // Merge assets back (they're stored separately in frontend)
+        newProject.assets = assetsRef.current;
 
-      // Apply any project upgrades and set state
-      upgradeProject(newProject);
-      setProject(clone(ProjectSchema, newProject));
-      setLastOperation(description);
+        // Apply any project upgrades and set state
+        upgradeProject(newProject);
+        setProject(newProject);
+        setLastOperation(description);
+
+        // Signal backend we're ready for the next update
+        frontendReadyForUpdate();
+      });
     });
+
+    return unsubscribe;
   }, []);
 
   // Subscribe to undo state changes from backend
