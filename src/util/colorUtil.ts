@@ -67,6 +67,7 @@ export function interpolatePalettes(
     );
   }
   return create(ColorPaletteSchema, {
+    id: 0n,
     primary: {
       color: {
         red: (1 - t) * a.primary.color.red + t * b.primary.color.red,

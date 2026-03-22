@@ -85,8 +85,9 @@ export function createNewProject() {
       [defaultSceneId.toString()]: {
         name: 'Default scene',
         tileMap: [],
-        colorPalettes: {
-          [defaultColorPaletteId.toString()]: {
+        colorPalettes: [
+          {
+            id: defaultColorPaletteId,
             name: 'Default',
             primary: {
               color: {
@@ -110,7 +111,7 @@ export function createNewProject() {
               },
             },
           },
-        },
+        ],
         activeColorPalette: defaultColorPaletteId,
         lastActiveColorPalette: defaultColorPaletteId,
         colorPaletteTransitionDurationMs: 3000,

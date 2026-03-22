@@ -113,6 +113,7 @@ pub fn run() {
             project::request_update,
             project::save_assets,
             project::toggle_tile,
+            project::get_default_color_palette,
             render::render_dmx,
             render::render_wled,
             render::set_render_mode,

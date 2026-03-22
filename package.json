@@ -8,6 +8,7 @@
     "preview": "vite preview",
     "proto:generate": "buf generate",
     "tauri": "tauri",
+    "tauri:dev": "RUST_BACKTRACE=1 tauri dev",
     "test": "jest && cd src-engine && cargo test",
     "type-check": "tsc --noEmit"
   },

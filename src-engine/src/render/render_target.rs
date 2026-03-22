@@ -1,8 +1,8 @@
 use std::fmt::Debug;
 
 use crate::proto::{
-    fixture_state::LightColor, render_mode::FixtureDebug, Color, ColorPalette, FixtureState,
-    QualifiedFixtureId,
+    Color, ColorPalette, FixtureState, QualifiedFixtureId, fixture_state::LightColor,
+    render_mode::FixtureDebug,
 };
 
 const BLACK: Color = Color {

@@ -125,32 +125,35 @@ export function LivePage(): JSX.Element {
         }
       />
       <div className={styles.palettes}>
-        {Object.entries(scene?.colorPalettes).map(([paletteId, palette], i) => (
+        {scene?.colorPalettes.map((palette, i) => (
           <PaletteSwatch
             key={i}
-            paletteId={BigInt(paletteId)}
+            paletteId={palette.id}
             sceneId={project.activeScene}
             palette={palette}
-            active={scene.activeColorPalette === BigInt(paletteId)}
+            active={scene.activeColorPalette === palette.id}
             onClick={() => {
               scene.lastActiveColorPalette = scene.activeColorPalette;
-              scene.activeColorPalette = BigInt(paletteId);
+              scene.activeColorPalette = palette.id;
               scene.colorPaletteStartTransition = BigInt(new Date().getTime());
               save(`Set color palette to ${palette.name}.`);
             }}
             onDelete={() => {
-              if (Object.keys(scene.colorPalettes).length <= 1) {
+              if (scene.colorPalettes.length <= 1) {
                 return;
               }
 
-              scene.activeColorPalette = BigInt(
-                Object.keys(scene.colorPalettes)[0],
+              const index = scene.colorPalettes.findIndex(
+                (p) => p.id === palette.id,
               );
-              scene.activeColorPalette = BigInt(
-                Object.keys(scene.colorPalettes)[0],
-              );
-              delete scene.colorPalettes[paletteId];
+              if (index < 0) {
+                return;
+              }
 
+              scene.activeColorPalette = scene.colorPalettes[0].id;
+              scene.lastActiveColorPalette = scene.colorPalettes[0].id;
+
+              scene.colorPalettes.splice(index, 1);
               save(`Delete color palette ${palette.name}`);
             }}
           />
@@ -158,9 +161,22 @@ export function LivePage(): JSX.Element {
         <Button
           icon={<BiPlus />}
           onClick={() => {
-            const newPalette = clone(ColorPaletteSchema, DEFAULT_COLOR_PALETTE);
+            const activePalette = scene.colorPalettes.find(
+              (p) => p.id === scene.activeColorPalette,
+            );
+
+            if (!activePalette) {
+              throw Error('Cannot find active color palette: ' + activePalette);
+            }
+
+            const newPalette = clone(ColorPaletteSchema, activePalette);
+            newPalette.id = randomUint64();
             newPalette.name = 'New color palette';
-            scene.colorPalettes[randomUint64().toString()] = newPalette;
+            scene.colorPalettes.push(newPalette);
+
+            scene.lastActiveColorPalette = scene.activeColorPalette;
+            scene.activeColorPalette = newPalette.id;
+            scene.colorPaletteStartTransition = BigInt(new Date().getTime());
             save('Add new color palette');
           }}
         >
@@ -217,7 +233,7 @@ export function LivePage(): JSX.Element {
     <PaletteContext.Provider
       value={{
         palette:
-          scene?.colorPalettes[scene.activeColorPalette.toString()] ||
+          scene?.colorPalettes.find((p) => p.id === scene.activeColorPalette) ??
           DEFAULT_COLOR_PALETTE,
       }}
     >

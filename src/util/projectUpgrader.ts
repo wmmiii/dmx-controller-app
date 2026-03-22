@@ -1,9 +1,28 @@
-import { create } from '@bufbuild/protobuf';
+import { clone, create } from '@bufbuild/protobuf';
+import { ColorPaletteSchema } from '@dmx-controller/proto/color_pb';
 import { type Project } from '@dmx-controller/proto/project_pb';
 import { Scene_Tile_LoopDetailsSchema } from '@dmx-controller/proto/scene_pb';
 import { SettingsSchema } from '@dmx-controller/proto/settings_pb';
 
 export default function upgradeProject(p: Project): void {
+  // Migrate color palettes from deprecated map (field 7) to new array (field 2)
+  for (const scene of Object.values(p.scenes)) {
+    if (
+      scene.colorPalettes.length === 0 &&
+      Object.keys(scene.deprecatedColorPalettes).length > 0
+    ) {
+      for (const [idStr, palette] of Object.entries(
+        scene.deprecatedColorPalettes,
+      )) {
+        const migratedPalette = clone(ColorPaletteSchema, palette);
+        migratedPalette.id = BigInt(idStr);
+        scene.colorPalettes.push(migratedPalette);
+      }
+      // Clear deprecated field after migration
+      scene.deprecatedColorPalettes = {};
+    }
+  }
+
   Object.values(p.patches)
     .flatMap((p) => Object.values(p.outputs))
     .forEach((o) => {

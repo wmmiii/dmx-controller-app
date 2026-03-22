@@ -132,7 +132,7 @@ export default function ShowPage(): JSX.Element {
   return (
     <PaletteContext.Provider
       value={{
-        palette: show.colorPalette || DEFAULT_COLOR_PALETTE,
+        palette: show.colorPalette ?? DEFAULT_COLOR_PALETTE,
       }}
     >
       <LightTimeline

@@ -1,9 +1,9 @@
 use crate::{
     proto::{
+        ColorPalette, EffectTiming, FixtureState, OutputTarget, Project, QualifiedFixtureId,
         effect::Effect,
         effect_timing::{Absolute, Beat, EasingFunction, Timing},
         output_target::{FixtureMapping, Output},
-        ColorPalette, EffectTiming, FixtureState, OutputTarget, Project, QualifiedFixtureId,
     },
     render::{
         ramp_effect::apply_ramp_effect, random_effect::apply_random_effect,
@@ -207,7 +207,7 @@ pub fn calculate_timing(
 }
 
 pub fn interpolate_palettes(a: ColorPalette, b: ColorPalette, t: f64) -> ColorPalette {
-    use crate::proto::{color_palette::ColorDescription, Color, ColorPalette};
+    use crate::proto::{Color, ColorPalette, color_palette::ColorDescription};
 
     let interpolate_color = |a: &Color, b: &Color, t: f64| -> Color {
         Color {
@@ -241,6 +241,7 @@ pub fn interpolate_palettes(a: ColorPalette, b: ColorPalette, t: f64) -> ColorPa
     };
 
     ColorPalette {
+        id: u64::max_value(),
         name: b.name.clone(),
         primary: interpolate_desc(a.primary.as_ref(), b.primary.as_ref(), t),
         secondary: interpolate_desc(a.secondary.as_ref(), b.secondary.as_ref(), t),

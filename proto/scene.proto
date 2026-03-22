@@ -76,7 +76,8 @@ message Scene {
 
   string name = 1;
   repeated TileMap tileMap = 13;
-  map<uint64, ColorPalette> color_palettes = 7;
+  map<uint64, ColorPalette> deprecated_color_palettes = 7 [ deprecated = true ];
+  repeated ColorPalette color_palettes = 2;
   uint64 active_color_palette = 8;
   uint64 last_active_color_palette = 9;
   uint32 color_palette_transition_duration_ms = 5;
@@ -88,8 +89,6 @@ message Scene {
 
   reserved 11; // repeated Tile components = 11 [deprecated = true];
   reserved 12; // repeated ComponentRow rows = 12 [deprecated = true];
-  reserved 2; // repeated ColorPalette deprecated_color_palettes = 2 [deprecated
-              // = true];
   reserved 3; // uint32 deprecated_active_color_palette = 3 [deprecated = true];
   reserved 4; // uint32 deprecated_last_active_color_palette = 4 [deprecated =
               // true];

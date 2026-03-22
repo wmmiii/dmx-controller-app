@@ -1,12 +1,13 @@
 use std::cmp::Ordering;
 
 use crate::{
+    project::DEFAULT_COLOR_PALETTE,
     proto::{
-        scene::{
-            tile::{EffectChannel, LoopDetails, OneShotDetails, TimingDetails, Transition},
-            TileMap,
-        },
         BeatMetadata, Duration, Effect, Project,
+        scene::{
+            TileMap,
+            tile::{EffectChannel, LoopDetails, OneShotDetails, TimingDetails, Transition},
+        },
     },
     render::{
         render_target::RenderTarget,
@@ -80,14 +81,16 @@ pub fn render_scene<T: RenderTarget<T>>(
     let color_palette = interpolate_palettes(
         scene
             .color_palettes
-            .get(&scene.last_active_color_palette)
+            .iter()
+            .find(|p| p.id == scene.last_active_color_palette)
             .cloned()
-            .unwrap_or_default(),
+            .unwrap_or(DEFAULT_COLOR_PALETTE.clone()),
         scene
             .color_palettes
-            .get(&scene.active_color_palette)
+            .iter()
+            .find(|p| p.id == scene.active_color_palette)
             .cloned()
-            .unwrap_or_default(),
+            .unwrap_or(DEFAULT_COLOR_PALETTE.clone()),
         color_palette_t,
     );
 

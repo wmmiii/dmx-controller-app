@@ -470,8 +470,10 @@ export function getActionDescription(
       case 'setTempo':
         return 'Sets the absolute BPM.';
       case 'colorPalette':
-        const colorPaletteName =
-          scene.colorPalettes[binding.action.value.paletteId.toString()]?.name;
+        const paletteId = binding.action.value.paletteId;
+        const colorPaletteName = scene.colorPalettes.find(
+          (c) => c.id === paletteId,
+        )?.name;
         return `Sets the color palette to ${colorPaletteName}.`;
       case 'tileStrength':
         const tileName = scene.tileMap.find(

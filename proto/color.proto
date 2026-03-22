@@ -18,10 +18,9 @@ enum PaletteColor {
 }
 
 message ColorPalette {
-  message ColorDescription {
-    Color color = 1;
-  }
+  message ColorDescription { Color color = 1; }
 
+  uint64 id = 5;
   string name = 4;
   ColorDescription primary = 1;
   ColorDescription secondary = 2;

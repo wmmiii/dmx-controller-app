@@ -3,9 +3,41 @@ use std::sync::Mutex;
 use once_cell::sync::Lazy;
 use prost::Message;
 
-use crate::proto::Project;
+use crate::proto::{
+    BeatMetadata, Color, ColorPalette, Patch, Project, Scene, color_palette::ColorDescription,
+};
 
 const MAX_UNDO: usize = 100;
+
+/// Default color palette used as a fallback when a palette cannot be found.
+pub static DEFAULT_COLOR_PALETTE: Lazy<ColorPalette> = Lazy::new(|| ColorPalette {
+    id: 0,
+    name: "Default".to_string(),
+    primary: Some(ColorDescription {
+        color: Some(Color {
+            red: 1.0,
+            green: 0.0,
+            blue: 1.0,
+            white: None,
+        }),
+    }),
+    secondary: Some(ColorDescription {
+        color: Some(Color {
+            red: 0.0,
+            green: 1.0,
+            blue: 1.0,
+            white: None,
+        }),
+    }),
+    tertiary: Some(ColorDescription {
+        color: Some(Color {
+            red: 1.0,
+            green: 1.0,
+            blue: 0.0,
+            white: None,
+        }),
+    }),
+});
 
 /// Represents a single operation in the undo stack
 struct Operation {
@@ -308,49 +340,20 @@ pub fn ensure_project_exists() -> Result<bool, String> {
 
 /// Creates a minimal default project.
 fn create_default_project() -> Project {
-    use crate::proto::{
-        BeatMetadata, Color, ColorPalette, Patch, Scene, color_palette::ColorDescription,
-    };
     use std::collections::HashMap;
 
-    let default_id = rand_id();
+    let scene_id = rand_id();
     let palette_id = rand_id();
+    let patch_id = rand_id();
 
-    let mut color_palettes = HashMap::new();
-    color_palettes.insert(
-        palette_id,
-        ColorPalette {
-            name: "Default".to_string(),
-            primary: Some(ColorDescription {
-                color: Some(Color {
-                    red: 1.0,
-                    green: 0.0,
-                    blue: 1.0,
-                    white: None,
-                }),
-            }),
-            secondary: Some(ColorDescription {
-                color: Some(Color {
-                    red: 0.0,
-                    green: 1.0,
-                    blue: 1.0,
-                    white: None,
-                }),
-            }),
-            tertiary: Some(ColorDescription {
-                color: Some(Color {
-                    red: 1.0,
-                    green: 1.0,
-                    blue: 0.0,
-                    white: None,
-                }),
-            }),
-        },
-    );
+    let mut color_palettes = Vec::new();
+    let mut default_palette = DEFAULT_COLOR_PALETTE.clone();
+    default_palette.id = palette_id;
+    color_palettes.push(default_palette);
 
     let mut scenes = HashMap::new();
     scenes.insert(
-        default_id,
+        scene_id,
         Scene {
             name: "Default scene".to_string(),
             color_palettes,
@@ -363,7 +366,7 @@ fn create_default_project() -> Project {
 
     let mut patches = HashMap::new();
     patches.insert(
-        default_id,
+        patch_id,
         Patch {
             name: "Default Patch".to_string(),
             ..Default::default()
@@ -372,9 +375,9 @@ fn create_default_project() -> Project {
 
     Project {
         name: "Untitled Project".to_string(),
-        active_scene: default_id,
+        active_scene: scene_id,
         scenes,
-        active_patch: default_id,
+        active_patch: patch_id,
         patches,
         live_beat: Some(BeatMetadata {
             length_ms: 500.0, // 120 BPM

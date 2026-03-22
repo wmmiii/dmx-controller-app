@@ -1,6 +1,6 @@
-use crate::proto::wled_render_target::Color;
 use crate::proto::ColorPalette;
 use crate::proto::WledRenderTarget;
+use crate::proto::wled_render_target::Color;
 use crate::render::render_target::RenderTarget;
 
 macro_rules! lerp {
