@@ -120,11 +120,10 @@ th {
 }
 
 .wrapper {
-  @include vars.fill;
+  position: absolute;
   display: flex;
   flex-direction: column;
-  gap: vars.spacing(1);
-  padding: vars.spacing(1);
+  inset: 0;
 
   header {
     position: relative;
@@ -135,6 +134,7 @@ th {
     gap: vars.spacing(1);
     align-items: center;
     min-height: 0;
+    padding: vars.spacing(1);
     background-color: vars.$col-bg-higher;
 
     & > * {
@@ -143,7 +143,7 @@ th {
 
     h1 {
       position: absolute;
-      top: 0;
+      top: 50%;
       left: 50%;
       z-index: 0;
       margin: 0;
@@ -152,7 +152,7 @@ th {
       font-size: 28px;
       font-family: 'Tomorrow', sans-serif;
       text-wrap: nowrap;
-      transform: translateX(-50%);
+      transform: translate(-50%, -50%);
       user-select: none;
     }
   }

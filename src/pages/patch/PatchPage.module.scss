@@ -3,9 +3,10 @@
 $channel-size: 100px;
 
 .wrapper {
-  @include vars.fill;
+  position: absolute;
   display: flex;
   flex-direction: column;
+  inset: 0;
 }
 
 .patch {
@@ -21,10 +22,11 @@ $channel-size: 100px;
 }
 
 .body {
-  @include vars.fill;
+  position: absolute;
 
   display: flex;
   flex-direction: column;
+  inset: 0;
 }
 
 .meta {
@@ -33,7 +35,9 @@ $channel-size: 100px;
   flex-shrink: 0;
   gap: vars.spacing(2);
   align-items: center;
-  margin-left: vars.spacing(2);
+  min-height: 0;
+  padding: vars.spacing(1) vars.spacing(2);
+  border-bottom: 1px solid vars.$col-border;
 
   label {
     display: flex;
@@ -49,12 +53,17 @@ $channel-size: 100px;
 }
 
 .contents {
-  @include vars.fill;
-  position: relative;
-
   display: flex;
+  flex: 1;
   flex-direction: row;
   overflow-y: auto;
+}
+
+.group-contents {
+  position: absolute;
+  display: flex;
+  flex-direction: row;
+  inset: 0;
 }
 
 .no-flex,
@@ -72,7 +81,8 @@ $channel-size: 100px;
 }
 
 .splitPane {
-  @include vars.fill;
+  position: absolute;
+  inset: 0;
 }
 
 .pane {

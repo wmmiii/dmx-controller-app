@@ -257,7 +257,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
   }, [undoState, undoProjectCommand, redoProjectCommand, setShortcuts]);
 
   if (project == null) {
-    return <>Loading...</>;
+    return <h1>Loading...</h1>;
   }
 
   return (

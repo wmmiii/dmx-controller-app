@@ -48,7 +48,7 @@ export function GroupEditor() {
   );
 
   return (
-    <div className={styles.contents}>
+    <div className={styles.groupContents}>
       <GroupList
         selectedGroupId={selectedGroupId}
         setSelectedGroupId={setSelectedGroupId}

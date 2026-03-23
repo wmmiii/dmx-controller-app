@@ -4,14 +4,14 @@ $col-accent: #11a2ca;
 $col-warning: #b02461;
 $col-midi: #7216c8;
 
-$col-bg: #111;
-$col-bg-higher: #1a1a1a;
+$col-bg: #080808;
+$col-bg-higher: #111;
 $col-bg-higher-hover: color.adjust($col-bg-higher, $lightness: 10%);
 $col-bg-active: color.adjust($col-accent, $lightness: -18%);
 $col-bg-active-lower: color.adjust($col-accent, $lightness: -25%);
 $col-text: #ffffff;
 $col-text-dim: #8f8f8f;
-$col-border: #333333;
+$col-border: #333;
 $col-border-higher: #555555;
 $col-border-lower: #222222;
 $col-border-disabled: $col-border;

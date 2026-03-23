@@ -1,9 +1,10 @@
 @use '../_vars';
 
 .wrapper {
-  @include vars.fill;
+  position: absolute;
 
   padding: vars.spacing(1);
+  inset: 0;
 }
 
 .mappings {

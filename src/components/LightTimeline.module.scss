@@ -1,13 +1,15 @@
 @use '../_vars';
 
 .wrapper {
-  @include vars.fill;
+  position: absolute;
+  inset: 0;
 }
 
 .trackContainer {
-  @include vars.fill;
+  position: absolute;
   display: flex;
   flex-direction: column;
+  inset: 0;
 
   .audioVisualizer,
   .timelineOptions {
@@ -43,9 +45,10 @@
   min-width: 0;
 
   .tracks {
-    @include vars.fill;
+    position: absolute;
     overflow-x: hidden;
     overflow-y: auto;
+    inset: 0;
   }
 }
 
@@ -78,9 +81,10 @@
 
 .effect-details,
 .effect-details-placeholder {
-  @include vars.fill;
+  position: absolute;
 
   padding: vars.spacing(2);
+  inset: 0;
 }
 
 .effect-details-placeholder {

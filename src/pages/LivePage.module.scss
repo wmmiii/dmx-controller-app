@@ -1,10 +1,11 @@
 @use '../_vars';
 
 .tab-container {
-  @include vars.fill;
+  position: absolute;
 
   display: flex;
   flex-direction: column;
+  inset: 0;
 }
 
 .add-component {
@@ -42,11 +43,12 @@
 }
 
 .body {
-  @include vars.fill;
+  position: absolute;
 
   display: flex;
   flex-direction: row;
   min-height: 0;
+  inset: 0;
 }
 
 .grid-wrapper {

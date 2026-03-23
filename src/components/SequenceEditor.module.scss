@@ -30,12 +30,13 @@
 }
 
 .verticalRules {
-  @include vars.fill;
+  position: absolute;
   z-index: 0;
 
   display: flex;
   flex-direction: row;
   pointer-events: none;
+  inset: 0;
 }
 
 .rule,

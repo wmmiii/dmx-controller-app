@@ -1,16 +1,19 @@
 @use '../_vars';
 
 .browser {
-  @include vars.fill;
+  position: absolute;
+  inset: 0;
 }
 
 .splitPane {
-  @include vars.fill;
+  position: absolute;
+  inset: 0;
 }
 
 .audioFileList {
-  @include vars.fill;
+  position: absolute;
   border: 1px solid transparent;
+  inset: 0;
 }
 
 .faint {

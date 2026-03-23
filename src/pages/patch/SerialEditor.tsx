@@ -113,7 +113,6 @@ export function SerialEditor({ outputId }: SacnEditorProps) {
           />
         </label>
       </div>
-      <hr />
       <DmxEditor outputId={outputId} />
     </div>
   );

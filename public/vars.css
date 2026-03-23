@@ -9,24 +9,24 @@
   --col-warning: #b02461;
   --col-midi: #7216c8;
   /* Backgrounds */
-  --col-bg: #111;
-  --col-bg-higher: #1a1a1a;
-  --col-bg-higher-hover: rgb(51.5, 51.5, 51.5);
+  --col-bg: #080808;
+  --col-bg-higher: #111;
+  --col-bg-higher-hover: rgb(42.5, 42.5, 42.5);
   --col-bg-active: rgb(9.8739726027, 94.0931506849, 117.3260273973);
   --col-bg-active-lower: rgb(7.102739726, 67.6849315068, 84.397260274);
-  --col-bg-tile: #1a1a1a;
-  --col-bg-tile-hover: rgb(51.5, 51.5, 51.5);
+  --col-bg-tile: #111;
+  --col-bg-tile-hover: rgb(42.5, 42.5, 42.5);
   --col-bg-gage: #000;
-  --col-bg-triangle: #4d4d4d;
-  --col-bg-triangle-hover: rgb(102.5, 102.5, 102.5);
+  --col-bg-triangle: #444444;
+  --col-bg-triangle-hover: rgb(93.5, 93.5, 93.5);
   /* Text */
   --col-text: #ffffff;
   --col-text-dim: #8f8f8f;
   /* Borders */
-  --col-border: #333333;
+  --col-border: #333;
   --col-border-higher: #555555;
   --col-border-lower: #222222;
-  --col-border-disabled: #333333;
+  --col-border-disabled: #333;
   /* Scrollbars */
   --col-scroll-thumb: #666666;
   --col-scroll-track: #333333;

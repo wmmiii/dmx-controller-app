@@ -34,7 +34,7 @@ export function SacnEditor({ outputId }: SacnEditorProps) {
           />
         </label>
         <label>
-          IP <span>Address</span>
+          <span>IP Address</span>
           <TextInput
             value={sacnOutput.ipAddress}
             onChange={(ipAddress) => {
@@ -46,7 +46,6 @@ export function SacnEditor({ outputId }: SacnEditorProps) {
           />
         </label>
       </div>
-      <hr />
       <DmxEditor outputId={outputId} />
     </div>
   );

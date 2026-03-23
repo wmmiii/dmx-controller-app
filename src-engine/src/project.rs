@@ -2,7 +2,8 @@ use prost::Message;
 use std::sync::{LazyLock, Mutex};
 
 use crate::proto::{
-    BeatMetadata, Color, ColorPalette, Patch, Project, Scene, color_palette::ColorDescription,
+    BeatMetadata, Color, ColorPalette, FixtureDefinitions, Patch, Project, Scene,
+    color_palette::ColorDescription,
 };
 
 const MAX_UNDO: usize = 100;
@@ -387,6 +388,9 @@ fn create_default_project() -> Project {
         scenes,
         active_patch: patch_id,
         patches,
+        fixture_definitions: Some(FixtureDefinitions {
+            dmx_fixture_definitions: HashMap::new(),
+        }),
         live_beat: Some(BeatMetadata {
             length_ms: 500.0, // 120 BPM
             offset_ms: 0,

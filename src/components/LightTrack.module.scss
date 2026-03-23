@@ -63,9 +63,10 @@
 }
 
 .collapsedLayer {
-  @include vars.fill;
+  position: absolute;
   z-index: 0;
   overflow-x: hidden;
   border-bottom: none;
   pointer-events: none;
+  inset: 0;
 }
