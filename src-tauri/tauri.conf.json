@@ -26,7 +26,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["deb", "msi", "app"],
+    "targets": ["deb", "msi", "app", "dmg"],
     "iOS": {
       "minimumSystemVersion": "14.0"
     },

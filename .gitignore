@@ -7,5 +7,6 @@ node_modules/
 pkg/
 proto/generated
 src-engine/target/
+src-tauri/gen
 src/wasm-engine/target/
 target

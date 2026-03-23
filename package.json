@@ -14,6 +14,7 @@
     "proto:generate": "buf generate",
     "tauri": "tauri",
     "tauri:dev": "RUST_BACKTRACE=1 tauri dev",
+    "tauri:ios": "RUST_BACKTRACE=1 tauri ios dev 'iPad Pro 13-inch (M5)'",
     "test": "jest && cd src-engine && cargo test",
     "type-check": "tsc --noEmit"
   },

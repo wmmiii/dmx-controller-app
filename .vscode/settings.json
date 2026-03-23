@@ -1,6 +1,7 @@
 {
   "search.exclude": {
-    "bazel-*": true
+    "bazel-*": true,
+    "src-tauri/target": true
   },
   "files.exclude": {
     "bazel-*": true
