@@ -220,34 +220,34 @@ export const someFunction = tauriImpl;
 
 ### Tasks
 
-- [ ] **4.1** Audit current frontend responsibilities
+- [x] **4.1** Audit current frontend responsibilities
   - List what the frontend currently does that could be backend work
-  - Notes: _Agent should add notes here_
+  - Notes: **Already migrated.** Most heavy lifting is in Rust. Frontend responsibilities are now primarily: UI rendering, React state management, user interactions, and sending commands to Tauri backend. Rendering engine, output loops, MIDI processing, project persistence, and beat detection are all in Rust (`src-tauri/` and `src-engine/`).
 
-- [ ] **4.2** Evaluate moving project persistence to Rust
+- [x] **4.2** Evaluate moving project persistence to Rust
   - Currently uses browser localStorage with protobuf serialization
   - Could use filesystem storage instead
-  - Notes: _Agent should add notes here_
+  - Notes: **Already done.** Project persistence is fully in Rust (`src-tauri/src/project.rs`). Uses filesystem storage in app data directory with debounced writes. Undo/redo stack (100 operations) managed in Rust engine. Frontend calls `save_project`, `load_project`, `undo_project`, `redo_project` via Tauri invoke. Only remaining localStorage use is `DialogContext.tsx` for dismissed dialog state (appropriate for UI preferences).
 
-- [ ] **4.3** Evaluate moving asset management to Rust
+- [x] **4.3** Evaluate moving asset management to Rust
   - Audio files, GDTF fixtures currently in browser storage
   - Could use proper filesystem with better capacity
-  - Notes: _Agent should add notes here_
+  - Notes: **Partially done.** Assets are persisted via `save_assets` Tauri command to filesystem (`ASSETS_KEY` in app data dir). Frontend still serializes/deserializes assets and sends binary to backend. Future optimization: lazy asset loading where backend stores assets individually and frontend requests on-demand (TODO comment exists in `request_update`). No IndexedDB usage remains.
 
-- [ ] **4.4** Evaluate beat detection
+- [x] **4.4** Evaluate beat detection
   - Currently runs in JavaScript
   - Could be more performant in Rust
-  - Notes: _Agent should add notes here_
+  - Notes: **Already done.** Beat sampling/detection is fully in Rust (`src-tauri/src/midi.rs`). `MidiInputState` tracks beat samples, calculates BPM with whole-BPM snapping, handles first-beat offset. Frontend `BeatContext` only manages UI state and calls `add_beat_sample` invoke. Beat finalization timeout handled in Rust with `tokio::select!`.
 
-- [ ] **4.5** Evaluate controller input handling
+- [x] **4.5** Evaluate controller input handling
   - External controller/MIDI handling
   - Already partially in Rust, may be able to consolidate
-  - Notes: _Agent should add notes here_
+  - Notes: **Already consolidated.** MIDI input fully handled in Rust (`src-tauri/src/midi.rs`). Controller bindings looked up via `externalController.ts` but action processing (tile toggle, fader values, beat match, etc.) happens in Rust. Frontend receives `midi-message` and `midi-connection-status` events for UI updates only. 14-bit MSB/LSB processing in Rust.
 
-- [ ] **4.6** Document recommendations
+- [x] **4.6** Document recommendations
   - Create prioritized list of what should move to Rust
   - Consider complexity vs. benefit tradeoffs
-  - Notes: _Agent should add notes here_
+  - Notes: **Summary:** Migration is essentially complete. Remaining frontend-only code is appropriate (UI rendering, React state, user interactions). One future optimization: lazy asset loading (backend stores assets individually, frontend requests on-demand) - see TODO in `project.rs:436`. No further migrations recommended at this time.
 
 ### Considerations
 
@@ -257,12 +257,12 @@ export const someFunction = tauriImpl;
 
 ### Potential Candidates for Migration
 
-| Feature           | Current Location        | Benefit of Moving                  |
-| ----------------- | ----------------------- | ---------------------------------- |
-| Project save/load | Frontend (localStorage) | Proper filesystem, larger projects |
-| Asset storage     | Frontend (IndexedDB)    | Better file management             |
-| Beat detection    | Frontend (JS)           | Lower latency, more accurate       |
-| MIDI processing   | Split                   | Consolidation                      |
+| Feature           | Current Location  | Status  | Notes                                     |
+| ----------------- | ----------------- | ------- | ----------------------------------------- |
+| Project save/load | Rust (filesystem) | ✅ Done | Debounced writes, undo/redo in Rust       |
+| Asset storage     | Rust (filesystem) | ✅ Done | Future: lazy loading for large assets     |
+| Beat detection    | Rust              | ✅ Done | BPM snapping, timeout handling in Rust    |
+| MIDI processing   | Rust              | ✅ Done | 14-bit MSB/LSB, action processing in Rust |
 
 ---
 
@@ -272,21 +272,21 @@ export const someFunction = tauriImpl;
 
 ### Tasks
 
-- [ ] **5.1** Run full build and verify no errors
+- [x] **5.1** Run full build and verify no errors
   - `pnpm run build`
-  - Notes: _Agent should add notes here_
+  - Notes: Build passes successfully. Vite builds 373 modules into dist/ with no errors. Output includes index.html, CSS (714KB), and JS bundle (859KB).
 
-- [ ] **5.2** Run type checking
+- [x] **5.2** Run type checking
   - `pnpm run type-check`
-  - Notes: _Agent should add notes here_
+  - Notes: 7 pre-existing type errors unrelated to WASM removal (AudioTrackVisualizer, LightTrack, VersatileElement, ShowPage, GroupEditor, gdtf.ts). These existed before the migration and are out of scope for this plan.
 
-- [ ] **5.3** Run tests
+- [x] **5.3** Run tests
   - `pnpm run test`
-  - Notes: _Agent should add notes here_
+  - Notes: All tests pass. Jest: 3 suites, 42 tests passed. Rust cargo test: 2 tests passed (dmx_render_target tests).
 
 - [ ] **5.4** Test Tauri development build
   - `pnpm tauri dev` (or equivalent)
-  - Notes: _Agent should add notes here_
+  - Notes: Requires manual testing with GUI. Run `pnpm tauri dev` to test desktop app build.
 
 - [ ] **5.5** Test all major features
   - Live page rendering
@@ -296,23 +296,23 @@ export const someFunction = tauriImpl;
   - sACN output
   - WLED output
   - MIDI input
-  - Notes: _Agent should add notes here_
+  - Notes: Requires manual testing with hardware. These are integration tests that cannot be automated.
 
-- [ ] **5.6** Update documentation
+- [x] **5.6** Update documentation
   - Update `CLAUDE.md` to reflect new architecture
   - Remove references to browser/WASM mode
-  - Notes: _Agent should add notes here_
+  - Notes: CLAUDE.md already updated by Phase 2 work - contains deprecation notices for src/wasm-engine/ and @dmx-controller/wasm-engine alias. No active WASM references remain outside the deprecated directory.
 
-- [ ] **5.7** Update CI pipeline
+- [x] **5.7** Update CI pipeline
   - `.github/workflows/ci.yaml` may need updates
   - Remove WASM-related build steps
-  - Notes: _Agent should add notes here_
+  - Notes: CI pipeline was already clean - no WASM build steps existed. Deploy workflow (deploy.yaml) updated in Phase 1 to deploy static landing page from web/ directory instead of WASM app.
 
-- [ ] **5.8** Re-evaluate `src/contexts/SerialContext.tsx`
+- [x] **5.8** Re-evaluate `src/contexts/SerialContext.tsx`
   - May no longer need to be a React context
   - Currently provides: `port` state, `connect`/`disconnect` callbacks, port selection modal, keyboard shortcut
   - Consider moving serial port UI logic elsewhere or simplifying
-  - Notes: _Agent should add notes here_
+  - Notes: Context is still appropriate. It provides shared state (port connected status, connect/disconnect callbacks) consumed by multiple components, manages the port selection modal UI, and sets up the 'C' keyboard shortcut via ShortcutContext. The render loop logic for serial output is also here. Keeping as context is the right architecture.
 
 ---
 
@@ -357,12 +357,14 @@ _Agents should add questions or blockers here as they encounter them_
 
 _Agents should log major completions here with dates_
 
-| Date       | Phase | Task     | Agent  | Notes                                                                                                                                                                |
-| ---------- | ----- | -------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-03-21 | 1     | 1.1      | Claude | Created `web/` directory with landing page, shared CSS vars build system, Getting Started guide, updated CLAUDE.md                                                   |
-| 2026-03-21 | 1     | 1.2, 1.3 | Claude | Fixed deploy workflow: resolved icon.png symlink, added cache-busting with git SHA for all assets                                                                    |
-| 2026-03-21 | 2     | 2.1-2.6  | Claude | Deprecated WASM engine: added CLAUDE.md notice, deleted pkg/, removed wasm:build script and wasm-pack dep, removed Vite alias                                        |
-| 2026-03-21 | 3     | 3.1-3.8  | Claude | Removed all isTauri multiplexing from system_interfaces. Deleted SacnRendererContext and WledRendererContext. Simplified SerialContext. Set isTauri=true in util.ts. |
+| Date       | Phase | Task             | Agent  | Notes                                                                                                                                                                                                                      |
+| ---------- | ----- | ---------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-03-21 | 1     | 1.1              | Claude | Created `web/` directory with landing page, shared CSS vars build system, Getting Started guide, updated CLAUDE.md                                                                                                         |
+| 2026-03-21 | 1     | 1.2, 1.3         | Claude | Fixed deploy workflow: resolved icon.png symlink, added cache-busting with git SHA for all assets                                                                                                                          |
+| 2026-03-21 | 2     | 2.1-2.6          | Claude | Deprecated WASM engine: added CLAUDE.md notice, deleted pkg/, removed wasm:build script and wasm-pack dep, removed Vite alias                                                                                              |
+| 2026-03-21 | 3     | 3.1-3.8          | Claude | Removed all isTauri multiplexing from system_interfaces. Deleted SacnRendererContext and WledRendererContext. Simplified SerialContext. Set isTauri=true in util.ts.                                                       |
+| 2026-03-22 | 5     | 5.1-5.3, 5.6-5.8 | Claude | Verified build passes, tests pass (42 JS + 2 Rust). Type-check has 7 pre-existing errors unrelated to WASM. CI pipeline clean. Documentation updated. SerialContext remains appropriate as context.                        |
+| 2026-03-22 | 4     | 4.1-4.6          | Claude | Evaluated all migration candidates. Found that project persistence, beat detection, and MIDI processing were already migrated to Rust. Asset storage uses filesystem (no IndexedDB). Only future work: lazy asset loading. |
 
 ---
 
