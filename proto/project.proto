@@ -9,6 +9,7 @@ import "proto/effect.proto";
 import "proto/fixture_definitions.proto";
 import "proto/output.proto";
 import "proto/scene.proto";
+import "proto/audio_config.proto";
 import "proto/settings.proto";
 import "proto/show.proto";
 
@@ -42,13 +43,18 @@ message Project {
   // Scene 0 is reserved for the "unset" scene.
   map<uint64, Scene> scenes = 56;
   uint64 active_scene = 57;
+  BeatMetadata prev_live_beat = 59;
   BeatMetadata live_beat = 53;
+  uint64 beat_transition_start_ms = 60;
+  uint64 beat_transition_duration_ms = 61;
   reserved 54; // last_controller_name
-  ControllerMapping controller_mapping = 55;
 
+  ControllerMapping controller_mapping = 55;
   // Controller bindings for global live page context
   // Shared across all scenes (e.g., beat controls)
   ControllerBindingsMap live_page_controller_bindings = 58;
+
+  AudioConfig audio_config = 62;
 
   reserved 52; // uint32 active_scene = 52;
   reserved 51; // repeated Scene scenes = 51;

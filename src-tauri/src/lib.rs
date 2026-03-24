@@ -1,4 +1,6 @@
 #[cfg(desktop)]
+mod beat;
+#[cfg(desktop)]
 mod midi;
 mod output_loop;
 mod project;
@@ -29,6 +31,7 @@ mod serial {
 }
 
 use std::sync::Arc;
+use std::sync::Mutex as StdMutex;
 use tauri::{Manager, RunEvent};
 use tokio::sync::Mutex;
 
@@ -59,7 +62,13 @@ pub fn run() {
 
             #[cfg(desktop)]
             {
-                let midi_state = midi::MidiState::new(app.handle().clone());
+                let shared_beat_sampler: beat::SharedBeatSampler =
+                    Arc::new(StdMutex::new(beat::TauriBeatSampler::new()));
+
+                app.manage(shared_beat_sampler.clone());
+
+                let midi_state =
+                    midi::MidiState::new(app.handle().clone(), shared_beat_sampler.clone());
                 let midi_state_arc = Arc::new(Mutex::new(midi_state));
 
                 // Start the MIDI device watcher for auto-reconnect
@@ -70,6 +79,20 @@ pub fn run() {
                 }
 
                 app.manage(midi_state_arc);
+
+                let beat_detection_state =
+                    beat::BeatDetectionState::new(app.handle().clone(), shared_beat_sampler);
+                let beat_detection_arc = Arc::new(Mutex::new(beat_detection_state));
+
+                // Start the audio device watcher for auto-reconnect
+                {
+                    let state_clone = beat_detection_arc.clone();
+                    beat_detection_arc
+                        .blocking_lock()
+                        .start_device_watcher(state_clone);
+                }
+
+                app.manage(beat_detection_arc);
             }
 
             let serial_state = serial::SerialState::new();
@@ -118,7 +141,13 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             #[cfg(desktop)]
-            midi::add_beat_sample,
+            beat::connect_audio_input,
+            #[cfg(desktop)]
+            beat::disconnect_audio_input,
+            #[cfg(desktop)]
+            beat::list_audio_inputs,
+            #[cfg(desktop)]
+            beat::add_beat_sample,
             #[cfg(desktop)]
             midi::connect_midi,
             #[cfg(desktop)]

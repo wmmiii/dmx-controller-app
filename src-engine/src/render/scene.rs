@@ -1,6 +1,7 @@
 use std::cmp::Ordering;
 
 use crate::{
+    beat::effective_beat_metadata,
     project::DEFAULT_COLOR_PALETTE,
     proto::{
         BeatMetadata, Duration, Effect, Project,
@@ -55,7 +56,7 @@ pub fn render_scene<T: RenderTarget<T>>(
         return Err(format!("Could not find scene {scene_id}"));
     };
 
-    let Some(beat_metadata) = project.live_beat else {
+    let Some(beat_metadata) = effective_beat_metadata(project, system_t) else {
         return Err("Live beat not set!".to_string());
     };
 

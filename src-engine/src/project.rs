@@ -1,5 +1,8 @@
 use prost::Message;
-use std::sync::{LazyLock, Mutex};
+use std::{
+    sync::{LazyLock, Mutex},
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use crate::proto::{
     BeatMetadata, Color, ColorPalette, ControllerBindingsMap, ControllerMapping,
@@ -331,7 +334,7 @@ pub fn ensure_project_exists() -> Result<bool, String> {
     }
 
     // Create default project with minimal required fields
-    let default_project = create_default_project();
+    let default_project = create_default_project()?;
     let project_binary = default_project.encode_to_vec();
 
     state.project = default_project;
@@ -348,7 +351,7 @@ pub fn ensure_project_exists() -> Result<bool, String> {
 }
 
 /// Creates a minimal default project.
-fn create_default_project() -> Project {
+fn create_default_project() -> Result<Project, String> {
     use std::collections::HashMap;
 
     let scene_id = rand_id();
@@ -385,7 +388,7 @@ fn create_default_project() -> Project {
         },
     );
 
-    Project {
+    Ok(Project {
         name: "Untitled Project".to_string(),
         active_patch: patch_id,
         patches,
@@ -396,7 +399,10 @@ fn create_default_project() -> Project {
         active_scene: scene_id,
         live_beat: Some(BeatMetadata {
             length_ms: 500.0, // 120 BPM
-            offset_ms: 0,
+            offset_ms: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .map_err(|e| e.to_string())?
+                .as_millis() as u64,
         }),
         controller_mapping: Some(ControllerMapping {
             controller_to_binding: HashMap::new(),
@@ -406,7 +412,7 @@ fn create_default_project() -> Project {
             bindings: HashMap::new(),
         }),
         ..Default::default()
-    }
+    })
 }
 
 /// Generates a random u64 ID.
