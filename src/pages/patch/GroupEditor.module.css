@@ -11,21 +11,28 @@
 
   ul {
     margin: 0;
-    padding: 0;
+    padding: var(--space-5) 0 0 0;
     font-size: 1.5em;
     list-style: none;
   }
 
   li {
+    position: relative;
+    right: -1px;
+    z-index: 1;
     padding: var(--space-1) var(--space-2);
+    border: 1px solid transparent;
+    border-top-left-radius: var(--dim-border-radius);
+    border-bottom-left-radius: var(--dim-border-radius);
     cursor: pointer;
 
     &.selected {
-      background: linear-gradient(to right, var(--col-bg-active), transparent);
+      border-color: var(--col-border);
+      border-right-color: var(--col-bg) !important;
     }
 
     &:hover {
-      background-color: var(--col-bg-active);
+      border-color: var(--col-interactive-hover);
     }
   }
 

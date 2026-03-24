@@ -108,13 +108,15 @@ export function LivePage(): JSX.Element {
               value: 0n,
             },
           });
+          const id = randomUint64();
           const tileMap = create(Scene_TileMapSchema, {
-            id: randomUint64(),
+            id: id,
             tile: tile,
             x: x,
             y: y,
           });
           scene.tileMap.push(tileMap);
+          setSelectedId(id);
           save('Add new effect to group.');
         }}
         maxX={

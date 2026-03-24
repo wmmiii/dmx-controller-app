@@ -73,17 +73,19 @@ function GroupList({ selectedGroupId, setSelectedGroupId }: GroupListProps) {
   return (
     <div className={styles.groupList}>
       <ul>
-        {Object.entries(project.groups).map(([id, group]) => (
-          <li
-            className={clsx({
-              [styles.selected]: BigInt(id) == selectedGroupId,
-            })}
-            key={id}
-            onClick={() => setSelectedGroupId(BigInt(id))}
-          >
-            {group.name}
-          </li>
-        ))}
+        {Object.entries(project.groups)
+          .sort(([_a, a], [_b, b]) => a.name.localeCompare(b.name))
+          .map(([id, group]) => (
+            <li
+              className={clsx({
+                [styles.selected]: BigInt(id) == selectedGroupId,
+              })}
+              key={id}
+              onClick={() => setSelectedGroupId(BigInt(id))}
+            >
+              {group.name}
+            </li>
+          ))}
       </ul>
       <Button
         onClick={() => {
@@ -170,8 +172,10 @@ function GroupEditorPane({
         <TextInput
           value={group.name}
           onChange={(name) => {
-            group.name = name;
-            save(`Set group name to "${name}".`);
+            if (name) {
+              group.name = name;
+              save(`Set group name to "${name}".`);
+            }
           }}
         />
         <IconButton
