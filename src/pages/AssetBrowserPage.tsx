@@ -13,7 +13,7 @@ import { ProjectContext } from '../contexts/ProjectContext';
 import { idMapToArray, nextId } from '../util/mapUtils';
 import { formatBytes } from '../util/numberUtils';
 
-import styles from './AssetBrowserPage.module.scss';
+import styles from './AssetBrowserPage.module.css';
 
 export default function AssetBrowserPage(): JSX.Element {
   const [selectedAudio, setSelectedAudio] = useState<AudioFile | null>(null);

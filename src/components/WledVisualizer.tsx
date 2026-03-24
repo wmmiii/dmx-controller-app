@@ -4,7 +4,7 @@ import { ProjectContext } from '../contexts/ProjectContext';
 
 import { getOutput } from '../util/projectUtils';
 
-import styles from './Visualizer.module.scss';
+import styles from './Visualizer.module.css';
 
 import { WledOutput, WledRenderTarget } from '@dmx-controller/proto/wled_pb';
 import { BiError } from 'react-icons/bi';

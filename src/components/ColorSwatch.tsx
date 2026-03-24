@@ -2,7 +2,7 @@ import { Color } from '@dmx-controller/proto/color_pb';
 import { useContext } from 'react';
 import { ColorPicker, useColor } from 'react-color-palette';
 import { ProjectContext } from '../contexts/ProjectContext';
-import styles from './ColorSwatch.module.scss';
+import styles from './ColorSwatch.module.css';
 
 import { stringifyColor } from '../util/colorUtil';
 import { Popover } from './Popover';

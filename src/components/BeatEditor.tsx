@@ -33,7 +33,7 @@ import {
   BiZoomIn,
   BiZoomOut,
 } from 'react-icons/bi';
-import styles from './BeatEditor.module.scss';
+import styles from './BeatEditor.module.css';
 import { Button } from './Button';
 import { NumberInput } from './Input';
 import { Modal } from './Modal';

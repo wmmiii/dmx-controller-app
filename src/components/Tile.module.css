@@ -1,0 +1,134 @@
+.tile-grid {
+  --element-size: 100px;
+  --border-size: var(--space-1);
+  --triangle-diag: 45px;
+
+  display: grid;
+  grid-template-rows: repeat(auto-fill, var(--element-size));
+  grid-template-columns: repeat(auto-fill, var(--element-size));
+  gap: var(--space-1);
+  margin: var(--space-1);
+}
+
+.tile {
+  border-radius: var(--dim-border-radius);
+  touch-action: none;
+
+  &::before {
+    content: '';
+    position: absolute;
+    background: radial-gradient(
+      farthest-corner,
+      var(--col-bg-tile) 35%,
+      transparent 140%
+    );
+    inset: 0;
+  }
+}
+
+.tile,
+.tile-placeholder {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: var(--element-size);
+  height: var(--element-size);
+  overflow: hidden;
+  background-color: var(--col-bg-tile);
+  border-radius: var(--dim-border-radius);
+  cursor: pointer;
+  transition: 200ms box-shadow;
+
+  &:hover,
+  &:hover .priority {
+    background-color: var(--col-bg-tile-hover);
+  }
+
+  .active-gage {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: var(--border-size);
+    box-shadow: inset calc(-1 * var(--border-size)) 0 var(--border-size)
+      calc(-1 * var(--border-size)) #000;
+
+    & > * {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      background-color: var(--col-accent);
+      transition: 50ms top ease-out;
+    }
+  }
+
+  .settings-triangle {
+    position: absolute;
+    top: calc(-1 * var(--triangle-diag) / 2);
+    right: calc(-1 * var(--triangle-diag) / 2);
+    width: var(--triangle-diag);
+    height: var(--triangle-diag);
+    background-color: var(--col-bg-triangle);
+    transform: rotate(-45deg);
+    transform-origin: 50% 50%;
+
+    &:hover {
+      background-color: var(--col-bg-triangle-hover);
+    }
+  }
+
+  .title {
+    position: absolute;
+    z-index: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    padding: var(--space-1);
+    overflow: hidden;
+    font-weight: 600;
+    font-size: 12pt;
+    text-align: center;
+    text-shadow:
+      0 0 1px #000,
+      0 0 2px #000,
+      0 0 4px #000;
+    border-radius: 100%;
+    pointer-events: none;
+    inset: var(--border-size);
+  }
+
+  .wled {
+    position: absolute;
+    z-index: -1;
+    background-image: url('/wled.svg');
+    background-size: cover;
+    pointer-events: none;
+    inset: var(--space-1);
+  }
+
+  .priority {
+    position: absolute;
+    top: 0;
+    left: var(--border-size);
+    z-index: 1;
+    flex-shrink: 0;
+    padding: var(--space-0-5);
+    color: var(--col-text-dim);
+    font-size: 10pt;
+    background-color: var(--col-bg-higher);
+    border-radius: var(--space-1);
+  }
+
+  .controller {
+    position: absolute;
+    right: var(--space-0-5);
+    bottom: -12px;
+    flex-shrink: 0;
+    font-size: 20pt;
+  }
+}

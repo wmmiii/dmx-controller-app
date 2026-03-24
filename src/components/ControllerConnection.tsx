@@ -22,7 +22,7 @@ import { BiPlus, BiTrash } from 'react-icons/bi';
 import { Button, ControllerButton, IconButton } from './Button';
 import { Modal } from './Modal';
 
-import styles from './ControllerConnection.module.scss';
+import styles from './ControllerConnection.module.css';
 
 interface ControllerConnectionProps {
   context: BindingContext;

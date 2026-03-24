@@ -1,0 +1,7 @@
+.warning input {
+  border-color: var(--col-warning);
+
+  &:hover {
+    border-color: var(--col-warning-hover);
+  }
+}

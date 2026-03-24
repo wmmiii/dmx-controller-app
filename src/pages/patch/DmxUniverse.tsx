@@ -22,7 +22,7 @@ import {
 } from '@dmx-controller/proto/dmx_pb';
 import { VersatileElement } from '../../components/VersatileElement';
 import { DraggableDmxFixture } from './DmxEditor';
-import styles from './PatchPage.module.scss';
+import styles from './PatchPage.module.css';
 
 type DmxOutput = SacnDmxOutput | SerialDmxOutput;
 

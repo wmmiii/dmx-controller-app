@@ -1,0 +1,27 @@
+.browser {
+  position: absolute;
+  inset: 0;
+}
+
+.splitPane {
+  position: absolute;
+  inset: 0;
+}
+
+.audioFileList {
+  position: absolute;
+  border: 1px solid transparent;
+  inset: 0;
+}
+
+.faint {
+  color: var(--col-text-dim);
+}
+
+.highlight-drop {
+  border-color: var(--col-interactive);
+}
+
+.audio-details {
+  padding: var(--space-1);
+}

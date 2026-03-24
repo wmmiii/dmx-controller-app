@@ -20,7 +20,7 @@ import { ShortcutContext } from '../contexts/ShortcutContext';
 import { DEFAULT_COLOR_PALETTE } from '../util/colorUtil';
 import { UNSET_INDEX, idMapToArray } from '../util/mapUtils';
 import { randomUint64 } from '../util/numberUtils';
-import styles from './ShowPage.module.scss';
+import styles from './ShowPage.module.css';
 
 function createShow(project: Project) {
   const audioFiles = Object.keys(project.assets?.audioFiles || {});

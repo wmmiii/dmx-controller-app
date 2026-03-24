@@ -1,0 +1,21 @@
+.live-beat {
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-1);
+  align-items: center;
+}
+
+.beat-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-1);
+  color: var(--col-bg);
+  background-color: var(--col-accent);
+  border-radius: 25%;
+
+  &.sampling {
+    background: var(--col-interactive-hover);
+    animation: gradient 1s ease infinite;
+  }
+}

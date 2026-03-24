@@ -1,0 +1,9 @@
+.container {
+  touch-action: pan-x pan-y;
+}
+
+.suppress-touch,
+.suppress-touch * {
+  overflow: none !important;
+  touch-action: none !important;
+}

@@ -12,11 +12,10 @@ import {
 import { BiCog, BiTrash } from 'react-icons/bi';
 import { stringifyColor } from '../util/colorUtil';
 import { IconButton } from './Button';
-import { ColorSwatch } from './ColorSwatch';
 import { ControllerConnection } from './ControllerConnection';
 import { TextInput } from './Input';
 import { Modal } from './Modal';
-import styles from './Palette.module.scss';
+import styles from './Palette.module.css';
 
 interface PaletteSwatchProps {
   paletteId: bigint;
@@ -54,11 +53,12 @@ export function PaletteSwatch({
     throw new Error('Palette color not set!');
   }
 
+  const background = `linear-gradient(60deg, transparent 10%, ${colorToRgb(palette.primary!.color)}, ${colorToRgb(palette.secondary!.color)}, ${colorToRgb(palette.tertiary!.color)}, transparent 90%)`;
+
   return (
     <div className={classes.join(' ')} onClick={onClick} title={palette.name}>
-      <ColorSwatch color={palette.primary!.color} />
-      <ColorSwatch color={palette.secondary!.color} />
-      <ColorSwatch color={palette.tertiary!.color} />
+      <div className={styles.swatchColors} style={{ background }}></div>
+      <div className={styles.title}>{palette.name}</div>
       <IconButton title="Modify palette" onClick={() => setEditPalette(true)}>
         <BiCog />
       </IconButton>
@@ -73,6 +73,10 @@ export function PaletteSwatch({
       )}
     </div>
   );
+}
+
+function colorToRgb(color: Color) {
+  return `rgb(${color.red * 255}, ${color.green * 255}, ${color.blue * 255})`;
 }
 
 interface EditPaletteDialogProps {

@@ -1,13 +1,8 @@
 /*
  * DMX Controller Landing Page
- * Uses shared design tokens from vars.css (generated from src/_vars.scss)
+ * Uses shared design tokens from vars.css (public/vars.css symlinks to src/vars.css)
  * Note: vars.css is loaded directly in index.html to prevent flash of unstyled content
  */
-
-:root {
-  /* Landing page aliases */
-  --radius: var(--dim-border-radius);
-}
 
 * {
   box-sizing: border-box;
@@ -50,7 +45,7 @@ header {
   width: 96px;
   height: 96px;
   margin-bottom: var(--space-3);
-  border-radius: var(--radius);
+  border-radius: var(--dim-border-radius);
 }
 
 h1 {
@@ -62,7 +57,7 @@ h1 {
 }
 
 .tagline {
-  color: var(--col-text-dim);
+  color: var(--col-text);
   font-weight: 300;
   font-size: 1.1rem;
   font-family: 'Montserrat', sans-serif;
@@ -77,7 +72,7 @@ h1 {
 .hero > p {
   max-width: 700px;
   margin: 0 auto var(--space-3);
-  color: var(--col-text-dim);
+  color: var(--col-text);
   font-size: 1.1rem;
   text-align: left;
 }
@@ -110,7 +105,7 @@ h1 {
   text-decoration: none;
   background-color: transparent;
   border: 1px solid;
-  border-radius: var(--radius);
+  border-radius: var(--dim-border-radius);
   cursor: pointer;
   transition:
     color 0.2s ease,
@@ -146,10 +141,10 @@ h1 {
 .notice {
   margin-bottom: var(--space-4);
   padding: var(--space-2) var(--space-3);
-  color: var(--col-text-dim);
+  color: var(--col-text);
   font-size: 0.9rem;
   border: 1px solid var(--col-warning);
-  border-radius: var(--radius);
+  border-radius: var(--dim-border-radius);
 }
 
 .notice a {
@@ -176,7 +171,7 @@ h1 {
 
 .section-intro {
   margin-bottom: var(--space-4);
-  color: var(--col-text-dim);
+  color: var(--col-text);
 }
 
 .steps {
@@ -220,7 +215,7 @@ h1 {
 
 .steps p {
   margin-bottom: var(--space-2);
-  color: var(--col-text-dim);
+  color: var(--col-text);
   font-size: 0.95rem;
 }
 
@@ -242,7 +237,7 @@ h1 {
 
 .substeps li {
   padding: var(--space-1) 0 var(--space-1) var(--space-2);
-  color: var(--col-text-dim);
+  color: var(--col-text);
   font-size: 0.9rem;
 }
 
@@ -261,7 +256,7 @@ h1 {
 }
 
 .requirements ul {
-  color: var(--col-text-dim);
+  color: var(--col-text);
   list-style: none;
 }
 
@@ -281,7 +276,7 @@ h1 {
 /* Footer */
 footer {
   padding: var(--space-4) 0;
-  color: var(--col-text-dim);
+  color: var(--col-text);
   font-size: 0.9rem;
   text-align: center;
   border-top: 1px solid var(--col-border);
@@ -293,7 +288,7 @@ footer .made-by {
 }
 
 footer a {
-  color: var(--col-text-dim);
+  color: var(--col-text);
   text-decoration: none;
   transition: color 0.2s ease;
 }

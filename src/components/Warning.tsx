@@ -1,5 +1,5 @@
 import { BiSolidError } from 'react-icons/bi';
-import style from './Warning.module.scss';
+import style from './Warning.module.css';
 
 interface WarningProps {
   title: string;

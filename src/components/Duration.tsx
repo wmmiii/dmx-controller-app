@@ -1,7 +1,7 @@
 import { Duration } from '@dmx-controller/proto/duration_pb';
 import { useContext } from 'react';
 import { ProjectContext } from '../contexts/ProjectContext';
-import styles from './Duration.module.scss';
+import styles from './Duration.module.css';
 import { NumberInput, ToggleInput } from './Input';
 
 interface DurationInputProps {

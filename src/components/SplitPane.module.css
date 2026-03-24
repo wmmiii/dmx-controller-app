@@ -1,0 +1,48 @@
+.horizontalPane {
+  display: flex;
+  flex-direction: row;
+}
+
+.overlay {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 999;
+  cursor: ew-resize !important;
+}
+
+.dragging {
+  .pane {
+    user-select: none;
+    pointer-events: none;
+  }
+}
+
+.pane {
+  position: relative;
+  flex: 1;
+  min-width: var(--space-4);
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.separator {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-1);
+  background-color: var(--col-bg-higher);
+  cursor: ew-resize;
+
+  &::after {
+    content: '';
+    flex-direction: column;
+    width: 2px;
+    height: 24px;
+    background-color: var(--col-bg);
+  }
+}

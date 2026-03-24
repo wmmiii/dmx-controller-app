@@ -11,7 +11,7 @@ import {
 import { BiTrash } from 'react-icons/bi';
 import { ShortcutContext } from '../contexts/ShortcutContext';
 import { IconButton } from './Button';
-import styles from './Layer.module.scss';
+import styles from './Layer.module.css';
 import { TimecodeEffect as EffectComponent } from './TimecodeEffect';
 
 interface NewEffect {

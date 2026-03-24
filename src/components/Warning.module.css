@@ -1,0 +1,5 @@
+.warning {
+  display: inline;
+  color: var(--col-warning);
+  vertical-align: middle;
+}

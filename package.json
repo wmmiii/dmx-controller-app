@@ -3,7 +3,6 @@
   "scripts": {
     "build": "pnpm run proto:generate && vite build",
     "cleanup": "pnpm run lint && pnpm run format",
-    "css-vars:build": "sass src/vars-export.scss public/vars.css --no-source-map",
     "dev": "pnpm run proto:generate && vite",
     "format": "npx prettier . --write",
     "lint": "pnpm run lint:rust && pnpm run lint:ts && pnpm run lint:dead",
@@ -55,7 +54,6 @@
     "prettier-plugin-organize-imports": "4.3.0",
     "prettier-plugin-rational-order": "^1.0.3",
     "protoc": "^34.0.0",
-    "sass": "1.98.0",
     "ts-jest": "29.4.6",
     "typescript": "5.9.3",
     "typescript-eslint": "^8.57.1",

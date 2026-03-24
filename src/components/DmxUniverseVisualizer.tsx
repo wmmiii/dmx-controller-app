@@ -22,7 +22,7 @@ import {
   subscribeToDmxRender,
   subscribeToRenderErrors,
 } from '../engine/renderRouter';
-import styles from './Visualizer.module.scss';
+import styles from './Visualizer.module.css';
 
 interface FixtureDetails {
   id: number;

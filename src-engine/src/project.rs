@@ -2,8 +2,8 @@ use prost::Message;
 use std::sync::{LazyLock, Mutex};
 
 use crate::proto::{
-    BeatMetadata, Color, ColorPalette, FixtureDefinitions, Patch, Project, Scene,
-    color_palette::ColorDescription,
+    BeatMetadata, Color, ColorPalette, ControllerBindingsMap, ControllerMapping,
+    FixtureDefinitions, Patch, Project, Scene, color_palette::ColorDescription,
 };
 
 const MAX_UNDO: usize = 100;
@@ -369,6 +369,9 @@ fn create_default_project() -> Project {
             active_color_palette: palette_id,
             last_active_color_palette: palette_id,
             color_palette_transition_duration_ms: 3000,
+            controller_bindings: Some(ControllerBindingsMap {
+                bindings: HashMap::new(),
+            }),
             ..Default::default()
         },
     );
@@ -384,16 +387,23 @@ fn create_default_project() -> Project {
 
     Project {
         name: "Untitled Project".to_string(),
-        active_scene: scene_id,
-        scenes,
         active_patch: patch_id,
         patches,
         fixture_definitions: Some(FixtureDefinitions {
             dmx_fixture_definitions: HashMap::new(),
         }),
+        scenes,
+        active_scene: scene_id,
         live_beat: Some(BeatMetadata {
             length_ms: 500.0, // 120 BPM
             offset_ms: 0,
+        }),
+        controller_mapping: Some(ControllerMapping {
+            controller_to_binding: HashMap::new(),
+            binding_names: HashMap::new(),
+        }),
+        live_page_controller_bindings: Some(ControllerBindingsMap {
+            bindings: HashMap::new(),
         }),
         ..Default::default()
     }

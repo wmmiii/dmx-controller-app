@@ -10,7 +10,7 @@ import {
   OutputTargetSchema,
 } from '@dmx-controller/proto/output_pb';
 import { GROUP_ALL_ID } from '../engine/fixtures/writableDevice';
-import styles from './OutputSelector.module.scss';
+import styles from './OutputSelector.module.css';
 import { SelectCategory, SelectInput, SelectOption } from './SelectInput';
 
 const EMPTY_OUTPUT_TARGET = create(OutputTargetSchema, {

@@ -9,7 +9,7 @@ import { Button } from '../../components/Button';
 import { TextInput, ToggleInput } from '../../components/Input';
 import { ProjectContext } from '../../contexts/ProjectContext';
 import { getOutput } from '../../util/projectUtils';
-import styles from './PatchPage.module.scss';
+import styles from './PatchPage.module.css';
 
 interface WledEditorProps {
   outputId: bigint;

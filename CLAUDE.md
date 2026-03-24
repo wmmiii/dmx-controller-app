@@ -15,14 +15,13 @@ This project uses **Vite** as its primary build system for the frontend. Key com
 - `pnpm run format` - Auto-format all code with Prettier
 - `pnpm run lint` - Run all linters (ESLint, Knip dead code detection, Clippy)
 - `pnpm run cleanup` - Run linters then format (use this when finalizing changes)
-- `pnpm run css-vars:build` - Regenerate `public/vars.css` from `src/_vars.scss`
 - `pnpm run tauri` - Build/run the Tauri desktop app
 
 **Development Workflow:**
 
 - Vite provides fast HMR (Hot Module Replacement) for auto-rebuilds during development
 - The dev server requires accepting a self-signed certificate (type "thisisunsafe" in Chrome if needed)
-- Frontend TypeScript builds via Vite with CSS modules and SCSS support
+- Frontend TypeScript builds via Vite with CSS modules
 
 ## Architecture Overview
 
@@ -118,7 +117,7 @@ This project uses **Vite** as its primary build system for the frontend. Key com
 
 - Uses strict TypeScript with `tsconfig.json` in root
 - React 19 with React Router for navigation
-- SCSS modules for styling with shared variables in `src/_vars.scss`
+- CSS modules for styling with shared variables in `src/vars.css`
 - Path aliases: `@dmx-controller/proto/*` for generated protobuf types
 - **Deprecated alias:** `@dmx-controller/wasm-engine` — do not use; WASM engine has been removed
 
@@ -193,4 +192,4 @@ The `web/` directory contains a static landing page deployed to GitHub Pages. Wh
 - Update protocol/feature descriptions if capabilities are added or removed
 - The landing page describes: Serial DMX, sACN/E1.31, WLED outputs; GDTF fixture support; tap tempo; MIDI control
 
-The landing page uses shared CSS variables generated from `src/_vars.scss`. Run `pnpm run css-vars:build` after modifying SCSS variables to regenerate `public/vars.css`.
+The landing page uses shared CSS variables from `src/vars.css` (symlinked to `public/vars.css`).

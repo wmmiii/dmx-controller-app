@@ -110,9 +110,6 @@ importers:
       protoc:
         specifier: ^34.0.0
         version: 34.0.0
-      sass:
-        specifier: 1.98.0
-        version: 1.98.0
       ts-jest:
         specifier: 29.4.6
         version: 29.4.6(@babel/core@7.29.0)(@jest/transform@30.3.0)(@jest/types@30.3.0)(babel-jest@30.3.0(@babel/core@7.29.0))(esbuild@0.27.4)(jest-util@30.3.0)(jest@30.3.0(@types/node@25.5.0))(typescript@5.9.3)
@@ -8206,6 +8203,7 @@ snapshots:
   chokidar@4.0.3:
     dependencies:
       readdirp: 4.1.2
+    optional: true
 
   ci-info@4.4.0: {}
 
@@ -8567,7 +8565,8 @@ snapshots:
 
   ignore@7.0.5: {}
 
-  immutable@5.1.5: {}
+  immutable@5.1.5:
+    optional: true
 
   import-local@3.2.0:
     dependencies:
@@ -9458,7 +9457,8 @@ snapshots:
 
   react@19.2.4: {}
 
-  readdirp@4.1.2: {}
+  readdirp@4.1.2:
+    optional: true
 
   require-directory@2.1.1: {}
 
@@ -9508,6 +9508,7 @@ snapshots:
       source-map-js: 1.2.1
     optionalDependencies:
       '@parcel/watcher': 2.5.6
+    optional: true
 
   saxes@6.0.0:
     dependencies:

@@ -1,6 +1,6 @@
 import { JSX } from 'react';
 
-import styles from './Tabs.module.scss';
+import styles from './Tabs.module.css';
 
 export interface TabsType {
   [key: string]: {

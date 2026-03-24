@@ -48,7 +48,7 @@ import { useRenderMode } from '../hooks/renderMode';
 import { DEFAULT_COLOR_PALETTE } from '../util/colorUtil';
 import { randomUint64 } from '../util/numberUtils';
 import { getActiveScene } from '../util/sceneUtils';
-import styles from './LivePage.module.scss';
+import styles from './LivePage.module.css';
 
 const NEW_SCENE_KEY = 'new';
 
@@ -251,6 +251,7 @@ export function LivePage(): JSX.Element {
               activeColorPalette: scene.activeColorPalette,
               lastActiveColorPalette: scene.activeColorPalette,
               colorPaletteTransitionDurationMs: 3_000,
+              controllerBindings: { bindings: {} },
             });
             project.activeScene = newSceneId;
             save('Add new scene');

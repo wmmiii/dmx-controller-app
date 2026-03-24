@@ -1,0 +1,52 @@
+.binding-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  padding: var(--space-1);
+  background-color: transparent;
+  transition: background-color 1s;
+
+  &.active {
+    background-color: var(--col-bg-active);
+    transition: background-color 0s;
+  }
+
+  button {
+    flex-shrink: 0;
+  }
+
+  span {
+    flex: 1;
+  }
+}
+
+.no-bindings,
+.warning {
+  box-sizing: border-box;
+  width: 100%;
+  padding: var(--space-1);
+}
+
+.warning {
+  color: var(--col-warning);
+}
+
+.add-binding {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 100%;
+  margin: var(--space-2) 0;
+}
+
+.button-row {
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-2);
+  align-items: center;
+  justify-content: space-between;
+  margin: var(--space-1) 0;
+}

@@ -5,7 +5,7 @@ import { ProjectContext } from '../contexts/ProjectContext';
 
 import { VersatileContainer } from '../contexts/VersatileContianer';
 import { Tile } from './Tile';
-import styles from './Tile.module.scss';
+import styles from './Tile.module.css';
 import { VersatileElement } from './VersatileElement';
 
 interface TileGridProps {

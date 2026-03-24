@@ -25,7 +25,7 @@ import {
   removeMidiListener,
 } from '../system_interfaces/midi';
 import { randomUint64 } from '../util/numberUtils';
-import styles from './ControllerContext.module.scss';
+import styles from './ControllerContext.module.css';
 
 export type ControllerChannel = string;
 export type ControlCommandType = 'msb' | 'lsb' | null;

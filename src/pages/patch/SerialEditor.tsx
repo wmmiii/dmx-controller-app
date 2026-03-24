@@ -5,7 +5,7 @@ import { ProjectContext } from '../../contexts/ProjectContext';
 import { listPorts } from '../../system_interfaces/serial';
 import { getOutput } from '../../util/projectUtils';
 import { DmxEditor } from './DmxEditor';
-import styles from './PatchPage.module.scss';
+import styles from './PatchPage.module.css';
 
 interface SacnEditorProps {
   outputId: bigint;

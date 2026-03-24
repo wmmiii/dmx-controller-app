@@ -1,6 +1,6 @@
 import { JSX, createRef, useEffect, useState } from 'react';
 
-import styles from './SplitPane.module.scss';
+import styles from './SplitPane.module.css';
 
 interface HorizontalSplitPaneProps {
   className?: string;

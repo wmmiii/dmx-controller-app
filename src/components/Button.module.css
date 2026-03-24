@@ -1,0 +1,98 @@
+.base-button {
+  display: inline-flex;
+  align-items: center;
+  min-height: calc(24px + var(--space-2));
+  cursor: pointer;
+}
+
+.button {
+  flex-direction: row;
+  gap: var(--space-1);
+  justify-content: space-evenly;
+  padding: var(--space-1) var(--space-2);
+  font-size: 18px;
+
+  .icon {
+    width: 24px;
+    height: 24px;
+    font-size: 24px;
+  }
+}
+
+.icon-button {
+  justify-content: center;
+  width: calc(24px + var(--space-2));
+  height: calc(24px + var(--space-2));
+  font-size: 24px;
+}
+
+.default-variant {
+  &:active,
+  &:hover,
+  &:focus {
+    color: var(--col-interactive-hover);
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: var(--col-interactive-hover);
+  }
+}
+
+.primary-variant {
+  color: var(--col-interactive);
+  border-color: var(--col-interactive);
+
+  &:hover {
+    color: var(--col-interactive-hover);
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: var(--col-interactive-hover);
+  }
+}
+
+.warning-variant {
+  color: var(--col-warning);
+  background-color: var(--col-bg);
+  border-color: var(--col-warning);
+
+  &:active,
+  &:hover,
+  &:focus {
+    color: var(--col-warning-hover);
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: var(--col-warning-hover);
+  }
+}
+
+.controller-button {
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-1);
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-1);
+  color: var(--col-text);
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+  border: 1px solid transparent;
+
+  .icon {
+    width: 24px;
+    height: 24px;
+    font-size: 24px;
+  }
+
+  &.inactive {
+    background:
+      linear-gradient(var(--col-bg-higher), var(--col-bg-higher)) padding-box,
+      linear-gradient(to right, var(--col-midi), var(--col-accent)) border-box;
+  }
+
+  &.active {
+    background:
+      linear-gradient(to right, var(--col-midi), var(--col-accent)) padding-box,
+      linear-gradient(to right, var(--col-midi), var(--col-accent)) border-box;
+  }
+
+  &.mapping {
+    background:
+      linear-gradient(to right, var(--col-midi), var(--col-warning)) padding-box,
+      linear-gradient(to right, var(--col-midi), var(--col-warning)) border-box;
+  }
+}

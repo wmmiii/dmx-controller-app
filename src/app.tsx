@@ -9,6 +9,7 @@ import { DialogProvider } from './contexts/DialogContext';
 import { ProjectProvider } from './contexts/ProjectContext';
 import { SerialProvider } from './contexts/SerialContext';
 import { ShortcutProvider } from './contexts/ShortcutContext';
+import './vars.css';
 
 const root = createRoot(document.getElementById('root')!);
 root.render(

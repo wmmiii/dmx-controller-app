@@ -22,7 +22,7 @@ import { ALL_CHANNELS } from '../engine/channel';
 import { IconButton } from './Button';
 import { NumberInput, TextInput } from './Input';
 import { Layer } from './Layer';
-import styles from './SequenceEditor.module.scss';
+import styles from './SequenceEditor.module.css';
 import { EffectDetails } from './TimecodeEffect';
 
 // Good resolution, nice divisors (2^5 * 3^2 * 5^2.)

@@ -1,7 +1,7 @@
 import { VersatileContainer } from '../../contexts/VersatileContianer';
 import { DmxFixtureList } from './DmxFixtureList';
 import { DmxUniverse } from './DmxUniverse';
-import styles from './PatchPage.module.scss';
+import styles from './PatchPage.module.css';
 
 export interface DraggableDmxFixture {
   id: bigint;

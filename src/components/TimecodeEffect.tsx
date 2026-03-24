@@ -62,7 +62,7 @@ import { NumberInput, ToggleInput } from './Input';
 import { Modal } from './Modal';
 import { SequenceEditor } from './SequenceEditor';
 import { Spacer } from './Spacer';
-import styles from './TimecodeEffect.module.scss';
+import styles from './TimecodeEffect.module.css';
 
 interface TimecodeEffectProps {
   className: string;

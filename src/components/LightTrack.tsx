@@ -17,7 +17,7 @@ import {
 } from 'react-icons/bi';
 import { Button, IconButton } from './Button';
 import { Layer } from './Layer';
-import styles from './LightTrack.module.scss';
+import styles from './LightTrack.module.css';
 
 export interface MappingFunctions {
   msWidthToPxWidth: (ms: number) => number;

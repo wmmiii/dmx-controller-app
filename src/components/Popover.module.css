@@ -1,0 +1,14 @@
+.content {
+  z-index: var(--z-index-popover);
+  padding: var(--space-1);
+  color: var(--col-text);
+
+  background-color: var(--col-bg-higher);
+  border-radius: var(--dim-border-radius);
+  /* MIXIN REPLACEMENT: @include vars.drop-shadow */
+  box-shadow: var(--drop-shadow);
+}
+
+.arrow {
+  color: var(--col-bg-higher);
+}

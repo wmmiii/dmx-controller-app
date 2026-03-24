@@ -4,7 +4,7 @@ import { ShortcutContext } from '../contexts/ShortcutContext';
 
 import { BiX } from 'react-icons/bi';
 import { IconButton } from './Button';
-import styles from './Modal.module.scss';
+import styles from './Modal.module.css';
 import { Spacer } from './Spacer';
 
 interface ModalProps {

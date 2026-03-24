@@ -7,7 +7,7 @@ import { TextInput, ToggleInput } from '../components/Input';
 import { DialogContext } from '../contexts/DialogContext';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { escapeForFilesystem } from '../util/fileUtils';
-import styles from './ProjectPage.module.scss';
+import styles from './ProjectPage.module.css';
 
 export default function ProjectPage(): JSX.Element {
   const { project, save } = useContext(ProjectContext);

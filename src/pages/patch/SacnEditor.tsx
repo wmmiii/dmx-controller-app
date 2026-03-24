@@ -3,7 +3,7 @@ import { TextInput, ToggleInput } from '../../components/Input';
 import { ProjectContext } from '../../contexts/ProjectContext';
 import { getOutput } from '../../util/projectUtils';
 import { DmxEditor } from './DmxEditor';
-import styles from './PatchPage.module.scss';
+import styles from './PatchPage.module.css';
 
 interface SacnEditorProps {
   outputId: bigint;

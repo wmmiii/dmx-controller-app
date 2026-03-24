@@ -21,7 +21,7 @@ import { getAvailableChannels } from '../engine/fixtures/fixture';
 import { AudioController, AudioTrackVisualizer } from './AudioTrackVisualizer';
 import { Button } from './Button';
 import { NumberInput } from './Input';
-import styles from './LightTimeline.module.scss';
+import styles from './LightTimeline.module.css';
 import { LightTrack, MappingFunctions } from './LightTrack';
 import { getOutputTargetName } from './OutputSelector';
 import { Spacer } from './Spacer';

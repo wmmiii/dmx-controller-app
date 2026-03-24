@@ -24,7 +24,7 @@ import { BiPlus, BiX } from 'react-icons/bi';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { Button, IconButton } from './Button';
 import { ColorSwatch } from './ColorSwatch';
-import styles from './EffectState.module.scss';
+import styles from './EffectState.module.css';
 import { NumberInput, NumberInputType } from './Input';
 
 type ColorSelectorType = 'none' | 'color' | PaletteColor;

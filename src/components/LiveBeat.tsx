@@ -13,7 +13,7 @@ import { ProjectContext } from '../contexts/ProjectContext';
 import { listenToTick } from '../util/time';
 import { ControllerConnection } from './ControllerConnection';
 import { NumberInput } from './Input';
-import styles from './LiveBeat.module.scss';
+import styles from './LiveBeat.module.css';
 
 interface LiveBeatProps {
   className?: string;

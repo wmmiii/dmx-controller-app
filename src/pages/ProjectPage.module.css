@@ -1,0 +1,10 @@
+.table {
+  position: absolute;
+  margin: var(--space-2);
+  inset: 0;
+
+  th {
+    padding-right: var(--space-2);
+    font-weight: 600;
+  }
+}

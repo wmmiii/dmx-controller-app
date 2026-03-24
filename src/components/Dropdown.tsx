@@ -1,6 +1,6 @@
 import { JSX, useEffect } from 'react';
 
-import styles from './Dropdown.module.scss';
+import styles from './Dropdown.module.css';
 
 interface DropdownProps {
   className?: string;

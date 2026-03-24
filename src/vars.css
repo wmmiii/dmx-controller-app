@@ -1,0 +1,64 @@
+:root {
+  /* Primary colors */
+  --col-accent: #11a2ca;
+  --col-warning: #b02461;
+  --col-midi: #7216c8;
+
+  /* Backgrounds */
+  --col-bg: #080808;
+  --col-bg-higher: #181818;
+  --col-bg-higher-hover: color-mix(in srgb, var(--col-bg-higher), #fff 20%);
+  --col-bg-active: color-mix(in srgb, var(--col-accent), black 36%);
+  --col-bg-active-lower: color-mix(in srgb, var(--col-accent), black 50%);
+  --col-bg-tile: var(--col-bg-higher);
+  --col-bg-tile-hover: color-mix(in srgb, var(--col-bg-tile), #fff 20%);
+  --col-bg-gage: #000;
+  --col-bg-triangle: color-mix(in srgb, var(--col-bg-higher), #fff 40%);
+  --col-bg-triangle-hover: color-mix(in srgb, var(--col-bg-triangle), #fff 20%);
+
+  /* Text */
+  --col-text: #ffffff;
+  --col-text-dim: #8f8f8f;
+
+  /* Borders */
+  --col-border: #333;
+  --col-border-higher: #555555;
+  --col-border-lower: #222222;
+  --col-border-disabled: var(--col-border);
+
+  /* Scrollbars */
+  --col-scroll-thumb: #666666;
+  --col-scroll-track: #333333;
+
+  /* Interactive */
+  --col-interactive: color-mix(in srgb, var(--col-accent), #fff 40%);
+  --col-interactive-hover: color-mix(in srgb, var(--col-accent), #fff 80%);
+  --col-warning-hover: color-mix(in srgb, var(--col-warning), #fff 50%);
+
+  /* Dimensions */
+  --dim-border-radius: 8px;
+
+  /* Filters */
+  --mask-blur: blur(2px);
+
+  /* Z-index layers */
+  --z-index-header: 20;
+  --z-index-menu: 40;
+  --z-index-modal: 80;
+  --z-index-popover: 100;
+  --z-index-interactive-mask: 9999;
+
+  /* Spacing (8px grid) */
+  --space-0-5: 4px;
+  --space-1: 8px;
+  --space-1-5: 12px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --space-5: 40px;
+  --space-6: 48px;
+
+  /* Shadows */
+  --drop-shadow: 0 0 8px #000000;
+  --inset-shadow: inset 0 0 4px #000000;
+}

@@ -27,7 +27,7 @@ import {
 import { hasAction } from '../external_controller/externalController';
 import { rgbwToHex } from '../util/colorUtil';
 import { listenToTick } from '../util/time';
-import styles from './Tile.module.scss';
+import styles from './Tile.module.css';
 import { VersatileElement } from './VersatileElement';
 
 interface TileProps {
@@ -84,16 +84,21 @@ export function Tile({ tileId, tile, onSelect, x, y, priority }: TileProps) {
       return complexColorToHex(details.colors[0], palette);
     }
 
-    let gradient = 'linear-gradient(135deg, ';
+    let gradient = 'conic-gradient(from -30deg, ';
     for (let i = 0; i < details.colors.length; i++) {
       const color = complexColorToHex(details.colors[i], palette);
-
-      gradient += i === 0 ? '' : ', ';
       if (color != null) {
         gradient += color;
       } else {
         gradient += 'transparent';
       }
+      gradient += ', ';
+    }
+    const wrapColor = complexColorToHex(details.colors[0], palette);
+    if (wrapColor != null) {
+      gradient += wrapColor;
+    } else {
+      gradient += 'transparent';
     }
     return gradient + ')';
   }, [details, palette]);
@@ -109,6 +114,7 @@ export function Tile({ tileId, tile, onSelect, x, y, priority }: TileProps) {
         gridColumnEnd: x + 2,
         gridRowStart: y + 1,
         gridRowEnd: y + 2,
+        background: background ?? undefined,
       }}
       onClick={toggle}
       onPress={onSelect}
@@ -125,10 +131,7 @@ export function Tile({ tileId, tile, onSelect, x, y, priority }: TileProps) {
           onPointerDown={(e) => e.stopPropagation()}
         ></div>
       )}
-      <div
-        className={styles.title}
-        style={{ background: background || undefined }}
-      >
+      <div className={styles.title}>
         {details.wled && <div className={styles.wled}></div>}
         {tile.name}
       </div>

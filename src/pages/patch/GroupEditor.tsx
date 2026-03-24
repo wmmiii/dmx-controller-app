@@ -25,7 +25,7 @@ import {
 } from '../../engine/group';
 import { useRenderMode } from '../../hooks/renderMode';
 import { randomUint64 } from '../../util/numberUtils';
-import styles from './PatchPage.module.scss';
+import styles from './PatchPage.module.css';
 
 export function GroupEditor() {
   const [selectedGroupId, setSelectedGroupId] = useState<bigint | null>(null);

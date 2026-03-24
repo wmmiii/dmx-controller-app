@@ -37,7 +37,7 @@ import { extractGdtf } from '../../util/gdtf';
 import { randomUint64 } from '../../util/numberUtils';
 import { getOutput } from '../../util/projectUtils';
 import { DraggableDmxFixture } from './DmxEditor';
-import styles from './PatchPage.module.scss';
+import styles from './PatchPage.module.css';
 
 interface DmxFixtureListProps {
   outputId: bigint;

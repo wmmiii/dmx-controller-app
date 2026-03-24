@@ -9,7 +9,7 @@ import {
 } from 'react';
 
 import { ProjectContext } from '../contexts/ProjectContext';
-import styles from './Input.module.scss';
+import styles from './Input.module.css';
 
 interface TextInputProps {
   value: string;

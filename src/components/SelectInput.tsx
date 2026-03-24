@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { BiX } from 'react-icons/bi';
 import { IconButton } from './Button';
-import styles from './SelectInput.module.scss';
+import styles from './SelectInput.module.css';
 
 export interface SelectOption<T> {
   value: T;

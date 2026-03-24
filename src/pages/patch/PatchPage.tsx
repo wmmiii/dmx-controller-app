@@ -18,7 +18,7 @@ import {
   getActivePatch,
 } from '../../util/projectUtils';
 import { GroupEditor } from './GroupEditor';
-import styles from './PatchPage.module.scss';
+import styles from './PatchPage.module.css';
 import { SacnEditor } from './SacnEditor';
 import { SerialEditor } from './SerialEditor';
 import { WledEditor } from './WledEditor';
@@ -148,85 +148,90 @@ export default function PatchPage(): JSX.Element {
         <Modal
           title="Create new output"
           onClose={() => setShowNewOutputDialog(false)}
+          footer={
+            <>
+              <Button
+                onClick={() => {
+                  const id = randomUint64();
+                  getActivePatch(project).outputs[id.toString()] = create(
+                    OutputSchema,
+                    {
+                      name: 'DMX Serial Output',
+                      latencyMs: 0,
+                      enabled: true,
+                      output: {
+                        case: 'serialDmxOutput',
+                        value: {
+                          fixtures: {},
+                        },
+                      },
+                    },
+                  );
+                  save('Create Serial DMX output.');
+                  setTabKey(id.toString());
+                  setShowNewOutputDialog(false);
+                }}
+                disabled={Boolean(
+                  Object.values(getActivePatch(project).outputs).find(
+                    (o) => o.output.case === 'serialDmxOutput',
+                  ),
+                )}
+              >
+                Serial Output
+              </Button>
+              <Button
+                onClick={() => {
+                  const id = randomUint64();
+                  getActivePatch(project).outputs[id.toString()] = create(
+                    OutputSchema,
+                    {
+                      name: 'DMX SACN Output',
+                      latencyMs: 0,
+                      enabled: true,
+                      output: {
+                        case: 'sacnDmxOutput',
+                        value: {
+                          ipAddress: '0.0.0.0',
+                          fixtures: {},
+                        },
+                      },
+                    },
+                  );
+                  save('Create SACN DMX output.');
+                  setTabKey(id.toString());
+                  setShowNewOutputDialog(false);
+                }}
+              >
+                SACN Output
+              </Button>
+              <Button
+                onClick={() => {
+                  const id = randomUint64();
+                  getActivePatch(project).outputs[id.toString()] = create(
+                    OutputSchema,
+                    {
+                      name: 'WLED Output',
+                      latencyMs: 0,
+                      enabled: true,
+                      output: {
+                        case: 'wledOutput',
+                        value: {
+                          segments: {},
+                        },
+                      },
+                    },
+                  );
+                  save('Create WLED output.');
+                  setTabKey(id.toString());
+                  setShowNewOutputDialog(false);
+                }}
+              >
+                WLED Output
+              </Button>
+            </>
+          }
         >
-          <Button
-            onClick={() => {
-              const id = randomUint64();
-              getActivePatch(project).outputs[id.toString()] = create(
-                OutputSchema,
-                {
-                  name: 'DMX Serial Output',
-                  latencyMs: 0,
-                  enabled: true,
-                  output: {
-                    case: 'serialDmxOutput',
-                    value: {
-                      fixtures: {},
-                    },
-                  },
-                },
-              );
-              save('Create Serial DMX output.');
-              setTabKey(id.toString());
-              setShowNewOutputDialog(false);
-            }}
-            disabled={Boolean(
-              Object.values(getActivePatch(project).outputs).find(
-                (o) => o.output.case === 'serialDmxOutput',
-              ),
-            )}
-          >
-            Serial Output
-          </Button>
-          <Button
-            onClick={() => {
-              const id = randomUint64();
-              getActivePatch(project).outputs[id.toString()] = create(
-                OutputSchema,
-                {
-                  name: 'DMX SACN Output',
-                  latencyMs: 0,
-                  enabled: true,
-                  output: {
-                    case: 'sacnDmxOutput',
-                    value: {
-                      ipAddress: '0.0.0.0',
-                      fixtures: {},
-                    },
-                  },
-                },
-              );
-              save('Create SACN DMX output.');
-              setTabKey(id.toString());
-              setShowNewOutputDialog(false);
-            }}
-          >
-            SACN Output
-          </Button>
-          <Button
-            onClick={() => {
-              const id = randomUint64();
-              getActivePatch(project).outputs[id.toString()] = create(
-                OutputSchema,
-                {
-                  name: 'WLED Output',
-                  latencyMs: 0,
-                  enabled: true,
-                  output: {
-                    case: 'wledOutput',
-                    value: {
-                      segments: {},
-                    },
-                  },
-                },
-              );
-              save('Create WLED output.');
-              setTabKey(id.toString());
-              setShowNewOutputDialog(false);
-            }}
-          >
-            WLED Output
-          </Button>
+          <p>Which type of output would you like to create?</p>
         </Modal>
       )}
     </div>

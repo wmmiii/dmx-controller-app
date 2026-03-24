@@ -12,7 +12,7 @@ import {
   BiUnlink,
   BiUpload,
 } from 'react-icons/bi';
-import styles from './Index.module.scss';
+import styles from './Index.module.css';
 import { Button, ControllerButton } from './components/Button';
 import { DmxUniverseVisualizer } from './components/DmxUniverseVisualizer';
 import { Dropdown } from './components/Dropdown';
@@ -82,14 +82,14 @@ export default function Index(): JSX.Element {
                   title: 'Live',
                   onSelect: () => navigate('/live'),
                 },
-                {
-                  title: 'Show',
-                  onSelect: () => navigate('/show'),
-                },
-                {
-                  title: 'Assets',
-                  onSelect: () => navigate('/assets'),
-                },
+                // {
+                //   title: 'Show',
+                //   onSelect: () => navigate('/show'),
+                // },
+                // {
+                //   title: 'Assets',
+                //   onSelect: () => navigate('/assets'),
+                // },
                 {
                   title: 'Patch',
                   onSelect: () => navigate('/patch'),

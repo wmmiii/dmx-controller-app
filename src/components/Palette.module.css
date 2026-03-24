@@ -1,0 +1,105 @@
+.palette-swatch {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-1);
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-1);
+  background-color: var(--col-bg);
+  cursor: pointer;
+
+  & > * {
+    z-index: 1;
+  }
+}
+
+.swatch-colors {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+
+  &::before {
+    content: '';
+    position: absolute;
+    background: linear-gradient(
+      var(--col-bg) 0%,
+      transparent 15%,
+      color-mix(in srgb, var(--col-bg) 100%, transparent 20%) 30%,
+      color-mix(in srgb, var(--col-bg) 100%, transparent 20%) 70%,
+      transparent 85%,
+      var(--col-bg) 100%
+    );
+    inset: 0;
+  }
+
+  &:hover::before {
+    background: linear-gradient(
+      var(--col-bg) 0%,
+      transparent 15%,
+      color-mix(in srgb, var(--col-bg) 100%, transparent 80%) 30%,
+      color-mix(in srgb, var(--col-bg) 100%, transparent 80%) 70%,
+      transparent 85%,
+      var(--col-bg) 100%
+    );
+  }
+}
+
+.swatch-colors:hover::before,
+.active .swatch-colors::before {
+  background: linear-gradient(
+    var(--col-bg) 0%,
+    transparent 15%,
+    color-mix(in srgb, var(--col-bg) 100%, transparent 80%) 30%,
+    color-mix(in srgb, var(--col-bg) 100%, transparent 80%) 70%,
+    transparent 85%,
+    var(--col-bg) 100%
+  );
+}
+
+.title {
+  pointer-events: none;
+}
+
+.header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+.color-selectors {
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-2);
+  justify-content: space-around;
+  padding: var(--space-2);
+}
+
+.visualizer {
+  position: relative;
+  width: 433px;
+  height: 433px;
+
+  .gradient {
+    position: absolute;
+    width: 75%;
+    mix-blend-mode: lighten;
+    aspect-ratio: 1/1;
+  }
+
+  .primary {
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+  }
+
+  .secondary {
+    top: 0;
+    right: 0;
+  }
+
+  .tertiary {
+    right: 0;
+    bottom: 0;
+  }
+}

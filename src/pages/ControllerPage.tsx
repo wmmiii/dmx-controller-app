@@ -15,7 +15,7 @@ import {
   deleteAction,
   getActionDescription,
 } from '../external_controller/externalController';
-import styles from './ControllerPage.module.scss';
+import styles from './ControllerPage.module.css';
 
 export function ControllerPage(): JSX.Element {
   const { project, save } = useContext(ProjectContext);

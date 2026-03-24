@@ -1,5 +1,5 @@
 import { createContext, useEffect, useRef, useState } from 'react';
-import styles from './VersatileContainer.module.scss';
+import styles from './VersatileContainer.module.css';
 
 const PRESS_TIMEOUT_MS = 500;
 const DRAG_DISTANCE_PX_SQ = Math.pow(20, 2);
