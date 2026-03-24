@@ -20,17 +20,22 @@ import {
   PhysicalDmxFixture,
   PhysicalDmxFixtureSchema,
 } from '@dmx-controller/proto/dmx_pb';
+import clsx from 'clsx';
 import { VersatileElement } from '../../components/VersatileElement';
 import { DraggableDmxFixture } from './DmxEditor';
-import styles from './PatchPage.module.css';
+import styles from './DmxUniverse.module.css';
 
 type DmxOutput = SacnDmxOutput | SerialDmxOutput;
 
 interface DmxUniverse {
   outputId: bigint;
+  className: string;
 }
 
-export function DmxUniverse({ outputId }: DmxUniverse): JSX.Element | null {
+export function DmxUniverse({
+  outputId,
+  className,
+}: DmxUniverse): JSX.Element | null {
   const { project, save, update } = useContext(ProjectContext);
   const [selectedFixtureId, setSelectedFixtureId] = useState<bigint | null>(
     null,
@@ -105,8 +110,8 @@ export function DmxUniverse({ outputId }: DmxUniverse): JSX.Element | null {
   }, [project]);
 
   return (
-    <div className={styles.grow}>
-      <div className={styles.universeGrid}>
+    <>
+      <div className={clsx(styles.dmxUniverse, className)}>
         {channels.map((ciArray, i) => {
           const classes = [styles.channel];
 
@@ -230,7 +235,7 @@ export function DmxUniverse({ outputId }: DmxUniverse): JSX.Element | null {
           }}
         />
       )}
-    </div>
+    </>
   );
 }
 
@@ -290,21 +295,18 @@ function EditFixtureDialog({
             fixture.fixtureMode = Object.keys(
               project.fixtureDefinitions!.dmxFixtureDefinitions[
                 fixture.fixtureDefinitionId.toString()
-              ].modes,
+              ]?.modes || {},
             )[0];
-            let definitionName = '<unset>';
-            if (fixture.fixtureDefinitionId.toString() !== '') {
-              definitionName =
-                project.fixtureDefinitions!.dmxFixtureDefinitions[
-                  fixture.fixtureDefinitionId.toString()
-                ].name;
-            }
+            const definitionName =
+              project.fixtureDefinitions!.dmxFixtureDefinitions[
+                fixture.fixtureDefinitionId.toString()
+              ].name;
             save(
               `Change fixture profile for ${fixture.name} to ${definitionName}`,
             );
           }}
         >
-          <option key="unset" value={''}>
+          <option disabled={true} key="unset" value={''}>
             &lt;unset&gt;
           </option>
           {Object.entries(project.fixtureDefinitions!.dmxFixtureDefinitions)
@@ -365,9 +367,9 @@ function EditFixtureDialog({
       </label>
       {definition != null &&
         ANGLE_CHANNELS.filter((t) =>
-          Object.values(definition.modes[fixture.fixtureMode].channels).some(
-            (c) => c.type === t,
-          ),
+          Object.values(
+            definition.modes[fixture.fixtureMode]?.channels ?? {},
+          ).some((c) => c.type === t),
         ).map((t, i) => (
           <label key={i}>
             <span>{t.charAt(0).toUpperCase() + t.slice(1)} Offset</span>

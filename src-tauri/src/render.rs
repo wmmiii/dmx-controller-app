@@ -11,7 +11,7 @@ pub fn render_dmx(output_id: String, system_t: u64, frame: u32) -> Result<Vec<u8
         .parse::<u64>()
         .map_err(|e| format!("Error parsing output id: {e}"))?;
 
-    let universe = render::render_dmx(oid, system_t, frame)?;
+    let universe = render::render_dmx(oid, system_t, frame).map_err(|e| e.to_string())?;
 
     Ok(universe.to_vec())
 }

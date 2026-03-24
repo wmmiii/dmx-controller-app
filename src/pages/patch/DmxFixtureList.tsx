@@ -17,6 +17,7 @@ import {
   SacnDmxOutput,
   SerialDmxOutput,
 } from '@dmx-controller/proto/output_pb';
+import clsx from 'clsx';
 import { BiGridVertical, BiPlus, BiTrash } from 'react-icons/bi';
 import { Button, IconButton } from '../../components/Button';
 import { ColorSwatch } from '../../components/ColorSwatch';
@@ -37,14 +38,16 @@ import { extractGdtf } from '../../util/gdtf';
 import { randomUint64 } from '../../util/numberUtils';
 import { getOutput } from '../../util/projectUtils';
 import { DraggableDmxFixture } from './DmxEditor';
-import styles from './PatchPage.module.css';
+import styles from './DmxFixtureList.module.css';
 
 interface DmxFixtureListProps {
   outputId: bigint;
+  className: string;
 }
 
 export function DmxFixtureList({
   outputId,
+  className,
 }: DmxFixtureListProps): JSX.Element | null {
   const { project, save } = useContext(ProjectContext);
   const [selectedId, setSelectedId] = useState<{
@@ -53,14 +56,11 @@ export function DmxFixtureList({
   } | null>(null);
   const [highlightDrop, setHighlightDrop] = useState(false);
 
-  const classes = [styles.fixtureDefinitionList];
-  if (highlightDrop) {
-    classes.push(styles.highlightDrop);
-  }
-
   return (
     <div
-      className={classes.join(' ')}
+      className={clsx(className, styles.fixtureDefinitionList, {
+        [styles.highlightDrop]: highlightDrop,
+      })}
       onDragOver={(e) => {
         if (e.dataTransfer.items.length > 1) {
           setHighlightDrop(true);

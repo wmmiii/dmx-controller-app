@@ -1,6 +1,6 @@
 use dmx_engine::project;
 use dmx_engine::proto::output::Output as ProtoOutput;
-use dmx_engine::render::render::{render_dmx, render_wled};
+use dmx_engine::render::render::{RenderError, render_dmx, render_wled};
 use prost::Message;
 use serde::Serialize;
 use std::collections::HashMap;
@@ -267,24 +267,20 @@ impl OutputLoopManager {
         system_t: u64,
         frame: u32,
         app: &AppHandle,
-    ) -> Result<Vec<u8>, String> {
-        match render_dmx(output_id, system_t, frame) {
-            Ok(dmx_data) => {
-                let dmx_vec = dmx_data.to_vec();
+    ) -> Result<Vec<u8>, RenderError> {
+        let dmx_data = render_dmx(output_id, system_t, frame)?;
+        let dmx_vec = dmx_data.to_vec();
 
-                // Emit render event to frontend
-                let event = DmxRenderEvent {
-                    output_id: output_id.to_string(),
-                    data: dmx_vec.clone(),
-                };
-                if let Err(e) = app.emit("dmx-render", event) {
-                    log::error!("Failed to emit DMX render event: {e}");
-                }
-
-                Ok(dmx_vec)
-            }
-            Err(e) => Err(e),
+        // Emit render event to frontend
+        let event = DmxRenderEvent {
+            output_id: output_id.to_string(),
+            data: dmx_vec.clone(),
+        };
+        if let Err(e) = app.emit("dmx-render", event) {
+            log::error!("Failed to emit DMX render event: {e}");
         }
+
+        Ok(dmx_vec)
     }
 
     async fn run_output_loop(
@@ -305,9 +301,7 @@ impl OutputLoopManager {
         let frame_duration = Duration::from_millis(1000 / u64::from(target_fps));
         let mut frame = 0u32;
 
-        log::info!(
-            "Starting output loop {output_id} ({output_type:?}) at {target_fps} FPS"
-        );
+        log::info!("Starting output loop {output_id} ({output_type:?}) at {target_fps} FPS");
 
         loop {
             // Check for cancellation
@@ -333,7 +327,14 @@ impl OutputLoopManager {
                             let serial = serial_state.lock().await;
                             serial.output_dmx_internal(&output_id.to_string(), &dmx_vec)
                         }
-                        Err(e) => Err(e),
+                        Err(RenderError::OutputNotFound { .. }) => {
+                            // Output was deleted - exit loop gracefully
+                            log::info!(
+                                "Output loop {output_id} stopping: output no longer exists in project"
+                            );
+                            break;
+                        }
+                        Err(e) => Err(e.to_string()),
                     }
                 }
                 OutputType::Sacn {
@@ -346,7 +347,14 @@ impl OutputLoopManager {
                             let sacn = sacn_state.lock().await;
                             sacn.output_sacn_internal(*universe, ip_address, &dmx_vec)
                         }
-                        Err(e) => Err(e),
+                        Err(RenderError::OutputNotFound { .. }) => {
+                            // Output was deleted - exit loop gracefully
+                            log::info!(
+                                "Output loop {output_id} stopping: output no longer exists in project"
+                            );
+                            break;
+                        }
+                        Err(e) => Err(e.to_string()),
                     }
                 }
                 OutputType::Wled { ip_address } => {
@@ -368,7 +376,14 @@ impl OutputLoopManager {
                             drop(wled);
                             result
                         }
-                        Err(e) => Err(e),
+                        Err(RenderError::OutputNotFound { .. }) => {
+                            // Output was deleted - exit loop gracefully
+                            log::info!(
+                                "Output loop {output_id} stopping: output no longer exists in project"
+                            );
+                            break;
+                        }
+                        Err(e) => Err(e.to_string()),
                     }
                 }
             };

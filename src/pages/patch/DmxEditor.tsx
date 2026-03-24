@@ -1,7 +1,7 @@
 import { VersatileContainer } from '../../contexts/VersatileContianer';
+import styles from './DmxEditor.module.css';
 import { DmxFixtureList } from './DmxFixtureList';
 import { DmxUniverse } from './DmxUniverse';
-import styles from './PatchPage.module.css';
 
 export interface DraggableDmxFixture {
   id: bigint;
@@ -16,8 +16,8 @@ interface DmxEditorProps {
 export function DmxEditor({ outputId }: DmxEditorProps) {
   return (
     <VersatileContainer className={styles.contents}>
-      <DmxUniverse outputId={outputId} />
-      <DmxFixtureList outputId={outputId} />
+      <DmxUniverse className={styles.grid} outputId={outputId} />
+      <DmxFixtureList className={styles.list} outputId={outputId} />
     </VersatileContainer>
   );
 }

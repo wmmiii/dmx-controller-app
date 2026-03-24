@@ -1,0 +1,24 @@
+.wrapper {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  inset: 0;
+}
+
+.settings {
+  flex-shrink: 0;
+  min-height: 0;
+  padding: var(--space-1);
+  border-bottom: 1px solid var(--col-border);
+}
+
+.body {
+  position: relative;
+  flex: 1;
+}
+
+.enabled-toggle {
+  display: inline-flex;
+  margin: var(--space-1);
+  vertical-align: middle;
+}

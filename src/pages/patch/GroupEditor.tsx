@@ -10,6 +10,7 @@ import {
   OutputTargetSchema,
   TargetGroupSchema,
 } from '@dmx-controller/proto/output_pb';
+import clsx from 'clsx';
 import { useCallback, useContext, useMemo, useState } from 'react';
 import { BiTrash } from 'react-icons/bi';
 import { Button, IconButton } from '../../components/Button';
@@ -25,7 +26,7 @@ import {
 } from '../../engine/group';
 import { useRenderMode } from '../../hooks/renderMode';
 import { randomUint64 } from '../../util/numberUtils';
-import styles from './PatchPage.module.css';
+import styles from './GroupEditor.module.css';
 
 export function GroupEditor() {
   const [selectedGroupId, setSelectedGroupId] = useState<bigint | null>(null);
@@ -74,7 +75,9 @@ function GroupList({ selectedGroupId, setSelectedGroupId }: GroupListProps) {
       <ul>
         {Object.entries(project.groups).map(([id, group]) => (
           <li
-            className={BigInt(id) == selectedGroupId ? styles.selected : ''}
+            className={clsx({
+              [styles.selected]: BigInt(id) == selectedGroupId,
+            })}
             key={id}
             onClick={() => setSelectedGroupId(BigInt(id))}
           >
@@ -220,7 +223,7 @@ function GroupEditorPane({
             ))}
           </div>
         </VersatileElement>
-        <VersatileElement
+        <VersatileElement<string>
           className={styles.inMembers}
           id="in-group"
           onDragOver={(draggingMember) => {

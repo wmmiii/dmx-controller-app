@@ -1,0 +1,70 @@
+.fixture-definition-list {
+  padding: var(--space-2);
+  border-left: 1px solid var(--col-border);
+
+  & h2 {
+    margin: 0;
+  }
+}
+
+.highlight-drop {
+  border-color: var(--col-interactive);
+}
+
+.mode {
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-1);
+  align-items: center;
+  width: fit-content;
+  padding: var(--space-1);
+  list-style: none;
+  background-color: var(--col-bg-higher);
+  border-radius: var(--dim-border-radius);
+  cursor: grab;
+
+  &:hover {
+    background-color: var(--col-bg-higher-hover);
+  }
+
+  svg {
+    color: var(--col-text-dim);
+  }
+}
+
+.hint {
+  max-width: 20rem;
+  color: var(--col-text-dim);
+  font-size: 10pt;
+}
+
+.editor-wrapper {
+  height: 100vh;
+}
+
+.editor {
+  display: flex;
+  flex-direction: column;
+  min-width: 60em;
+
+  th,
+  td {
+    padding: var(--space-1);
+  }
+}
+
+.editor-metadata {
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-1);
+
+  * {
+    flex-shrink: 0;
+  }
+
+  .spacer {
+    flex: 1;
+  }
+}

@@ -1,0 +1,17 @@
+.contents {
+  position: absolute;
+  display: flex;
+  flex: 1;
+  flex-direction: row;
+  overflow-y: auto;
+  inset: 0;
+}
+
+.grid {
+  flex: 1;
+  align-self: start;
+}
+
+.list {
+  flex-shrink: 0;
+}

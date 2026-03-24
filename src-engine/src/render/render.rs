@@ -1,3 +1,4 @@
+use std::fmt;
 use std::sync::{LazyLock, Mutex};
 
 use crate::{
@@ -16,84 +17,144 @@ use crate::{
     },
 };
 
+/// Errors that can occur during rendering.
+#[derive(Debug, Clone)]
+pub enum RenderError {
+    /// The specified output was not found in the current patch.
+    /// This can happen when an output is deleted but the render loop hasn't stopped yet.
+    OutputNotFound { output_id: u64, patch_id: u64 },
+    /// The output exists but is not the expected type (e.g., expected DMX but got WLED).
+    WrongOutputType,
+    /// Fixture definitions are not available.
+    MissingFixtureDefinitions,
+    /// Failed to acquire a lock on shared state.
+    LockError(String),
+    /// Scene rendering error.
+    SceneError(String),
+}
+
+impl fmt::Display for RenderError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::OutputNotFound {
+                output_id,
+                patch_id,
+            } => {
+                write!(f, "Could not find output {output_id} for patch {patch_id}")
+            }
+            Self::WrongOutputType => write!(f, "Output is not the expected type"),
+            Self::MissingFixtureDefinitions => write!(f, "Fixture definitions not defined"),
+            Self::LockError(msg) => write!(f, "Failed to lock: {msg}"),
+            Self::SceneError(msg) => write!(f, "Scene error: {msg}"),
+        }
+    }
+}
+
+impl std::error::Error for RenderError {}
+
+impl From<String> for RenderError {
+    fn from(s: String) -> Self {
+        Self::LockError(s)
+    }
+}
+
 /// Global static render mode instance
 /// Can be accessed from both WASM and Tauri contexts
 pub static RENDER_MODE_REF: LazyLock<Mutex<RenderMode>> =
     LazyLock::new(|| Mutex::new(RenderMode::default()));
 
-pub fn render_dmx(output_id: u64, system_t: u64, frame: u32) -> Result<[u8; 512], String> {
-    project::with_project(|project| {
-        let fixtures = match project
-            .patches
-            .get(&project.active_patch)
-            .and_then(|p| p.outputs.get(&output_id))
-            .and_then(|o| o.output.as_ref())
-        {
-            Some(Output::SerialDmxOutput(serial)) => &serial.fixtures,
-            Some(Output::SacnDmxOutput(sacn)) => &sacn.fixtures,
-            Some(_) => return Err("Output specified not DMX!".to_string()),
-            None => {
-                return Err(format!(
-                    "Could not find output {} for patch {}",
-                    output_id, project.active_patch
-                ));
-            }
-        };
+pub fn render_dmx(output_id: u64, system_t: u64, frame: u32) -> Result<[u8; 512], RenderError> {
+    // Use nested Result to carry RenderError through the String-based with_project
+    let nested_result: Result<Result<[u8; 512], RenderError>, String> =
+        project::with_project(|project| {
+            let fixtures = match project
+                .patches
+                .get(&project.active_patch)
+                .and_then(|p| p.outputs.get(&output_id))
+                .and_then(|o| o.output.as_ref())
+            {
+                Some(Output::SerialDmxOutput(serial)) => &serial.fixtures,
+                Some(Output::SacnDmxOutput(sacn)) => &sacn.fixtures,
+                Some(_) => return Ok(Err(RenderError::WrongOutputType)),
+                None => {
+                    return Ok(Err(RenderError::OutputNotFound {
+                        output_id,
+                        patch_id: project.active_patch,
+                    }));
+                }
+            };
 
-        let Some(fixture_definitions) = project
-            .fixture_definitions
-            .as_ref()
-            .map(|d| &d.dmx_fixture_definitions)
-        else {
-            return Err("Fixture definitions not defined!".to_string());
-        };
+            let Some(fixture_definitions) = project
+                .fixture_definitions
+                .as_ref()
+                .map(|d| &d.dmx_fixture_definitions)
+            else {
+                return Ok(Err(RenderError::MissingFixtureDefinitions));
+            };
 
-        let mut render_target = DmxRenderTarget::new(fixtures, fixture_definitions);
+            let mut render_target = DmxRenderTarget::new(fixtures, fixture_definitions);
 
-        render(output_id, &mut render_target, system_t, frame, project)
-            .map(|()| render_target.get_universe())
-    })
+            Ok(
+                render(output_id, &mut render_target, system_t, frame, project)
+                    .map(|()| render_target.get_universe()),
+            )
+        });
+
+    // Flatten: String error -> RenderError::LockError, then unwrap inner Result
+    nested_result.map_err(RenderError::LockError)?
 }
 
-pub fn render_wled(output_id: u64, system_t: u64, frame: u32) -> Result<WledRenderTarget, String> {
-    project::with_project(|project| {
-        let wled_output = match project
-            .patches
-            .get(&project.active_patch)
-            .and_then(|p| p.outputs.get(&output_id))
-            .and_then(|o| o.output.as_ref())
-        {
-            Some(Output::WledOutput(output)) => output,
-            Some(_) => return Err("Output specified not WLED!".to_string()),
-            None => {
-                return Err(format!(
-                    "Could not find output {} for patch {}",
-                    output_id, project.active_patch
-                ));
-            }
-        };
+pub fn render_wled(
+    output_id: u64,
+    system_t: u64,
+    frame: u32,
+) -> Result<WledRenderTarget, RenderError> {
+    // Use nested Result to carry RenderError through the String-based with_project
+    let nested_result: Result<Result<WledRenderTarget, RenderError>, String> =
+        project::with_project(|project| {
+            let wled_output = match project
+                .patches
+                .get(&project.active_patch)
+                .and_then(|p| p.outputs.get(&output_id))
+                .and_then(|o| o.output.as_ref())
+            {
+                Some(Output::WledOutput(output)) => output,
+                Some(_) => return Ok(Err(RenderError::WrongOutputType)),
+                None => {
+                    return Ok(Err(RenderError::OutputNotFound {
+                        output_id,
+                        patch_id: project.active_patch,
+                    }));
+                }
+            };
 
-        let mut render_target = WledRenderTarget {
-            id: output_id,
-            segments: wled_output
-                .segments
-                .iter()
-                .map(|_| Segment {
-                    effect: 0,
-                    palette: 0,
-                    primary_color: Some(crate::proto::wled_render_target::Color {
-                        red: 0.0,
-                        green: 0.0,
-                        blue: 0.0,
-                    }),
-                    speed: 1.0,
-                    brightness: 1.0,
-                })
-                .collect(),
-        };
+            let mut render_target = WledRenderTarget {
+                id: output_id,
+                segments: wled_output
+                    .segments
+                    .iter()
+                    .map(|_| Segment {
+                        effect: 0,
+                        palette: 0,
+                        primary_color: Some(crate::proto::wled_render_target::Color {
+                            red: 0.0,
+                            green: 0.0,
+                            blue: 0.0,
+                        }),
+                        speed: 1.0,
+                        brightness: 1.0,
+                    })
+                    .collect(),
+            };
 
-        render(output_id, &mut render_target, system_t, frame, project).map(|()| render_target)
-    })
+            Ok(
+                render(output_id, &mut render_target, system_t, frame, project)
+                    .map(|()| render_target),
+            )
+        });
+
+    // Flatten: String error -> RenderError::LockError, then unwrap inner Result
+    nested_result.map_err(RenderError::LockError)?
 }
 
 fn render<T: RenderTarget<T>>(
@@ -102,10 +163,10 @@ fn render<T: RenderTarget<T>>(
     system_t: u64,
     frame: u32,
     project: &Project,
-) -> Result<(), String> {
+) -> Result<(), RenderError> {
     let render_mode = RENDER_MODE_REF
         .lock()
-        .map_err(|e| format!("Failed to lock render mode: {e}"))?;
+        .map_err(|e| RenderError::LockError(e.to_string()))?;
 
     match &render_mode.mode {
         None | Some(Mode::Blackout(_)) => Ok(()),
@@ -121,6 +182,7 @@ fn render<T: RenderTarget<T>>(
         }
         Some(Mode::Scene(Scene { scene_id })) => {
             render_scene(*scene_id, render_target, system_t, frame, project)
+                .map_err(RenderError::SceneError)
         }
         Some(Mode::Show(_)) => todo!("Show not implemented yet!"),
     }

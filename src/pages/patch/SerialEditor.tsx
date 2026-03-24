@@ -1,11 +1,10 @@
 import { useContext, useEffect, useMemo, useState } from 'react';
-import { ToggleInput } from '../../components/Input';
 import { SelectCategory, SelectInput } from '../../components/SelectInput';
 import { ProjectContext } from '../../contexts/ProjectContext';
 import { listPorts } from '../../system_interfaces/serial';
 import { getOutput } from '../../util/projectUtils';
 import { DmxEditor } from './DmxEditor';
-import styles from './PatchPage.module.css';
+import { OutputFrame } from './OutputFrame';
 
 interface SacnEditorProps {
   outputId: bigint;
@@ -68,21 +67,16 @@ export function SerialEditor({ outputId }: SacnEditorProps) {
   }, [ports, output]);
 
   return (
-    <div className={styles.body}>
-      <div className={styles.meta}>
-        <label>
-          <span>Enabled</span>
-          <ToggleInput
-            className={styles.enabledToggle}
-            value={output.enabled}
-            onChange={(value) => {
-              output.enabled = value;
-              save(`${value ? 'Enabled' : 'Disabled'} output ${output.name}`);
-            }}
-          />
-        </label>
+    <OutputFrame
+      outputEnabled={output.enabled}
+      setOutputEnabled={(value) => {
+        output.enabled = value;
+        save(`${value ? 'Enabled' : 'Disabled'} output ${output.name}`);
+      }}
+      settings={
         <label>
           <span>Serial Port</span>
+          &emsp;
           <SelectInput<string>
             value={output.output.value.lastPort}
             onChange={(value) => {
@@ -112,8 +106,9 @@ export function SerialEditor({ outputId }: SacnEditorProps) {
             }}
           />
         </label>
-      </div>
+      }
+    >
       <DmxEditor outputId={outputId} />
-    </div>
+    </OutputFrame>
   );
 }
