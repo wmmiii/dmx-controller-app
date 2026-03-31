@@ -1,3 +1,5 @@
+#[cfg(desktop)]
+mod audio_detection;
 mod beat;
 #[cfg(desktop)]
 mod midi;
@@ -88,6 +90,20 @@ pub fn run() {
                 }
 
                 app.manage(midi_state_arc);
+
+                let beat_detection_state =
+                    beat::BeatDetectionState::new(app.handle().clone(), shared_beat_sampler);
+                let beat_detection_arc = Arc::new(Mutex::new(beat_detection_state));
+
+                // Start the audio device watcher for auto-reconnect
+                {
+                    let state_clone = beat_detection_arc.clone();
+                    beat_detection_arc
+                        .blocking_lock()
+                        .start_device_watcher(state_clone);
+                }
+
+                app.manage(beat_detection_arc);
             }
 
             let serial_state = serial::SerialState::new();
@@ -128,6 +144,12 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            #[cfg(desktop)]
+            beat::connect_audio_input,
+            #[cfg(desktop)]
+            beat::disconnect_audio_input,
+            #[cfg(desktop)]
+            beat::list_audio_inputs,
             beat::add_beat_sample,
             beat::get_beat_t,
             #[cfg(desktop)]

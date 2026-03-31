@@ -19,4 +19,18 @@
     background: var(--col-interactive-hover);
     animation: gradient 1s ease infinite;
   }
+
+  &.auto-detecting {
+    outline: 2px solid var(--col-interactive-hover);
+  }
+}
+
+.audio-select {
+  max-width: 12rem;
+  height: 100%;
+  padding: 0 var(--space-1);
+  color: var(--col-text);
+  background: var(--col-bg-higher);
+  border: 1px solid var(--col-border);
+  border-radius: var(--dim-border-radius);
 }

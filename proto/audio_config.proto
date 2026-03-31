@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package dmx_controller;
+
+message AudioConfig {
+  // Name of the audio input device for automatic beat detection.
+  // Empty string means auto beat detection is disabled.
+  string beat_detection_device = 1;
+}
