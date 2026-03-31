@@ -46,9 +46,6 @@ jobs:
       - name: Setup
         uses: ./.github/setup
 
-      - name: Generate CSS variables
-        run: pnpm run css-vars:build
-
       - name: Resolve symlinks for deployment
         run: |
           rm web/vars.css
