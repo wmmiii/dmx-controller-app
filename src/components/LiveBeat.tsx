@@ -3,13 +3,20 @@ import {
   InputBindingSchema,
   InputType,
 } from '@dmx-controller/proto/controller_pb';
-import { JSX, createRef, useContext, useEffect, useMemo } from 'react';
+import {
+  JSX,
+  createRef,
+  useContext,
+  useEffect,
+  useMemo,
+} from 'react';
 
 import { BeatContext } from '../contexts/BeatContext';
 import { ShortcutContext } from '../contexts/ShortcutContext';
 
 import { BiPulse } from 'react-icons/bi';
 import { ProjectContext } from '../contexts/ProjectContext';
+import { getBeatT, } from '../system_interfaces/beat_detection';
 import { listenToTick } from '../util/time';
 import { ControllerConnection } from './ControllerConnection';
 import { NumberInput } from './Input';
@@ -26,20 +33,12 @@ export function LiveBeat({ className }: LiveBeatProps): JSX.Element {
   const indicatorRef = createRef<HTMLDivElement>();
 
   useEffect(() => {
-    const liveBeat = project.liveBeat;
-    if (!liveBeat) {
-      return () => {};
-    }
-
-    const offset = liveBeat.offsetMs;
-    const reciprocal = 1 / liveBeat.lengthMs;
-    return listenToTick((t) => {
-      if (!indicatorRef.current) {
+    return listenToTick(async () => {
+      const beatT = await getBeatT();
+      if (!indicatorRef.current || !beatT) {
         return;
       }
-
-      const amount = 1 - ((Number(t - offset) * reciprocal) % 1);
-      indicatorRef.current.style.opacity = String(amount);
+      indicatorRef.current.style.opacity = String(1 - (beatT % 1));
     });
   }, [indicatorRef, project]);
 

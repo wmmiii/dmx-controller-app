@@ -70,7 +70,6 @@ export function SelectInput<T>({
       }
     }
 
-    console.log('value', value);
     throw Error(`Unknown value in select: ${value}`);
   }, [value, options]);
 
@@ -189,7 +188,10 @@ export function SelectInput<T>({
       )}
 
       {isOpen && hasItems && (
-        <div className={styles.dropdown}>
+        <div
+          className={styles.dropdown}
+          onMouseDown={(e) => e.preventDefault()}
+        >
           {isCategories ? (
             // Render categorized options
             (filteredItems as SelectCategory<T>[]).map(

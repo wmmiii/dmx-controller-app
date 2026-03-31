@@ -397,8 +397,8 @@ impl OutputLoopManager {
 
             // Sleep to maintain target FPS
             let elapsed = loop_start.elapsed();
-            if elapsed < frame_duration {
-                tokio::time::sleep(frame_duration - elapsed).await;
+            if let Some(remaining) = frame_duration.checked_sub(elapsed) {
+                tokio::time::sleep(remaining).await;
             }
         }
 

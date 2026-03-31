@@ -6,6 +6,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from 'react';
 
@@ -24,12 +25,17 @@ export const BeatContext = createContext({
 export function BeatProvider({ children }: PropsWithChildren): JSX.Element {
   const { project, save } = useContext(ProjectContext);
   const [sampling, setSampling] = useState(false);
+  const samplingHandle = useRef<number | undefined>(undefined);
 
   // Listen for beat sampling state changes from the Rust backend
   useEffect(
     () =>
-      subscribeToBeatSamplingState((isSampling) => {
-        setSampling(isSampling);
+      subscribeToBeatSamplingState(() => {
+        setSampling(true);
+        clearTimeout(samplingHandle.current);
+        samplingHandle.current = setTimeout(() => {
+          setSampling(false);
+        }, 3_000);
       }),
     [],
   );

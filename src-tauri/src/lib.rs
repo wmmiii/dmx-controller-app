@@ -1,3 +1,4 @@
+mod beat;
 #[cfg(desktop)]
 mod midi;
 mod output_loop;
@@ -29,6 +30,7 @@ mod serial {
 }
 
 use std::sync::Arc;
+use std::sync::Mutex as StdMutex;
 use tauri::{Manager, RunEvent};
 use tokio::sync::Mutex;
 
@@ -57,9 +59,15 @@ pub fn run() {
             let persist_state = project::PersistState::new(app_data_dir);
             app.manage(Arc::new(Mutex::new(persist_state)));
 
+            let shared_beat_sampler: beat::SharedBeatSampler =
+                Arc::new(StdMutex::new(beat::TauriBeatSampler::new()));
+
+            app.manage(shared_beat_sampler.clone());
+
             #[cfg(desktop)]
             {
-                let midi_state = midi::MidiState::new(app.handle().clone());
+                let midi_state =
+                    midi::MidiState::new(app.handle().clone(), shared_beat_sampler.clone());
                 let midi_state_arc = Arc::new(Mutex::new(midi_state));
 
                 // Start the MIDI device watcher for auto-reconnect
@@ -117,8 +125,8 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            #[cfg(desktop)]
-            midi::add_beat_sample,
+            beat::add_beat_sample,
+            beat::get_beat_t,
             #[cfg(desktop)]
             midi::connect_midi,
             #[cfg(desktop)]
