@@ -3,20 +3,14 @@ import {
   InputBindingSchema,
   InputType,
 } from '@dmx-controller/proto/controller_pb';
-import {
-  JSX,
-  createRef,
-  useContext,
-  useEffect,
-  useMemo,
-} from 'react';
+import { JSX, createRef, useContext, useEffect, useMemo } from 'react';
 
 import { BeatContext } from '../contexts/BeatContext';
 import { ShortcutContext } from '../contexts/ShortcutContext';
 
 import { BiPulse } from 'react-icons/bi';
 import { ProjectContext } from '../contexts/ProjectContext';
-import { getBeatT, } from '../system_interfaces/beat_detection';
+import { getBeatT } from '../system_interfaces/beat_detection';
 import { listenToTick } from '../util/time';
 import { ControllerConnection } from './ControllerConnection';
 import { NumberInput } from './Input';

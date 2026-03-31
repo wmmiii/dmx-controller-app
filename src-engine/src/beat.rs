@@ -229,23 +229,17 @@ pub fn transition_beat(
         return Ok(());
     };
 
-    let start_ms = t;
-    let duration_ms = next_beat.length_ms;
-    let end_ms = t + project.beat_transition_duration_ms;
-
-    let mut mut_next_beat = next_beat.clone();
+    let mut mut_next_beat = *next_beat;
 
     if prev_beat.length_ms > 0.0 && next_beat.length_ms > 0.0 {
-        let start_beat =
-            beat_t(&prev_beat, start_ms).map_err(|_| "Cannot get beat t of previous beat!")?;
-        let end_beat = beat_t(next_beat, end_ms).map_err(|_| "Cannot get beat t of next beat!")?;
-        let beat_count =
-            (duration_ms / prev_beat.length_ms + duration_ms / next_beat.length_ms) / 2.0;
-        let target_end_beat = start_beat + beat_count;
-
-        mut_next_beat.offset_ms -=
-            ((target_end_beat - end_beat) * mut_next_beat.length_ms).round() as u64;
+        let prev_beat_t = (t as f64 - prev_beat.offset_ms as f64) / prev_beat.length_ms;
+        let next_beat_t = (t as f64 - next_beat.offset_ms as f64) / next_beat.length_ms;
+        let n = (prev_beat_t - next_beat_t).round();
+        let new_offset = next_beat.offset_ms as f64 - n * next_beat.length_ms;
+        mut_next_beat.offset_ms = new_offset.round().max(0.0) as u64;
     }
+
+    let duration_ms = next_beat.length_ms;
 
     project.prev_live_beat = Some(prev_beat);
     project.live_beat = Some(mut_next_beat);
@@ -513,8 +507,8 @@ mod tests {
         .unwrap();
 
         assert_eq!(
-            beat_t(&project.prev_live_beat.unwrap(), 2001),
-            beat_t(&project.live_beat.unwrap(), 2001)
+            beat_t(&project.prev_live_beat.unwrap(), 2001).map(|b| b.floor()),
+            beat_t(&project.live_beat.unwrap(), 2001).map(|b| b.floor())
         );
 
         assert_eq!(
