@@ -1,10 +1,12 @@
-import { createContext, useEffect, useRef, useState } from 'react';
+import { createContext, MutableRefObject, useEffect, useRef, useState } from 'react';
 import styles from './VersatileContainer.module.css';
 
 const PRESS_TIMEOUT_MS = 500;
 const DRAG_DISTANCE_PX_SQ = Math.pow(20, 2);
 
 type VersatileState = 'idle' | 'click' | 'press' | 'drag';
+
+const idleRef: MutableRefObject<VersatileState> = { current: 'idle' };
 
 export const VersatileContainerContext = createContext({
   id: null as unknown,
@@ -17,6 +19,7 @@ export const VersatileContainerContext = createContext({
     _y: number,
   ) => {},
   state: 'idle' as VersatileState,
+  stateRef: idleRef as MutableRefObject<VersatileState>,
   reset: () => {},
 });
 

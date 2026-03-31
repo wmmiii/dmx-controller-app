@@ -6,9 +6,11 @@ import {
 import {
   JSX,
   createRef,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
+  useState,
 } from 'react';
 
 import { BeatContext } from '../contexts/BeatContext';
@@ -16,7 +18,14 @@ import { ShortcutContext } from '../contexts/ShortcutContext';
 
 import { BiPulse } from 'react-icons/bi';
 import { ProjectContext } from '../contexts/ProjectContext';
-import { getBeatT, } from '../system_interfaces/beat_detection';
+import {
+  AudioInputCandidate,
+  connectAudioInput,
+  disconnectAudioInput,
+  getBeatT,
+  listAudioInputs,
+  subscribeToAudioConnectionStatus,
+} from '../system_interfaces/beat_detection';
 import { listenToTick } from '../util/time';
 import { ControllerConnection } from './ControllerConnection';
 import { NumberInput } from './Input';
@@ -31,6 +40,30 @@ export function LiveBeat({ className }: LiveBeatProps): JSX.Element {
   const { setBeat, addBeatSample, sampling } = useContext(BeatContext);
   const { setShortcuts } = useContext(ShortcutContext);
   const indicatorRef = createRef<HTMLDivElement>();
+
+  const [audioDevices, setAudioDevices] = useState<AudioInputCandidate[]>([]);
+  const [audioConnected, setAudioConnected] = useState(false);
+
+  const configuredDevice = project.audioConfig?.beatDetectionDevice ?? '';
+
+  const refreshDevices = useCallback(() => {
+    listAudioInputs()
+      .then(setAudioDevices)
+      .catch(() => setAudioDevices([]));
+  }, []);
+
+  useEffect(() => {
+    refreshDevices();
+    return subscribeToAudioConnectionStatus((_deviceName, connected) => {
+      setAudioConnected(connected);
+      refreshDevices();
+    });
+  }, [refreshDevices]);
+
+  // Sync connected state with configured device on mount
+  useEffect(() => {
+    setAudioConnected(configuredDevice !== '');
+  }, [configuredDevice]);
 
   useEffect(() => {
     return listenToTick(async () => {
@@ -101,6 +134,9 @@ export function LiveBeat({ className }: LiveBeatProps): JSX.Element {
   if (sampling) {
     indicatorClasses.push(styles.sampling);
   }
+  if (audioConnected) {
+    indicatorClasses.push(styles.autoDetecting);
+  }
 
   return (
     <div className={classes.join(' ')}>
@@ -115,6 +151,26 @@ export function LiveBeat({ className }: LiveBeatProps): JSX.Element {
         value={Math.floor(60_000 / (project.liveBeat!.lengthMs || NaN))}
         onChange={(v) => setBeat(60_000 / v)}
       />
+
+      <select
+        className={styles.audioSelect}
+        value={configuredDevice}
+        onChange={(e) => {
+          const value = e.target.value;
+          if (value === '') {
+            disconnectAudioInput().catch(console.error);
+          } else {
+            connectAudioInput(value).catch(console.error);
+          }
+        }}
+      >
+        <option value="">Auto detect: off</option>
+        {audioDevices.map((d) => (
+          <option key={d.name} value={d.name}>
+            {d.name}
+          </option>
+        ))}
+      </select>
 
       <ControllerConnection
         title="Set BPM"

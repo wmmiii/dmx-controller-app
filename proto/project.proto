@@ -9,6 +9,7 @@ import "proto/effect.proto";
 import "proto/fixture_definitions.proto";
 import "proto/output.proto";
 import "proto/scene.proto";
+import "proto/audio_config.proto";
 import "proto/settings.proto";
 import "proto/show.proto";
 
@@ -52,6 +53,8 @@ message Project {
   // Controller bindings for global live page context
   // Shared across all scenes (e.g., beat controls)
   ControllerBindingsMap live_page_controller_bindings = 58;
+
+  AudioConfig audio_config = 62;
 
   reserved 52; // uint32 active_scene = 52;
   reserved 51; // repeated Scene scenes = 51;

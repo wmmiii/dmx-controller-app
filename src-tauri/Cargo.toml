@@ -30,7 +30,11 @@ tauri-plugin-log = "2"
 tauri-plugin-process = "2"
 tokio = { version = "1.48.0", features = ["time", "macros", "sync"] }
 
+[patch.crates-io]
+ringbuffer = { git = "https://github.com/NULLx76/ringbuffer", tag = "0.7.1" }
+
 [target.'cfg(not(target_os = "ios"))'.dependencies]
+cpal = "0.13.3"
 midir = "0.10.2"
 open_dmx = "1.1.1"
 serialport = "4.7.3"
