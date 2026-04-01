@@ -82,7 +82,11 @@ impl BeatSampler {
     /// Called when the user explicitly identifies a beat boundary ("first
     /// beat").  Adjusts `beat_count` so the offset calculation in
     /// [`BeatSampler::get_beat`] aligns to this moment.
-    #[allow(clippy::cast_precision_loss)]
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        clippy::cast_precision_loss
+    )]
     pub fn set_first_beat(&mut self, t: u64) -> Option<BeatMetadata> {
         if self.samples.is_empty() {
             return None;
@@ -187,7 +191,6 @@ pub fn effective_beat_metadata(project: &Project, t: u64) -> Option<BeatMetadata
 /// `0.0` represents the start of a beat (full flash) and values approaching
 /// `1.0` represent the end of the beat (fully faded).  Returns `None` when no
 /// beat metadata is available.
-#[must_use]
 #[allow(clippy::cast_precision_loss)]
 pub fn beat_t(beat: &BeatMetadata, t: u64) -> Result<f64, String> {
     if beat.length_ms <= 0.0 {

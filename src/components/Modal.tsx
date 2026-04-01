@@ -1,3 +1,4 @@
+import { Dialog } from 'radix-ui';
 import { JSX, useContext, useEffect } from 'react';
 
 import { ShortcutContext } from '../contexts/ShortcutContext';
@@ -56,24 +57,35 @@ export function Modal({
   }
 
   return (
-    <div className={styles.wrapper} onClick={() => onClose()}>
-      <div
-        className={classes.join(' ')}
-        onClick={(e) => {
-          e.stopPropagation();
-        }}
-      >
-        <div className={styles.header}>
-          {icon && <div className={styles.icon}>{icon}</div>}
-          {title}
-          <Spacer />
-          <IconButton title="close" onClick={onClose}>
-            <BiX />
-          </IconButton>
-        </div>
-        <div className={bodyClasses.join(' ')}>{children}</div>
-        {footer && <div className={styles.footer}>{footer}</div>}
-      </div>
-    </div>
+    <Dialog.Root open onOpenChange={(open) => !open && onClose()}>
+      <Dialog.Portal>
+        <Dialog.Overlay className={styles.wrapper}>
+          <Dialog.Content
+            className={classes.join(' ')}
+            onOpenAutoFocus={(e) => e.preventDefault()}
+            onEscapeKeyDown={(e) => {
+              onClose();
+              e.stopPropagation();
+              e.preventDefault();
+            }}
+          >
+            <div className={styles.header}>
+              {icon && <div className={styles.icon}>{icon}</div>}
+              <Dialog.Title className={styles.title}>{title}</Dialog.Title>
+              <Spacer />
+              <Dialog.Close asChild>
+                <IconButton title="close" onClick={onClose}>
+                  <BiX />
+                </IconButton>
+              </Dialog.Close>
+            </div>
+            <Dialog.Description asChild>
+              <div className={bodyClasses.join(' ')}>{children}</div>
+            </Dialog.Description>
+            {footer && <div className={styles.footer}>{footer}</div>}
+          </Dialog.Content>
+        </Dialog.Overlay>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }

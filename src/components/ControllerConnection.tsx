@@ -315,12 +315,12 @@ function ConflictModal({
       title="Controller Input Already Assigned"
       onClose={onCancel}
       footer={
-        <div className={styles.buttonRow}>
+        <>
           <Button onClick={onCancel}>Cancel</Button>
           <Button variant="warning" onClick={onReassign}>
             Reassign
           </Button>
-        </div>
+        </>
       }
     >
       <p>

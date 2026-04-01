@@ -281,14 +281,14 @@ export function BeatEditor({ file, onCancel }: BeatEditorProps): JSX.Element {
       onClose={() => onCancel()}
       fullScreen={true}
       footer={
-        <div className={styles.buttonRow}>
+        <>
           <Button variant="default" onClick={onCancel}>
             Close
           </Button>
           <Button variant="primary" onClick={onSave}>
             Save
           </Button>
-        </div>
+        </>
       }
     >
       <div className={styles.buttonRow}>

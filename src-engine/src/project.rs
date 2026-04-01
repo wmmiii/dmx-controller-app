@@ -399,6 +399,7 @@ fn create_default_project() -> Result<Project, String> {
         active_scene: scene_id,
         live_beat: Some(BeatMetadata {
             length_ms: 500.0, // 120 BPM
+            #[allow(clippy::cast_possible_truncation)]
             offset_ms: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .map_err(|e| e.to_string())?

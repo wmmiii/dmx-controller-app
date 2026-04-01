@@ -29,7 +29,7 @@
   border: none;
   box-shadow: var(--drop-shadow);
 
-  &.full-screen {
+  &.fullScreen {
     width: calc(100vw - var(--space-2));
     height: calc(100vh - var(--space-2));
   }
@@ -43,8 +43,6 @@
   align-items: center;
   padding: var(--space-2);
   padding-right: var(--space-1);
-  font-weight: 600;
-  font-size: 24px;
   border-bottom: 1px solid var(--col-border);
 }
 
@@ -55,15 +53,25 @@
   font-size: 36px;
 }
 
+.title {
+  margin: 0;
+  font-weight: 600;
+  font-size: 24px;
+}
+
 .main {
   position: relative;
   flex: 1;
-  padding: 0;
   overflow-y: auto;
 }
 
 .footer {
+  display: flex;
+  flex-direction: row;
   flex-shrink: 1;
+  gap: var(--space-2);
+  align-items: center;
+  justify-content: space-between;
   padding: var(--space-2);
   border-top: 1px solid var(--col-border);
 }

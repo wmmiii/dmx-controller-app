@@ -210,7 +210,7 @@ function WarningDialog() {
       title="Welcome! 😊"
       onClose={() => setOpen(false)}
       footer={
-        <div className={styles.buttonRow}>
+        <>
           <Button
             variant="warning"
             onClick={() => {
@@ -224,7 +224,7 @@ function WarningDialog() {
           <Button variant="primary" onClick={() => setOpen(false)}>
             Let's go!
           </Button>
-        </div>
+        </>
       }
     >
       <p>
