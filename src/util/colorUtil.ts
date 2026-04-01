@@ -32,6 +32,10 @@ export const DEFAULT_COLOR_PALETTE = create(ColorPaletteSchema, {
   },
 }) as ColorPalette;
 
+export function colorToHex(color: Color) {
+  return rgbwToHex(color.red, color.green, color.blue, color.white ?? 0);
+}
+
 export function rgbwToHex(r: number, g: number, b: number, w: number) {
   r = Math.floor(Math.min((r + w) * 255, 255));
   g = Math.floor(Math.min((g + w) * 255, 255));

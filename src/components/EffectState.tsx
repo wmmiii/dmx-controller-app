@@ -224,7 +224,7 @@ function ColorChannel({ values }: ColorChannelProps) {
                 s.lightColor = {
                   case: 'color',
                   value: create(ColorSchema, {
-                    red: 0,
+                    red: 1,
                     green: 0,
                     blue: 0,
                   }),

@@ -1,10 +1,10 @@
 import { Color } from '@dmx-controller/proto/color_pb';
 import { useContext } from 'react';
-import { ColorPicker, useColor } from 'react-color-palette';
 import { ProjectContext } from '../contexts/ProjectContext';
 import styles from './ColorSwatch.module.css';
 
-import { stringifyColor } from '../util/colorUtil';
+import { Wheel } from '@uiw/react-color';
+import { colorToHex } from '../util/colorUtil';
 import { Popover } from './Popover';
 
 interface ColorSwatchProps {
@@ -20,25 +20,20 @@ export function ColorSwatch({
 }: ColorSwatchProps) {
   const { save, update } = useContext(ProjectContext);
 
-  const [iColor, setIColor] = useColor(stringifyColor(color));
-
   if (updateDescription) {
     return (
       <div className={className}>
         <Popover
           onClose={() => save(updateDescription)}
           popover={
-            <ColorPicker
-              color={iColor}
-              onChange={(iColor) => {
-                setIColor(iColor);
-
-                color.red = iColor.rgb.r / 255;
-                color.green = iColor.rgb.g / 255;
-                color.blue = iColor.rgb.b / 255;
+            <Wheel
+              color={colorToHex(color)}
+              onChange={(c) => {
+                color.red = c.rgb.r / 255;
+                color.green = c.rgb.g / 255;
+                color.blue = c.rgb.b / 255;
                 update();
               }}
-              hideAlpha={true}
             />
           }
         >

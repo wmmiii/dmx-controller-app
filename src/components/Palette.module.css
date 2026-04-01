@@ -51,20 +51,27 @@
   display: flex;
   flex-direction: row;
   justify-content: space-between;
+  padding: var(--space-1);
 }
 
 .color-selectors {
   display: flex;
   flex-direction: row;
   gap: var(--space-2);
+  align-items: center;
   justify-content: space-around;
   padding: var(--space-2);
+
+  & > div {
+    box-sizing: border-box;
+    padding-bottom: var(--space-4);
+  }
 }
 
 .visualizer {
   position: relative;
-  width: 433px;
-  height: 433px;
+  width: 400px;
+  height: 400px;
 
   .gradient {
     position: absolute;

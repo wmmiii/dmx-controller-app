@@ -45,7 +45,7 @@
   --z-index-header: 20;
   --z-index-menu: 40;
   --z-index-modal: 80;
-  --z-index-popover: 100;
+  --z-index-popover: 800;
   --z-index-interactive-mask: 9999;
 
   /* Spacing (8px grid) */

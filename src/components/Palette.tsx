@@ -1,7 +1,6 @@
 import { create } from '@bufbuild/protobuf';
 import { Color, type ColorPalette } from '@dmx-controller/proto/color_pb';
 import { useCallback, useContext, useMemo, useState } from 'react';
-import { ColorPicker, IColor, useColor } from 'react-color-palette';
 
 import { ProjectContext } from '../contexts/ProjectContext';
 
@@ -9,9 +8,10 @@ import {
   InputBindingSchema,
   InputType,
 } from '@dmx-controller/proto/controller_pb';
+import { RgbColor, Wheel } from '@uiw/react-color';
 import { BiPencil, BiTrash } from 'react-icons/bi';
-import { stringifyColor } from '../util/colorUtil';
-import { IconButton } from './Button';
+import { colorToHex, stringifyColor } from '../util/colorUtil';
+import { Button, IconButton } from './Button';
 import { ControllerConnection } from './ControllerConnection';
 import { TextInput } from './Input';
 import { Modal } from './Modal';
@@ -85,10 +85,6 @@ export function PaletteSwatch({
   );
 }
 
-function colorToRgb(color: Color) {
-  return `rgb(${color.red * 255}, ${color.green * 255}, ${color.blue * 255})`;
-}
-
 interface EditPaletteDialogProps {
   paletteId: bigint;
   sceneId: bigint;
@@ -114,22 +110,15 @@ function EditPaletteDialog({
     throw new Error('Palette color not set!');
   }
 
-  const [iPrimary, setIPrimary] = useColor(
-    stringifyColor(palette.primary!.color!),
+  const updateColor = useCallback(
+    (newColor: RgbColor, paletteColor: Color) => {
+      paletteColor.red = newColor.r / 255;
+      paletteColor.green = newColor.g / 255;
+      paletteColor.blue = newColor.b / 255;
+      update();
+    },
+    [update],
   );
-  const [iSecondary, setISecondary] = useColor(
-    stringifyColor(palette.secondary!.color!),
-  );
-  const [iTertiary, setITertiary] = useColor(
-    stringifyColor(palette.tertiary!.color!),
-  );
-
-  const updateColor = useCallback((newColor: IColor, paletteColor: Color) => {
-    paletteColor.red = newColor.rgb.r / 255;
-    paletteColor.green = newColor.rgb.g / 255;
-    paletteColor.blue = newColor.rgb.b / 255;
-    update();
-  }, []);
 
   const done = () => {
     save(`Edit color palette ${palette.name}.`);
@@ -153,6 +142,11 @@ function EditPaletteDialog({
       title={`Edit ${palette.name}`}
       onClose={done}
       bodyClass={styles.editModal}
+      footer={
+        <Button variant="primary" onClick={onClose}>
+          Done
+        </Button>
+      }
     >
       <div className={styles.header}>
         <IconButton
@@ -182,34 +176,35 @@ function EditPaletteDialog({
         />
       </div>
       <div className={styles.colorSelectors}>
-        <ColorPicker
-          hideAlpha={true}
-          color={iPrimary}
-          onChange={(color) => {
-            setIPrimary(color);
-            updateColor(color, palette.primary!.color!);
-          }}
-        />
-        <ColorPicker
-          hideAlpha={true}
-          color={iSecondary}
-          onChange={(color) => {
-            setISecondary(color);
-            updateColor(color, palette.secondary!.color!);
-          }}
-        />
-        <ColorPicker
-          hideAlpha={true}
-          color={iTertiary}
-          onChange={(color) => {
-            setITertiary(color);
-            updateColor(color, palette.tertiary!.color!);
-          }}
-        />
+        <div>
+          <h3>Primary</h3>
+          <Wheel
+            color={colorToHex(palette.primary!.color)}
+            onChange={(c) => updateColor(c.rgb, palette.primary!.color!)}
+          />
+        </div>
+        <div>
+          <h3>Secondary</h3>
+          <Wheel
+            color={colorToHex(palette.secondary!.color)}
+            onChange={(c) => updateColor(c.rgb, palette.secondary!.color!)}
+          />
+        </div>
+        <div>
+          <h3>Tertiary</h3>
+          <Wheel
+            color={colorToHex(palette.tertiary!.color)}
+            onChange={(c) => updateColor(c.rgb, palette.tertiary!.color!)}
+          />
+        </div>
         <PaletteVisualizer palette={palette} />
       </div>
     </Modal>
   );
+}
+
+function colorToRgb(color: Color) {
+  return `rgb(${color.red * 255}, ${color.green * 255}, ${color.blue * 255})`;
 }
 
 interface PaletteVisualizerProps {
