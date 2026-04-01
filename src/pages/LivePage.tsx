@@ -40,7 +40,7 @@ import { ProjectContext } from '../contexts/ProjectContext';
 import { getAvailableChannels } from '../engine/fixtures/fixture';
 import { deleteBindings } from '../external_controller/externalController';
 
-import { BiPlus, BiTrash } from 'react-icons/bi';
+import { BiPencil, BiPlus, BiTrash } from 'react-icons/bi';
 import { DurationInput } from '../components/Duration';
 import { Spacer } from '../components/Spacer';
 import { Tabs, TabsType } from '../components/Tabs';
@@ -57,6 +57,7 @@ export function LivePage(): JSX.Element {
   const projectRef = useRef<Project>(project);
 
   const [selectedId, setSelectedId] = useState<bigint>(0n);
+  const [editPalette, setEditPalette] = useState(false);
 
   const scene = project?.scenes[project.activeScene.toString()];
   const selected = scene.tileMap.find((t) => t.id === selectedId);
@@ -134,6 +135,7 @@ export function LivePage(): JSX.Element {
             sceneId={project.activeScene}
             palette={palette}
             active={scene.activeColorPalette === palette.id}
+            edit={editPalette}
             onClick={() => {
               scene.lastActiveColorPalette = scene.activeColorPalette;
               scene.activeColorPalette = palette.id;
@@ -160,6 +162,13 @@ export function LivePage(): JSX.Element {
             }}
           />
         ))}
+        <Button
+          onClick={() => setEditPalette((e) => !e)}
+          variant={editPalette ? 'primary' : 'default'}
+          icon={<BiPencil />}
+        >
+          Edit palettes
+        </Button>
         <Button
           icon={<BiPlus />}
           onClick={() => {

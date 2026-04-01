@@ -8,7 +8,7 @@
 .button {
   flex-direction: row;
   gap: var(--space-1);
-  justify-content: space-evenly;
+  justify-content: center;
   padding: var(--space-1) var(--space-2);
   font-size: 18px;
 

@@ -9,7 +9,7 @@ import {
   InputBindingSchema,
   InputType,
 } from '@dmx-controller/proto/controller_pb';
-import { BiCog, BiTrash } from 'react-icons/bi';
+import { BiPencil, BiTrash } from 'react-icons/bi';
 import { stringifyColor } from '../util/colorUtil';
 import { IconButton } from './Button';
 import { ControllerConnection } from './ControllerConnection';
@@ -22,6 +22,7 @@ interface PaletteSwatchProps {
   sceneId: bigint;
   palette: ColorPalette;
   active: boolean;
+  edit: boolean;
   onClick: () => void;
   onDelete: () => void;
   className?: string;
@@ -32,6 +33,7 @@ export function PaletteSwatch({
   sceneId,
   palette,
   active,
+  edit,
   onClick,
   onDelete,
   className,
@@ -53,15 +55,23 @@ export function PaletteSwatch({
     throw new Error('Palette color not set!');
   }
 
-  const background = `linear-gradient(60deg, transparent 10%, ${colorToRgb(palette.primary!.color)}, ${colorToRgb(palette.secondary!.color)}, ${colorToRgb(palette.tertiary!.color)}, transparent 90%)`;
+  const background = `linear-gradient(60deg, ${colorToRgb(palette.primary!.color)} 20%, ${colorToRgb(palette.secondary!.color)}, ${colorToRgb(palette.tertiary!.color)} 80%)`;
 
   return (
     <div className={classes.join(' ')} onClick={onClick} title={palette.name}>
-      <div className={styles.swatchColors} style={{ background }}></div>
-      <div className={styles.title}>{palette.name}</div>
-      <IconButton title="Modify palette" onClick={() => setEditPalette(true)}>
-        <BiCog />
-      </IconButton>
+      <div className={styles.details}>
+        <div className={styles.title}>{palette.name}</div>
+        <div className={styles.swatchColors} style={{ background }}></div>
+      </div>
+      {edit && (
+        <IconButton
+          className={styles.edit}
+          title="Modify palette"
+          onClick={() => setEditPalette(true)}
+        >
+          <BiPencil />
+        </IconButton>
+      )}
       {editPalette && (
         <EditPaletteDialog
           paletteId={paletteId}

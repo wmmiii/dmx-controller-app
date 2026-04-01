@@ -7,58 +7,44 @@
   justify-content: space-between;
   padding: var(--space-1);
   background-color: var(--col-bg);
+  border-top: 1px solid transparent;
+  border-bottom: 1px solid transparent;
   cursor: pointer;
 
   & > * {
     z-index: 1;
   }
+
+  &:hover {
+    background-color: var(--col-bg-tile-hover);
+  }
+
+  &.active {
+    background-color: var(--col-bg-tile);
+    border-color: var(--col-interactive);
+  }
+}
+
+.details {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-1);
 }
 
 .swatch-colors {
-  position: absolute;
-  z-index: 0;
-  inset: 0;
-
-  &::before {
-    content: '';
-    position: absolute;
-    background: linear-gradient(
-      var(--col-bg) 0%,
-      transparent 15%,
-      color-mix(in srgb, var(--col-bg) 100%, transparent 20%) 30%,
-      color-mix(in srgb, var(--col-bg) 100%, transparent 20%) 70%,
-      transparent 85%,
-      var(--col-bg) 100%
-    );
-    inset: 0;
-  }
-
-  &:hover::before {
-    background: linear-gradient(
-      var(--col-bg) 0%,
-      transparent 15%,
-      color-mix(in srgb, var(--col-bg) 100%, transparent 80%) 30%,
-      color-mix(in srgb, var(--col-bg) 100%, transparent 80%) 70%,
-      transparent 85%,
-      var(--col-bg) 100%
-    );
-  }
-}
-
-.swatch-colors:hover::before,
-.active .swatch-colors::before {
-  background: linear-gradient(
-    var(--col-bg) 0%,
-    transparent 15%,
-    color-mix(in srgb, var(--col-bg) 100%, transparent 80%) 30%,
-    color-mix(in srgb, var(--col-bg) 100%, transparent 80%) 70%,
-    transparent 85%,
-    var(--col-bg) 100%
-  );
+  flex-shrink: 0;
+  height: 10px;
+  border-radius: 5px;
 }
 
 .title {
   pointer-events: none;
+}
+
+.edit {
+  flex-shrink: 0;
+  margin: calc(-1 * var(--space-1)) 0;
 }
 
 .header {
