@@ -58,6 +58,11 @@ fn main() {
         .map(std::string::String::as_str)
         .collect();
 
+    // Re-run build script when any proto file changes
+    for proto_file in &proto_files {
+        println!("cargo:rerun-if-changed={proto_file}");
+    }
+
     // Compile all proto files with include path set to project root
     // Disable clippy warnings on generated protobuf code
     prost_build::Config::new()

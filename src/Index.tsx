@@ -21,7 +21,6 @@ import { Modal } from './components/Modal';
 import { Spacer } from './components/Spacer';
 import { WledVisualizer } from './components/WledVisualizer';
 import { ControllerContext } from './contexts/ControllerContext';
-import { DialogContext } from './contexts/DialogContext';
 import { ProjectContext } from './contexts/ProjectContext';
 import { SerialContext } from './contexts/SerialContext';
 import AssetBrowserPage from './pages/AssetBrowserPage';
@@ -30,6 +29,7 @@ import { LivePage } from './pages/LivePage';
 import ProjectPage from './pages/ProjectPage';
 import ShowPage from './pages/ShowPage';
 import PatchPage from './pages/patch/PatchPage';
+import { dismissDialog, isDialogDismissed } from './util/dialogUtil';
 import { getActivePatch } from './util/projectUtils';
 
 export default function Index(): JSX.Element {
@@ -192,12 +192,12 @@ export default function Index(): JSX.Element {
   );
 }
 
-const WARNING_DIALOG_KEY = 'instability-warning';
+const WARNING_DIALOG_KEY = 'welcome-warning';
 
 function WarningDialog() {
-  const dialogContext = useContext(DialogContext);
+  const { project, save } = useContext(ProjectContext);
   const [open, setOpen] = useState(
-    !dialogContext.isDismissed(WARNING_DIALOG_KEY),
+    !isDialogDismissed(project, WARNING_DIALOG_KEY),
   );
 
   if (!open) {
@@ -214,7 +214,8 @@ function WarningDialog() {
           <Button
             variant="warning"
             onClick={() => {
-              dialogContext.setDismissed(WARNING_DIALOG_KEY);
+              dismissDialog(project, WARNING_DIALOG_KEY);
+              save('Dismiss welcome dialog.');
               setOpen(false);
             }}
           >

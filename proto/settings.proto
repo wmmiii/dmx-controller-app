@@ -2,4 +2,7 @@ syntax = "proto3";
 
 package dmx_controller;
 
-message Settings { bool touchInterface = 1; }
+message Settings { 
+    bool touchInterface = 1;
+    repeated string dismissed_dialogs = 2;
+}

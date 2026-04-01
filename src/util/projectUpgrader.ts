@@ -57,13 +57,13 @@ export default function upgradeProject(p: Project): void {
       }
     });
 
-  if (p.settings?.touchInterface === undefined) {
-    if (p.settings === undefined) {
-      p.settings = create(SettingsSchema, {
-        touchInterface: Boolean(window.ontouchstart),
-      });
-    } else {
-      p.settings.touchInterface = Boolean(window.ontouchstart);
-    }
+  if (p.settings == null) {
+    p.settings = create(SettingsSchema, {});
+  }
+  if (p.settings.touchInterface == null) {
+    p.settings.touchInterface = Boolean(window.ontouchstart);
+  }
+  if (p.settings.dismissedDialogs == null) {
+    p.settings.dismissedDialogs = [];
   }
 }
