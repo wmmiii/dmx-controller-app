@@ -4,12 +4,11 @@
 }
 
 .input {
-  /* padding-right: var(--space-4); */ /* Make room for clear button */
   width: 100%;
   margin: 0;
 }
 
-.clear-button {
+.clearButton {
   position: absolute;
   top: 50%;
   right: 1px;
@@ -24,19 +23,15 @@
 }
 
 .dropdown {
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
-  left: 0;
   z-index: var(--z-index-popover);
   box-sizing: border-box;
+  min-width: var(--radix-popover-trigger-width);
   max-height: 300px;
   overflow: auto;
   background-color: var(--col-bg-higher);
   border: 1px solid var(--col-border);
   border-radius: var(--dim-border-radius);
   outline: none;
-  /* MIXIN REPLACEMENT: @include vars.drop-shadow */
   box-shadow: var(--drop-shadow);
 
   /* Custom scrollbar styling */
@@ -73,7 +68,8 @@
   cursor: pointer;
   user-select: none;
 
-  &:hover {
+  &:hover,
+  &:focus {
     background-color: var(--col-bg-active);
   }
 
@@ -81,7 +77,8 @@
     color: var(--col-interactive);
     font-weight: 500;
 
-    &:hover {
+    &:hover,
+    &:focus {
       color: var(--col-interactive-hover);
     }
   }

@@ -1,3 +1,4 @@
+import { Popover } from 'radix-ui';
 import { useMemo, useRef, useState } from 'react';
 import { BiX } from 'react-icons/bi';
 import { IconButton } from './Button';
@@ -38,49 +39,49 @@ export function SelectInput<T>({
   equals = (a, b) => a === b,
   className,
 }: SelectValueInputProps<T>) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Determine if items are categories or simple options
+  const isCategories =
+    options &&
+    options.length > 0 &&
+    typeof options[0] === 'object' &&
+    'options' in options[0];
+
+  // Flatten all options for lookup
+  const allOptions = useMemo(() => {
+    const result: SelectOption<T>[] = [];
+    if (isCategories) {
+      const categories = options as SelectCategory<T>[];
+      for (const category of categories) {
+        result.push(...category.options);
+      }
+    } else {
+      result.push(...(options as SelectOption<T>[]));
+    }
+    return result;
+  }, [options, isCategories]);
+
+  // Find the label for the current value
   const label = useMemo(() => {
     if (value === undefined) {
       return '';
     }
-
-    const isCategories =
-      options &&
-      options.length > 0 &&
-      typeof options[0] === 'object' &&
-      'options' in options[0];
-
-    if (isCategories) {
-      const categories = options as SelectCategory<T>[];
-      for (const category of categories) {
-        const option = category.options.find((opt) => equals(opt.value, value));
-        if (option) {
-          return option.label;
-        }
-      }
-    } else {
-      const simpleOptions = options as SelectOption<T>[];
-      const option = simpleOptions.find((opt) => equals(opt.value, value));
-      if (option) {
-        return option.label;
-      }
+    const option = allOptions.find((opt) => equals(opt.value, value));
+    if (option) {
+      return option.label;
     }
+    // For arbitrary string values (like serial ports typed manually)
+    if (typeof value === 'string') {
+      return value;
+    }
+    return '';
+  }, [value, allOptions, equals]);
 
-    throw Error(`Unknown value in select: ${value}`);
-  }, [value, options]);
-
-  const handleSelect = (selectedValue: typeof value) => {
-    onChange(selectedValue);
-    setTimeout(() => {
-      inputRef.current?.blur();
-    }, 0);
-  };
-
-  // Fuzzy match function - checks if search chars appear in order in the target
+  // Fuzzy match function
   const fuzzyMatch = (search: string, target: string): boolean => {
     const searchLower = search.toLowerCase();
     const targetLower = target.toLowerCase();
@@ -98,13 +99,6 @@ export function SelectInput<T>({
 
     return searchIndex === searchLower.length;
   };
-
-  // Determine if items are categories or simple options
-  const isCategories =
-    options &&
-    options.length > 0 &&
-    typeof options[0] === 'object' &&
-    'options' in options[0];
 
   // Filter items based on search query
   const filteredItems = useMemo(() => {
@@ -130,78 +124,136 @@ export function SelectInput<T>({
     }
   }, [options, searchQuery, isCategories]);
 
-  const hasItems = filteredItems && filteredItems.length > 0;
+  const handleSelect = (selectedValue: T) => {
+    onChange(selectedValue);
+    setOpen(false);
+    setSearchQuery('');
+  };
 
-  const displayValue = isOpen ? searchQuery : label;
+  const handleClear = () => {
+    if (onClear) {
+      onClear();
+    } else {
+      onChange(undefined);
+    }
+    setSearchQuery('');
+  };
+
+  const handleOpenChange = (isOpen: boolean) => {
+    if (isOpen) {
+      setSearchQuery('');
+      onFocus?.();
+    } else {
+      onBlur?.(searchQuery);
+      setSearchQuery('');
+    }
+    setOpen(isOpen);
+  };
+
+  const hasItems =
+    filteredItems &&
+    (isCategories
+      ? (filteredItems as SelectCategory<T>[]).some(
+          (cat) => cat.options.length > 0,
+        )
+      : filteredItems.length > 0);
+
+  const displayValue = open ? searchQuery : label;
 
   return (
-    <div className={`${styles.root} ${className || ''}`} ref={dropdownRef}>
-      <input
-        ref={inputRef}
-        type="text"
-        className={styles.input}
-        placeholder={placeholder}
-        value={displayValue}
-        onChange={(e) => {
-          const newValue = e.target.value;
-          if (isOpen) {
-            // When dropdown is open, update search query
-            setSearchQuery(newValue);
-          }
-        }}
-        onKeyDown={(e) => {
-          switch (e.code) {
-            case 'Escape':
-            case 'Enter':
-              inputRef.current?.blur();
-              break;
-          }
-        }}
-        onFocus={() => {
-          setIsOpen(true);
-          setSearchQuery('');
-          onFocus?.();
-        }}
-        onBlur={() => {
-          setTimeout(() => {
-            setIsOpen(false);
-            onBlur?.(searchQuery);
-            setSearchQuery('');
-          }, 100);
-        }}
-      />
-      {value && (
-        <IconButton
-          className={styles.clearButton}
-          title="Clear"
-          onClick={() => {
-            if (onClear) {
-              onClear();
-            } else {
-              onChange(undefined);
-            }
-            setSearchQuery('');
-          }}
-        >
-          <BiX />
-        </IconButton>
-      )}
+    <Popover.Root open={open} onOpenChange={handleOpenChange}>
+      <Popover.Anchor asChild>
+        <div className={`${styles.root} ${className || ''}`}>
+          <Popover.Trigger asChild>
+            <input
+              ref={inputRef}
+              type="text"
+              className={styles.input}
+              placeholder={placeholder}
+              value={displayValue}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                if (!open) {
+                  setOpen(true);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.code === 'Escape') {
+                  setOpen(false);
+                  inputRef.current?.blur();
+                } else if (e.code === 'Enter') {
+                  // Select first option that exactly matches the search query
+                  const match = allOptions.find(
+                    (opt) => opt.label === searchQuery,
+                  );
+                  if (match) {
+                    e.preventDefault();
+                    handleSelect(match.value);
+                    inputRef.current?.blur();
+                  }
+                } else if (e.code === 'Tab' && open && !e.shiftKey) {
+                  // Move focus to first item in dropdown
+                  const firstItem =
+                    dropdownRef.current?.querySelector<HTMLElement>(
+                      '[tabindex="0"]',
+                    );
+                  if (firstItem) {
+                    e.preventDefault();
+                    firstItem.focus();
+                  }
+                }
+              }}
+            />
+          </Popover.Trigger>
+          {value !== undefined && (
+            <IconButton
+              className={styles.clearButton}
+              title="Clear"
+              onClick={() => handleClear()}
+            >
+              <BiX />
+            </IconButton>
+          )}
+        </div>
+      </Popover.Anchor>
 
-      {isOpen && hasItems && (
-        <div
+      <Popover.Portal>
+        <Popover.Content
+          ref={dropdownRef}
           className={styles.dropdown}
-          onMouseDown={(e) => e.preventDefault()}
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          onInteractOutside={() => setOpen(false)}
+          onEscapeKeyDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setOpen(false);
+            inputRef.current?.focus();
+          }}
+          onKeyDown={(e) => {
+            if (e.code === 'Tab' && e.shiftKey) {
+              // Check if we're on the first item
+              const items =
+                dropdownRef.current?.querySelectorAll<HTMLElement>(
+                  '[tabindex="0"]',
+                );
+              if (items && items[0] === document.activeElement) {
+                e.preventDefault();
+                inputRef.current?.focus();
+              }
+            }
+          }}
+          sideOffset={4}
         >
-          {isCategories ? (
-            // Render categorized options
-            (filteredItems as SelectCategory<T>[]).map(
-              (category, categoryIndex) => {
-                return (
+          {hasItems &&
+            (isCategories ? (
+              (filteredItems as SelectCategory<T>[]).map(
+                (category, categoryIndex) => (
                   <div key={categoryIndex} className={styles.category}>
                     <div className={styles.categoryLabel}>{category.label}</div>
                     <ul className={styles.list}>
-                      {category.options.map((option) => (
+                      {category.options.map((option, optionIndex) => (
                         <Option
+                          key={`${categoryIndex}-${optionIndex}`}
                           option={option}
                           selected={equals(option.value, value)}
                           handleSelect={handleSelect}
@@ -209,24 +261,23 @@ export function SelectInput<T>({
                       ))}
                     </ul>
                   </div>
-                );
-              },
-            )
-          ) : (
-            // Render simple items list
-            <ul className={styles.list}>
-              {(filteredItems as Array<SelectOption<T>>).map((option) => (
-                <Option
-                  option={option}
-                  selected={equals(option.value, value)}
-                  handleSelect={handleSelect}
-                />
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
-    </div>
+                ),
+              )
+            ) : (
+              <ul className={styles.list}>
+                {(filteredItems as SelectOption<T>[]).map((option, index) => (
+                  <Option
+                    key={index}
+                    option={option}
+                    selected={equals(option.value, value)}
+                    handleSelect={handleSelect}
+                  />
+                ))}
+              </ul>
+            ))}
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   );
 }
 
@@ -243,9 +294,17 @@ function Option<T>({ option, selected, handleSelect }: OptionProps<T>) {
   }
   return (
     <li
-      key={String(option.value)}
+      role="option"
+      aria-selected={selected}
+      tabIndex={0}
       className={classes.join(' ')}
       onClick={() => handleSelect(option.value)}
+      onKeyDown={(e) => {
+        if (e.code === 'Enter' || e.code === 'Space') {
+          e.preventDefault();
+          handleSelect(option.value);
+        }
+      }}
     >
       {option.label}
     </li>
