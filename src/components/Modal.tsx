@@ -11,7 +11,6 @@ import { Spacer } from './Spacer';
 
 interface ModalProps {
   title: React.ReactNode;
-  icon?: JSX.Element;
   onClose: () => void;
   children: React.ReactNode;
   className?: string;
@@ -22,7 +21,6 @@ interface ModalProps {
 
 export function Modal({
   title,
-  icon,
   onClose,
   className,
   bodyClass,
@@ -88,7 +86,6 @@ export function Modal({
             }}
           >
             <div className={styles.header}>
-              {icon && <div className={styles.icon}>{icon}</div>}
               <Dialog.Title className={styles.title}>{title}</Dialog.Title>
               <Spacer />
               <Dialog.Close asChild>

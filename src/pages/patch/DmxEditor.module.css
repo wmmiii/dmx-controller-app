@@ -10,8 +10,14 @@
 .grid {
   flex: 1;
   align-self: start;
+  box-sizing: border-box;
+  height: 100%;
+  overflow-y: auto;
 }
 
 .list {
   flex-shrink: 0;
+  box-sizing: border-box;
+  height: 100%;
+  overflow-y: auto;
 }

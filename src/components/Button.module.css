@@ -1,7 +1,7 @@
 .base-button {
   display: inline-flex;
   align-items: center;
-  min-height: calc(24px + var(--space-2));
+  min-height: calc(18px + var(--space-2));
   border: none;
   cursor: pointer;
 }
@@ -9,22 +9,23 @@
 .button {
   flex-direction: row;
   gap: var(--space-1);
+  align-items: center;
   justify-content: center;
   padding: var(--space-1) var(--space-2);
   font-size: 18px;
 
   .icon {
-    width: 24px;
-    height: 24px;
-    font-size: 24px;
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
   }
 }
 
 .icon-button {
   justify-content: center;
-  width: calc(24px + var(--space-2));
-  height: calc(24px + var(--space-2));
-  font-size: 24px;
+  width: calc(18px + var(--space-2));
+  height: calc(18px + var(--space-2));
+  font-size: 18px;
 }
 
 .default-variant {
@@ -77,9 +78,9 @@
   border: 1px solid transparent;
 
   .icon {
-    width: 24px;
-    height: 24px;
-    font-size: 24px;
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
   }
 
   &.inactive {

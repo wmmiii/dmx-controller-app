@@ -48,13 +48,6 @@
   }
 }
 
-.icon {
-  display: flex;
-  justify-content: center;
-  margin-right: var(--space-1);
-  font-size: 36px;
-}
-
 .title {
   display: flex;
   flex-direction: row;
