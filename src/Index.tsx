@@ -1,4 +1,4 @@
-import { JSX, createRef, useContext, useEffect, useState } from 'react';
+import { JSX, useContext, useState } from 'react';
 import { Route, Routes, useNavigate } from 'react-router';
 
 import '@radix-ui/themes/styles.css';
@@ -42,31 +42,12 @@ export default function Index(): JSX.Element {
   const navigate = useNavigate();
 
   const [showMenu, setShowMenu] = useState(false);
-  const uploadButtonRef = createRef<HTMLInputElement>();
-
-  useEffect(() => {
-    if (uploadButtonRef.current) {
-      const button = uploadButtonRef.current;
-      const handleUpload = async () => {
-        if (button?.files == null) {
-          throw new Error('Cannot find input button files!');
-        }
-        const file = button.files[0];
-        const body = new Uint8Array(await file.arrayBuffer());
-        openProject(body);
-      };
-      button.addEventListener('change', handleUpload);
-      return () => button.removeEventListener('change', handleUpload);
-    }
-    return undefined;
-  }, [uploadButtonRef.current]);
 
   return (
     <div className={styles.wrapper}>
       <WarningDialog />
       <header data-tauri-drag-region>
         <h1>DMX Controller App</h1>
-        <input ref={uploadButtonRef} type="file" hidden></input>
         <div
           className={styles.menu}
           onClick={(e) => {
@@ -105,14 +86,14 @@ export default function Index(): JSX.Element {
                 },
                 { type: 'separator' },
                 {
-                  title: 'Download',
+                  title: 'Save As',
                   icon: <BiDownload />,
                   onSelect: downloadProject,
                 },
                 {
-                  title: 'Upload',
+                  title: 'Open',
                   icon: <BiUpload />,
-                  onSelect: () => uploadButtonRef.current?.click(),
+                  onSelect: openProject,
                 },
                 { type: 'separator' },
                 {

@@ -1,4 +1,4 @@
-import { clone, create, fromBinary, toBinary } from '@bufbuild/protobuf';
+import { create, fromBinary, toBinary } from '@bufbuild/protobuf';
 import {
   ProjectSchema,
   Project_Assets,
@@ -16,12 +16,11 @@ import {
   useState,
 } from 'react';
 
-import { downloadBlob, escapeForFilesystem } from '../util/fileUtils';
+import { invoke } from '@tauri-apps/api/core';
 import upgradeProject from '../util/projectUpgrader';
 
 import {
   frontendReadyForUpdate,
-  loadProject as loadProjectCommand,
   redoProject as redoProjectCommand,
   requestUpdate,
   saveAssets as saveAssetsCommand,
@@ -42,7 +41,7 @@ export const ProjectContext = createContext({
   update: () => {},
   saveAssets: () => {},
   downloadProject: () => {},
-  openProject: (_project: Uint8Array) => {},
+  openProject: () => {},
   lastOperation: null as string | null,
 });
 
@@ -52,7 +51,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
   const projectRef = useRef(project);
   const assetsRef = useRef<Project_Assets | undefined>(undefined);
 
-  const [lastLoad, setLastLoad] = useState(new Date());
+  const [lastLoad] = useState(new Date());
   const [lastOperation, setLastOperation] = useState<string | null>(null);
 
   // Update coalescing: drop intermediate updates when updates are queued rapidly
@@ -194,43 +193,15 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
     await save('Updating assets.');
   }, [project, save, saveAssetsImpl]);
 
-  // Download project
-  const downloadProject = useCallback(() => {
-    if (project == null) {
-      throw new Error('Tried to download without project loaded!');
+  // Open project via native file dialog
+  const openProject = useCallback(async () => {
+    const assetsBinary: number[] | null = await invoke('import_project');
+    if (assetsBinary != null) {
+      assetsRef.current = fromBinary(
+        Project_AssetsSchema,
+        new Uint8Array(assetsBinary),
+      ) as Project_Assets;
     }
-    const blob = new Blob([toBinary(ProjectSchema, project)], {
-      type: 'application/protobuf',
-    });
-    downloadBlob(blob, escapeForFilesystem(project.name) + '.dmxapp');
-  }, [project]);
-
-  // Open project - load from file and send to backend
-  const openProject = useCallback(async (projectBlob: Uint8Array) => {
-    const p = fromBinary(ProjectSchema, projectBlob) as Project;
-    upgradeProject(p);
-
-    // Save assets via backend
-    if (p.assets) {
-      assetsRef.current = p.assets;
-      await saveAssetsCommand(
-        toBinary(Project_AssetsSchema, p.assets, {
-          writeUnknownFields: false,
-        }),
-      );
-    }
-
-    // Update local state
-    setProject(p);
-    setLastLoad(new Date());
-    setLastOperation('Open project.');
-
-    // Send to backend (will persist and reset undo stack)
-    const minProject = clone(ProjectSchema, p);
-    minProject.assets = undefined;
-    await loadProjectCommand(
-      toBinary(ProjectSchema, minProject, { writeUnknownFields: false }),
-    );
   }, []);
 
   // Keyboard shortcuts for undo/redo based on backend state
@@ -268,7 +239,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
         save: save,
         update: update,
         saveAssets: saveAssets,
-        downloadProject: downloadProject,
+        downloadProject: async () => await invoke('export_project'),
         openProject: openProject,
         lastOperation: lastOperation,
       }}

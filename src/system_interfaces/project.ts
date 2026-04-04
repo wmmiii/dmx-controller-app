@@ -103,15 +103,6 @@ export async function redoProject(): Promise<void> {
 }
 
 /**
- * Loads a project, resetting the undo stack.
- */
-export async function loadProject(projectBinary: Uint8Array): Promise<void> {
-  await invoke('load_project', {
-    projectBinary: Array.from(projectBinary),
-  });
-}
-
-/**
  * Requests the backend to emit a project-updated event with the current project.
  */
 export async function requestUpdate(): Promise<void> {

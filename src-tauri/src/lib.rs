@@ -42,6 +42,7 @@ pub fn run() {
     let builder = builder.plugin(tauri_plugin_keepawake::init());
 
     let app = builder
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_process::init())
         .setup(|app| {
             // Register logging plugin first so all log::* calls are captured
@@ -144,6 +145,8 @@ pub fn run() {
             project::request_update,
             project::save_assets,
             project::toggle_tile,
+            project::export_project,
+            project::import_project,
             render::render_dmx,
             render::set_render_mode,
             #[cfg(desktop)]

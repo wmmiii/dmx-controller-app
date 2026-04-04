@@ -454,6 +454,122 @@ pub async fn save_assets(
     Ok(())
 }
 
+/// Exports the project by merging assets, showing a native save dialog,
+/// and writing the full project binary to the chosen path.
+#[tauri::command]
+pub async fn export_project(
+    app: AppHandle,
+    persist_state: State<'_, Arc<TokioMutex<PersistState>>>,
+) -> Result<bool, String> {
+    use dmx_engine::proto;
+    use prost::Message;
+    use tauri_plugin_dialog::DialogExt;
+
+    // Get the project from the engine and decode it
+    let project_binary = project::get()?;
+    let mut project = proto::Project::decode(project_binary.as_slice())
+        .map_err(|e| format!("Failed to decode project: {e}"))?;
+
+    // Read assets from disk and merge into project
+    let assets_path = {
+        let state = persist_state.lock().await;
+        state.app_data_dir.join(ASSETS_KEY)
+    };
+    if let Ok(assets_binary) = std::fs::read(&assets_path)
+        && let Ok(assets) = proto::project::Assets::decode(assets_binary.as_slice())
+    {
+        project.assets = Some(assets);
+    }
+
+    // Build default filename from project name with date stamp
+    let today = chrono::Local::now().format("%Y-%m-%d");
+    let default_name = sanitize_filename::sanitize(format!("{}_{}.dmxapp", project.name, today));
+
+    let path = app
+        .dialog()
+        .file()
+        .set_title("Save Project")
+        .set_file_name(&default_name)
+        .add_filter("DMX App Project", &["dmxapp"])
+        .blocking_save_file();
+
+    match path {
+        Some(path) => {
+            std::fs::write(
+                path.as_path().ok_or("Invalid file path")?,
+                project.encode_to_vec(),
+            )
+            .map_err(|e| format!("Failed to export project: {e}"))?;
+            Ok(true)
+        }
+        None => Ok(false),
+    }
+}
+
+/// Imports a project by showing a native open dialog, reading the file,
+/// splitting assets from the project, persisting both, and loading
+/// the project into the engine. Returns the assets binary for the
+/// frontend to cache, or None if the user cancelled.
+#[tauri::command]
+pub async fn import_project(
+    app: AppHandle,
+    persist_state: State<'_, Arc<TokioMutex<PersistState>>>,
+    output_loop_manager: State<'_, Arc<TokioMutex<OutputLoopManager>>>,
+    serial_state: State<'_, Arc<TokioMutex<SerialState>>>,
+    sacn_state: State<'_, Arc<TokioMutex<SacnState>>>,
+    wled_state: State<'_, Arc<TokioMutex<WledState>>>,
+) -> Result<Option<Vec<u8>>, String> {
+    use dmx_engine::proto;
+    use prost::Message;
+    use tauri_plugin_dialog::DialogExt;
+
+    let path = app
+        .dialog()
+        .file()
+        .set_title("Open Project")
+        .add_filter("DMX App Project", &["dmxapp"])
+        .blocking_pick_file();
+
+    let Some(path) = path else {
+        return Ok(None);
+    };
+
+    let file_bytes = std::fs::read(path.as_path().ok_or("Invalid file path")?)
+        .map_err(|e| format!("Failed to read project file: {e}"))?;
+
+    let mut full_project = proto::Project::decode(file_bytes.as_slice())
+        .map_err(|e| format!("Failed to decode project: {e}"))?;
+
+    // Extract and persist assets separately
+    let assets_binary = if let Some(assets) = full_project.assets.take() {
+        let binary = assets.encode_to_vec();
+        queue_assets_persist(&binary, persist_state.inner()).await;
+        Some(binary)
+    } else {
+        None
+    };
+
+    // Load the asset-stripped project into the engine
+    let project_binary = full_project.encode_to_vec();
+    project::load(&project_binary)?;
+
+    // Emit updates and persist
+    emit_project_update(&app, Some("Open project.".to_string()));
+    emit_undo_state(&app);
+    queue_project_persist(&project_binary, persist_state.inner()).await;
+
+    // Rebuild output loops
+    rebuild_outputs(
+        serial_state.inner(),
+        output_loop_manager.inner(),
+        sacn_state.inner(),
+        wled_state.inner(),
+    )
+    .await?;
+
+    Ok(assets_binary)
+}
+
 /// Toggles a tile on/off based on its current state.
 /// Returns whether the tile was enabled (true) or disabled (false).
 #[tauri::command]
