@@ -24,9 +24,9 @@
   max-height: calc(100vh - var(--header-height));
   margin-top: var(--header-height);
   color: var(--col-text);
-
   background-color: var(--col-bg-higher);
   border: none;
+  border-radius: var(--dim-border-radius-lg);
   box-shadow: var(--drop-shadow);
 
   &.fullScreen {
@@ -42,17 +42,10 @@
   gap: var(--space-2);
   align-items: center;
   padding: var(--space-2);
-  padding-right: var(--space-1);
 
   :global(body.apple) & > :last-child {
     order: -1;
   }
-}
-
-:global(body.apple) .header {
-  gap: var(--space-1);
-  padding-right: var(--space-2);
-  padding-left: var(--space-1);
 }
 
 .icon {

@@ -167,16 +167,16 @@ function EditPaletteDialog({
       }
     >
       <div className={styles.header}>
-        <IconButton
-          title={`Delete palette "${palette.name}"`}
+        <Button
+          icon={<BiTrash />}
           variant="warning"
           onClick={() => {
             onClose();
             onDelete();
           }}
         >
-          <BiTrash />
-        </IconButton>
+          Delete palette
+        </Button>
         <div>
           Name:&nbsp;
           <TextInput
