@@ -1,25 +1,44 @@
 .sequence-editor {
   position: absolute;
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   inset: 0;
+}
 
-  .sequence {
-    flex: 1;
+.header {
+  display: flex;
+  flex-direction: row;
+  flex-shrink: 0;
+  gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-1);
 
-    & > label {
-      display: inline;
-    }
+  input {
+    margin-left: var(--space-1);
   }
+}
 
-  .effect-details,
-  .effect-details-placeholder {
-    flex-shrink: 0;
-    min-width: 351px;
-    padding: var(--space-2);
-    overflow-y: auto;
-    border: 1px solid var(--col-border);
+.main {
+  display: flex;
+  flex: 1;
+  flex-direction: row;
+}
+
+.sequence {
+  flex: 1;
+
+  & > label {
+    display: inline;
   }
+}
+
+.effect-details,
+.effect-details-placeholder {
+  flex-shrink: 0;
+  min-width: 351px;
+  padding: var(--space-2);
+  overflow-y: auto;
+  border: 1px solid var(--col-border);
 }
 
 .layer-container {

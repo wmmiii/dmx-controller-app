@@ -401,7 +401,7 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
                     duration: {
                       amount: {
                         case: 'beat',
-                        value: 0,
+                        value: 1,
                       },
                     },
                   }),

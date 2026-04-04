@@ -16,6 +16,7 @@ import {
   LayerSchema,
   TimecodedEffect,
 } from '@dmx-controller/proto/effect_pb';
+import clsx from 'clsx';
 import { BiPlus } from 'react-icons/bi';
 import { ShortcutContext } from '../contexts/ShortcutContext';
 import { ALL_CHANNELS } from '../engine/channel';
@@ -128,11 +129,9 @@ export function SequenceEditor({
     [panelWidth],
   );
 
-  const classes = [styles.sequenceEditor, className];
-
   return (
-    <div className={classes.join(' ')}>
-      <div className={styles.sequence} ref={panelElement}>
+    <div className={clsx(styles.sequenceEditor, className)}>
+      <div className={styles.header}>
         <label>
           Name
           <TextInput
@@ -164,31 +163,35 @@ export function SequenceEditor({
             max={16}
           />
         </label>
-        <hr />
-        <Layers
-          layers={sequence.layers}
-          nativeBeats={sequence.nativeBeats}
-          beatSubdivisions={beatSubdivisions}
-          selectedEffect={selectedEffect}
-          setSelectedEffectAddress={setSelectedEffectAddress}
-          copyEffect={copyEffect}
-          msToPx={msToPx}
-          pxToMs={pxToMs}
-          snapToBeat={snapToBeat}
-        />
       </div>
-      {selectedEffect ? (
-        <EffectDetails
-          className={styles.effectDetails}
-          effect={selectedEffect.effect!}
-          showPhase={true}
-          availableChannels={ALL_CHANNELS}
-        />
-      ) : (
-        <div className={styles.effectDetailsPlaceholder}>
-          Select an effect to view details.
+      <div className={styles.main}>
+        <div className={styles.sequence} ref={panelElement}>
+          <hr />
+          <Layers
+            layers={sequence.layers}
+            nativeBeats={sequence.nativeBeats}
+            beatSubdivisions={beatSubdivisions}
+            selectedEffect={selectedEffect}
+            setSelectedEffectAddress={setSelectedEffectAddress}
+            copyEffect={copyEffect}
+            msToPx={msToPx}
+            pxToMs={pxToMs}
+            snapToBeat={snapToBeat}
+          />
         </div>
-      )}
+        {selectedEffect ? (
+          <EffectDetails
+            className={styles.effectDetails}
+            effect={selectedEffect.effect!}
+            showPhase={true}
+            availableChannels={ALL_CHANNELS}
+          />
+        ) : (
+          <div className={styles.effectDetailsPlaceholder}>
+            Select an effect to view details.
+          </div>
+        )}
+      </div>
     </div>
   );
 }

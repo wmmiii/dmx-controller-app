@@ -20,7 +20,7 @@ export function tileActiveAmount(
         default:
           ms = 0;
       }
-      return t < tile.transition.value + BigInt(ms) ? 1 : 0;
+      return t < tile.transition.value + BigInt(Math.round(ms)) ? 1 : 0;
     } else {
       return 1;
     }

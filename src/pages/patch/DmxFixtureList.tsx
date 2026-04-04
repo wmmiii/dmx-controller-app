@@ -654,13 +654,15 @@ function ChannelMapping({
               title={`Minimum value for ${type} channel.`}
               value={mapping.value.minValue}
               onChange={(value) => {
+                console.log('ON CHANGE', value);
                 if (mapping.case === 'amountMapping') {
                   mapping.value.minValue = value;
                 }
               }}
-              onFinalize={(value) =>
-                save(`Set channel ${index} min value to ${value}.`)
-              }
+              onFinalize={(value) => {
+                console.log('ON FINALIZE', value);
+                save(`Set channel ${index} min value to ${value}.`);
+              }}
               max="255"
             />
           </td>

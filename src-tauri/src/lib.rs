@@ -44,6 +44,15 @@ pub fn run() {
     let app = builder
         .plugin(tauri_plugin_process::init())
         .setup(|app| {
+            // Register logging plugin first so all log::* calls are captured
+            if cfg!(debug_assertions) {
+                app.handle().plugin(
+                    tauri_plugin_log::Builder::default()
+                        .level(log::LevelFilter::Info)
+                        .build(),
+                )?;
+            }
+
             // Get app data dir for persistence
             let app_data_dir = app
                 .path()
@@ -115,13 +124,6 @@ pub fn run() {
                 app.state::<Arc<Mutex<wled::WledState>>>().inner().clone(),
             );
 
-            if cfg!(debug_assertions) {
-                app.handle().plugin(
-                    tauri_plugin_log::Builder::default()
-                        .level(log::LevelFilter::Info)
-                        .build(),
-                )?;
-            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
