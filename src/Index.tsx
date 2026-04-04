@@ -6,6 +6,7 @@ import { exit } from '@tauri-apps/plugin-process';
 import {
   BiDownload,
   BiError,
+  BiHappyBeaming,
   BiLink,
   BiLogoGithub,
   BiMenu,
@@ -207,7 +208,11 @@ function WarningDialog() {
   return (
     <Modal
       bodyClass={styles.welcomeDialog}
-      title="Welcome! 😊"
+      title={
+        <>
+          <BiHappyBeaming /> Welcome!
+        </>
+      }
       onClose={() => setOpen(false)}
       footer={
         <>
@@ -228,32 +233,32 @@ function WarningDialog() {
       }
     >
       <p>
-        This app attempts to provide an experimental playground for easily
-        creating and playing DMX (And now WLED!) lighting performances! All the
-        features have been thrown together with haste so there are plenty of
-        bugs and engineer-UI everywhere.
+        Welcome to DMX Controller App! Create and perform live lighting shows
+        with DMX and WLED devices. Whether you're lighting a stage, a party, or
+        just experimenting, this app makes it easy to get started.
       </p>
       <p>
-        To contribute to the project or report any issues please open an issue
-        on the&nbsp;
+        New here? Check out the&nbsp;
+        <a href="https://dmx-controller.app" target="_blank">
+          getting started guide
+        </a>
+        . Have feedback or found a bug? Open an issue on the&nbsp;
         <a
           href="https://github.com/wmmiii/dmx-controller-app/issues"
           target="_blank"
         >
-          project's GitHub page
+          GitHub page
         </a>
-        . Thanks!
+        —contributions are always welcome!
       </p>
       <h3>
         <BiError />
         Warning
       </h3>
       <p>
-        This app is currently in development and there is a&nbsp;
-        <strong>significant risk of data-loss</strong>!
-        <br />
-        <br />
-        Use at your own risk!
+        This app is in active development. Updates may introduce&nbsp;
+        <strong>breaking changes</strong> that make your existing projects
+        incompatible. Use at your own risk!
       </p>
     </Modal>
   );

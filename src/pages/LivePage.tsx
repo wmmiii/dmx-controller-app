@@ -313,7 +313,18 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
 
   return (
     <Modal
-      title={`Edit Tile "${tile.name}"`}
+      title={
+        <>
+          Edit Tile
+          <EditableText
+            value={tile.name}
+            onChange={(v) => {
+              tile.name = v;
+              save(`Change tile name to "${v}".`);
+            }}
+          />
+        </>
+      }
       fullScreen={true}
       bodyClass={styles.editorBody}
       onClose={onClose}

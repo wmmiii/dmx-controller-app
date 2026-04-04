@@ -51,6 +51,11 @@
   td {
     padding: var(--space-1);
   }
+
+  label input,
+  label select {
+    margin-left: var(--space-1);
+  }
 }
 
 .editor-metadata {

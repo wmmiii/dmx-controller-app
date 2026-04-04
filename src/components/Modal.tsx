@@ -10,7 +10,7 @@ import styles from './Modal.module.css';
 import { Spacer } from './Spacer';
 
 interface ModalProps {
-  title: string;
+  title: React.ReactNode;
   icon?: JSX.Element;
   onClose: () => void;
   children: React.ReactNode;

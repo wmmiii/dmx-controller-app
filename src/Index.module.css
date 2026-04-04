@@ -201,6 +201,10 @@ th {
 .welcome-dialog {
   max-width: 40em;
   padding: 0 var(--space-2);
+
+  & > p:first-child {
+    margin-top: 0;
+  }
 }
 
 .warning {

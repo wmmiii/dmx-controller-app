@@ -146,7 +146,18 @@ function EditPaletteDialog({
 
   return (
     <Modal
-      title={`Edit ${palette.name}`}
+      title={
+        <>
+          Edit
+          <EditableText
+            value={palette.name}
+            onChange={(v) => {
+              palette.name = v;
+              update();
+            }}
+          />
+        </>
+      }
       onClose={done}
       bodyClass={styles.editModal}
       footer={
