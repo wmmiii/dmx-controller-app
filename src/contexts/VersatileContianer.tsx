@@ -1,8 +1,6 @@
 import { createContext, useEffect, useRef, useState } from 'react';
+import { DRAG_DISTANCE_PX_SQ, LONG_PRESS_MS } from '../util/browserUtils';
 import styles from './VersatileContainer.module.css';
-
-const PRESS_TIMEOUT_MS = 500;
-const DRAG_DISTANCE_PX_SQ = Math.pow(20, 2);
 
 type VersatileState = 'idle' | 'click' | 'press' | 'drag';
 
@@ -93,7 +91,7 @@ export function VersatileContainer({
               id,
               timeout: setTimeout(() => {
                 setState('press');
-              }, PRESS_TIMEOUT_MS),
+              }, LONG_PRESS_MS),
               onDragComplete,
               x,
               y,

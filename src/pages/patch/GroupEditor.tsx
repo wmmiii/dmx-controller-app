@@ -13,8 +13,8 @@ import {
 import clsx from 'clsx';
 import { useCallback, useContext, useMemo, useState } from 'react';
 import { BiTrash } from 'react-icons/bi';
-import { Button, IconButton } from '../../components/Button';
-import { TextInput } from '../../components/Input';
+import { Button } from '../../components/Button';
+import { EditableText } from '../../components/Input';
 import { getOutputTargetName } from '../../components/OutputSelector';
 import { VersatileElement } from '../../components/VersatileElement';
 import { ProjectContext } from '../../contexts/ProjectContext';
@@ -83,7 +83,15 @@ function GroupList({ selectedGroupId, setSelectedGroupId }: GroupListProps) {
               key={id}
               onClick={() => setSelectedGroupId(BigInt(id))}
             >
-              {group.name}
+              <EditableText
+                value={group.name}
+                onChange={(name) => {
+                  if (name) {
+                    group.name = name;
+                    save(`Set group name to "${name}".`);
+                  }
+                }}
+              />
             </li>
           ))}
       </ul>
@@ -169,17 +177,8 @@ function GroupEditorPane({
   return (
     <div className={styles.groupEditor}>
       <div className={styles.header}>
-        <TextInput
-          value={group.name}
-          onChange={(name) => {
-            if (name) {
-              group.name = name;
-              save(`Set group name to "${name}".`);
-            }
-          }}
-        />
-        <IconButton
-          title={`Delete ${group.name}`}
+        <Button
+          icon={<BiTrash />}
           variant="warning"
           onClick={() => {
             deleteTargetGroup(project, selectedGroupId!);
@@ -187,8 +186,8 @@ function GroupEditorPane({
             setSelectedGroupId(null);
           }}
         >
-          <BiTrash />
-        </IconButton>
+          Delete {group.name}
+        </Button>
       </div>
       <VersatileContainer className={styles.members}>
         <VersatileElement

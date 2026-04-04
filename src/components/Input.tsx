@@ -5,10 +5,12 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
 import { ProjectContext } from '../contexts/ProjectContext';
+import { DRAG_DISTANCE_PX_SQ, LONG_PRESS_MS } from '../util/browserUtils';
 import styles from './Input.module.css';
 
 interface TextInputProps {
@@ -56,19 +58,96 @@ interface EditableTextProps {
 
 export function EditableText({ value, onChange }: EditableTextProps) {
   const [edit, setEdit] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+
+  useEffect(() => {
+    if (!edit) {
+      setDraft(value);
+    }
+  }, [value, edit]);
+
+  useEffect(() => {
+    if (edit && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [edit]);
+
+  const startEdit = useCallback(() => {
+    setDraft(value);
+    setEdit(true);
+  }, [value]);
+
+  const commit = useCallback(() => {
+    if (draft !== value) {
+      onChange(draft);
+    }
+    setEdit(false);
+  }, [draft, value, onChange]);
+
+  const cancel = useCallback(() => {
+    setDraft(value);
+    setEdit(false);
+  }, [value]);
 
   if (edit) {
     return (
-      <TextInput
-        value={value}
-        onChange={(value) => {
-          onChange(value);
-          setEdit(false);
+      <input
+        ref={inputRef}
+        className={styles.editableInput}
+        value={draft}
+        size={Math.max(draft.length, 1)}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            commit();
+            e.preventDefault();
+          } else if (e.key === 'Escape') {
+            cancel();
+            e.preventDefault();
+          }
+          e.stopPropagation();
         }}
       />
     );
   } else {
-    return <span onDoubleClick={() => setEdit(true)}>{value}</span>;
+    return (
+      <span
+        className={styles.editableText}
+        onDoubleClick={startEdit}
+        onTouchStart={(e) => {
+          const touch = e.touches[0];
+          touchStart.current = { x: touch.clientX, y: touch.clientY };
+          longPressTimer.current = setTimeout(startEdit, LONG_PRESS_MS);
+        }}
+        onTouchEnd={() => {
+          if (longPressTimer.current) {
+            clearTimeout(longPressTimer.current);
+            longPressTimer.current = null;
+          }
+          touchStart.current = null;
+        }}
+        onTouchMove={(e) => {
+          if (longPressTimer.current && touchStart.current) {
+            const touch = e.touches[0];
+            const dist =
+              Math.pow(touch.clientX - touchStart.current.x, 2) +
+              Math.pow(touch.clientY - touchStart.current.y, 2);
+            if (dist > DRAG_DISTANCE_PX_SQ) {
+              clearTimeout(longPressTimer.current);
+              longPressTimer.current = null;
+              touchStart.current = null;
+            }
+          }
+        }}
+      >
+        {value}
+      </span>
+    );
   }
 }
 

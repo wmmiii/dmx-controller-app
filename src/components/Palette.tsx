@@ -13,7 +13,7 @@ import { BiPencil, BiTrash } from 'react-icons/bi';
 import { colorToHex, stringifyColor } from '../util/colorUtil';
 import { Button, IconButton } from './Button';
 import { ControllerConnection } from './ControllerConnection';
-import { TextInput } from './Input';
+import { EditableText, TextInput } from './Input';
 import { Modal } from './Modal';
 import styles from './Palette.module.css';
 
@@ -38,6 +38,7 @@ export function PaletteSwatch({
   onDelete,
   className,
 }: PaletteSwatchProps) {
+  const { save } = useContext(ProjectContext);
   const [editPalette, setEditPalette] = useState(false);
 
   const classes = [styles.paletteSwatch];
@@ -60,7 +61,13 @@ export function PaletteSwatch({
   return (
     <div className={classes.join(' ')} onClick={onClick} title={palette.name}>
       <div className={styles.details}>
-        <div className={styles.title}>{palette.name}</div>
+        <EditableText
+          value={palette.name}
+          onChange={(newName) => {
+            palette.name = newName;
+            save(`Update palette name to ${newName}.`);
+          }}
+        />
         <div className={styles.swatchColors} style={{ background }}></div>
       </div>
       {edit && (

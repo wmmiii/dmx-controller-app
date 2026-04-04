@@ -8,7 +8,7 @@ import {
 } from '@dmx-controller/proto/output_pb';
 import { BiPlus, BiTrash } from 'react-icons/bi';
 import { Button } from '../../components/Button';
-import { EditableText, TextInput } from '../../components/Input';
+import { EditableText } from '../../components/Input';
 import { Modal } from '../../components/Modal';
 import { Tabs, TabsType } from '../../components/Tabs';
 import { ProjectContext } from '../../contexts/ProjectContext';
@@ -134,7 +134,7 @@ export default function PatchPage(): JSX.Element {
               ))}
               <option value="new">+ Add new patch</option>
             </select>
-            <TextInput
+            <EditableText
               value={getActivePatch(project).name}
               onChange={(v) => {
                 getActivePatch(project).name = v;

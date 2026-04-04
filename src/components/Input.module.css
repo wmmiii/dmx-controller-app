@@ -1,3 +1,24 @@
+.editable-text {
+  border-bottom: 1px dashed var(--col-border);
+  cursor: text;
+  pointer-events: auto;
+
+  &:hover {
+    border-bottom-color: var(--col-border-higher);
+  }
+}
+
+.editable-input {
+  min-width: 1ch;
+  margin: 0;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  border-bottom: 1px dashed var(--col-interactive);
+  outline: none;
+  field-sizing: content;
+}
+
 .number-input {
   max-width: 5em;
 }

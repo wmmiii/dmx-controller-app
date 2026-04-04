@@ -38,10 +38,6 @@
   border-radius: 5px;
 }
 
-.title {
-  pointer-events: none;
-}
-
 .edit {
   flex-shrink: 0;
   margin: calc(-1 * var(--space-1)) 0;

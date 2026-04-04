@@ -21,6 +21,7 @@ import {
   PhysicalDmxFixtureSchema,
 } from '@dmx-controller/proto/dmx_pb';
 import clsx from 'clsx';
+import { BiTrash } from 'react-icons/bi';
 import { VersatileElement } from '../../components/VersatileElement';
 import { DraggableDmxFixture } from './DmxEditor';
 import styles from './DmxUniverse.module.css';
@@ -272,7 +273,7 @@ function EditFixtureDialog({
       }
     >
       <div>
-        <Button variant="warning" onClick={onDelete}>
+        <Button icon={<BiTrash />} variant="warning" onClick={onDelete}>
           Delete Fixture
         </Button>
       </div>
