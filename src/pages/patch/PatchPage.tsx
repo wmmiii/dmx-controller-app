@@ -156,28 +156,23 @@ export default function PatchPage(): JSX.Element {
                   getActivePatch(project).outputs[id.toString()] = create(
                     OutputSchema,
                     {
-                      name: 'DMX Serial Output',
+                      name: 'WLED Output',
                       latencyMs: 0,
                       enabled: true,
                       output: {
-                        case: 'serialDmxOutput',
+                        case: 'wledOutput',
                         value: {
-                          fixtures: {},
+                          segments: {},
                         },
                       },
                     },
                   );
-                  save('Create Serial DMX output.');
+                  save('Create WLED output.');
                   setTabKey(id.toString());
                   setShowNewOutputDialog(false);
                 }}
-                disabled={Boolean(
-                  Object.values(getActivePatch(project).outputs).find(
-                    (o) => o.output.case === 'serialDmxOutput',
-                  ),
-                )}
               >
-                Serial Output
+                WLED Output
               </Button>
               <Button
                 onClick={() => {
@@ -210,23 +205,28 @@ export default function PatchPage(): JSX.Element {
                   getActivePatch(project).outputs[id.toString()] = create(
                     OutputSchema,
                     {
-                      name: 'WLED Output',
+                      name: 'DMX Serial Output',
                       latencyMs: 0,
                       enabled: true,
                       output: {
-                        case: 'wledOutput',
+                        case: 'serialDmxOutput',
                         value: {
-                          segments: {},
+                          fixtures: {},
                         },
                       },
                     },
                   );
-                  save('Create WLED output.');
+                  save('Create Serial DMX output.');
                   setTabKey(id.toString());
                   setShowNewOutputDialog(false);
                 }}
+                disabled={Boolean(
+                  Object.values(getActivePatch(project).outputs).find(
+                    (o) => o.output.case === 'serialDmxOutput',
+                  ),
+                )}
               >
-                WLED Output
+                Serial Output
               </Button>
             </>
           }

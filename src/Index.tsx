@@ -211,6 +211,9 @@ function WarningDialog() {
       onClose={() => setOpen(false)}
       footer={
         <>
+          <Button variant="primary" onClick={() => setOpen(false)}>
+            Let's go!
+          </Button>
           <Button
             variant="warning"
             onClick={() => {
@@ -220,9 +223,6 @@ function WarningDialog() {
             }}
           >
             Don't show this dialog again
-          </Button>
-          <Button variant="primary" onClick={() => setOpen(false)}>
-            Let's go!
           </Button>
         </>
       }

@@ -1,8 +1,9 @@
 import { Dialog } from 'radix-ui';
-import { JSX, useContext, useEffect } from 'react';
+import { JSX, useContext, useEffect, useRef, useState } from 'react';
 
 import { ShortcutContext } from '../contexts/ShortcutContext';
 
+import clsx from 'clsx';
 import { BiX } from 'react-icons/bi';
 import { IconButton } from './Button';
 import styles from './Modal.module.css';
@@ -30,6 +31,32 @@ export function Modal({
   fullScreen,
 }: ModalProps): JSX.Element {
   const { setShortcuts } = useContext(ShortcutContext);
+  const mainWrapperRef = useRef<HTMLDivElement | null>(null);
+  const mainRef = useRef<HTMLDivElement | null>(null);
+  const [overflow, setOverflow] = useState(false);
+
+  useEffect(() => {
+    let observer: ResizeObserver | null = null;
+
+    const frameId = requestAnimationFrame(() => {
+      const contentEle = mainRef.current;
+      const mainEle = mainWrapperRef.current;
+      if (!contentEle || !mainEle) return;
+
+      const checkOverflow = () =>
+        setOverflow(mainEle.scrollHeight > mainEle.clientHeight);
+      observer = new ResizeObserver(checkOverflow);
+      checkOverflow();
+
+      observer.observe(contentEle);
+      observer.observe(mainEle);
+    });
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      observer?.disconnect();
+    };
+  }, []);
 
   useEffect(
     () =>
@@ -43,25 +70,16 @@ export function Modal({
     [title, onClose],
   );
 
-  const classes = [styles.modal];
-  if (fullScreen) {
-    classes.push(styles.fullScreen);
-  }
-  if (className) {
-    classes.push(className);
-  }
-
-  const bodyClasses = [styles.main];
-  if (bodyClass) {
-    bodyClasses.push(bodyClass);
-  }
-
   return (
     <Dialog.Root open onOpenChange={(open) => !open && onClose()}>
       <Dialog.Portal>
         <Dialog.Overlay className={styles.wrapper}>
           <Dialog.Content
-            className={classes.join(' ')}
+            className={clsx(
+              styles.modal,
+              { [styles.fullScreen]: fullScreen, [styles.overflow]: overflow },
+              className,
+            )}
             onOpenAutoFocus={(e) => e.preventDefault()}
             onEscapeKeyDown={(e) => {
               onClose();
@@ -80,7 +98,11 @@ export function Modal({
               </Dialog.Close>
             </div>
             <Dialog.Description asChild>
-              <div className={bodyClasses.join(' ')}>{children}</div>
+              <div ref={mainWrapperRef} className={styles.mainWrapper}>
+                <div ref={mainRef} className={clsx(styles.main, bodyClass)}>
+                  {children}
+                </div>
+              </div>
             </Dialog.Description>
             {footer && <div className={styles.footer}>{footer}</div>}
           </Dialog.Content>

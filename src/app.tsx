@@ -10,6 +10,10 @@ import { SerialProvider } from './contexts/SerialContext';
 import { ShortcutProvider } from './contexts/ShortcutContext';
 import './vars.css';
 
+if (/iPad|iPhone|iPod|Mac/.test(navigator.userAgent)) {
+  document.body.classList.add('apple');
+}
+
 const root = createRoot(document.getElementById('root')!);
 root.render(
   <StrictMode>

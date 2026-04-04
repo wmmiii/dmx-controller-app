@@ -19,6 +19,7 @@
   /* Text */
   --col-text: #ffffff;
   --col-text-dim: #8f8f8f;
+  --col-text-inverted: #000;
 
   /* Borders */
   --col-border: #333;
@@ -36,7 +37,7 @@
   --col-warning-hover: color-mix(in srgb, var(--col-warning), #fff 50%);
 
   /* Dimensions */
-  --dim-border-radius: 8px;
+  --dim-border-radius: 4px;
 
   /* Filters */
   --mask-blur: blur(2px);
@@ -61,4 +62,9 @@
   /* Shadows */
   --drop-shadow: 0 0 8px #000000;
   --inset-shadow: inset 0 0 4px #000000;
+}
+
+.apple {
+  /* Dimensions */
+  --dim-border-radius: 12px;
 }

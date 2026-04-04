@@ -47,7 +47,6 @@ input,
 textarea,
 select {
   box-sizing: border-box;
-  margin: 0 var(--space-1);
   padding: var(--space-1) var(--space-1-5);
   color: var(--col-text);
   background-color: transparent;
@@ -201,7 +200,7 @@ th {
 
 .welcome-dialog {
   max-width: 40em;
-  padding: var(--space-1);
+  padding: 0 var(--space-2);
 }
 
 .warning {
