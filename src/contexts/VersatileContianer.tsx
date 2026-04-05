@@ -1,4 +1,10 @@
-import { createContext, MutableRefObject, useEffect, useRef, useState } from 'react';
+import {
+  createContext,
+  MutableRefObject,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { DRAG_DISTANCE_PX_SQ, LONG_PRESS_MS } from '../util/browserUtils';
 import styles from './VersatileContainer.module.css';
 
@@ -31,6 +37,7 @@ export function VersatileContainer({
   children,
 }: DragAndDropProviderProps) {
   const [state, setState] = useState<VersatileState>('idle');
+  const stateRef = useRef<VersatileState>('idle');
   const mouseDown = useRef<{
     id: unknown;
     timeout: number | undefined;
@@ -54,6 +61,7 @@ export function VersatileContainer({
       if (state === 'drag' && mouseDown.current?.onDragComplete) {
         mouseDown.current.onDragComplete();
       }
+      stateRef.current = 'idle';
       return 'idle';
     });
     clearTimeout(mouseDown.current?.timeout);
@@ -78,6 +86,7 @@ export function VersatileContainer({
           const dist =
             Math.pow(e.clientX - pos.x, 2) + Math.pow(e.clientY - pos.y, 2);
           if (dist > DRAG_DISTANCE_PX_SQ) {
+            stateRef.current = 'drag';
             setState('drag');
           }
         }
@@ -93,15 +102,18 @@ export function VersatileContainer({
             mouseDown.current = {
               id,
               timeout: setTimeout(() => {
+                stateRef.current = 'press';
                 setState('press');
               }, LONG_PRESS_MS),
               onDragComplete,
               x,
               y,
             };
+            stateRef.current = 'click';
             setState('click');
           },
           state,
+          stateRef,
           reset,
         }}
       >
