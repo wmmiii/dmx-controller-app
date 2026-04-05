@@ -1,8 +1,8 @@
 html {
   overflow-x: hidden;
   color: var(--col-text);
-  font-weight: 300;
-  font-size: 11pt;
+  font-weight: var(--font-weight-regular);
+  font-size: var(--dim-text-size-md);
   font-family: 'Roboto', sans-serif;
   background-color: var(--col-bg-higher);
   scrollbar-color: var(--col-scroll-thumb) var(--col-scroll-track);
@@ -13,7 +13,7 @@ h1,
 h2,
 h3,
 h4 {
-  font-weight: 600;
+  font-weight: var(--font-weight-heavy);
   font-family: 'Montserrat', sans-serif;
 }
 
@@ -30,7 +30,7 @@ hr {
 
 a {
   color: var(--col-interactive);
-  font-weight: 600;
+  font-weight: var(--font-weight-heavy);
   text-decoration: none;
 
   &:hover {
@@ -56,12 +56,12 @@ select {
 
   &:active,
   &:focus {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: var(--col-bg-tint-hover);
     border-color: var(--col-interactive);
   }
 
   &:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: var(--col-bg-tint-hover);
     border-color: var(--col-interactive-hover);
   }
 
@@ -143,8 +143,8 @@ th {
       z-index: 0;
       margin: 0;
       color: var(--col-border);
-      font-weight: 800;
-      font-size: 28px;
+      font-weight: var(--font-weight-heavy);
+      font-size: var(--dim-text-size-xl);
       font-family: 'Tomorrow', sans-serif;
       text-wrap: nowrap;
       transform: translate(-50%, -50%);
@@ -186,14 +186,14 @@ th {
 .fps {
   flex-shrink: 0;
   color: var(--col-text-dim);
-  font-size: 10pt;
+  font-size: var(--dim-text-size-sm);
 }
 
 .message {
   flex-shrink: 1;
   overflow: hidden;
   color: var(--col-text-dim);
-  font-size: 10pt;
+  font-size: var(--dim-text-size-sm);
   white-space: nowrap;
   text-overflow: ellipsis;
 }

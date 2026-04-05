@@ -18,7 +18,7 @@
   min-height: 32px !important;
   margin: 0;
   padding: 0;
-  font-size: 1rem;
+  font-size: var(--dim-text-size-md);
   transform: translateY(-50%);
 }
 
@@ -75,7 +75,7 @@
 
   &.selected {
     color: var(--col-interactive);
-    font-weight: 500;
+    font-weight: var(--font-weight-heavy);
 
     &:hover,
     &:focus {
@@ -93,6 +93,6 @@
 .categoryLabel {
   padding: var(--space-1-5) var(--space-1) var(--space-1);
   color: var(--col-text-dim);
-  font-weight: 600;
+  font-weight: var(--font-weight-heavy);
   letter-spacing: 0.05em;
 }

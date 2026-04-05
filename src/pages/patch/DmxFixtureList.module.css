@@ -48,7 +48,7 @@
 .hint {
   max-width: 20rem;
   color: var(--col-text-dim);
-  font-size: 10pt;
+  font-size: var(--dim-text-size-sm);
 }
 
 .editor-wrapper {

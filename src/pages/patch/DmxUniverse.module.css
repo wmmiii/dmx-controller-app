@@ -12,8 +12,8 @@
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  width: var(--channel-size);
-  height: var(--channel-size);
+  width: var(--dim-tile-size);
+  height: var(--dim-tile-size);
   margin: 0;
   padding: 0;
   overflow: hidden;

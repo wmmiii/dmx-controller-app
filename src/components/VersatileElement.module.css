@@ -18,7 +18,7 @@
 
 .element {
   cursor: pointer;
-  transition: 500ms box-shadow;
+  transition: var(--transition-slow) box-shadow;
   -webkit-user-select: none;
   user-select: none;
 }
@@ -35,8 +35,8 @@
     0 0 16px white,
     0 0 8px white;
   cursor: grabbing;
-  transition: 50ms box-shadow;
-  animation: wiggle 300ms infinite;
+  transition: var(--transition-fast) box-shadow;
+  animation: wiggle var(--transition-normal) infinite;
   touch-action: none;
 }
 
@@ -45,6 +45,6 @@
     0 0 16px white,
     0 0 8px white;
   cursor: grabbing;
-  animation: wiggle 300ms infinite;
+  animation: wiggle var(--transition-normal) infinite;
   touch-action: none;
 }

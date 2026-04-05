@@ -34,6 +34,9 @@ use std::sync::Mutex as StdMutex;
 use tauri::{Manager, RunEvent};
 use tokio::sync::Mutex;
 
+#[cfg(desktop)]
+use tauri_plugin_keepawake::TauriPluginKeepawakeExt;
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let builder = tauri::Builder::default();
@@ -124,6 +127,23 @@ pub fn run() {
                 app.state::<Arc<Mutex<sacn::SacnState>>>().inner().clone(),
                 app.state::<Arc<Mutex<wled::WledState>>>().inner().clone(),
             );
+
+            // Prevent the system from sleeping while the app is running so that
+            // DMX output (sACN, Serial, WLED) is never interrupted by idle sleep.
+            #[cfg(desktop)]
+            {
+                use tauri_plugin_keepawake::KeepAwakeConfig;
+                if let Err(e) = app.tauri_plugin_keepawake().start(
+                    app.handle(),
+                    Some(KeepAwakeConfig {
+                        display: false,
+                        idle: true,
+                        sleep: true,
+                    }),
+                ) {
+                    log::warn!("Failed to activate keep-awake: {e}");
+                }
+            }
 
             Ok(())
         })

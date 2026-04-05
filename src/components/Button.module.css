@@ -12,12 +12,12 @@
   align-items: center;
   justify-content: center;
   padding: var(--space-1) var(--space-2);
-  font-size: 18px;
+  font-size: var(--dim-text-size-lg);
 
   .icon {
     width: 18px;
     height: 18px;
-    font-size: 18px;
+    font-size: var(--dim-text-size-lg);
   }
 }
 
@@ -25,7 +25,7 @@
   justify-content: center;
   width: calc(18px + var(--space-2));
   height: calc(18px + var(--space-2));
-  font-size: 18px;
+  font-size: var(--dim-text-size-lg);
 }
 
 .default-variant {
@@ -36,7 +36,7 @@
   &:hover,
   &:focus {
     color: var(--col-interactive-hover);
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: var(--col-bg-tint-hover);
     border-color: var(--col-interactive-hover);
   }
 }
@@ -61,7 +61,7 @@
   &:hover,
   &:focus {
     color: var(--col-warning-hover);
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: var(--col-bg-tint-hover);
     border-color: var(--col-warning-hover);
   }
 }
@@ -80,7 +80,7 @@
   .icon {
     width: 18px;
     height: 18px;
-    font-size: 18px;
+    font-size: var(--dim-text-size-lg);
   }
 
   &.inactive {

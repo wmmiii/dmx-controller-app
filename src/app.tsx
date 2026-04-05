@@ -12,6 +12,8 @@ import './vars.css';
 
 if (/iPad|iPhone|iPod|Mac/.test(navigator.userAgent)) {
   document.body.classList.add('apple');
+} else if (/Windows/.test(navigator.userAgent)) {
+  document.body.classList.add('windows');
 }
 
 const root = createRoot(document.getElementById('root')!);

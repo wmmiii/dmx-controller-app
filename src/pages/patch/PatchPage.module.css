@@ -1,6 +1,4 @@
 .wrapper {
-  --channel-size: 100px;
-
   position: absolute;
   display: flex;
   flex-direction: column;
@@ -141,7 +139,7 @@
   ul {
     margin: 0;
     padding: 0;
-    font-size: 1.5em;
+    font-size: var(--dim-text-size-xl);
     list-style: none;
   }
 
@@ -179,7 +177,7 @@
 .hint {
   max-width: 15rem;
   color: var(--col-text-dim);
-  font-size: 10pt;
+  font-size: var(--dim-text-size-sm);
 }
 
 .enabled-toggle {
