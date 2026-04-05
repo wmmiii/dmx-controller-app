@@ -96,7 +96,7 @@ export function Modal({
             </div>
             <Dialog.Description asChild>
               <div ref={mainWrapperRef} className={styles.mainWrapper}>
-                <div ref={mainRef} className={clsx(styles.main, bodyClass)}>
+                <div ref={mainRef} className={clsx(bodyClass, styles.main)}>
                   {children}
                 </div>
               </div>

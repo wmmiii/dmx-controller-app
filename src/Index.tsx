@@ -6,6 +6,7 @@ import { exit } from '@tauri-apps/plugin-process';
 import {
   BiDownload,
   BiError,
+  BiFile,
   BiHappyBeaming,
   BiLink,
   BiLogoGithub,
@@ -37,15 +38,54 @@ export default function Index(): JSX.Element {
   const { port, connect, disconnect } = useContext(SerialContext);
   const { connectedDevices, connect: connectMidi } =
     useContext(ControllerContext);
-  const { project, downloadProject, openProject, lastOperation } =
+  const { project, downloadProject, openProject, newProject, lastOperation } =
     useContext(ProjectContext);
   const navigate = useNavigate();
 
   const [showMenu, setShowMenu] = useState(false);
+  const [showNewProjectDialog, setShowNewProjectDialog] = useState(false);
 
   return (
     <div className={styles.wrapper}>
       <WarningDialog />
+      {showNewProjectDialog && (
+        <Modal
+          title="New Project"
+          onClose={() => setShowNewProjectDialog(false)}
+          bodyClass={styles.newProject}
+          footer={
+            <>
+              <Button
+                variant="primary"
+                onClick={async () => {
+                  await downloadProject();
+                  await newProject();
+                  setShowNewProjectDialog(false);
+                }}
+              >
+                Save first
+              </Button>
+              <Button
+                variant="warning"
+                onClick={async () => {
+                  await newProject();
+                  setShowNewProjectDialog(false);
+                }}
+              >
+                Don't save
+              </Button>
+              <Button onClick={() => setShowNewProjectDialog(false)}>
+                Cancel
+              </Button>
+            </>
+          }
+        >
+          <p>
+            Would you like to save your current project before creating a new
+            one? Any unsaved changes will be lost.
+          </p>
+        </Modal>
+      )}
       <header data-tauri-drag-region>
         <h1>DMX Controller App</h1>
         <div
@@ -85,6 +125,11 @@ export default function Index(): JSX.Element {
                   onSelect: () => navigate('/project'),
                 },
                 { type: 'separator' },
+                {
+                  title: 'New Project',
+                  icon: <BiFile />,
+                  onSelect: () => setShowNewProjectDialog(true),
+                },
                 {
                   title: 'Save As',
                   icon: <BiDownload />,

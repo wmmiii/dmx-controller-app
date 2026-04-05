@@ -18,9 +18,11 @@ import {
 
 import { invoke } from '@tauri-apps/api/core';
 import upgradeProject from '../util/projectUpgrader';
+import styles from './ProjectContext.module.css';
 
 import {
   frontendReadyForUpdate,
+  newProject as newProjectCommand,
   redoProject as redoProjectCommand,
   requestUpdate,
   saveAssets as saveAssetsCommand,
@@ -42,6 +44,7 @@ export const ProjectContext = createContext({
   saveAssets: () => {},
   downloadProject: () => {},
   openProject: () => {},
+  newProject: () => {},
   lastOperation: null as string | null,
 });
 
@@ -193,6 +196,12 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
     await save('Updating assets.');
   }, [project, save, saveAssetsImpl]);
 
+  // Reset to a new default project
+  const newProject = useCallback(async () => {
+    await newProjectCommand();
+    assetsRef.current = undefined;
+  }, []);
+
   // Open project via native file dialog
   const openProject = useCallback(async () => {
     const assetsBinary: number[] | null = await invoke('import_project');
@@ -228,7 +237,12 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
   }, [undoState, undoProjectCommand, redoProjectCommand, setShortcuts]);
 
   if (project == null) {
-    return <h1>Loading...</h1>;
+    return (
+      <div className={styles.loading}>
+        <img src="./icon.svg" />
+        <h1>Loading...</h1>
+      </div>
+    );
   }
 
   return (
@@ -241,6 +255,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
         saveAssets: saveAssets,
         downloadProject: async () => await invoke('export_project'),
         openProject: openProject,
+        newProject: newProject,
         lastOperation: lastOperation,
       }}
     >

@@ -167,6 +167,7 @@ pub fn run() {
             project::toggle_tile,
             project::export_project,
             project::import_project,
+            project::new_project,
             render::render_dmx,
             render::set_render_mode,
             #[cfg(desktop)]

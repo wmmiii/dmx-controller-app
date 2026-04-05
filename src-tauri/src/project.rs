@@ -570,6 +570,40 @@ pub async fn import_project(
     Ok(assets_binary)
 }
 
+/// Resets the project to a fresh default, clearing assets and undo history.
+#[tauri::command]
+pub async fn new_project(
+    app: AppHandle,
+    persist_state: State<'_, Arc<TokioMutex<PersistState>>>,
+    output_loop_manager: State<'_, Arc<TokioMutex<OutputLoopManager>>>,
+    serial_state: State<'_, Arc<TokioMutex<SerialState>>>,
+    sacn_state: State<'_, Arc<TokioMutex<SacnState>>>,
+    wled_state: State<'_, Arc<TokioMutex<WledState>>>,
+) -> Result<(), String> {
+    // 1. Reset engine to default project
+    let project_binary = project::new_project()?;
+
+    // 2. Emit project update and undo state
+    emit_project_update(&app, Some("New project.".to_string()));
+    emit_undo_state(&app);
+
+    // 3. Persist the new project and clear assets
+    queue_project_persist(&project_binary, persist_state.inner()).await;
+    // Write empty assets to clear any existing asset data
+    queue_assets_persist(&[], persist_state.inner()).await;
+
+    // 4. Rebuild output loops
+    rebuild_outputs(
+        serial_state.inner(),
+        output_loop_manager.inner(),
+        sacn_state.inner(),
+        wled_state.inner(),
+    )
+    .await?;
+
+    Ok(())
+}
+
 /// Toggles a tile on/off based on its current state.
 /// Returns whether the tile was enabled (true) or disabled (false).
 #[tauri::command]

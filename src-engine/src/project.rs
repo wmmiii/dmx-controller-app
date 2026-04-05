@@ -416,6 +416,29 @@ fn create_default_project() -> Result<Project, String> {
     })
 }
 
+/// Resets the project to a fresh default state, clearing the undo stack.
+/// Returns the new project as a binary protobuf.
+pub fn new_project() -> Result<Vec<u8>, String> {
+    let default_project = create_default_project()?;
+    let project_binary = default_project.encode_to_vec();
+
+    let mut state = PROJECT_STATE
+        .lock()
+        .map_err(|e| format!("Failed to lock state: {e}"))?;
+
+    state.project = default_project;
+
+    // Reset undo stack with the new default as the initial state
+    state.operation_stack.clear();
+    state.operation_stack.push(Operation {
+        project_state: project_binary.clone(),
+        description: "New project".to_string(),
+    });
+    state.operation_index = 0;
+
+    Ok(project_binary)
+}
+
 /// Generates a random u64 ID.
 fn rand_id() -> u64 {
     use std::time::{SystemTime, UNIX_EPOCH};

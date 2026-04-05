@@ -183,6 +183,11 @@ th {
   height: 32px;
 }
 
+.new-project {
+  width: 0;
+  padding: 0 var(--space-2);
+}
+
 .fps {
   flex-shrink: 0;
   color: var(--col-text-dim);

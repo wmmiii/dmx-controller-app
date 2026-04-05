@@ -128,6 +128,13 @@ export async function frontendReadyForUpdate(): Promise<void> {
 }
 
 /**
+ * Resets the project to a fresh default, clearing assets and undo history.
+ */
+export async function newProject(): Promise<void> {
+  await invoke('new_project');
+}
+
+/**
  * Toggles a tile on/off based on its current state.
  * Returns whether the tile is now enabled (true) or disabled (false).
  */
