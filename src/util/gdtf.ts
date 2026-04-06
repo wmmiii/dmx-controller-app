@@ -35,7 +35,7 @@ export async function extractGdtf(arrayBuffer: Blob) {
   const descriptionEntry = entries.find(
     (e) => e.filename === 'description.xml',
   );
-  if (descriptionEntry == null) {
+  if (descriptionEntry == null || descriptionEntry.directory) {
     throw new Error('Could not read GDTF file!');
   }
 

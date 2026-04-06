@@ -39,7 +39,7 @@ export function VersatileElement<T>({
   useEffect(() => {
     const listener = () => {
       if (onDragOver && state === 'drag' && activeElement != null) {
-        onDragOver(activeElement);
+        onDragOver(activeElement as T);
       }
     };
     const ref = elementRef.current;

@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use crate::beat::{set_bpm, set_first_beat};
 use crate::project;
 use crate::proto::{self, InputBinding, InputType};
 use crate::tile::{calculate_tile_strength, toggle_tile};
@@ -79,6 +80,7 @@ fn find_binding<'a>(
 ///
 /// Returns information about whether the project was modified and if any beat
 /// actions need to be handled by the Tauri layer.
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
 pub fn perform_action(
     binding_id: u64,
     channel: &str,
@@ -99,8 +101,7 @@ pub fn perform_action(
         let action = &binding.action.unwrap();
 
         match action {
-            proto::input_binding::Action::BeatMatch(_)
-            | proto::input_binding::Action::FirstBeat(_) => {
+            proto::input_binding::Action::BeatMatch(_) => {
                 // Only trigger on binary press (value > 0.5)
                 if binding.input_type() == InputType::Binary && value > 0.5 {
                     Ok(ActionResult::with_action(*action, false))
@@ -108,16 +109,19 @@ pub fn perform_action(
                     Ok(ActionResult::unchanged())
                 }
             }
+            proto::input_binding::Action::FirstBeat(_) => {
+                // Only trigger on binary press (value > 0.5)
+                if binding.input_type() == InputType::Binary && value > 0.5 {
+                    set_first_beat(project).and(Ok(ActionResult::with_action(*action, false)))
+                } else {
+                    Ok(ActionResult::unchanged())
+                }
+            }
             proto::input_binding::Action::SetTempo(_) => {
                 // Calculate BPM from fader value (80-207 BPM range)
-                let bpm = (value * 127.0 + 80.0).floor();
-                let length_ms = 60_000.0 / bpm;
+                let bpm = (value * 127.0 + 80.0).floor() as u16;
 
-                if let Some(ref mut beat) = project.live_beat {
-                    beat.length_ms = length_ms;
-                }
-
-                Ok(ActionResult::with_action(*action, true))
+                set_bpm(project, bpm).and(Ok(ActionResult::with_action(*action, true)))
             }
             proto::input_binding::Action::TileStrength(tile_action) => {
                 let modified = perform_tile_strength(project, tile_action.tile_id, value, cct, t);

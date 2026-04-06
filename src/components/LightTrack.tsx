@@ -141,6 +141,10 @@ export function LightTrack({
               }
             }}
             copyEffect={copyEffect}
+            onDelete={() => {
+              output.layers.splice(i, 1);
+              save(`Delete layer ${i + 1}`);
+            }}
             maxMs={maxMs}
             msToPx={mappingFunctions.msToPx}
             pxToMs={mappingFunctions.pxToMs}

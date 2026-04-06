@@ -8,6 +8,7 @@ import {
   TimecodedEffect,
   TimecodedEffectSchema,
 } from '@dmx-controller/proto/effect_pb';
+import clsx from 'clsx';
 import { BiTrash } from 'react-icons/bi';
 import { ShortcutContext } from '../contexts/ShortcutContext';
 import { IconButton } from './Button';
@@ -32,6 +33,7 @@ interface LayerProps {
   msToPx: (ms: number) => number;
   pxToMs: (px: number) => number;
   snapToBeat: (t: number) => number;
+  className?: string;
 }
 
 export function Layer({
@@ -44,6 +46,7 @@ export function Layer({
   msToPx,
   pxToMs,
   snapToBeat,
+  className,
 }: LayerProps): JSX.Element {
   const { save } = useContext(ProjectContext);
   const { setShortcuts } = useContext(ShortcutContext);
@@ -72,7 +75,7 @@ export function Layer({
   return (
     <div
       ref={layerRef}
-      className={styles.layer}
+      className={clsx(className, styles.layer)}
       onMouseDown={(e) => {
         const ms = pxToMs(e.clientX);
         let index = layer.effects.findIndex((e) => e.startMs > ms);

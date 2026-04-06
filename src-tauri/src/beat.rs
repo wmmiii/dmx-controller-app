@@ -2,13 +2,14 @@
 /// into `dmx_engine` directly.
 pub use dmx_engine::beat::BeatSampler;
 
-use dmx_engine::beat::{beat_t, effective_beat_metadata, transition_beat};
+use dmx_engine::beat::{
+    beat_t, effective_beat_metadata, set_bpm as engine_set_bpm,
+    set_first_beat as engine_set_first_beat, transition_beat,
+};
 use dmx_engine::project;
 use std::sync::{Arc, Mutex as StdMutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, State};
-
-use crate::project::emit_project_update;
 
 pub(crate) type SharedBeatSampler = Arc<StdMutex<TauriBeatSampler>>;
 
@@ -36,19 +37,6 @@ impl TauriBeatSampler {
         }
 
         let _ = app_handle.emit("beat-sampling-state", true);
-        emit_project_update(app_handle, None);
-    }
-
-    pub fn set_first_beat(&mut self, app_handle: &AppHandle, t: u64) {
-        let new_beat_optional = self.inner.set_first_beat(t);
-
-        if let Some(new_beat) = new_beat_optional {
-            let _ = project::with_project_mut(|project| transition_beat(project, &new_beat, t));
-        }
-
-        // Always emit so the frontend knows detection is active
-        let _ = app_handle.emit("beat-sampling-state", true);
-        emit_project_update(app_handle, None);
     }
 }
 
@@ -86,4 +74,16 @@ pub fn get_beat_t() -> Result<f64, String> {
         let beat = effective_beat_metadata(project, t).ok_or("Beat not set!")?;
         beat_t(&beat, t)
     })
+}
+
+/// Returns the current beat position `[0.0, 1.0)` using the engine clock.
+#[tauri::command]
+pub fn set_first_beat() -> Result<(), String> {
+    project::with_project_mut(engine_set_first_beat)
+}
+
+/// Returns the current beat position `[0.0, 1.0)` using the engine clock.
+#[tauri::command]
+pub fn set_bpm(bpm: u16) -> Result<(), String> {
+    project::with_project_mut(|project| engine_set_bpm(project, bpm))
 }

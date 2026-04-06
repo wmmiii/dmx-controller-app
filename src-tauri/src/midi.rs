@@ -1,7 +1,9 @@
 use crate::beat::SharedBeatSampler;
+use crate::project::emit_project_update;
 use dmx_engine::{
     midi::{ActionResult, ControlCommandType, calculate_midi_output, perform_action},
-    project, proto,
+    project,
+    proto::input_binding::Action::BeatMatch,
 };
 use midir::{MidiInput, MidiInputConnection, MidiOutput, MidiOutputConnection};
 use serde::{Deserialize, Serialize};
@@ -560,14 +562,15 @@ fn handle_action_result(
         let Ok(mut sampler) = beat_sampler.lock() else {
             return;
         };
-        match action {
-            proto::input_binding::Action::BeatMatch(_) => {
-                sampler.add_sample(app_handle, t);
-            }
-            proto::input_binding::Action::FirstBeat(_) => {
-                sampler.set_first_beat(app_handle, t);
-            }
-            _ => {}
+
+        // We want to handle beat matching at the Tauri level.
+        if let BeatMatch(_) = action {
+            sampler.add_sample(app_handle, t);
+        }
+
+        drop(sampler); // Release lock before emitting
+        if result.modified {
+            emit_project_update(app_handle, None);
         }
     }
 }

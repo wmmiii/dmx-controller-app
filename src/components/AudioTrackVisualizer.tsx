@@ -124,6 +124,7 @@ export function AudioTrackVisualizer({
 
       return () => ws.un('scroll', callback);
     }
+    return undefined;
   }, [ws, setVisible]);
 
   // Set zoom level.

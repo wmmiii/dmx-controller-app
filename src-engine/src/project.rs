@@ -351,8 +351,14 @@ pub fn ensure_project_exists() -> Result<bool, String> {
 }
 
 /// Creates a minimal default project.
+#[allow(clippy::cast_possible_truncation)]
 fn create_default_project() -> Result<Project, String> {
     use std::collections::HashMap;
+
+    let t = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|e| e.to_string())?
+        .as_millis() as u64;
 
     let scene_id = rand_id();
     let palette_id = rand_id();
@@ -400,10 +406,12 @@ fn create_default_project() -> Result<Project, String> {
         live_beat: Some(BeatMetadata {
             length_ms: 500.0, // 120 BPM
             #[allow(clippy::cast_possible_truncation)]
-            offset_ms: SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .map_err(|e| e.to_string())?
-                .as_millis() as u64,
+            offset_ms: t,
+        }),
+        prev_live_beat: Some(BeatMetadata {
+            length_ms: 500.0, // 120 BPM
+            #[allow(clippy::cast_possible_truncation)]
+            offset_ms: t,
         }),
         controller_mapping: Some(ControllerMapping {
             controller_to_binding: HashMap::new(),

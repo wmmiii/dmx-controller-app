@@ -10,9 +10,7 @@ import {
 } from '@dmx-controller/proto/show_pb';
 import { Button } from '../components/Button';
 import { TextInput } from '../components/Input';
-import LightTimeline, {
-  LightTimelineEffect,
-} from '../components/LightTimeline';
+import LightTimeline from '../components/LightTimeline';
 import { Modal } from '../components/Modal';
 import { PaletteContext } from '../contexts/PaletteContext';
 import { ProjectContext } from '../contexts/ProjectContext';
@@ -54,8 +52,14 @@ export default function ShowPage(): JSX.Element {
 
   const [showDetailsModal, setShowDetailsModal] = useState(false);
 
-  const [selectedEffect, setSelectedEffect] =
-    useState<LightTimelineEffect | null>(null);
+  const [selectedEffect, setSelectedEffect] = useState<TimecodedEffect | null>(
+    null,
+  );
+  const [selectedEffectAddress, setSelectedEffectAddress] = useState<{
+    output: number;
+    layer: number;
+    index: number;
+  } | null>(null);
   const [copyEffect, setCopyEffect] = useState<TimecodedEffect | null>(null);
 
   const show = useMemo(
@@ -73,7 +77,7 @@ export default function ShowPage(): JSX.Element {
         },
         {
           shortcut: { key: 'KeyC', modifiers: ['ctrl'] },
-          action: () => setCopyEffect(selectedEffect?.effect || null),
+          action: () => setCopyEffect(selectedEffect),
           description: 'Copy currently selected effect to clipboard.',
         },
       ]),
@@ -94,7 +98,7 @@ export default function ShowPage(): JSX.Element {
     if (!audioFile) {
       return undefined;
     }
-    return new Blob([audioFile.contents], {
+    return new Blob([audioFile.contents.buffer as ArrayBuffer], {
       type: audioFile.mime,
     });
   }, [audioFile]);
@@ -140,7 +144,8 @@ export default function ShowPage(): JSX.Element {
         audioDuration={audioDuration}
         setAudioDuration={setAudioDuration}
         selectedEffect={selectedEffect}
-        setSelectedEffect={setSelectedEffect}
+        selectedEffectAddress={selectedEffectAddress}
+        setSelectedEffectAddress={setSelectedEffectAddress}
         copyEffect={copyEffect}
         beatMetadata={beatMetadata}
         beatSubdivisions={beatSubdivisions}
