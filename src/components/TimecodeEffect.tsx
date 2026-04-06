@@ -11,6 +11,12 @@ import {
   EffectTiming_BeatSchema,
   EffectTiming_EasingFunction,
   EffectTiming_OneShotSchema,
+  Effect_PresetEffect,
+  Effect_PresetEffectSchema,
+  Effect_PresetEffect_CircleEffect,
+  Effect_PresetEffect_CircleEffectSchema,
+  Effect_PresetEffect_RainbowEffect,
+  Effect_PresetEffect_RainbowEffectSchema,
   Effect_RampEffectSchema,
   Effect_RandomEffectSchema,
   Effect_SequenceEffect,
@@ -37,6 +43,7 @@ import {
   BiPause,
   BiSolidBinoculars,
   BiSolidBolt,
+  BiStar,
   BiSun,
 } from 'react-icons/bi';
 import { LuChartBarStacked } from 'react-icons/lu';
@@ -342,6 +349,15 @@ export function EffectDetails({
     case 'sequenceEffect':
       details = (
         <SequenceEffectDetails
+          effect={effect.effect.value}
+          availableChannels={availableChannels}
+          showPhase={showPhase}
+        />
+      );
+      break;
+    case 'presetEffect':
+      details = (
+        <PresetEffectDetails
           effect={effect.effect.value}
           availableChannels={availableChannels}
           showPhase={showPhase}
@@ -792,6 +808,152 @@ function SequenceEffectDetails({
   );
 }
 
+function PresetEffectDetails({
+  effect: presetEffect,
+  showPhase,
+}: EffectDetailsBaseProps<Effect_PresetEffect>): JSX.Element {
+  const { save } = useContext(ProjectContext);
+
+  const effect = presetEffect.effect.value;
+  const effectCase = presetEffect.effect.case;
+
+  let body: JSX.Element | null;
+  switch (effectCase) {
+    case 'rainbowEffect':
+      body = null;
+      break;
+    case 'circleEffect': {
+      // Redefine for type.
+      const effect = presetEffect.effect.value;
+      body = (
+        <>
+          <hr />
+          <label>
+            <span>Min Pan</span>
+            <NumberInput
+              type="float"
+              max={720}
+              min={-720}
+              value={effect.minPan}
+              onChange={(v) => {
+                effect.minPan = v;
+              }}
+              onFinalize={(v) => save(`Set effect min pan to ${v}.`)}
+            />
+          </label>
+          <label>
+            <span>Max Pan</span>
+            <NumberInput
+              type="float"
+              max={720}
+              min={-720}
+              value={effect.maxPan}
+              onChange={(v) => {
+                effect.maxPan = v;
+              }}
+              onFinalize={(v) => save(`Set effect max pan to ${v}.`)}
+            />
+          </label>
+          <label>
+            <span>Min Tilt</span>
+            <NumberInput
+              type="float"
+              max={720}
+              min={-720}
+              value={effect.minTilt}
+              onChange={(v) => {
+                effect.minTilt = v;
+              }}
+              onFinalize={(v) => save(`Set effect min tilt to ${v}.`)}
+            />
+          </label>
+          <label>
+            <span>Max Tilt</span>
+            <NumberInput
+              type="float"
+              max={720}
+              min={-720}
+              value={effect.maxTilt}
+              onChange={(v) => {
+                effect.maxTilt = v;
+              }}
+              onFinalize={(v) => save(`Set effect max tilt to ${v}.`)}
+            />
+          </label>
+        </>
+      );
+      break;
+    }
+    default:
+      body = null;
+  }
+
+  return (
+    <>
+      <select
+        value={effectCase}
+        onChange={(e) => {
+          console.log('EFFECT ', e.target.value);
+          if (e.target.value === effectCase) {
+            return;
+          }
+
+          switch (e.target.value as typeof effectCase) {
+            case 'rainbowEffect':
+              presetEffect.effect = {
+                case: 'rainbowEffect',
+                value: create(Effect_PresetEffect_RainbowEffectSchema, {
+                  timingMode: {
+                    timing: {
+                      case: 'beat',
+                      value: {
+                        multiplier: 4,
+                      },
+                    },
+                  },
+                }),
+              };
+              break;
+            case 'circleEffect':
+              presetEffect.effect = {
+                case: 'circleEffect',
+                value: create(Effect_PresetEffect_CircleEffectSchema, {
+                  timingMode: {
+                    timing: {
+                      case: 'absolute',
+                      value: {
+                        durationMs: 8_000,
+                      },
+                    },
+                  },
+                  minPan: -90,
+                  maxPan: 90,
+                  minTilt: 90,
+                  maxTilt: 90,
+                }),
+              };
+              break;
+            default:
+              throw new Error(
+                `Unrecognized preset effect type: ${e.target.value}`,
+              );
+          }
+
+          save('Change preset effect type.');
+        }}
+      >
+        <option value="circleEffect">Circle Effect</option>
+        <option value="rainbowEffect">Rainbow Effect</option>
+      </select>
+      <hr />
+      {(effectCase === 'circleEffect' || effectCase === 'rainbowEffect') && (
+        <EffectTimingDetails effect={effect!} showPhase={showPhase} />
+      )}
+      {body}
+    </>
+  );
+}
+
 interface EffectSelectorProps {
   effect: Effect['effect'];
   setEffect: (effect: Effect['effect'], description: string) => void;
@@ -969,12 +1131,49 @@ function EffectSelector({
       >
         <LuChartBarStacked />
       </IconButton>
+      <IconButton
+        title="Preset Effect"
+        variant={effect.case === 'presetEffect' ? 'primary' : 'default'}
+        onClick={() => {
+          if (effect.case === 'presetEffect') {
+            return;
+          }
+
+          setEffect(
+            {
+              case: 'presetEffect',
+              value: create(Effect_PresetEffectSchema, {
+                effect: {
+                  case: 'rainbowEffect',
+                  value: {
+                    timingMode: {
+                      timing: {
+                        case: 'absolute',
+                        value: {
+                          durationMs: 8_000,
+                        },
+                      },
+                    },
+                  },
+                },
+              }),
+            },
+            'Change effect type to preset.',
+          );
+        }}
+      >
+        <BiStar />
+      </IconButton>
     </>
   );
 }
 
 interface EffectTimingDetailsProps {
-  effect: Effect_RampEffect | Effect_SequenceEffect;
+  effect:
+    | Effect_RampEffect
+    | Effect_SequenceEffect
+    | Effect_PresetEffect_RainbowEffect
+    | Effect_PresetEffect_CircleEffect;
   showPhase: boolean;
 }
 
@@ -1155,6 +1354,14 @@ function RandomEffectSubDetails({
     case 'sequenceEffect':
       return (
         <SequenceEffectDetails
+          effect={effect.effect.value}
+          availableChannels={availableChannels}
+          showPhase={false}
+        />
+      );
+    case 'presetEffect':
+      return (
+        <PresetEffectDetails
           effect={effect.effect.value}
           availableChannels={availableChannels}
           showPhase={false}

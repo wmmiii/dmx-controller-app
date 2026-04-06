@@ -50,8 +50,8 @@ jobs:
         run: |
           rm web/vars.css
           cp public/vars.css web/vars.css
-          rm web/icon.png
-          cp src-tauri/icons/icon.png web/icon.png
+          rm web/icon.svg
+          cp public/icon.svg web/icon.svg
 
       - name: Add cache-busting to assets
         run: |

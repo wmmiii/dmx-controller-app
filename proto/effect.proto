@@ -132,6 +132,23 @@ message Effect {
     reserved 2; // Sequence sequence_impl = 2;
   }
 
+  message PresetEffect {
+    message RainbowEffect { EffectTiming timing_mode = 1; }
+
+    message CircleEffect {
+      EffectTiming timing_mode = 1;
+      int32 min_pan = 2;
+      int32 max_pan = 3;
+      int32 min_tilt = 4;
+      int32 max_tilt = 5;
+    }
+
+    oneof effect {
+      RainbowEffect rainbow_effect = 1;
+      CircleEffect circle_effect = 2;
+    }
+  }
+
   reserved 3 to 10;
 
   reserved 19 to 100;
@@ -142,6 +159,7 @@ message Effect {
     StrobeEffect strobe_effect = 103;
     RandomEffect random_effect = 104;
     SequenceEffect sequence_effect = 105;
+    PresetEffect preset_effect = 106;
   }
 
   // Deprecated

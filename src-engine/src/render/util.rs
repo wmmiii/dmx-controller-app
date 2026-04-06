@@ -8,9 +8,9 @@ use crate::{
         output_target::{FixtureMapping, Output},
     },
     render::{
-        ramp_effect::apply_ramp_effect, random_effect::apply_random_effect,
-        render_target::RenderTarget, sequence_effect::apply_sequence_effect,
-        strobe_effect::apply_strobe_effect,
+        preset_effect::apply_preset_effect, ramp_effect::apply_ramp_effect,
+        random_effect::apply_random_effect, render_target::RenderTarget,
+        sequence_effect::apply_sequence_effect, strobe_effect::apply_strobe_effect,
     },
 };
 use std::f64::consts::PI;
@@ -71,6 +71,16 @@ pub fn apply_effect<T: RenderTarget<T>>(
             beat_t,
             frame,
             sequence_effect,
+            color_palette,
+        ),
+        Effect::PresetEffect(preset_effect) => apply_preset_effect(
+            project,
+            render_target,
+            output_target,
+            system_t,
+            effect_t,
+            beat_t,
+            preset_effect,
             color_palette,
         ),
     }
