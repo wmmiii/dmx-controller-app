@@ -150,6 +150,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             beat::add_beat_sample,
             beat::get_beat_t,
+            beat::set_bpm,
             #[cfg(desktop)]
             midi::connect_midi,
             #[cfg(desktop)]

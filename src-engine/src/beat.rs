@@ -5,6 +5,8 @@
 
 use crate::proto::{BeatMetadata, Project};
 
+use std::time::{SystemTime, UNIX_EPOCH};
+
 /// Maximum number of beat timestamps to retain in the rolling window.
 pub const MAX_BEAT_SAMPLES: usize = 8;
 
@@ -248,6 +250,28 @@ pub fn transition_beat(
     project.live_beat = Some(mut_next_beat);
     project.beat_transition_duration_ms = duration_ms as u64;
     project.beat_transition_start_ms = t;
+
+    Ok(())
+}
+
+#[allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_precision_loss
+)]
+pub fn set_bpm(project: &mut Project, bpm: u16) -> Result<(), String> {
+    let t = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|e| e.to_string())?
+        .as_millis() as u64;
+    let Some(live_beat) = project.live_beat.as_mut() else {
+        return Err("Beat not set on project!".to_string());
+    };
+    let beat_t = (t as f64 - live_beat.offset_ms as f64) / live_beat.length_ms;
+    let length = 60_000.0 / f64::from(bpm);
+
+    live_beat.offset_ms = t - (length * beat_t) as u64;
+    live_beat.length_ms = length;
 
     Ok(())
 }

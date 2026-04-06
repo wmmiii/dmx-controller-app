@@ -2,7 +2,9 @@
 /// into `dmx_engine` directly.
 pub use dmx_engine::beat::BeatSampler;
 
-use dmx_engine::beat::{beat_t, effective_beat_metadata, transition_beat};
+use dmx_engine::beat::{
+    beat_t, effective_beat_metadata, set_bpm as engine_set_bpm, transition_beat,
+};
 use dmx_engine::project;
 use std::sync::{Arc, Mutex as StdMutex};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -86,4 +88,11 @@ pub fn get_beat_t() -> Result<f64, String> {
         let beat = effective_beat_metadata(project, t).ok_or("Beat not set!")?;
         beat_t(&beat, t)
     })
+}
+
+/// Returns the current beat position `[0.0, 1.0)` using the engine clock.
+#[tauri::command]
+#[allow(clippy::cast_possible_truncation, clippy::unnecessary_wraps)]
+pub fn set_bpm(bpm: u16) -> Result<(), String> {
+    project::with_project_mut(|project| engine_set_bpm(project, bpm))
 }
