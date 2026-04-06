@@ -370,10 +370,10 @@ function ConflictModal({
       onClose={onCancel}
       footer={
         <>
+          <Button onClick={onCancel}>Cancel</Button>
           <Button variant="warning" onClick={onReassign}>
             Reassign
           </Button>
-          <Button onClick={onCancel}>Cancel</Button>
         </>
       }
     >

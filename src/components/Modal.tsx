@@ -1,4 +1,4 @@
-import { Dialog } from 'radix-ui';
+import { Dialog } from '@base-ui/react';
 import { JSX, useContext, useEffect, useRef, useState } from 'react';
 
 import { ShortcutContext } from '../contexts/ShortcutContext';
@@ -31,6 +31,7 @@ export function Modal({
   const { setShortcuts } = useContext(ShortcutContext);
   const mainWrapperRef = useRef<HTMLDivElement | null>(null);
   const mainRef = useRef<HTMLDivElement | null>(null);
+  const footerRef = useRef<HTMLDivElement | null>(null);
   const [overflow, setOverflow] = useState(false);
 
   useEffect(() => {
@@ -71,39 +72,54 @@ export function Modal({
   return (
     <Dialog.Root open onOpenChange={(open) => !open && onClose()}>
       <Dialog.Portal>
-        <Dialog.Overlay className={styles.wrapper}>
-          <Dialog.Content
-            className={clsx(
-              styles.modal,
-              { [styles.fullScreen]: fullScreen, [styles.overflow]: overflow },
-              className,
-            )}
-            onOpenAutoFocus={(e) => e.preventDefault()}
-            onEscapeKeyDown={(e) => {
+        <Dialog.Backdrop className={styles.wrapper} />
+        <Dialog.Popup
+          className={clsx(
+            styles.modal,
+            { [styles.fullScreen]: fullScreen, [styles.overflow]: overflow },
+            className,
+          )}
+          initialFocus={() => {
+            if (!footerRef.current) {
+              return true;
+            }
+            const focusable = footerRef.current.querySelectorAll<HTMLElement>(
+              'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+            );
+            return focusable[focusable.length - 1] ?? true;
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
               onClose();
               e.stopPropagation();
               e.preventDefault();
-            }}
-          >
-            <div className={styles.header}>
-              <Dialog.Title className={styles.title}>{title}</Dialog.Title>
-              <Spacer />
-              <Dialog.Close asChild>
+            }
+          }}
+        >
+          <div className={styles.header}>
+            <Dialog.Title className={styles.title}>{title}</Dialog.Title>
+            <Spacer />
+            <Dialog.Close
+              render={
                 <IconButton title="close" onClick={onClose}>
                   <BiX />
                 </IconButton>
-              </Dialog.Close>
+              }
+            />
+          </div>
+          <Dialog.Description
+            render={<div ref={mainWrapperRef} className={styles.mainWrapper} />}
+          >
+            <div ref={mainRef} className={clsx(bodyClass, styles.main)}>
+              {children}
             </div>
-            <Dialog.Description asChild>
-              <div ref={mainWrapperRef} className={styles.mainWrapper}>
-                <div ref={mainRef} className={clsx(bodyClass, styles.main)}>
-                  {children}
-                </div>
-              </div>
-            </Dialog.Description>
-            {footer && <div className={styles.footer}>{footer}</div>}
-          </Dialog.Content>
-        </Dialog.Overlay>
+          </Dialog.Description>
+          {footer && (
+            <div ref={footerRef} className={styles.footer}>
+              {footer}
+            </div>
+          )}
+        </Dialog.Popup>
       </Dialog.Portal>
     </Dialog.Root>
   );

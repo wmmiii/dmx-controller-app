@@ -1,7 +1,6 @@
 import { JSX, useContext, useState } from 'react';
 import { Route, Routes, useNavigate } from 'react-router';
 
-import '@radix-ui/themes/styles.css';
 import { exit } from '@tauri-apps/plugin-process';
 import {
   BiDownload,
@@ -55,15 +54,8 @@ export default function Index(): JSX.Element {
           bodyClass={styles.newProject}
           footer={
             <>
-              <Button
-                variant="primary"
-                onClick={async () => {
-                  await downloadProject();
-                  await newProject();
-                  setShowNewProjectDialog(false);
-                }}
-              >
-                Save first
+              <Button onClick={() => setShowNewProjectDialog(false)}>
+                Cancel
               </Button>
               <Button
                 variant="warning"
@@ -74,8 +66,15 @@ export default function Index(): JSX.Element {
               >
                 Don't save
               </Button>
-              <Button onClick={() => setShowNewProjectDialog(false)}>
-                Cancel
+              <Button
+                variant="primary"
+                onClick={async () => {
+                  await downloadProject();
+                  await newProject();
+                  setShowNewProjectDialog(false);
+                }}
+              >
+                Save first
               </Button>
             </>
           }
@@ -242,9 +241,6 @@ function WarningDialog() {
       onClose={() => setOpen(false)}
       footer={
         <>
-          <Button variant="primary" onClick={() => setOpen(false)}>
-            Let's go!
-          </Button>
           <Button
             variant="warning"
             onClick={() => {
@@ -254,6 +250,9 @@ function WarningDialog() {
             }}
           >
             Don't show this dialog again
+          </Button>
+          <Button variant="primary" onClick={() => setOpen(false)}>
+            Let's go!
           </Button>
         </>
       }

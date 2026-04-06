@@ -1,4 +1,5 @@
-import { Popover } from 'radix-ui';
+import { Popover } from '@base-ui/react';
+import clsx from 'clsx';
 import { useMemo, useRef, useState } from 'react';
 import { BiX } from 'react-icons/bi';
 import { IconButton } from './Button';
@@ -43,6 +44,7 @@ export function SelectInput<T>({
   const [searchQuery, setSearchQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Determine if items are categories or simple options
   const isCategories =
@@ -162,120 +164,127 @@ export function SelectInput<T>({
 
   return (
     <Popover.Root open={open} onOpenChange={handleOpenChange}>
-      <Popover.Anchor asChild>
-        <div className={`${styles.root} ${className || ''}`}>
-          <Popover.Trigger asChild>
-            <input
-              ref={inputRef}
-              type="text"
-              className={styles.input}
-              placeholder={placeholder}
-              value={displayValue}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                if (!open) {
-                  setOpen(true);
-                }
-              }}
-              onKeyDown={(e) => {
-                if (e.code === 'Escape') {
-                  setOpen(false);
-                  inputRef.current?.blur();
-                } else if (e.code === 'Enter') {
-                  // Select first option that exactly matches the search query
-                  const match = allOptions.find(
-                    (opt) => opt.label === searchQuery,
-                  );
-                  if (match) {
-                    e.preventDefault();
-                    handleSelect(match.value);
-                    inputRef.current?.blur();
-                  }
-                } else if (e.code === 'Tab' && open && !e.shiftKey) {
-                  // Move focus to first item in dropdown
-                  const firstItem =
-                    dropdownRef.current?.querySelector<HTMLElement>(
-                      '[tabindex="0"]',
-                    );
-                  if (firstItem) {
-                    e.preventDefault();
-                    firstItem.focus();
-                  }
-                }
-              }}
-            />
-          </Popover.Trigger>
-          {value !== undefined && (
-            <IconButton
-              className={styles.clearButton}
-              title="Clear"
-              onClick={() => handleClear()}
-            >
-              <BiX />
-            </IconButton>
-          )}
-        </div>
-      </Popover.Anchor>
-
-      <Popover.Portal>
-        <Popover.Content
-          ref={dropdownRef}
-          className={styles.dropdown}
-          onOpenAutoFocus={(e) => e.preventDefault()}
-          onInteractOutside={() => setOpen(false)}
-          onEscapeKeyDown={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setOpen(false);
-            inputRef.current?.focus();
+      <div
+        ref={containerRef}
+        className={clsx(className, styles.root, { [styles.open]: open })}
+      >
+        <input
+          ref={inputRef}
+          type="text"
+          className={styles.input}
+          placeholder={placeholder}
+          value={displayValue}
+          onClick={() => {
+            if (!open) {
+              setOpen(true);
+            }
+          }}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+            if (!open) {
+              setOpen(true);
+            }
           }}
           onKeyDown={(e) => {
-            if (e.code === 'Tab' && e.shiftKey) {
-              // Check if we're on the first item
-              const items =
-                dropdownRef.current?.querySelectorAll<HTMLElement>(
+            if (e.code === 'Escape') {
+              setOpen(false);
+              inputRef.current?.blur();
+            } else if (e.code === 'Enter') {
+              // Select first option that exactly matches the search query
+              const match = allOptions.find((opt) => opt.label === searchQuery);
+              if (match) {
+                e.preventDefault();
+                handleSelect(match.value);
+                inputRef.current?.blur();
+              }
+            } else if (e.code === 'Tab' && open && !e.shiftKey) {
+              // Move focus to first item in dropdown
+              const firstItem =
+                dropdownRef.current?.querySelector<HTMLElement>(
                   '[tabindex="0"]',
                 );
-              if (items && items[0] === document.activeElement) {
+              if (firstItem) {
                 e.preventDefault();
-                inputRef.current?.focus();
+                firstItem.focus();
               }
             }
           }}
-          sideOffset={4}
+        />
+        {value !== undefined && (
+          <IconButton
+            className={styles.clearButton}
+            title="Clear"
+            onClick={() => handleClear()}
+          >
+            <BiX />
+          </IconButton>
+        )}
+      </div>
+
+      <Popover.Portal>
+        <Popover.Positioner
+          side="bottom"
+          anchor={containerRef}
+          className={styles.popoverPositioner}
         >
-          {hasItems &&
-            (isCategories ? (
-              (filteredItems as SelectCategory<T>[]).map(
-                (category, categoryIndex) => (
-                  <div key={categoryIndex} className={styles.category}>
-                    <div className={styles.categoryLabel}>{category.label}</div>
-                    <ul className={styles.list}>
-                      {category.options.map((option, optionIndex) => (
-                        <Option
-                          key={`${categoryIndex}-${optionIndex}`}
-                          option={option}
-                          selected={equals(option.value, value)}
-                          handleSelect={handleSelect}
-                        />
-                      ))}
-                    </ul>
-                  </div>
-                ),
-              )
-            ) : (
-              <ul className={styles.list}>
-                {(filteredItems as SelectOption<T>[]).map((option, index) => (
-                  <Option
-                    key={index}
-                    option={option}
-                    selected={equals(option.value, value)}
-                    handleSelect={handleSelect}
-                  />
-                ))}
-              </ul>
-            ))}
-        </Popover.Content>
+          <Popover.Popup
+            ref={dropdownRef}
+            className={styles.dropdown}
+            initialFocus={inputRef}
+            onKeyDown={(e) => {
+              if (e.code === 'Escape') {
+                e.preventDefault();
+                e.stopPropagation();
+                setOpen(false);
+                inputRef.current?.focus();
+              } else if (e.code === 'Tab' && e.shiftKey) {
+                // Check if we're on the first item
+                const items =
+                  dropdownRef.current?.querySelectorAll<HTMLElement>(
+                    '[tabindex="0"]',
+                  );
+                if (items && items[0] === document.activeElement) {
+                  e.preventDefault();
+                  inputRef.current?.focus();
+                }
+              }
+            }}
+          >
+            {hasItems &&
+              (isCategories ? (
+                (filteredItems as SelectCategory<T>[]).map(
+                  (category, categoryIndex) => (
+                    <div key={categoryIndex} className={styles.category}>
+                      <div className={styles.categoryLabel}>
+                        {category.label}
+                      </div>
+                      <ul className={styles.list}>
+                        {category.options.map((option, optionIndex) => (
+                          <Option
+                            key={`${categoryIndex}-${optionIndex}`}
+                            option={option}
+                            selected={equals(option.value, value)}
+                            handleSelect={handleSelect}
+                          />
+                        ))}
+                      </ul>
+                    </div>
+                  ),
+                )
+              ) : (
+                <ul className={styles.list}>
+                  {(filteredItems as SelectOption<T>[]).map((option, index) => (
+                    <Option
+                      key={index}
+                      option={option}
+                      selected={equals(option.value, value)}
+                      handleSelect={handleSelect}
+                    />
+                  ))}
+                </ul>
+              ))}
+          </Popover.Popup>
+        </Popover.Positioner>
       </Popover.Portal>
     </Popover.Root>
   );
