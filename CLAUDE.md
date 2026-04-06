@@ -16,11 +16,12 @@ This project uses **Vite** as its primary build system for the frontend. Key com
 - `pnpm run lint` - Run all linters (ESLint, Knip dead code detection, Clippy)
 - `pnpm run cleanup` - Run linters then format (use this when finalizing changes)
 - `pnpm run tauri` - Build/run the Tauri desktop app
+- `pnpm run tauri:dev` - Run Tauri in development mode with backtrace enabled
+- `pnpm run tauri:ios` - Run iOS simulator (iPad Pro 13-inch M5)
 
 **Development Workflow:**
 
 - Vite provides fast HMR (Hot Module Replacement) for auto-rebuilds during development
-- The dev server requires accepting a self-signed certificate (type "thisisunsafe" in Chrome if needed)
 - Frontend TypeScript builds via Vite with CSS modules
 
 ## Architecture Overview
@@ -31,6 +32,7 @@ This project uses **Vite** as its primary build system for the frontend. Key com
 
 - Located in `src/`
 - Multi-page application with routing: Live performance (`LivePage`), Show editing (`ShowPage`), Patch configuration (`PatchPage`), Asset management (`AssetBrowserPage`), Controller configuration (`ControllerPage`), Project management (`ProjectPage`)
+- Note: Show and Assets pages are currently disabled in the main menu UI (commented out in [src/Index.tsx:107-114](src/Index.tsx#L107-L114))
 - Uses React Context for state management across: Project, Serial/DMX, Beat detection, Controller input, Shortcuts, Dialog, Palette, Effect rendering
 
 **Rendering Engine (Rust)**
@@ -69,7 +71,7 @@ This project uses **Vite** as its primary build system for the frontend. Key com
 **State Management:**
 
 - `ProjectContext` handles project persistence, undo/redo stack (max 100 operations)
-- Auto-saves to browser localStorage with binary protobuf serialization
+- Auto-saves to file system with binary protobuf serialization
 - Assets (audio files, GDTF fixtures) stored separately in `Project_Assets`
 
 ### Key Files to Understand
@@ -80,7 +82,7 @@ This project uses **Vite** as its primary build system for the frontend. Key com
 - `src-engine/src/render/scene.rs` - Scene rendering
 - `src-engine/src/render/dmx_render_target.rs` - DMX output target
 - `src-engine/src/render/wled_render_target.rs` - WLED output target
-- Effect renderers: `ramp_effect.rs`, `random_effect.rs`, `sequence_effect.rs`, `strobe_effect.rs`
+- Effect renderers: `ramp_effect.rs`, `random_effect.rs`, `sequence_effect.rs`, `strobe_effect.rs`, `preset_effect.rs`
 
 **Engine (TypeScript — browser glue):**
 
@@ -116,7 +118,9 @@ This project uses **Vite** as its primary build system for the frontend. Key com
 **TypeScript Configuration:**
 
 - Uses strict TypeScript with `tsconfig.json` in root
-- React 19 with React Router for navigation
+- React 19.2.4 with React Router 7 for navigation
+- React Compiler enabled via `babel-plugin-react-compiler` for automatic optimization
+- Radix UI Themes for component library and dialogs
 - CSS modules for styling with shared variables in `src/vars.css`
 - Path aliases: `@dmx-controller/proto/*` for generated protobuf types
 - **Deprecated alias:** `@dmx-controller/wasm-engine` — do not use; WASM engine has been removed
@@ -130,11 +134,16 @@ This project uses **Vite** as its primary build system for the frontend. Key com
 **Hardware Integration:**
 
 - Desktop mode (Tauri): native Serial, MIDI, sACN, and WLED output
-- Audio beat detection uses real-time BPM analyzer for tempo sync
+- Manual BPM and first beat configuration for precise beat synchronization
+- Tap tempo for manual BPM sync
+- Keepawake plugin prevents system sleep during performances
 
 **Effect System:**
 
-- Effects have start/end times and can be static, ramp, strobe, or random
+- Effects have start/end times and can be static, ramp, strobe, random, sequence, or preset
+- **Preset effects** include:
+  - Rainbow Effect: HSV-based rainbow color cycle across fixtures
+  - Circle Effect: Circular pan/tilt movements with configurable min/max ranges
 - Effects can target individual fixtures or groups
 - Timing can be beat-synchronized or time-based
 - Color palettes provide dynamic color sources that interpolate during transitions
