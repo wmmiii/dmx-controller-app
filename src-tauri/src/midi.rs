@@ -283,7 +283,7 @@ fn connect_midi_internal(state: &MidiState, candidate: MidiPortCandidate) -> Res
                     data: message.to_vec(),
                 };
                 if let Err(e) = app_handle.emit("midi-message", &midi_msg) {
-                    eprintln!("Failed to emit MIDI event: {e}");
+                    log::error!("Failed to emit MIDI event: {e}");
                 }
 
                 // Process the MIDI input
@@ -427,13 +427,19 @@ fn output_midi_state_for_device(
 
 #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
 pub fn output_value(conn: &mut MidiOutputConnection, channel: &[u8], value: f64) {
-    let msb = (value * 127.0).round() as u8;
+    // CCs 0-31 support 14-bit resolution with LSB at CC+32
+    if channel[1] < 32 {
+        // 14-bit mode: map to 0-16383, split into MSB (bits 7-13) and LSB (bits 0-6)
+        let value_14bit = (value.clamp(0.0, 1.0) * 16383.0).round() as u16;
+        let msb = (value_14bit >> 7) as u8;
+        let lsb = (value_14bit & 0x7F) as u8;
 
-    let _ = conn.send(&[channel[0], channel[1], msb]);
-
-    if channel[0] < 32 {
-        let lsb = ((value * 127.0).fract() * 127.0).floor() as u8;
+        let _ = conn.send(&[channel[0], channel[1], msb]);
         let _ = conn.send(&[channel[0], channel[1] + 32, lsb]);
+    } else {
+        // 7-bit mode: map to 0-127
+        let value_7bit = (value.clamp(0.0, 1.0) * 127.0).round() as u8;
+        let _ = conn.send(&[channel[0], channel[1], value_7bit]);
     }
 }
 

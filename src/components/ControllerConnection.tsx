@@ -1,4 +1,10 @@
-import { type InputBinding } from '@dmx-controller/proto/controller_pb';
+import { clone } from '@bufbuild/protobuf';
+import {
+  InputBindingSchema,
+  InputType,
+  type InputBinding,
+  type TileStrengthAction,
+} from '@dmx-controller/proto/controller_pb';
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
@@ -23,6 +29,7 @@ import { Button, ControllerButton, IconButton } from './Button';
 import { Modal } from './Modal';
 
 import styles from './ControllerConnection.module.css';
+import { ToggleInput } from './Input';
 
 interface ControllerConnectionProps {
   context: BindingContext;
@@ -106,6 +113,7 @@ function ControllerBindingModal({
       bindingId: bigint;
       channel: ControllerChannel;
       context: BindingContext;
+      inputType: InputType;
     }>
   >([]);
   const [isAddingBinding, setIsAddingBinding] = useState(false);
@@ -121,9 +129,15 @@ function ControllerBindingModal({
     const connectedBindingIds = new Set(
       connectedDevices.map((d) => d.bindingId),
     );
-    const allBindings = getAllBindingsForAction(project, action).filter((b) =>
-      connectedBindingIds.has(b.bindingId),
-    );
+    const allBindings = getAllBindingsForAction(project, action)
+      .filter((b) => connectedBindingIds.has(b.bindingId))
+      .map((b) => {
+        const binding = findBinding(project, b.bindingId, b.channel, b.context);
+        return {
+          ...b,
+          inputType: binding?.inputType ?? InputType.UNSPECIFIED,
+        };
+      });
     setBindings(allBindings);
   }, [project, connectedDevices, action]);
 
@@ -205,7 +219,11 @@ function ControllerBindingModal({
 
         // Add the binding
         if (cct == null || cct == 'msb') {
-          assignAction(project, bindingId, channel, action);
+          // Set the inputType based on the controller input type
+          const bindingToAssign = clone(InputBindingSchema, action);
+          bindingToAssign.inputType =
+            cct == null ? InputType.BINARY : InputType.CONTINUOUS;
+          assignAction(project, bindingId, channel, bindingToAssign);
           save('Add MIDI binding.');
           setIsAddingBinding(false);
         }
@@ -239,24 +257,60 @@ function ControllerBindingModal({
         onClose={onClose}
         footer={<Button onClick={onClose}>Done</Button>}
       >
-        {bindings.map(({ bindingId, channel }) => (
-          <div
-            key={`${bindingId}-${channel}`}
-            className={`${styles.bindingRow} ${highlight === channel ? styles.active : ''}`}
-          >
-            <span>{channel}</span>
-            <IconButton
-              title="Remove binding"
-              variant="warning"
-              onClick={() => {
-                deleteAction(project, bindingId, channel);
-                save('Remove MIDI binding.');
-              }}
-            >
-              <BiTrash />
-            </IconButton>
-          </div>
-        ))}
+        {bindings
+          .sort((a, b) => a.channel.localeCompare(b.channel))
+          .map(({ bindingId, channel, inputType }) => {
+            const binding = findBinding(project, bindingId, channel, context);
+            const isTileStrength = binding?.action.case === 'tileStrength';
+            const tileStrengthAction = isTileStrength
+              ? (binding!.action.value as TileStrengthAction)
+              : null;
+
+            return (
+              <div
+                key={`${bindingId}-${channel}`}
+                className={`${styles.bindingRow} ${highlight === channel ? styles.active : ''}`}
+              >
+                <span>{channel}</span>
+                {isTileStrength && inputType === InputType.CONTINUOUS && (
+                  <ToggleInput
+                    labels={{ left: 'Normal', right: 'Invert' }}
+                    value={tileStrengthAction?.invert ?? false}
+                    onChange={(v) => {
+                      if (binding && binding.action.case === 'tileStrength') {
+                        (binding.action.value as TileStrengthAction).invert = v;
+                        assignAction(project, bindingId, channel, binding);
+                        save('Toggle invert on MIDI binding.');
+                      }
+                    }}
+                  />
+                )}
+                {isTileStrength && inputType === InputType.BINARY && (
+                  <ToggleInput
+                    labels={{ left: 'Toggle', right: 'Hold' }}
+                    value={tileStrengthAction?.hold ?? false}
+                    onChange={(v) => {
+                      if (binding && binding.action.case === 'tileStrength') {
+                        (binding.action.value as TileStrengthAction).hold = v;
+                        assignAction(project, bindingId, channel, binding);
+                        save('Toggle hold on MIDI binding.');
+                      }
+                    }}
+                  />
+                )}
+                <IconButton
+                  title="Remove binding"
+                  variant="warning"
+                  onClick={() => {
+                    deleteAction(project, bindingId, channel);
+                    save('Remove MIDI binding.');
+                  }}
+                >
+                  <BiTrash />
+                </IconButton>
+              </div>
+            );
+          })}
         {bindings.length === 0 && (
           <div className={styles.noBindings}>No MIDI bindings.</div>
         )}

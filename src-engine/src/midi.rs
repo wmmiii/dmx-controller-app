@@ -1,9 +1,13 @@
+use std::borrow::Cow;
 use std::collections::HashMap;
 
 use crate::beat::{set_bpm, set_first_beat};
 use crate::project;
-use crate::proto::{self, InputBinding, InputType};
-use crate::tile::{calculate_tile_strength, toggle_tile};
+use crate::proto::{self, InputBinding, InputType, TileStrengthAction};
+use crate::tile::{calculate_tile_strength, enable_tile, toggle_tile};
+
+static NOTE_ON: &str = "144,";
+static NOTE_OFF: &str = "128,";
 
 /// Result of performing a MIDI action
 #[derive(Debug, Clone)]
@@ -83,12 +87,22 @@ fn find_binding<'a>(
 #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
 pub fn perform_action(
     binding_id: u64,
-    channel: &str,
-    value: f64,
+    original_channel: &str,
+    original_value: f64,
     cct: Option<ControlCommandType>,
     t: u64,
 ) -> Result<ActionResult, String> {
     project::with_project_mut(|project| {
+        // For note on and off values we simply map the "NOTE_OFF" channel type to the "NODE_ON" with a value of 0.0.
+        let (channel_cow, value): (Cow<str>, f64) = if original_channel.starts_with(NOTE_ON) {
+            (Cow::Borrowed(original_channel), 1.0)
+        } else if original_channel.starts_with(NOTE_OFF) {
+            (Cow::Owned(original_channel.replace(NOTE_OFF, NOTE_ON)), 0.0)
+        } else {
+            (Cow::Borrowed(original_channel), original_value)
+        };
+        let channel = channel_cow.as_ref();
+
         // TODO: Use actual binding context.
         let binding_context = BindingContext::Scene {
             scene_id: project.active_scene,
@@ -124,7 +138,7 @@ pub fn perform_action(
                 set_bpm(project, bpm).and(Ok(ActionResult::with_action(*action, true)))
             }
             proto::input_binding::Action::TileStrength(tile_action) => {
-                let modified = perform_tile_strength(project, tile_action.tile_id, value, cct, t);
+                let modified = perform_tile_strength(project, tile_action, value, cct, t);
                 Ok(ActionResult::with_action(*action, modified))
             }
             proto::input_binding::Action::ColorPalette(palette_action) => {
@@ -142,28 +156,39 @@ pub fn perform_action(
 /// Performs tile strength action - either sets absolute strength (fader) or toggles (button).
 fn perform_tile_strength(
     project: &mut proto::Project,
-    tile_id: u64,
+    tile_action: &TileStrengthAction,
     value: f64,
     cct: Option<ControlCommandType>,
     t: u64,
 ) -> bool {
     if let Some(scene) = project.scenes.get_mut(&project.active_scene)
-        && let Some(tile_entry) = scene.tile_map.iter_mut().find(|tm| tm.id == tile_id)
+        && let Some(tile_entry) = scene
+            .tile_map
+            .iter_mut()
+            .find(|tm| tm.id == tile_action.tile_id)
         && let Some(tile) = tile_entry.tile.as_mut()
     {
+        let beat = match &project.live_beat {
+            Some(b) => *b,
+            None => return false,
+        };
         #[allow(clippy::cast_possible_truncation)]
         if cct.is_some() {
             // Fader input - set absolute strength
             tile.transition = Some(proto::scene::tile::Transition::AbsoluteStrength(
-                value as f32,
+                if tile_action.invert {
+                    1.0 - value as f32
+                } else {
+                    value as f32
+                },
             ));
+            true
+        } else if tile_action.hold {
+            // Binary hold input - enable when note down
+            enable_tile(tile, &beat, t, value > 0.5);
             true
         } else if value > 0.5 {
             // Binary input - toggle tile
-            let beat = match &project.live_beat {
-                Some(b) => *b,
-                None => return false,
-            };
             toggle_tile(tile, &beat, t);
             true
         } else {
@@ -235,7 +260,12 @@ pub fn calculate_midi_output(
                     (60_000.0 / beat_metadata.length_ms - 80.0) / 127.0
                 }
                 Some(proto::input_binding::Action::TileStrength(tile_action)) => {
-                    calculate_tile_strength(project, tile_action.tile_id, t)
+                    let strength = calculate_tile_strength(project, tile_action.tile_id, t);
+                    if tile_action.invert {
+                        1.0 - strength
+                    } else {
+                        strength
+                    }
                 }
                 Some(proto::input_binding::Action::ColorPalette(_)) => 1.0,
                 None => 0.0,
@@ -247,4 +277,312 @@ pub fn calculate_midi_output(
 
         Ok(output)
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::proto::{self, BeatMetadata, Scene};
+
+    fn create_test_project_with_tile() -> proto::Project {
+        let mut project = proto::Project::default();
+        project.active_scene = 1;
+
+        let mut scene = Scene::default();
+        scene.name = "Test Scene".to_string();
+
+        // Add a tile
+        let mut tile = proto::scene::Tile::default();
+        tile.name = "Test Tile".to_string();
+
+        let mut tile_map_entry = proto::scene::TileMap::default();
+        tile_map_entry.id = 100;
+        tile_map_entry.tile = Some(tile);
+        scene.tile_map.push(tile_map_entry);
+
+        project.scenes.insert(1, scene);
+
+        // Add beat metadata for timing
+        project.live_beat = Some(BeatMetadata {
+            offset_ms: 0,
+            length_ms: 500.0, // 120 BPM
+        });
+
+        project
+    }
+
+    #[test]
+    fn test_tile_strength_invert_normal() {
+        let mut project = create_test_project_with_tile();
+
+        let tile_action = TileStrengthAction {
+            tile_id: 100,
+            invert: false,
+            hold: false,
+        };
+
+        // Test with value 0.75 (should stay 0.75 without invert)
+        let modified = perform_tile_strength(
+            &mut project,
+            &tile_action,
+            0.75,
+            Some(ControlCommandType::Msb),
+            0,
+        );
+
+        assert!(modified, "Action should modify the project");
+
+        let tile = &project.scenes[&1].tile_map[0].tile.as_ref().unwrap();
+        if let Some(proto::scene::tile::Transition::AbsoluteStrength(strength)) = &tile.transition {
+            assert!(
+                (strength - 0.75).abs() < 0.001,
+                "Strength should be 0.75 without invert"
+            );
+        } else {
+            panic!("Expected AbsoluteStrength transition");
+        }
+    }
+
+    #[test]
+    fn test_tile_strength_invert_enabled() {
+        let mut project = create_test_project_with_tile();
+
+        let tile_action = TileStrengthAction {
+            tile_id: 100,
+            invert: true,
+            hold: false,
+        };
+
+        // Test with value 0.75 (should become 0.25 with invert)
+        let modified = perform_tile_strength(
+            &mut project,
+            &tile_action,
+            0.75,
+            Some(ControlCommandType::Msb),
+            0,
+        );
+
+        assert!(modified, "Action should modify the project");
+
+        let tile = &project.scenes[&1].tile_map[0].tile.as_ref().unwrap();
+        if let Some(proto::scene::tile::Transition::AbsoluteStrength(strength)) = &tile.transition {
+            assert!(
+                (strength - 0.25).abs() < 0.001,
+                "Strength should be inverted: 1.0 - 0.75 = 0.25"
+            );
+        } else {
+            panic!("Expected AbsoluteStrength transition");
+        }
+    }
+
+    #[test]
+    fn test_tile_strength_hold_enabled_press() {
+        let mut project = create_test_project_with_tile();
+
+        // Set up loop timing details for the tile so enable_tile works
+        if let Some(scene) = project.scenes.get_mut(&1) {
+            if let Some(tile_entry) = scene.tile_map.first_mut() {
+                if let Some(tile) = tile_entry.tile.as_mut() {
+                    tile.timing_details = Some(proto::scene::tile::TimingDetails::Loop(
+                        proto::scene::tile::LoopDetails::default(),
+                    ));
+                }
+            }
+        }
+
+        let tile_action = TileStrengthAction {
+            tile_id: 100,
+            invert: false,
+            hold: true,
+        };
+
+        // Test button press (value = 1.0) with hold enabled - should enable tile
+        let modified = perform_tile_strength(&mut project, &tile_action, 1.0, None, 0);
+
+        assert!(modified, "Action should modify the project");
+
+        let tile = &project.scenes[&1].tile_map[0].tile.as_ref().unwrap();
+        // Should enable the tile, which sets a fade-in or fade-out transition
+        assert!(
+            tile.transition.is_some(),
+            "Hold press should set a transition"
+        );
+    }
+
+    #[test]
+    fn test_tile_strength_hold_enabled_release() {
+        let mut project = create_test_project_with_tile();
+
+        // Set up loop timing details for the tile so enable_tile works
+        if let Some(scene) = project.scenes.get_mut(&1) {
+            if let Some(tile_entry) = scene.tile_map.first_mut() {
+                if let Some(tile) = tile_entry.tile.as_mut() {
+                    tile.timing_details = Some(proto::scene::tile::TimingDetails::Loop(
+                        proto::scene::tile::LoopDetails::default(),
+                    ));
+                    // Set initial state to fading in so release can toggle to fade out
+                    tile.transition = Some(proto::scene::tile::Transition::StartFadeInMs(0));
+                }
+            }
+        }
+
+        let tile_action = TileStrengthAction {
+            tile_id: 100,
+            invert: false,
+            hold: true,
+        };
+
+        // Test button release (value = 0.0) with hold enabled - should disable tile
+        let modified = perform_tile_strength(&mut project, &tile_action, 0.0, None, 0);
+
+        assert!(modified, "Action should modify the project");
+
+        let tile = &project.scenes[&1].tile_map[0].tile.as_ref().unwrap();
+        // Should disable the tile, which sets a fade-out transition
+        assert!(
+            matches!(
+                tile.transition,
+                Some(proto::scene::tile::Transition::StartFadeOutMs(_))
+            ),
+            "Hold release should set a fade-out transition"
+        );
+    }
+
+    #[test]
+    fn test_tile_strength_button_toggle_without_hold() {
+        let mut project = create_test_project_with_tile();
+
+        // Set up loop timing details for the tile so toggle works
+        if let Some(scene) = project.scenes.get_mut(&1) {
+            if let Some(tile_entry) = scene.tile_map.first_mut() {
+                if let Some(tile) = tile_entry.tile.as_mut() {
+                    tile.timing_details = Some(proto::scene::tile::TimingDetails::Loop(
+                        proto::scene::tile::LoopDetails::default(),
+                    ));
+                }
+            }
+        }
+
+        let tile_action = TileStrengthAction {
+            tile_id: 100,
+            invert: false,
+            hold: false,
+        };
+
+        // Test button press (value = 1.0) without hold - should toggle
+        let modified = perform_tile_strength(&mut project, &tile_action, 1.0, None, 0);
+
+        assert!(modified, "Action should modify the project");
+
+        let tile = &project.scenes[&1].tile_map[0].tile.as_ref().unwrap();
+        // Should toggle, which sets transition based on tile state
+        assert!(
+            tile.transition.is_some(),
+            "Tile should have a transition after toggle"
+        );
+    }
+
+    #[test]
+    fn test_tile_strength_button_release_without_hold() {
+        let mut project = create_test_project_with_tile();
+
+        let tile_action = TileStrengthAction {
+            tile_id: 100,
+            invert: false,
+            hold: false,
+        };
+
+        // Test button release (value = 0.0) without hold - should not modify
+        let modified = perform_tile_strength(&mut project, &tile_action, 0.0, None, 0);
+
+        assert!(!modified, "Release without hold should not modify");
+    }
+
+    #[test]
+    fn test_midi_output_invert() {
+        use crate::project;
+        use std::collections::HashMap;
+
+        let mut project = create_test_project_with_tile();
+
+        // Set tile strength to 0.75
+        if let Some(scene) = project.scenes.get_mut(&1) {
+            if let Some(tile_entry) = scene.tile_map.first_mut() {
+                if let Some(tile) = tile_entry.tile.as_mut() {
+                    tile.transition = Some(proto::scene::tile::Transition::AbsoluteStrength(0.75));
+                }
+            }
+        }
+
+        // Add controller mapping
+        let controller_name = "TestController";
+        let binding_id = 42u64;
+        project.controller_mapping = Some(proto::ControllerMapping {
+            controller_to_binding: HashMap::from([(controller_name.to_string(), binding_id)]),
+            binding_names: HashMap::new(),
+        });
+
+        // Create binding without invert
+        let binding_normal = proto::InputBinding {
+            input_type: proto::InputType::Continuous.into(),
+            action: Some(proto::input_binding::Action::TileStrength(
+                TileStrengthAction {
+                    tile_id: 100,
+                    invert: false,
+                    hold: false,
+                },
+            )),
+        };
+
+        // Create binding with invert
+        let binding_inverted = proto::InputBinding {
+            input_type: proto::InputType::Continuous.into(),
+            action: Some(proto::input_binding::Action::TileStrength(
+                TileStrengthAction {
+                    tile_id: 100,
+                    invert: true,
+                    hold: false,
+                },
+            )),
+        };
+
+        // Add scene-level bindings
+        let mut scene_bindings = proto::ControllerBindingsMap::default();
+        let mut controller_bindings = proto::controller_bindings_map::ControllerBindings::default();
+        controller_bindings
+            .bindings
+            .insert("normal".to_string(), binding_normal);
+        controller_bindings
+            .bindings
+            .insert("inverted".to_string(), binding_inverted);
+        scene_bindings
+            .bindings
+            .insert(binding_id, controller_bindings);
+
+        if let Some(scene) = project.scenes.get_mut(&1) {
+            scene.controller_bindings = Some(scene_bindings);
+        }
+
+        // Load project into global state
+        use prost::Message;
+        let project_binary = project.encode_to_vec();
+        project::load(&project_binary).unwrap();
+
+        // Calculate MIDI output
+        let output = calculate_midi_output(controller_name, 0).unwrap();
+
+        // Normal output should be 0.75
+        assert!(
+            (output.get("normal").unwrap() - 0.75).abs() < 0.001,
+            "Normal output should be 0.75, got {}",
+            output.get("normal").unwrap()
+        );
+
+        // Inverted output should be 0.25 (1.0 - 0.75)
+        assert!(
+            (output.get("inverted").unwrap() - 0.25).abs() < 0.001,
+            "Inverted output should be 0.25, got {}",
+            output.get("inverted").unwrap()
+        );
+    }
 }

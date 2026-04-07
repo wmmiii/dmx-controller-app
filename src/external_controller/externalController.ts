@@ -1,5 +1,6 @@
-import { clone, create, equals } from '@bufbuild/protobuf';
+import { clone, create } from '@bufbuild/protobuf';
 import {
+  ColorPaletteAction,
   ControllerBindingsMap,
   ControllerBindingsMapSchema,
   ControllerBindingsMap_ControllerBindingsSchema,
@@ -10,6 +11,37 @@ import {
 import { type Project } from '@dmx-controller/proto/project_pb';
 
 import { ControllerChannel } from '../contexts/ControllerContext';
+
+/**
+ * Compares two action bindings by their identity (ignoring behavioral modifiers like invert/hold).
+ * Returns true if the actions represent the same logical action.
+ */
+// TODO: Push this into Rust.
+function actionsEqual(a: InputBinding, b: InputBinding): boolean {
+  if (a.action.case !== b.action.case) {
+    return false;
+  }
+
+  switch (a.action.case) {
+    case 'tileStrength': {
+      const aValue = a.action.value as TileStrengthAction;
+      const bValue = b.action.value as TileStrengthAction;
+      return aValue.tileId === bValue.tileId;
+    }
+    case 'colorPalette': {
+      const aValue = a.action.value as ColorPaletteAction;
+      const bValue = b.action.value as ColorPaletteAction;
+      return aValue.paletteId === bValue.paletteId;
+    }
+    case 'beatMatch':
+    case 'firstBeat':
+    case 'setTempo':
+      // These actions have no identity fields
+      return true;
+    case undefined:
+      return true;
+  }
+}
 
 /**
  * Represents a location in the binding hierarchy.
@@ -246,11 +278,8 @@ export function hasAction(
 
     if (bindings) {
       for (const existingBinding of Object.values(bindings) as InputBinding[]) {
-        // Compare bindings ignoring inputType field - only compare actions
-        if (
-          existingBinding.action.case === binding.action.case &&
-          equals(InputBindingSchema, existingBinding, binding)
-        ) {
+        // Compare bindings ignoring behavioral modifiers (invert/hold)
+        if (actionsEqual(existingBinding, binding)) {
           return true;
         }
       }
@@ -367,7 +396,7 @@ export function getAllBindingsForAction(
       for (const [channel, existingBinding] of Object.entries(
         controllerBindings.bindings,
       )) {
-        if (equals(InputBindingSchema, existingBinding, binding)) {
+        if (actionsEqual(existingBinding as InputBinding, binding)) {
           results.push({
             bindingId: BigInt(id),
             channel,

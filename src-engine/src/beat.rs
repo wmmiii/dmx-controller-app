@@ -270,11 +270,6 @@ pub fn set_first_beat(project: &mut Project) -> Result<(), String> {
     prev_beat.length_ms = live_beat.length_ms;
     prev_beat.offset_ms = t;
 
-    println!(
-        "t: {}\tlive: {}\tprev: {}",
-        t, live_beat.offset_ms, prev_beat.offset_ms
-    );
-
     Ok(())
 }
 

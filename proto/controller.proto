@@ -56,6 +56,11 @@ message BeatMatchAction {}
 message FirstBeatAction {}
 message SetTempoAction {}
 
-message TileStrengthAction { uint64 tile_id = 1; }
+// :)
+message TileStrengthAction {
+  uint64 tile_id = 1;
+  bool invert = 2;
+  bool hold = 3;
+}
 
 message ColorPaletteAction { uint64 palette_id = 1; }

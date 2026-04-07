@@ -129,14 +129,14 @@ pub fn run() {
             );
 
             // Prevent the system from sleeping while the app is running so that
-            // DMX output (sACN, Serial, WLED) is never interrupted by idle sleep.
+            // output is never interrupted by idle sleep.
             #[cfg(desktop)]
             {
                 use tauri_plugin_keepawake::KeepAwakeConfig;
                 if let Err(e) = app.tauri_plugin_keepawake().start(
                     app.handle(),
                     Some(KeepAwakeConfig {
-                        display: false,
+                        display: true,
                         idle: true,
                         sleep: true,
                     }),
