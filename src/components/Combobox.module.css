@@ -6,28 +6,28 @@
 .input {
   width: 100%;
   margin: 0;
-}
 
-.open .input {
-  border-bottom-right-radius: 0;
-  border-bottom-left-radius: 0;
+  &[data-popup-open] {
+    border-bottom-right-radius: 0;
+    border-bottom-left-radius: 0;
+  }
 }
 
 .clear-button {
   position: absolute;
-  top: 50%;
-  right: 1px;
-  width: 30px !important;
-  min-width: 30px !important;
-  height: 30px !important;
-  min-height: 30px !important;
-  margin: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 0;
   font-size: var(--dim-text-size-md);
-  transform: translateY(-50%);
+  border: none;
+  aspect-ratio: 1/1;
 }
 
-.popover-positioner {
+.positioner {
   z-index: var(--z-index-popover);
 }
 
@@ -35,35 +35,15 @@
   box-sizing: border-box;
   min-width: var(--anchor-width);
   max-height: 300px;
+  padding: var(--space-0-5);
   overflow: auto;
+  color: var(--col-text);
+  background-color: var(--col-bg-higher);
+  border-radius: var(--dim-border-radius);
   border-top-left-radius: 0;
   border-top-right-radius: 0;
   outline: none;
-
-  /* Custom scrollbar styling */
-  &::-webkit-scrollbar {
-    width: 8px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: var(--col-scroll-track);
-    border-radius: var(--dim-border-radius);
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: var(--col-scroll-thumb);
-    border-radius: var(--dim-border-radius);
-
-    &:hover {
-      background: color-mix(in srgb, var(--col-scroll-thumb), white 20%);
-    }
-  }
-}
-
-.list {
-  margin: 0;
-  padding: var(--space-0-5);
-  list-style: none;
+  filter: drop-shadow(var(--drop-shadow));
 }
 
 .item {
@@ -75,16 +55,16 @@
   user-select: none;
 
   &:hover,
-  &:focus {
+  &[data-highlighted] {
     background-color: var(--col-bg-active);
   }
 
-  &.selected {
+  &[data-selected] {
     color: var(--col-interactive);
     font-weight: var(--font-weight-heavy);
 
     &:hover,
-    &:focus {
+    &[data-highlighted] {
       color: var(--col-interactive-hover);
     }
   }

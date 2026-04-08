@@ -1,5 +1,6 @@
 import { JSX } from 'react';
 
+import clsx from 'clsx';
 import styles from './Tabs.module.css';
 
 export interface TabsType {
@@ -26,17 +27,12 @@ export function Tabs({
   after,
   className,
 }: TabsProps) {
-  const classes = [styles.wrapper];
-  if (className) {
-    classes.push(className);
-  }
-
   if (tabs[selectedTab] == null) {
     setSelectedTab(Object.keys(tabs)[0]);
   }
 
   return (
-    <div className={classes.join(' ')}>
+    <div className={clsx(className, styles.wrapper)}>
       <div className={styles.header}>
         {before}
         <div className={styles.tabs}>
@@ -50,8 +46,13 @@ export function Tabs({
               <div
                 key={id}
                 className={classes.join(' ')}
-                tabIndex={-1}
+                tabIndex={0}
                 onClick={() => setSelectedTab(id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === 'Space') {
+                    setSelectedTab(id);
+                  }
+                }}
               >
                 {tab.name}
               </div>

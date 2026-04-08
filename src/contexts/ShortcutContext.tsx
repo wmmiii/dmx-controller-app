@@ -122,7 +122,8 @@ function matchesShortcut(
   return (
     shortcut.key === event.code &&
     event.altKey === modifiers.includes('alt') &&
-    event.ctrlKey === modifiers.includes('ctrl') &&
+    (event.ctrlKey === modifiers.includes('ctrl') ||
+      event.metaKey === modifiers.includes('ctrl')) &&
     event.shiftKey === modifiers.includes('shift')
   );
 }

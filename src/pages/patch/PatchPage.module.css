@@ -206,3 +206,7 @@
     color: var(--col-text-dim);
   }
 }
+
+.create-new {
+  padding: 0 var(--space-2);
+}

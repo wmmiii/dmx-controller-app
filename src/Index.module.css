@@ -79,6 +79,7 @@ select {
 
 button {
   padding: var(--space-1);
+  cursor: pointer;
 }
 
 select {

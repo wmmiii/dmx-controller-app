@@ -13,6 +13,7 @@
   display: flex;
   flex-direction: row;
   flex-shrink: 0;
+  align-self: flex-end;
   min-height: 0;
   padding: 0 var(--space-1);
 }
@@ -21,8 +22,6 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  align-self: end;
-  height: fit-content;
   margin-bottom: -1px;
   padding: var(--space-1);
   border: 1px solid var(--col-border-lower);

@@ -40,7 +40,7 @@ export default function PatchPage(): JSX.Element {
 
   for (const [outputIdString, output] of Object.entries(
     getActivePatch(project).outputs,
-  )) {
+  ).sort(([_a, a], [_b, b]) => a.name.localeCompare(b.name))) {
     const outputId = BigInt(outputIdString);
     switch (output.output.case) {
       case 'sacnDmxOutput':
@@ -147,6 +147,7 @@ export default function PatchPage(): JSX.Element {
       {showNewOutputDialog && (
         <Modal
           title="Create new output"
+          bodyClass={styles.createNew}
           onClose={() => setShowNewOutputDialog(false)}
           footer={
             <>

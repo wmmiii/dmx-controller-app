@@ -10,8 +10,8 @@ import {
   OutputTargetSchema,
 } from '@dmx-controller/proto/output_pb';
 import { GROUP_ALL_ID } from '../engine/fixtures/writableDevice';
+import { Combobox, ComboboxGroup, ComboboxOption } from './Combobox';
 import styles from './OutputSelector.module.css';
-import { SelectCategory, SelectInput, SelectOption } from './SelectInput';
 
 const EMPTY_OUTPUT_TARGET = create(OutputTargetSchema, {
   output: {
@@ -31,13 +31,13 @@ export function OutputSelector({
 }: OutputSelectorProps): JSX.Element {
   const { project } = useContext(ProjectContext);
 
-  const targets: Array<SelectCategory<OutputTarget>> = useMemo(() => {
+  const targets: Array<ComboboxGroup<OutputTarget>> = useMemo(() => {
     if (getActivePatch(project) == null) {
       return [];
     }
 
-    const targets: Array<SelectCategory<OutputTarget>> = [];
-    const groups: Array<SelectOption<OutputTarget>> = [
+    const targets: Array<ComboboxGroup<OutputTarget>> = [];
+    const groups: Array<ComboboxOption<OutputTarget>> = [
       {
         value: create(OutputTargetSchema, {
           output: {
@@ -61,10 +61,10 @@ export function OutputSelector({
     }
     targets.push({
       label: 'Groups',
-      options: groups,
+      items: groups,
     });
 
-    const fixtures: Array<SelectOption<OutputTarget>> = [];
+    const fixtures: Array<ComboboxOption<OutputTarget>> = [];
     for (const [outputId, output] of Object.entries(
       getActivePatch(project).outputs,
     )) {
@@ -124,7 +124,7 @@ export function OutputSelector({
     if (fixtures.length > 0) {
       targets.push({
         label: 'Fixtures',
-        options: fixtures,
+        items: fixtures,
       });
     }
 
@@ -142,19 +142,13 @@ export function OutputSelector({
   }
 
   return (
-    <SelectInput
+    <Combobox
       className={classes.join(' ')}
       placeholder="Select output"
       value={selectValue}
       onChange={setValue}
       options={targets}
-      equals={(a, b) => {
-        if (a === undefined || b === undefined) {
-          return a === b;
-        } else {
-          return equals(OutputTargetSchema, a, b);
-        }
-      }}
+      equals={(a, b) => equals(OutputTargetSchema, a, b)}
     />
   );
 }

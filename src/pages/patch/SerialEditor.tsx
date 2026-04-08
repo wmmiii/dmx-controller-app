@@ -1,10 +1,11 @@
 import { useContext, useEffect, useMemo, useState } from 'react';
-import { SelectCategory, SelectInput } from '../../components/SelectInput';
+import { Combobox, ComboboxGroup } from '../../components/Combobox';
 import { ProjectContext } from '../../contexts/ProjectContext';
 import { listPorts } from '../../system_interfaces/serial';
 import { getOutput } from '../../util/projectUtils';
 import { DmxEditor } from './DmxEditor';
 import { OutputFrame } from './OutputFrame';
+import styles from './SerialEditor.module.css';
 
 interface SacnEditorProps {
   outputId: bigint;
@@ -37,10 +38,10 @@ export function SerialEditor({ outputId }: SacnEditorProps) {
   }
 
   const options = useMemo(() => {
-    const items: SelectCategory<string>[] = [
+    const items: ComboboxGroup<string>[] = [
       {
         label: 'Available ports',
-        options: ports.map((p) => ({
+        items: ports.map((p) => ({
           label: p,
           value: p,
         })),
@@ -54,7 +55,7 @@ export function SerialEditor({ outputId }: SacnEditorProps) {
     if (port && ports.indexOf(port) === -1) {
       items.unshift({
         label: 'Unavailable ports',
-        options: [
+        items: [
           {
             label: port,
             value: port,
@@ -77,7 +78,8 @@ export function SerialEditor({ outputId }: SacnEditorProps) {
         <label>
           <span>Serial Port</span>
           &emsp;
-          <SelectInput<string>
+          <Combobox<string>
+            className={styles.portSelect}
             value={output.output.value.lastPort}
             onChange={(value) => {
               if (output.output.case === 'serialDmxOutput') {
@@ -89,21 +91,9 @@ export function SerialEditor({ outputId }: SacnEditorProps) {
                 );
               }
             }}
-            onClear={() => {
-              if (output.output.case === 'serialDmxOutput') {
-                output.output.value.lastPort = undefined;
-                save(`Disconnect port for ${output.name}`);
-              }
-            }}
             onFocus={refreshPorts}
             placeholder="Select or enter serial port"
             options={options}
-            onBlur={(value) => {
-              if (value && output.output.case === 'serialDmxOutput') {
-                output.output.value.lastPort = value;
-                save(`Set port for ${output.name} to ${value}.`);
-              }
-            }}
           />
         </label>
       }
