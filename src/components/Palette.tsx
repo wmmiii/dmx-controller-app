@@ -9,13 +9,16 @@ import {
   InputType,
 } from '@dmx-controller/proto/controller_pb';
 import { RgbColor, Wheel } from '@uiw/react-color';
+import clsx from 'clsx';
 import { BiPencil, BiTrash } from 'react-icons/bi';
 import { colorToHex, stringifyColor } from '../util/colorUtil';
 import { Button, IconButton } from './Button';
 import { ControllerConnection } from './ControllerConnection';
 import { EditableText, TextInput } from './Input';
-import { Modal } from './Modal';
 import styles from './Palette.module.css';
+import { Popover } from './Popover';
+
+const WHEEL_HEIGHT = 150;
 
 interface PaletteSwatchProps {
   paletteId: bigint;
@@ -41,13 +44,6 @@ export function PaletteSwatch({
   const { save } = useContext(ProjectContext);
   const [editPalette, setEditPalette] = useState(false);
 
-  const classes = [styles.paletteSwatch];
-  if (active) {
-    classes.push(styles.active);
-  }
-  if (className) {
-    classes.push(className);
-  }
   if (
     palette.primary?.color == null ||
     palette.secondary?.color == null ||
@@ -59,7 +55,47 @@ export function PaletteSwatch({
   const background = `linear-gradient(60deg, ${colorToRgb(palette.primary!.color)} 20%, ${colorToRgb(palette.secondary!.color)}, ${colorToRgb(palette.tertiary!.color)} 80%)`;
 
   return (
-    <div className={classes.join(' ')} onClick={onClick} title={palette.name}>
+    <div
+      className={clsx(
+        className,
+        { [styles.active]: active },
+        styles.paletteSwatch,
+      )}
+      onClick={onClick}
+      title={palette.name}
+    >
+      {edit && (
+        <Popover
+          open={editPalette}
+          onOpenChange={(open) => {
+            console.log('OPEN CHANGE ', open);
+            if (!open) {
+              save(`Edit color palette ${palette.name}.`);
+            }
+            setEditPalette(open);
+          }}
+          side="left"
+          popover={
+            <EditPalettePopup
+              paletteId={paletteId}
+              sceneId={sceneId}
+              palette={palette}
+              onDelete={() => {
+                setEditPalette(false);
+                onDelete();
+              }}
+            />
+          }
+        >
+          <IconButton
+            className={styles.edit}
+            title="Modify palette"
+            onClick={() => setEditPalette(true)}
+          >
+            <BiPencil />
+          </IconButton>
+        </Popover>
+      )}
       <div className={styles.details}>
         <EditableText
           value={palette.name}
@@ -70,44 +106,24 @@ export function PaletteSwatch({
         />
         <div className={styles.swatchColors} style={{ background }}></div>
       </div>
-      {edit && (
-        <IconButton
-          className={styles.edit}
-          title="Modify palette"
-          onClick={() => setEditPalette(true)}
-        >
-          <BiPencil />
-        </IconButton>
-      )}
-      {editPalette && (
-        <EditPaletteDialog
-          paletteId={paletteId}
-          sceneId={sceneId}
-          palette={palette}
-          onDelete={onDelete}
-          onClose={() => setEditPalette(false)}
-        />
-      )}
     </div>
   );
 }
 
-interface EditPaletteDialogProps {
+interface EditPalettePopupProps {
   paletteId: bigint;
   sceneId: bigint;
   palette: ColorPalette;
   onDelete: () => void;
-  onClose: () => void;
 }
 
-function EditPaletteDialog({
+function EditPalettePopup({
   paletteId,
   sceneId,
   palette,
   onDelete,
-  onClose,
-}: EditPaletteDialogProps) {
-  const { save, update } = useContext(ProjectContext);
+}: EditPalettePopupProps) {
+  const { update } = useContext(ProjectContext);
 
   if (
     palette.primary?.color == null ||
@@ -127,11 +143,6 @@ function EditPaletteDialog({
     [update],
   );
 
-  const done = () => {
-    save(`Edit color palette ${palette.name}.`);
-    onClose();
-  };
-
   const action = useMemo(
     () =>
       create(InputBindingSchema, {
@@ -145,36 +156,9 @@ function EditPaletteDialog({
   );
 
   return (
-    <Modal
-      title={
-        <>
-          Edit
-          <EditableText
-            value={palette.name}
-            onChange={(v) => {
-              palette.name = v;
-              update();
-            }}
-          />
-        </>
-      }
-      onClose={done}
-      bodyClass={styles.editModal}
-      footer={
-        <Button variant="primary" onClick={onClose}>
-          Done
-        </Button>
-      }
-    >
+    <>
       <div className={styles.header}>
-        <Button
-          icon={<BiTrash />}
-          variant="warning"
-          onClick={() => {
-            onClose();
-            onDelete();
-          }}
-        >
+        <Button icon={<BiTrash />} variant="warning" onClick={onDelete}>
           Delete palette
         </Button>
         <div>
@@ -197,6 +181,8 @@ function EditPaletteDialog({
         <div>
           <h3>Primary</h3>
           <Wheel
+            width={WHEEL_HEIGHT}
+            height={WHEEL_HEIGHT}
             color={colorToHex(palette.primary!.color)}
             onChange={(c) => updateColor(c.rgb, palette.primary!.color!)}
           />
@@ -204,6 +190,8 @@ function EditPaletteDialog({
         <div>
           <h3>Secondary</h3>
           <Wheel
+            width={WHEEL_HEIGHT}
+            height={WHEEL_HEIGHT}
             color={colorToHex(palette.secondary!.color)}
             onChange={(c) => updateColor(c.rgb, palette.secondary!.color!)}
           />
@@ -211,13 +199,15 @@ function EditPaletteDialog({
         <div>
           <h3>Tertiary</h3>
           <Wheel
+            width={WHEEL_HEIGHT}
+            height={WHEEL_HEIGHT}
             color={colorToHex(palette.tertiary!.color)}
             onChange={(c) => updateColor(c.rgb, palette.tertiary!.color!)}
           />
         </div>
         <PaletteVisualizer palette={palette} />
       </div>
-    </Modal>
+    </>
   );
 }
 

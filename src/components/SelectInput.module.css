@@ -36,12 +36,9 @@
   min-width: var(--anchor-width);
   max-height: 300px;
   overflow: auto;
-  background-color: var(--col-bg-higher);
-  border: 1px solid var(--col-border);
-  border-bottom-right-radius: var(--dim-border-radius);
-  border-bottom-left-radius: var(--dim-border-radius);
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
   outline: none;
-  box-shadow: var(--drop-shadow);
 
   /* Custom scrollbar styling */
   &::-webkit-scrollbar {

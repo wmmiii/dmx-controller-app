@@ -1,5 +1,5 @@
 import { Color } from '@dmx-controller/proto/color_pb';
-import { useContext } from 'react';
+import { useContext, useState } from 'react';
 import { ProjectContext } from '../contexts/ProjectContext';
 import styles from './ColorSwatch.module.css';
 
@@ -19,12 +19,19 @@ export function ColorSwatch({
   updateDescription,
 }: ColorSwatchProps) {
   const { save, update } = useContext(ProjectContext);
+  const [edit, setEdit] = useState(false);
 
   if (updateDescription) {
     return (
       <div className={className}>
         <Popover
-          onClose={() => save(updateDescription)}
+          open={edit}
+          onOpenChange={(open) => {
+            if (!open) {
+              save(updateDescription);
+            }
+            setEdit(open);
+          }}
           popover={
             <Wheel
               color={colorToHex(color)}

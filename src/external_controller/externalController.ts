@@ -327,7 +327,9 @@ export function deleteBindings(
 ): void {
   // Helper to clean bindings from a ControllerBindingsMap
   const cleanBindingsMap = (bindingsMap: ControllerBindingsMap) => {
-    if (!bindingsMap?.bindings) return;
+    if (!bindingsMap?.bindings) {
+      return;
+    }
 
     // Iterate through all controller IDs
     for (const controllerBindings of Object.values(bindingsMap.bindings)) {

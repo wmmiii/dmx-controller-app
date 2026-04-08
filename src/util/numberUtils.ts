@@ -1,5 +1,7 @@
 export function formatBytes(bytes: number, decimals: number = 2) {
-  if (!+bytes) return '0 Bytes';
+  if (!+bytes) {
+    return '0 Bytes';
+  }
 
   const k = 1000;
   const dm = decimals < 0 ? 0 : decimals;

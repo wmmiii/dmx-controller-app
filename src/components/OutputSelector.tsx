@@ -45,7 +45,7 @@ export function OutputSelector({
             value: GROUP_ALL_ID,
           },
         }),
-        label: '⧉ All Fixtures',
+        label: 'All Fixtures',
       },
     ];
     for (const [groupId, group] of Object.entries(project.groups)) {
@@ -56,7 +56,7 @@ export function OutputSelector({
             value: BigInt(groupId),
           },
         }),
-        label: '⧉ ' + group.name,
+        label: group.name,
       });
     }
     targets.push({
@@ -89,7 +89,7 @@ export function OutputSelector({
                   },
                 },
               }),
-              label: '⧇ ' + dmxFixture.name,
+              label: dmxFixture.name,
             });
           }
           break;
@@ -112,7 +112,7 @@ export function OutputSelector({
                   },
                 },
               }),
-              label: '⧇ ' + segment.name,
+              label: segment.name,
             });
           }
           break;
@@ -191,13 +191,13 @@ export function getOutputTargetName(
               'Unknown output type in getOutputTargetName! ' + output.case,
             );
         }
-        return `⧇ ${name}`;
+        return name;
       }
     case 'group':
       if (target.output.value === GROUP_ALL_ID) {
-        return '⧉ All Fixtures';
+        return 'All Fixtures';
       }
-      return '⧇ ' + project.groups[target.output.value.toString()].name;
+      return project.groups[target.output.value.toString()].name;
     default:
       return '<Unset>';
   }

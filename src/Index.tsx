@@ -2,6 +2,7 @@ import { JSX, useContext, useState } from 'react';
 import { Route, Routes, useNavigate } from 'react-router';
 
 import { exit } from '@tauri-apps/plugin-process';
+import clsx from 'clsx';
 import {
   BiDownload,
   BiError,
@@ -14,11 +15,11 @@ import {
   BiUpload,
 } from 'react-icons/bi';
 import styles from './Index.module.css';
-import { Button, ControllerButton } from './components/Button';
+import { Button, ControllerButton, IconButton } from './components/Button';
 import { DmxUniverseVisualizer } from './components/DmxUniverseVisualizer';
-import { Dropdown } from './components/Dropdown';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Modal } from './components/Modal';
+import { Popover } from './components/Popover';
 import { Spacer } from './components/Spacer';
 import { WledVisualizer } from './components/WledVisualizer';
 import { ControllerContext } from './contexts/ControllerContext';
@@ -41,8 +42,77 @@ export default function Index(): JSX.Element {
     useContext(ProjectContext);
   const navigate = useNavigate();
 
-  const [showMenu, setShowMenu] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [showNewProjectDialog, setShowNewProjectDialog] = useState(false);
+
+  const menuItems = [
+    {
+      title: 'Live',
+      onSelect: () => navigate('/live'),
+    },
+    // {
+    //   title: 'Show',
+    //   onSelect: () => navigate('/show'),
+    // },
+    // {
+    //   title: 'Assets',
+    //   onSelect: () => navigate('/assets'),
+    // },
+    {
+      title: 'Patch',
+      onSelect: () => navigate('/patch'),
+    },
+    {
+      title: 'MIDI',
+      onSelect: () => navigate('/controller'),
+    },
+    {
+      title: 'Project Settings',
+      onSelect: () => navigate('/project'),
+    },
+    { type: 'separator' },
+    {
+      title: 'New Project',
+      icon: <BiFile />,
+      onSelect: () => setShowNewProjectDialog(true),
+    },
+    {
+      title: 'Save As',
+      icon: <BiDownload />,
+      onSelect: downloadProject,
+    },
+    {
+      title: 'Open',
+      icon: <BiUpload />,
+      onSelect: openProject,
+    },
+    { type: 'separator' },
+    {
+      title: 'Connect to serial',
+      icon: port ? <BiLink /> : <BiUnlink />,
+      onSelect: () => (port ? disconnect() : connect()),
+    },
+    { type: 'separator' },
+    {
+      title: 'GitHub Page',
+      icon: <BiLogoGithub />,
+      onSelect: () =>
+        window.open('https://github.com/wmmiii/dmx-controller-app/', '_blank'),
+    },
+    {
+      type: 'separator' as const, // Type-madness.
+    },
+    {
+      title: 'Exit',
+      onSelect: async () => {
+        try {
+          await exit(0);
+        } catch (e) {
+          console.error(e);
+        }
+      },
+    },
+  ];
 
   return (
     <div className={styles.wrapper}>
@@ -87,91 +157,42 @@ export default function Index(): JSX.Element {
       )}
       <header data-tauri-drag-region>
         <h1>DMX Controller App</h1>
-        <div
-          className={styles.menu}
-          onClick={(e) => {
-            setShowMenu(!showMenu);
-            e.stopPropagation();
-          }}
+        <Popover
+          open={menuOpen}
+          onOpenChange={setMenuOpen}
+          arrow={false}
+          className={styles.dropdown}
+          popover={
+            <>
+              {menuItems.map((item, index) => {
+                if (item.type === 'separator') {
+                  return <hr key={index} />;
+                }
+                return (
+                  <button
+                    key={index}
+                    className={styles.item}
+                    onClick={() => {
+                      item.onSelect?.();
+                      setMenuOpen(false);
+                    }}
+                  >
+                    <div className={styles.icon}>{item.icon}</div>
+                    {item.title}
+                  </button>
+                );
+              })}
+            </>
+          }
         >
-          <BiMenu className={styles.menuIcon} />
-          {showMenu && (
-            <Dropdown
-              onClose={() => setShowMenu(false)}
-              items={[
-                {
-                  title: 'Live',
-                  onSelect: () => navigate('/live'),
-                },
-                // {
-                //   title: 'Show',
-                //   onSelect: () => navigate('/show'),
-                // },
-                // {
-                //   title: 'Assets',
-                //   onSelect: () => navigate('/assets'),
-                // },
-                {
-                  title: 'Patch',
-                  onSelect: () => navigate('/patch'),
-                },
-                {
-                  title: 'MIDI',
-                  onSelect: () => navigate('/controller'),
-                },
-                {
-                  title: 'Project Settings',
-                  onSelect: () => navigate('/project'),
-                },
-                { type: 'separator' },
-                {
-                  title: 'New Project',
-                  icon: <BiFile />,
-                  onSelect: () => setShowNewProjectDialog(true),
-                },
-                {
-                  title: 'Save As',
-                  icon: <BiDownload />,
-                  onSelect: downloadProject,
-                },
-                {
-                  title: 'Open',
-                  icon: <BiUpload />,
-                  onSelect: openProject,
-                },
-                { type: 'separator' },
-                {
-                  title: 'Connect to serial',
-                  icon: port ? <BiLink /> : <BiUnlink />,
-                  onSelect: () => (port ? disconnect() : connect()),
-                },
-                { type: 'separator' },
-                {
-                  title: 'GitHub Page',
-                  icon: <BiLogoGithub />,
-                  onSelect: () =>
-                    window.open(
-                      'https://github.com/wmmiii/dmx-controller-app/',
-                      '_blank',
-                    ),
-                },
-                {
-                  type: 'separator' as const, // Type-madness.
-                },
-                {
-                  title: 'Exit',
-                  onSelect: async () => {
-                    try {
-                      await exit(0);
-                    } catch (e) {
-                      console.error(e);
-                    }
-                  },
-                },
-              ]}
-            />
-          )}
-        </div>
+          <IconButton
+            className={clsx(styles.menu, { [styles.open]: menuOpen })}
+            title="menu"
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            <BiMenu />
+          </IconButton>
+        </Popover>
         {Object.entries(getActivePatch(project).outputs)
           .filter(([_, output]) => output.enabled)
           .map(([outputId, output], i) => {

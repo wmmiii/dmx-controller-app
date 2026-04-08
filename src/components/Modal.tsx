@@ -40,7 +40,9 @@ export function Modal({
     const frameId = requestAnimationFrame(() => {
       const contentEle = mainRef.current;
       const mainEle = mainWrapperRef.current;
-      if (!contentEle || !mainEle) return;
+      if (!contentEle || !mainEle) {
+        return;
+      }
 
       const checkOverflow = () =>
         setOverflow(mainEle.scrollHeight > mainEle.clientHeight);

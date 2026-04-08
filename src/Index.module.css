@@ -169,18 +169,50 @@ th {
 }
 
 .menu {
-  position: relative;
-  height: 32px;
-  cursor: pointer;
+  width: 48px !important;
+  height: 48px !important;
+  border: none !important;
 
-  &:hover {
-    color: var(--col-interactive-hover);
+  > svg {
+    width: 48px !important;
+    height: 48px !important;
+  }
+
+  &.open {
+    background-color: var(--col-bg-higher);
+    border-bottom-right-radius: 0;
+    border-bottom-left-radius: 0;
   }
 }
 
-.menu-icon {
-  width: 32px;
-  height: 32px;
+.dropdown {
+  border-top-left-radius: 0 !important;
+}
+
+.item {
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-1);
+  align-items: center;
+  width: 100%;
+  padding: var(--space-1) var(--space-2);
+  color: var(--col-interactive);
+  font: inherit;
+  text-wrap: nowrap;
+  background: none;
+  border: none;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    color: var(--col-interactive-hover);
+    outline: none;
+  }
+
+  .icon {
+    width: 20px;
+    height: 20px;
+  }
 }
 
 .new-project {

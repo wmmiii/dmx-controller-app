@@ -1,8 +1,8 @@
-import { Popover } from '@base-ui/react';
 import clsx from 'clsx';
 import { useMemo, useRef, useState } from 'react';
 import { BiX } from 'react-icons/bi';
 import { IconButton } from './Button';
+import { Popover } from './Popover';
 import styles from './SelectInput.module.css';
 
 export interface SelectOption<T> {
@@ -141,17 +141,6 @@ export function SelectInput<T>({
     setSearchQuery('');
   };
 
-  const handleOpenChange = (isOpen: boolean) => {
-    if (isOpen) {
-      setSearchQuery('');
-      onFocus?.();
-    } else {
-      onBlur?.(searchQuery);
-      setSearchQuery('');
-    }
-    setOpen(isOpen);
-  };
-
   const hasItems =
     filteredItems &&
     (isCategories
@@ -160,10 +149,113 @@ export function SelectInput<T>({
         )
       : filteredItems.length > 0);
 
+  const getOptionElements = () =>
+    dropdownRef.current?.querySelectorAll<HTMLElement>('[role="option"]') ??
+    ([] as unknown as NodeListOf<HTMLElement>);
+
+  const focusOptionByOffset = (offset: number) => {
+    const items = getOptionElements();
+    if (items.length === 0) {
+      return;
+    }
+    const currentIndex = Array.from(items).indexOf(
+      document.activeElement as HTMLElement,
+    );
+    const nextIndex =
+      currentIndex === -1
+        ? offset > 0
+          ? 0
+          : items.length - 1
+        : Math.min(Math.max(currentIndex + offset, 0), items.length - 1);
+    items[nextIndex].focus();
+  };
+
   const displayValue = open ? searchQuery : label;
 
   return (
-    <Popover.Root open={open} onOpenChange={handleOpenChange}>
+    <Popover
+      open={open}
+      onOpenChange={(open) => {
+        if (open) {
+          setSearchQuery('');
+          onFocus?.();
+        } else {
+          onBlur?.(searchQuery);
+          setSearchQuery('');
+        }
+        setOpen(open);
+      }}
+      initialFocus={inputRef}
+      side="bottom"
+      arrow={false}
+      className={styles.dropdown}
+      popover={
+        <div
+          ref={dropdownRef}
+          onKeyDown={(e) => {
+            if (e.code === 'Escape') {
+              e.preventDefault();
+              e.stopPropagation();
+              setOpen(false);
+              inputRef.current?.focus();
+            } else if (e.code === 'ArrowDown') {
+              e.preventDefault();
+              focusOptionByOffset(1);
+            } else if (e.code === 'ArrowUp') {
+              e.preventDefault();
+              const items = getOptionElements();
+              if (items.length > 0 && items[0] === document.activeElement) {
+                inputRef.current?.focus();
+              } else {
+                focusOptionByOffset(-1);
+              }
+            } else if (e.code === 'Tab' && e.shiftKey) {
+              // Check if we're on the first item
+              const items =
+                dropdownRef.current?.querySelectorAll<HTMLElement>(
+                  '[tabindex="0"]',
+                );
+              if (items && items[0] === document.activeElement) {
+                e.preventDefault();
+                inputRef.current?.focus();
+              }
+            }
+          }}
+        >
+          {hasItems &&
+            (isCategories ? (
+              (filteredItems as SelectCategory<T>[]).map(
+                (category, categoryIndex) => (
+                  <div key={categoryIndex} className={styles.category}>
+                    <div className={styles.categoryLabel}>{category.label}</div>
+                    <ul className={styles.list}>
+                      {category.options.map((option, optionIndex) => (
+                        <Option
+                          key={`${categoryIndex}-${optionIndex}`}
+                          option={option}
+                          selected={equals(option.value, value)}
+                          handleSelect={handleSelect}
+                        />
+                      ))}
+                    </ul>
+                  </div>
+                ),
+              )
+            ) : (
+              <ul className={styles.list}>
+                {(filteredItems as SelectOption<T>[]).map((option, index) => (
+                  <Option
+                    key={index}
+                    option={option}
+                    selected={equals(option.value, value)}
+                    handleSelect={handleSelect}
+                  />
+                ))}
+              </ul>
+            ))}
+        </div>
+      }
+    >
       <div
         ref={containerRef}
         className={clsx(className, styles.root, { [styles.open]: open })}
@@ -197,6 +289,18 @@ export function SelectInput<T>({
                 handleSelect(match.value);
                 inputRef.current?.blur();
               }
+            } else if (e.code === 'ArrowDown') {
+              e.preventDefault();
+              if (!open) {
+                setOpen(true);
+              }
+              focusOptionByOffset(1);
+            } else if (e.code === 'ArrowUp') {
+              e.preventDefault();
+              if (!open) {
+                setOpen(true);
+              }
+              focusOptionByOffset(-1);
             } else if (e.code === 'Tab' && open && !e.shiftKey) {
               // Move focus to first item in dropdown
               const firstItem =
@@ -220,73 +324,7 @@ export function SelectInput<T>({
           </IconButton>
         )}
       </div>
-
-      <Popover.Portal>
-        <Popover.Positioner
-          side="bottom"
-          anchor={containerRef}
-          className={styles.popoverPositioner}
-        >
-          <Popover.Popup
-            ref={dropdownRef}
-            className={styles.dropdown}
-            initialFocus={inputRef}
-            onKeyDown={(e) => {
-              if (e.code === 'Escape') {
-                e.preventDefault();
-                e.stopPropagation();
-                setOpen(false);
-                inputRef.current?.focus();
-              } else if (e.code === 'Tab' && e.shiftKey) {
-                // Check if we're on the first item
-                const items =
-                  dropdownRef.current?.querySelectorAll<HTMLElement>(
-                    '[tabindex="0"]',
-                  );
-                if (items && items[0] === document.activeElement) {
-                  e.preventDefault();
-                  inputRef.current?.focus();
-                }
-              }
-            }}
-          >
-            {hasItems &&
-              (isCategories ? (
-                (filteredItems as SelectCategory<T>[]).map(
-                  (category, categoryIndex) => (
-                    <div key={categoryIndex} className={styles.category}>
-                      <div className={styles.categoryLabel}>
-                        {category.label}
-                      </div>
-                      <ul className={styles.list}>
-                        {category.options.map((option, optionIndex) => (
-                          <Option
-                            key={`${categoryIndex}-${optionIndex}`}
-                            option={option}
-                            selected={equals(option.value, value)}
-                            handleSelect={handleSelect}
-                          />
-                        ))}
-                      </ul>
-                    </div>
-                  ),
-                )
-              ) : (
-                <ul className={styles.list}>
-                  {(filteredItems as SelectOption<T>[]).map((option, index) => (
-                    <Option
-                      key={index}
-                      option={option}
-                      selected={equals(option.value, value)}
-                      handleSelect={handleSelect}
-                    />
-                  ))}
-                </ul>
-              ))}
-          </Popover.Popup>
-        </Popover.Positioner>
-      </Popover.Portal>
-    </Popover.Root>
+    </Popover>
   );
 }
 
