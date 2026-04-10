@@ -121,6 +121,9 @@ impl SerialState {
                 dmx_data[..copy_len].copy_from_slice(&data[..copy_len]);
 
                 dmx_serial.set_channels(dmx_data);
+                dmx_serial
+                    .update()
+                    .map_err(|_| "DMX device disconnected".to_string())?;
                 Ok(())
             }
             None => Err("Output not bound to any port".to_string()),
@@ -129,7 +132,7 @@ impl SerialState {
 
     /// Attempt to open a port for the given output
     pub fn try_open_port(&self, output_id: &str, port_name: &str) -> Result<(), String> {
-        match DMXSerial::open(port_name) {
+        match DMXSerial::open_sync(port_name) {
             Ok(dmx_port) => {
                 let mut ports = self
                     .dmx_ports
@@ -228,6 +231,9 @@ impl SerialState {
 
             let mut outputs = Vec::new();
             for (output_id, output) in &active_patch.outputs {
+                if !output.enabled {
+                    continue;
+                }
                 if let Some(ProtoOutput::SerialDmxOutput(SerialDmxOutput {
                     fixtures: _,
                     last_port,

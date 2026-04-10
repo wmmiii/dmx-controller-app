@@ -104,10 +104,14 @@ impl OutputLoopManager {
         self.stop_loop(output_id).await?;
 
         let (cancel_tx, cancel_rx) = tokio::sync::watch::channel(false);
-        let loops_clone = self.loops.clone();
         let output_type_clone = output_type.clone();
         let app_clone = self.app.clone();
 
+        // The task does NOT remove itself from the map on exit.
+        // stop_loop removes the handle before signalling cancel, so the task
+        // never needs the loops lock to exit — eliminating a deadlock where
+        // stop_loop held the lock while awaiting the task, which in turn
+        // needed the lock before it could complete.
         let task = tokio::spawn(async move {
             if let Err(e) = Self::run_output_loop(
                 output_id,
@@ -122,10 +126,6 @@ impl OutputLoopManager {
             {
                 log::error!("Output loop {output_id} failed: {e}");
             }
-
-            // Remove self from the map when done
-            let mut loops = loops_clone.lock().await;
-            loops.remove(&output_id);
         });
 
         let handle = OutputLoopHandle {
@@ -252,7 +252,17 @@ impl OutputLoopManager {
         // Stop loops that need to be stopped
         for output_id in to_stop {
             log::info!("Stopping output loop {output_id} (removed or changed)");
+            let is_serial = matches!(current_loops.get(&output_id), Some(OutputType::Serial { .. }));
+            let will_restart = to_start.iter().any(|(id, _)| *id == output_id);
             self.stop_loop(output_id).await?;
+            // Close the serial port when the output is disabled or deleted. Skip
+            // this when the loop is being immediately restarted (e.g. FPS change)
+            // so we don't briefly drop and reopen the same port.
+            if is_serial && !will_restart {
+                let serial = serial_state.lock().await;
+                let _ = serial.try_close_port(&output_id.to_string());
+                drop(serial);
+            }
         }
 
         // Start new loops
@@ -348,9 +358,11 @@ impl OutputLoopManager {
                 OutputType::Serial { .. } => {
                     match Self::render_and_emit_dmx(output_id, system_t, frame, &app) {
                         Ok(dmx_vec) => {
-                            // Output via serial
                             let serial = serial_state.lock().await;
-                            serial.output_dmx_internal(&output_id.to_string(), &dmx_vec)
+                            let output_result =
+                                serial.output_dmx_internal(&output_id.to_string(), &dmx_vec);
+                            drop(serial);
+                            output_result
                         }
                         Err(RenderError::OutputNotFound { .. }) => {
                             // Output was deleted - exit loop gracefully
@@ -369,9 +381,11 @@ impl OutputLoopManager {
                 } => {
                     match Self::render_and_emit_dmx(output_id, system_t, frame, &app) {
                         Ok(dmx_vec) => {
-                            // Output via sACN
                             let sacn = sacn_state.lock().await;
-                            sacn.output_sacn_internal(*universe, ip_address, &dmx_vec)
+                            let output_result =
+                                sacn.output_sacn_internal(*universe, ip_address, &dmx_vec);
+                            drop(sacn);
+                            output_result
                         }
                         Err(RenderError::OutputNotFound { .. }) => {
                             // Output was deleted - exit loop gracefully
@@ -398,9 +412,10 @@ impl OutputLoopManager {
 
                             // Output via WLED
                             let wled = wled_state.lock().await;
-                            let result = wled.output_wled_internal(ip_address, &wled_data).await;
+                            let output_result =
+                                wled.output_wled_internal(ip_address, &wled_data).await;
                             drop(wled);
-                            result
+                            output_result
                         }
                         Err(RenderError::OutputNotFound { .. }) => {
                             // Output was deleted - exit loop gracefully
@@ -421,10 +436,20 @@ impl OutputLoopManager {
 
             frame = frame.wrapping_add(1);
 
-            // Sleep to maintain target FPS
+            // Sleep to maintain target FPS.
+            // tokio::time::sleep can be delayed 100ms+ on Windows when the tokio scheduler
+            // is busy with Tauri/WebView work. block_in_place runs the sleep on an OS thread,
+            // bypassing the tokio scheduler entirely for precise frame timing.
             let elapsed = loop_start.elapsed();
             if let Some(remaining) = frame_duration.checked_sub(elapsed) {
-                tokio::time::sleep(remaining).await;
+                const SPIN_BUDGET: Duration = Duration::from_millis(3);
+                tokio::task::block_in_place(|| {
+                    let sleep_duration = remaining.saturating_sub(SPIN_BUDGET);
+                    std::thread::sleep(sleep_duration);
+                    while loop_start.elapsed() < frame_duration {
+                        std::hint::spin_loop();
+                    }
+                });
             }
         }
 

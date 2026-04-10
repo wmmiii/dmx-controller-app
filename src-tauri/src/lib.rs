@@ -37,8 +37,23 @@ use tokio::sync::Mutex;
 #[cfg(desktop)]
 use tauri_plugin_keepawake::TauriPluginKeepawakeExt;
 
+// Request 1ms Windows timer resolution for the lifetime of the process.
+// Without this, tokio::time::sleep has ~15ms granularity on Windows,
+// causing DMX frame intervals to spike (observed: 112ms at 30 FPS).
+#[cfg(windows)]
+#[link(name = "winmm")]
+unsafe extern "system" {
+    fn timeBeginPeriod(uPeriod: u32) -> u32;
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    #[cfg(windows)]
+    // SAFETY: timeBeginPeriod is always safe to call; 1 is the minimum valid period.
+    unsafe {
+        timeBeginPeriod(1);
+    }
+
     let builder = tauri::Builder::default();
 
     #[cfg(desktop)]
