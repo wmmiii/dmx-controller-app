@@ -26,6 +26,11 @@ export function SacnEditor({ outputId }: SacnEditorProps) {
         output.enabled = enabled;
         save(`${enabled ? 'Enabled' : 'Disabled'} output "${output.name}".`);
       }}
+      fps={output.fps}
+      setFps={(fps) => {
+        output.fps = fps;
+        save(`Set FPS for ${output.name} to ${fps}.`);
+      }}
       settings={
         <label>
           <span>IP Address</span>

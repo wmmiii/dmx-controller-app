@@ -10,6 +10,10 @@
   min-height: 0;
   padding: var(--space-1);
   border-bottom: 1px solid var(--col-border);
+
+  label {
+    margin: var(--space-1);
+  }
 }
 
 .body {

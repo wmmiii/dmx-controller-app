@@ -195,6 +195,7 @@ export default function Index(): JSX.Element {
         </Popover>
         {Object.entries(getActivePatch(project).outputs)
           .filter(([_, output]) => output.enabled)
+          .sort(([_a, a], [_b, b]) => a.name.localeCompare(b.name))
           .map(([outputId, output], i) => {
             switch (output.output.case) {
               case 'sacnDmxOutput':

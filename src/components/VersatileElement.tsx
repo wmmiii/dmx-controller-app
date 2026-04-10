@@ -69,6 +69,9 @@ export function VersatileElement<T>({
       style={style}
       onPointerDown={(e) => {
         if (onClick || onPress) {
+          // Prevent synthetic click events on touch devices which can
+          // interfere with dialogs opened by the onClick handler.
+          e.preventDefault();
           mouseDown(id, element, onDragComplete, e.clientX, e.clientY);
         }
       }}

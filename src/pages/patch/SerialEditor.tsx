@@ -74,6 +74,11 @@ export function SerialEditor({ outputId }: SacnEditorProps) {
         output.enabled = value;
         save(`${value ? 'Enabled' : 'Disabled'} output ${output.name}`);
       }}
+      fps={output.fps}
+      setFps={(fps) => {
+        output.fps = fps;
+        save(`Set FPS for ${output.name} to ${fps}.`);
+      }}
       settings={
         <label>
           <span>Serial Port</span>

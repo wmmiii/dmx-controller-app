@@ -1,9 +1,11 @@
-import { ToggleInput } from '../../components/Input';
+import { NumberInput, ToggleInput } from '../../components/Input';
 import styles from './OutputFrame.module.css';
 
 interface OutputFrameProps {
   outputEnabled: boolean;
   setOutputEnabled: (enabled: boolean) => void;
+  fps: number;
+  setFps: (fps: number) => void;
   settings: React.ReactNode;
   children: React.ReactNode;
 }
@@ -11,6 +13,8 @@ interface OutputFrameProps {
 export function OutputFrame({
   outputEnabled,
   setOutputEnabled,
+  fps,
+  setFps,
   settings,
   children,
 }: OutputFrameProps) {
@@ -23,6 +27,17 @@ export function OutputFrame({
             className={styles.enabledToggle}
             value={outputEnabled}
             onChange={setOutputEnabled}
+          />
+        </label>
+        <label>
+          <span>FPS</span>
+          &emsp;
+          <NumberInput
+            type="integer"
+            value={fps}
+            onChange={setFps}
+            min={1}
+            max={120}
           />
         </label>
         {settings}

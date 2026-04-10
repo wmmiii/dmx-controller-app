@@ -93,13 +93,13 @@ export function LivePage(): JSX.Element {
                 fadeIn: {
                   amount: {
                     case: 'beat',
-                    value: 0,
+                    value: 1,
                   },
                 },
                 fadeOut: {
                   amount: {
                     case: 'beat',
-                    value: 0,
+                    value: 1,
                   },
                 },
               },

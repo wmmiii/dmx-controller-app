@@ -69,7 +69,9 @@ export function getAvailableChannels(
         throw Error('Tried to get channels of unknown output type!');
     }
   }
-  return Array.from(channels);
+  return Array.from(channels).sort(
+    (a, b) => ALL_CHANNELS.indexOf(a) - ALL_CHANNELS.indexOf(b),
+  );
 }
 
 export function deleteFixture(project: Project, fixtureId: QualifiedFixtureId) {

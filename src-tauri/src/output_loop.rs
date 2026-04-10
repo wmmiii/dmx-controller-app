@@ -14,10 +14,10 @@ use crate::sacn::SacnState;
 use crate::serial::SerialState;
 use crate::wled::WledState;
 
-// FPS constants for each output type
-const SERIAL_FPS: u32 = 44;
-const SACN_FPS: u32 = 44;
-const WLED_FPS: u32 = 42;
+// Default FPS for each output type when not specified
+const DEFAULT_SERIAL_FPS: u32 = 44;
+const DEFAULT_SACN_FPS: u32 = 44;
+const DEFAULT_WLED_FPS: u32 = 42;
 
 // Event payloads for rendering results
 #[derive(Clone, Serialize)]
@@ -40,9 +40,18 @@ struct RenderErrorEvent {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum OutputType {
-    Serial,
-    Sacn { universe: u16, ip_address: String },
-    Wled { ip_address: String },
+    Serial {
+        fps: u32,
+    },
+    Sacn {
+        universe: u16,
+        ip_address: String,
+        fps: u32,
+    },
+    Wled {
+        ip_address: String,
+        fps: u32,
+    },
 }
 
 struct OutputLoopHandle {
@@ -170,13 +179,29 @@ impl OutputLoopManager {
 
                 #[allow(clippy::cast_possible_truncation)]
                 let output_type = match &output.output {
-                    Some(ProtoOutput::SerialDmxOutput(_)) => OutputType::Serial,
+                    Some(ProtoOutput::SerialDmxOutput(_)) => OutputType::Serial {
+                        fps: if output.fps > 0 {
+                            output.fps
+                        } else {
+                            DEFAULT_SERIAL_FPS
+                        },
+                    },
                     Some(ProtoOutput::SacnDmxOutput(sacn)) => OutputType::Sacn {
                         universe: sacn.universe as u16,
                         ip_address: sacn.ip_address.clone(),
+                        fps: if output.fps > 0 {
+                            output.fps
+                        } else {
+                            DEFAULT_SACN_FPS
+                        },
                     },
                     Some(ProtoOutput::WledOutput(wled)) => OutputType::Wled {
                         ip_address: wled.ip_address.clone(),
+                        fps: if output.fps > 0 {
+                            output.fps
+                        } else {
+                            DEFAULT_WLED_FPS
+                        },
                     },
                     None => continue, // Skip outputs without a type
                 };
@@ -293,9 +318,9 @@ impl OutputLoopManager {
         cancel_rx: tokio::sync::watch::Receiver<bool>,
     ) -> Result<(), String> {
         let target_fps = match &output_type {
-            OutputType::Serial => SERIAL_FPS,
-            OutputType::Sacn { .. } => SACN_FPS,
-            OutputType::Wled { .. } => WLED_FPS,
+            OutputType::Serial { fps }
+            | OutputType::Sacn { fps, .. }
+            | OutputType::Wled { fps, .. } => *fps,
         };
 
         let frame_duration = Duration::from_millis(1000 / u64::from(target_fps));
@@ -320,7 +345,7 @@ impl OutputLoopManager {
                 .as_millis() as u64;
 
             let result = match &output_type {
-                OutputType::Serial => {
+                OutputType::Serial { .. } => {
                     match Self::render_and_emit_dmx(output_id, system_t, frame, &app) {
                         Ok(dmx_vec) => {
                             // Output via serial
@@ -340,6 +365,7 @@ impl OutputLoopManager {
                 OutputType::Sacn {
                     universe,
                     ip_address,
+                    ..
                 } => {
                     match Self::render_and_emit_dmx(output_id, system_t, frame, &app) {
                         Ok(dmx_vec) => {
@@ -357,7 +383,7 @@ impl OutputLoopManager {
                         Err(e) => Err(e.to_string()),
                     }
                 }
-                OutputType::Wled { ip_address } => {
+                OutputType::Wled { ip_address, .. } => {
                     // Render WLED
                     match render_wled(output_id, system_t, frame) {
                         Ok(wled_data) => {

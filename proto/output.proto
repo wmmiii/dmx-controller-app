@@ -40,6 +40,7 @@ message SacnDmxOutput {
 message Output {
   string name = 1;
   uint32 latency_ms = 2;
+  uint32 fps = 7;
   bool enabled = 6;
 
   oneof output {

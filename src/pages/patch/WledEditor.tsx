@@ -45,6 +45,11 @@ export function WledEditor({ outputId }: WledEditorProps) {
         output.enabled = enabled;
         save(`${enabled ? 'Enabled' : 'Disabled'} output "${output.name}".`);
       }}
+      fps={output.fps}
+      setFps={(fps) => {
+        output.fps = fps;
+        save(`Set FPS for ${output.name} to ${fps}.`);
+      }}
       settings={
         <>
           <label>

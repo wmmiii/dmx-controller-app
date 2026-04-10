@@ -368,7 +368,8 @@ function CustomChannels({ states }: CustomChannelsProps) {
               Index
               <NumberInput
                 value={index}
-                onChange={(newIndex) => {
+                onChange={() => {}}
+                onFinalize={(newIndex) => {
                   for (const state of states) {
                     const channel = state.channels.find(
                       (c) => c.index === index,

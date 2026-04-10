@@ -252,9 +252,9 @@ export function NumberInput({
       value={input}
       onInput={(e) => onChangeImpl((e.target as HTMLInputElement).value)}
       onBlur={() => {
-        setInput(String(value));
         if (onFinalize) {
-          onFinalize(value);
+          const inputValue = parseValue(input);
+          onFinalize(isNaN(inputValue) ? value : inputValue);
         }
       }}
     />
