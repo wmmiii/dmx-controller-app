@@ -326,6 +326,14 @@ impl OutputLoopManager {
         let frame_duration = Duration::from_millis(1000 / u64::from(target_fps));
         let mut frame = 0u32;
 
+        // Timing diagnostics
+        let stats_interval = target_fps * 5; // Log every 5 seconds
+        let mut last_frame_time = Instant::now();
+        let mut late_frames = 0u32;
+        let mut max_interval_ms = 0f64;
+        let mut total_render_ms = 0f64;
+        let mut total_output_ms = 0f64;
+
         log::info!("Starting output loop {output_id} ({output_type:?}) at {target_fps} FPS");
 
         loop {
@@ -336,6 +344,16 @@ impl OutputLoopManager {
             }
 
             let loop_start = Instant::now();
+
+            // Track frame interval jitter
+            let frame_interval = last_frame_time.elapsed();
+            let interval_ms = frame_interval.as_secs_f64() * 1000.0;
+            let expected_ms = frame_duration.as_secs_f64() * 1000.0;
+            if interval_ms > expected_ms * 1.5 {
+                late_frames += 1;
+            }
+            max_interval_ms = max_interval_ms.max(interval_ms);
+            last_frame_time = Instant::now();
 
             // Render the frame
             #[allow(clippy::cast_possible_truncation)]
@@ -348,9 +366,19 @@ impl OutputLoopManager {
                 OutputType::Serial { .. } => {
                     match Self::render_and_emit_dmx(output_id, system_t, frame, &app) {
                         Ok(dmx_vec) => {
+                            let render_time = loop_start.elapsed();
+                            total_render_ms += render_time.as_secs_f64() * 1000.0;
+
                             // Output via serial
                             let serial = serial_state.lock().await;
-                            serial.output_dmx_internal(&output_id.to_string(), &dmx_vec)
+                            let output_result =
+                                serial.output_dmx_internal(&output_id.to_string(), &dmx_vec);
+                            drop(serial);
+
+                            let output_time = loop_start.elapsed() - render_time;
+                            total_output_ms += output_time.as_secs_f64() * 1000.0;
+
+                            output_result
                         }
                         Err(RenderError::OutputNotFound { .. }) => {
                             // Output was deleted - exit loop gracefully
@@ -369,9 +397,19 @@ impl OutputLoopManager {
                 } => {
                     match Self::render_and_emit_dmx(output_id, system_t, frame, &app) {
                         Ok(dmx_vec) => {
+                            let render_time = loop_start.elapsed();
+                            total_render_ms += render_time.as_secs_f64() * 1000.0;
+
                             // Output via sACN
                             let sacn = sacn_state.lock().await;
-                            sacn.output_sacn_internal(*universe, ip_address, &dmx_vec)
+                            let output_result =
+                                sacn.output_sacn_internal(*universe, ip_address, &dmx_vec);
+                            drop(sacn);
+
+                            let output_time = loop_start.elapsed() - render_time;
+                            total_output_ms += output_time.as_secs_f64() * 1000.0;
+
+                            output_result
                         }
                         Err(RenderError::OutputNotFound { .. }) => {
                             // Output was deleted - exit loop gracefully
@@ -396,11 +434,19 @@ impl OutputLoopManager {
                                 log::error!("Failed to emit WLED render event: {e}");
                             }
 
+                            let render_time = loop_start.elapsed();
+                            total_render_ms += render_time.as_secs_f64() * 1000.0;
+
                             // Output via WLED
                             let wled = wled_state.lock().await;
-                            let result = wled.output_wled_internal(ip_address, &wled_data).await;
+                            let output_result =
+                                wled.output_wled_internal(ip_address, &wled_data).await;
                             drop(wled);
-                            result
+
+                            let output_time = loop_start.elapsed() - render_time;
+                            total_output_ms += output_time.as_secs_f64() * 1000.0;
+
+                            output_result
                         }
                         Err(RenderError::OutputNotFound { .. }) => {
                             // Output was deleted - exit loop gracefully
@@ -420,6 +466,20 @@ impl OutputLoopManager {
             }
 
             frame = frame.wrapping_add(1);
+
+            // Log timing stats every 5 seconds
+            if frame % stats_interval == 0 && frame > 0 {
+                let frames_f64 = f64::from(stats_interval);
+                let avg_render = total_render_ms / frames_f64;
+                let avg_output = total_output_ms / frames_f64;
+                log::info!(
+                    "Output {output_id} timing: late_frames={late_frames}, max_interval={max_interval_ms:.1}ms, avg_render={avg_render:.2}ms, avg_output={avg_output:.2}ms"
+                );
+                late_frames = 0;
+                max_interval_ms = 0.0;
+                total_render_ms = 0.0;
+                total_output_ms = 0.0;
+            }
 
             // Sleep to maintain target FPS
             let elapsed = loop_start.elapsed();
