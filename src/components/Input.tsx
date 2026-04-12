@@ -295,7 +295,14 @@ export function NumberInput(props: NumberInputProps): JSX.Element {
     classes.push(className);
   }
 
-  return (
+  const indicator =
+    props.normalized && numberInputMode === NumberInputMode.DMX
+      ? '#'
+      : props.normalized && numberInputMode === NumberInputMode.PERCENTAGE
+        ? '%'
+        : null;
+
+  const inputEl = (
     <input
       ref={inputRef}
       className={classes.join(' ')}
@@ -331,6 +338,16 @@ export function NumberInput(props: NumberInputProps): JSX.Element {
       }}
     />
   );
+
+  if (indicator != null) {
+    return (
+      <span className={styles.numberInputWrapper}>
+        {inputEl}
+        <span className={styles.numberInputSuffix}>{indicator}</span>
+      </span>
+    );
+  }
+  return inputEl;
 }
 
 interface ToggleInputProps {

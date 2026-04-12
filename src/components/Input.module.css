@@ -23,6 +23,18 @@
   max-width: 5em;
 }
 
+.number-input-wrapper {
+  display: inline-flex;
+  align-items: center;
+}
+
+.number-input-suffix {
+  padding-left: 2px;
+  opacity: 0.35;
+  user-select: none;
+  pointer-events: none;
+}
+
 .parse-error {
   border-bottom-color: var(--col-warning);
 }
