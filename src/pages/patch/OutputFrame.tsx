@@ -32,13 +32,7 @@ export function OutputFrame({
         <label>
           <span>FPS</span>
           &emsp;
-          <NumberInput
-            type="integer"
-            value={fps}
-            onChange={setFps}
-            min={1}
-            max={120}
-          />
+          <NumberInput mode="bpm" value={fps} onChange={setFps} />
         </label>
         {settings}
       </div>

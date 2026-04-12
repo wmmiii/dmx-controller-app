@@ -325,22 +325,14 @@ export function BeatEditor({ file, onCancel }: BeatEditorProps): JSX.Element {
         <div>
           <span>Beats per segment</span>
           <NumberInput
-            type="integer"
+            mode="beat"
             value={beatsPerDuration}
             onChange={setBeatsPerDuration}
-            min={1}
-            max={128}
           />
         </div>
         <div>
           BPM:
-          <NumberInput
-            type="integer"
-            min={0}
-            max={300}
-            value={bpm}
-            onChange={setBpm}
-          />
+          <NumberInput mode="bpm" value={bpm} onChange={setBpm} />
         </div>
       </div>
       <h2>Instructions</h2>

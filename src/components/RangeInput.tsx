@@ -19,25 +19,11 @@ export default function RangeInput({
   onFinalize,
   max,
 }: RangeInputProps): JSX.Element {
-  if (max === '1') {
-    return (
-      <NumberInput
-        className={className}
-        title={title}
-        normalized
-        value={value}
-        onChange={onChange}
-        onFinalize={onFinalize}
-      />
-    );
-  }
   return (
     <NumberInput
       className={className}
       title={title}
-      type="integer"
-      min={0}
-      max={255}
+      mode={max === '255' ? 'dmx' : undefined}
       value={value}
       onChange={onChange}
       onFinalize={onFinalize}

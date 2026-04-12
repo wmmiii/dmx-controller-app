@@ -152,140 +152,170 @@ export function EditableText({ value, onChange }: EditableTextProps) {
   }
 }
 
-export type NumberInputType = 'float' | 'integer';
+// The mode controls how the value is displayed and whether the system
+// NumberInputMode setting applies:
+//
+//   undefined  — value is 0-1 internally; display unit follows the project
+//                NumberInputMode setting (NORMALIZED / DMX / PERCENTAGE).
+//   'normalized' — value is 0-1; always display as 0-1 regardless of setting.
+//   'dmx'        — value is already in 0-255 space; always display as 0-255.
+//   'percent'    — value is already in 0-100 space; always display as 0-100.
+//   'degree'     — value is in degrees; unconstrained, shows '°' suffix.
+//   'beat'       — value is a beat count; unconstrained, shows ♩ suffix.
+//   'bpm'        — unconstrained pass-through (beats per minute, durations,
+//                  frame counts, and any other non-normalised quantity).
+export type InputMode =
+  | 'normalized'
+  | 'dmx'
+  | 'percent'
+  | 'degree'
+  | 'beat'
+  | 'bpm';
 
-type NumberInputBaseProps = {
+export interface NumberInputProps {
   className?: string;
   title?: string;
   disabled?: boolean;
+  mode?: InputMode;
   value: number;
   onChange: (value: number) => void;
   onFinalize?: (value: number) => void;
-};
-
-// When normalized is true, the value is always in the 0–1 range internally.
-// The display unit (and min/max) are derived from the project's NumberInputMode.
-type NormalizedNumberInputProps = NumberInputBaseProps & {
-  normalized: true;
-};
-
-// When normalized is absent/false, min, max, and type must be supplied explicitly.
-type RawNumberInputProps = NumberInputBaseProps & {
-  normalized?: false;
-  type?: NumberInputType;
-  min: number;
-  max: number;
-};
-
-export type NumberInputProps = NormalizedNumberInputProps | RawNumberInputProps;
+}
 
 type DisplayConfig = {
-  min: number;
-  max: number;
-  effectiveType: NumberInputType | undefined;
-  // Multiplier: internal → display (e.g. 255 for DMX, 100 for %)
-  scale: number;
-  // Whether to round the internal→display conversion (DMX integers)
-  rounded: boolean;
+  min: number | null; // null = no lower bound
+  max: number | null; // null = no upper bound
+  isInteger: boolean;
+  scale: number; // internal × scale = display value
+  indicator: string | null;
 };
 
 function getDisplayConfig(
-  props: NumberInputProps,
-  mode: NumberInputMode,
+  inputMode: InputMode | undefined,
+  systemMode: NumberInputMode,
 ): DisplayConfig {
-  if (props.normalized) {
-    switch (mode) {
-      case NumberInputMode.DMX:
+  if (inputMode !== undefined) {
+    switch (inputMode) {
+      case 'normalized':
+        return { min: 0, max: 1, isInteger: false, scale: 1, indicator: null };
+      case 'dmx':
         return {
           min: 0,
           max: 255,
-          effectiveType: 'integer',
-          scale: 255,
-          rounded: true,
+          isInteger: true,
+          scale: 1,
+          indicator: '#',
         };
-      case NumberInputMode.PERCENTAGE:
+      case 'percent':
         return {
           min: 0,
           max: 100,
-          effectiveType: 'float',
-          scale: 100,
-          rounded: false,
-        };
-      default: // NORMALIZED
-        return {
-          min: 0,
-          max: 1,
-          effectiveType: 'float',
+          isInteger: false,
           scale: 1,
-          rounded: false,
+          indicator: '%',
+        };
+      case 'degree':
+        return {
+          min: null,
+          max: null,
+          isInteger: false,
+          scale: 1,
+          indicator: '°',
+        };
+      case 'beat':
+        return {
+          min: null,
+          max: null,
+          isInteger: false,
+          scale: 1,
+          indicator: '♩',
+        };
+      case 'bpm':
+        return {
+          min: null,
+          max: null,
+          isInteger: false,
+          scale: 1,
+          indicator: null,
         };
     }
   }
-  return {
-    min: props.min,
-    max: props.max,
-    effectiveType: props.type,
-    scale: 1,
-    rounded: false,
-  };
+  // mode undefined → value is 0-1, follow project-level NumberInputMode
+  switch (systemMode) {
+    case NumberInputMode.DMX:
+      return { min: 0, max: 255, isInteger: true, scale: 255, indicator: '#' };
+    case NumberInputMode.PERCENTAGE:
+      return {
+        min: 0,
+        max: 100,
+        isInteger: false,
+        scale: 100,
+        indicator: '%',
+      };
+    default: // NORMALIZED
+      return { min: 0, max: 1, isInteger: false, scale: 1, indicator: null };
+  }
 }
 
-export function NumberInput(props: NumberInputProps): JSX.Element {
+export function NumberInput({
+  className,
+  title,
+  disabled,
+  mode,
+  value,
+  onChange,
+  onFinalize,
+}: NumberInputProps): JSX.Element {
   const { update, numberInputMode } = useContext(ProjectContext);
-  const { className, title, disabled, value, onChange, onFinalize } = props;
 
-  // Extract raw-mode props for use in useMemo deps (undefined when normalized)
-  const minProp = props.normalized ? undefined : props.min;
-  const maxProp = props.normalized ? undefined : props.max;
-  const typeProp = props.normalized ? undefined : props.type;
-
-  const { min, max, effectiveType, scale, rounded } = useMemo(
-    () => getDisplayConfig(props, numberInputMode),
-    [props.normalized, numberInputMode, minProp, maxProp, typeProp],
+  const { min, max, isInteger, scale, indicator } = useMemo(
+    () => getDisplayConfig(mode, numberInputMode),
+    [mode, numberInputMode],
   );
 
   const inputRef = createRef<HTMLInputElement>();
 
   const toDisplay = (v: number) =>
-    rounded ? Math.round(v * scale) : v * scale;
+    isInteger ? Math.round(v * scale) : v * scale;
 
   const [input, setInput] = useState(String(toDisplay(value)));
 
-  const step = useMemo(() => (max > 1 ? 1 : 1 / 16), [max]);
+  // 1-unit steps for ranges > 1 or unconstrained; fine steps for 0-1
+  const step = max === null ? 1 : max > 1 ? 1 : 1 / 16;
 
   // Re-sync display string when the external value or display config changes.
-  // toDisplay is a closure over scale/rounded; those are the real deps.
-  useEffect(() => setInput(String(toDisplay(value))), [value, scale, rounded]);
+  // toDisplay is a closure over isInteger/scale; those are the real deps.
+  useEffect(
+    () => setInput(String(toDisplay(value))),
+    [value, scale, isInteger],
+  );
 
   const parseValue = useCallback(
-    (raw: string) => {
+    (raw: string): number => {
       try {
-        if (effectiveType === 'float') {
-          return parseFloat(raw);
-        } else {
-          return parseInt(raw);
-        }
-      } catch (e) {
+        return isInteger ? parseInt(raw) : parseFloat(raw);
+      } catch {
         return NaN;
       }
     },
-    [effectiveType],
+    [isInteger],
   );
 
   const onChangeImpl = (newInput: string) => {
     setInput(newInput);
-
     const parsed = parseValue(newInput);
-    // Only fire onChange if value is valid and within the display range
-    if (!isNaN(parsed) && parsed >= min && parsed <= max) {
+    const inRange =
+      (min === null || parsed >= min) && (max === null || parsed <= max);
+    if (!isNaN(parsed) && inRange) {
       onChange(parsed / scale);
       update();
     }
   };
 
-  // Check if current input is valid
   const parsed = parseValue(input);
-  const isValid = !isNaN(parsed) && parsed >= min && parsed <= max;
+  const inRange =
+    (min === null || parsed >= min) && (max === null || parsed <= max);
+  const isValid = !isNaN(parsed) && inRange;
 
   const classes = [styles.input, styles.numberInput];
   if (!isValid) {
@@ -294,13 +324,6 @@ export function NumberInput(props: NumberInputProps): JSX.Element {
   if (className) {
     classes.push(className);
   }
-
-  const indicator =
-    props.normalized && numberInputMode === NumberInputMode.DMX
-      ? '#'
-      : props.normalized && numberInputMode === NumberInputMode.PERCENTAGE
-        ? '%'
-        : null;
 
   const inputEl = (
     <input

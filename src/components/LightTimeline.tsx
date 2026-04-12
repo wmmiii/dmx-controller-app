@@ -277,8 +277,7 @@ function Tracks({
             Subdivide beat&nbsp;
             <NumberInput
               disabled={!snapToBeat}
-              min={1}
-              max={16}
+              mode="beat"
               value={beatSubdivisions}
               onChange={setBeatSubdivisions}
             />

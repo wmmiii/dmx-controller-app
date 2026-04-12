@@ -45,7 +45,7 @@ export function DurationInput({ duration, className }: DurationInputProps) {
       <span>
         {duration.amount.case === 'ms' ? (
           <NumberInput
-            type="float"
+            mode="bpm"
             value={duration.amount.value / 1000}
             onChange={(sec) => {
               duration.amount = {
@@ -54,12 +54,10 @@ export function DurationInput({ duration, className }: DurationInputProps) {
               };
             }}
             onFinalize={(sec) => save(`Set duration to ${sec} seconds.`)}
-            min={0}
-            max={120}
           />
         ) : (
           <NumberInput
-            type="float"
+            mode="beat"
             value={duration.amount!.value!}
             onChange={(beat) => {
               duration.amount = {
@@ -68,8 +66,6 @@ export function DurationInput({ duration, className }: DurationInputProps) {
               };
             }}
             onFinalize={(beat) => save(`Set duration to ${beat} beats.`)}
-            min={0}
-            max={512}
           />
         )}
       </span>

@@ -408,11 +408,7 @@ function EditDefinitionDialog({
         <label>
           <span>Total channels</span>
           <NumberInput
-            min={Math.max(
-              0,
-              ...Object.keys(mode.channels).map((i) => parseInt(i)),
-            )}
-            max={512}
+            mode="bpm"
             value={mode.numChannels}
             onChange={(v) => {
               mode.numChannels = v;
@@ -426,8 +422,7 @@ function EditDefinitionDialog({
         <label>
           <span>Test fixture index</span>
           <NumberInput
-            min={1}
-            max={512}
+            mode="bpm"
             value={testIndex + 1}
             onChange={(v) => setTestIndex(v - 1)}
           />
@@ -544,8 +539,7 @@ function EditDefinitionDialog({
                 <td>
                   {channel != null && (
                     <NumberInput
-                      min={0}
-                      max={255}
+                      mode="dmx"
                       value={channel.defaultValue}
                       onChange={(v) => {
                         channel.defaultValue = v;
@@ -566,8 +560,7 @@ function EditDefinitionDialog({
                 />
                 <td>
                   <NumberInput
-                    min={0}
-                    max={255}
+                    mode="dmx"
                     value={testValues[i] || 0}
                     onChange={(v) => {
                       setTestValues((testValues) => {
@@ -614,8 +607,7 @@ function ChannelMapping({
         <>
           <td>
             <NumberInput
-              min={-720}
-              max={720}
+              mode="degree"
               value={mapping.value.minDegrees}
               onChange={(v) => {
                 if (mapping.case === 'angleMapping') {
@@ -629,8 +621,7 @@ function ChannelMapping({
           </td>
           <td>
             <NumberInput
-              min={-720}
-              max={720}
+              mode="degree"
               value={mapping.value.maxDegrees}
               onChange={(v) => {
                 if (mapping.case === 'angleMapping') {
@@ -725,8 +716,7 @@ function ColorWheelEditor({ wheel, onClose }: ColorWheelEditorProps) {
               <tr key={i}>
                 <td>
                   <NumberInput
-                    min={0}
-                    max={512}
+                    mode="bpm"
                     value={c.value}
                     onChange={(value) => {
                       c.value = value;
