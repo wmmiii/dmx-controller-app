@@ -1,7 +1,10 @@
 import { JSX, useContext } from 'react';
 
 import { create } from '@bufbuild/protobuf';
-import { SettingsSchema } from '@dmx-controller/proto/settings_pb';
+import {
+  NumberInputMode,
+  SettingsSchema,
+} from '@dmx-controller/proto/settings_pb';
 import { Button } from '../components/Button';
 import { TextInput, ToggleInput } from '../components/Input';
 import { ProjectContext } from '../contexts/ProjectContext';
@@ -47,6 +50,38 @@ export default function ProjectPage(): JSX.Element {
                 );
               }}
             />
+          </td>
+        </tr>
+        <tr>
+          <th>Number input mode</th>
+          <td>
+            <select
+              value={
+                project.settings?.numberInputMode ?? NumberInputMode.NORMALIZED
+              }
+              onChange={(e) => {
+                let settings = project.settings;
+                if (settings == null) {
+                  settings = project.settings = create(SettingsSchema, {});
+                }
+                const mode = parseInt(e.target.value) as NumberInputMode;
+                settings.numberInputMode = mode;
+                const labels: Record<NumberInputMode, string> = {
+                  [NumberInputMode.NORMALIZED]: '0–1',
+                  [NumberInputMode.DMX]: '0–255',
+                  [NumberInputMode.PERCENTAGE]: 'percentage',
+                };
+                save(`Set number input mode to ${labels[mode]}.`);
+              }}
+            >
+              <option value={NumberInputMode.NORMALIZED}>
+                0 – 1 (normalized)
+              </option>
+              <option value={NumberInputMode.DMX}>0 – 255 (DMX)</option>
+              <option value={NumberInputMode.PERCENTAGE}>
+                0 – 100 (percentage)
+              </option>
+            </select>
           </td>
         </tr>
         <tr>

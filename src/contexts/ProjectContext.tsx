@@ -5,6 +5,7 @@ import {
   Project_AssetsSchema,
   type Project,
 } from '@dmx-controller/proto/project_pb';
+import { NumberInputMode } from '@dmx-controller/proto/settings_pb';
 import {
   JSX,
   PropsWithChildren,
@@ -39,6 +40,7 @@ let globalOpened = false;
 export const ProjectContext = createContext({
   project: create(ProjectSchema, {}) as Project,
   lastLoad: new Date(),
+  numberInputMode: NumberInputMode.NORMALIZED,
   save: (_changeDescription: string, _undoable?: boolean) => {},
   update: () => {},
   saveAssets: () => {},
@@ -250,6 +252,8 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
       value={{
         project: project,
         lastLoad: lastLoad,
+        numberInputMode:
+          project.settings?.numberInputMode ?? NumberInputMode.NORMALIZED,
         save: save,
         update: update,
         saveAssets: saveAssets,

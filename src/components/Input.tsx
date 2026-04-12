@@ -9,6 +9,7 @@ import {
   useState,
 } from 'react';
 
+import { NumberInputMode } from '@dmx-controller/proto/settings_pb';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { DRAG_DISTANCE_PX_SQ, LONG_PRESS_MS } from '../util/browserUtils';
 import styles from './Input.module.css';
@@ -153,60 +154,131 @@ export function EditableText({ value, onChange }: EditableTextProps) {
 
 export type NumberInputType = 'float' | 'integer';
 
-interface NumberInputProps {
+type NumberInputBaseProps = {
   className?: string;
   title?: string;
   disabled?: boolean;
-  type?: NumberInputType;
   value: number;
   onChange: (value: number) => void;
   onFinalize?: (value: number) => void;
+};
+
+// When normalized is true, the value is always in the 0–1 range internally.
+// The display unit (and min/max) are derived from the project's NumberInputMode.
+type NormalizedNumberInputProps = NumberInputBaseProps & {
+  normalized: true;
+};
+
+// When normalized is absent/false, min, max, and type must be supplied explicitly.
+type RawNumberInputProps = NumberInputBaseProps & {
+  normalized?: false;
+  type?: NumberInputType;
   min: number;
   max: number;
+};
+
+export type NumberInputProps = NormalizedNumberInputProps | RawNumberInputProps;
+
+type DisplayConfig = {
+  min: number;
+  max: number;
+  effectiveType: NumberInputType | undefined;
+  // Multiplier: internal → display (e.g. 255 for DMX, 100 for %)
+  scale: number;
+  // Whether to round the internal→display conversion (DMX integers)
+  rounded: boolean;
+};
+
+function getDisplayConfig(
+  props: NumberInputProps,
+  mode: NumberInputMode,
+): DisplayConfig {
+  if (props.normalized) {
+    switch (mode) {
+      case NumberInputMode.DMX:
+        return {
+          min: 0,
+          max: 255,
+          effectiveType: 'integer',
+          scale: 255,
+          rounded: true,
+        };
+      case NumberInputMode.PERCENTAGE:
+        return {
+          min: 0,
+          max: 100,
+          effectiveType: 'float',
+          scale: 100,
+          rounded: false,
+        };
+      default: // NORMALIZED
+        return {
+          min: 0,
+          max: 1,
+          effectiveType: 'float',
+          scale: 1,
+          rounded: false,
+        };
+    }
+  }
+  return {
+    min: props.min,
+    max: props.max,
+    effectiveType: props.type,
+    scale: 1,
+    rounded: false,
+  };
 }
 
-export function NumberInput({
-  className,
-  title,
-  disabled,
-  type,
-  value,
-  onChange,
-  onFinalize,
-  min,
-  max,
-}: NumberInputProps): JSX.Element {
-  const { update } = useContext(ProjectContext);
+export function NumberInput(props: NumberInputProps): JSX.Element {
+  const { update, numberInputMode } = useContext(ProjectContext);
+  const { className, title, disabled, value, onChange, onFinalize } = props;
+
+  // Extract raw-mode props for use in useMemo deps (undefined when normalized)
+  const minProp = props.normalized ? undefined : props.min;
+  const maxProp = props.normalized ? undefined : props.max;
+  const typeProp = props.normalized ? undefined : props.type;
+
+  const { min, max, effectiveType, scale, rounded } = useMemo(
+    () => getDisplayConfig(props, numberInputMode),
+    [props.normalized, numberInputMode, minProp, maxProp, typeProp],
+  );
+
   const inputRef = createRef<HTMLInputElement>();
-  const [input, setInput] = useState(String(value));
+
+  const toDisplay = (v: number) =>
+    rounded ? Math.round(v * scale) : v * scale;
+
+  const [input, setInput] = useState(String(toDisplay(value)));
 
   const step = useMemo(() => (max > 1 ? 1 : 1 / 16), [max]);
 
-  // Sync internal state when value prop changes externally
-  useEffect(() => setInput(String(value)), [value]);
+  // Re-sync display string when the external value or display config changes.
+  // toDisplay is a closure over scale/rounded; those are the real deps.
+  useEffect(() => setInput(String(toDisplay(value))), [value, scale, rounded]);
 
   const parseValue = useCallback(
-    (input: string) => {
+    (raw: string) => {
       try {
-        if (type === 'float') {
-          return parseFloat(input);
+        if (effectiveType === 'float') {
+          return parseFloat(raw);
         } else {
-          return parseInt(input);
+          return parseInt(raw);
         }
       } catch (e) {
         return NaN;
       }
     },
-    [type],
+    [effectiveType],
   );
 
   const onChangeImpl = (newInput: string) => {
     setInput(newInput);
 
     const parsed = parseValue(newInput);
-    // Only fire onChange if value is valid and within range
+    // Only fire onChange if value is valid and within the display range
     if (!isNaN(parsed) && parsed >= min && parsed <= max) {
-      onChange(parsed);
+      onChange(parsed / scale);
       update();
     }
   };
@@ -254,7 +326,7 @@ export function NumberInput({
       onBlur={() => {
         if (onFinalize) {
           const inputValue = parseValue(input);
-          onFinalize(isNaN(inputValue) ? value : inputValue);
+          onFinalize(isNaN(inputValue) ? value : inputValue / scale);
         }
       }}
     />

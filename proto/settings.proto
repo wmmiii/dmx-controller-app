@@ -2,7 +2,14 @@ syntax = "proto3";
 
 package dmx_controller;
 
-message Settings { 
+enum NumberInputMode {
+  NUMBER_INPUT_MODE_NORMALIZED = 0;
+  NUMBER_INPUT_MODE_DMX = 1;
+  NUMBER_INPUT_MODE_PERCENTAGE = 2;
+}
+
+message Settings {
     bool touchInterface = 1;
     repeated string dismissed_dialogs = 2;
+    NumberInputMode number_input_mode = 3;
 }
