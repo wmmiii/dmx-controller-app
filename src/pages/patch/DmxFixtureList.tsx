@@ -23,6 +23,7 @@ import { Button, IconButton } from '../../components/Button';
 import { ColorSwatch } from '../../components/ColorSwatch';
 import { NumberInput, TextInput } from '../../components/Input';
 import { Modal } from '../../components/Modal';
+import { Select } from '../../components/Select';
 import { VersatileElement } from '../../components/VersatileElement';
 import {
   AMOUNT_CHANNELS,
@@ -331,10 +332,10 @@ function EditDefinitionDialog({
       <div className={styles.editorMetadata}>
         <label>
           <span>Mode</span>
-          <select
+          <Select
             value={id.mode}
-            onChange={(e) => {
-              if (e.target.value === 'new') {
+            onChange={(value) => {
+              if (value === 'new') {
                 const modeId = randomUint64();
                 definition.modes[modeId.toString()] = create(
                   DmxFixtureDefinition_ModeSchema,
@@ -346,17 +347,17 @@ function EditDefinitionDialog({
                 save('Add new fixture mode.');
                 setModeId(modeId.toString());
               } else {
-                setModeId(e.target.value);
+                setModeId(value);
               }
             }}
-          >
-            {Object.keys(definition.modes).map((m) => (
-              <option key={m} value={m}>
-                {definition.modes[m].name}
-              </option>
-            ))}
-            <option value="new">+ Create New Mode</option>
-          </select>
+            options={[
+              ...Object.keys(definition.modes).map((m) => ({
+                value: m,
+                label: definition.modes[m].name,
+              })),
+              { value: 'new', label: '+ Create New Mode' },
+            ]}
+          />
         </label>
         <div className={styles.spacer}></div>
         <IconButton
@@ -449,16 +450,16 @@ function EditDefinitionDialog({
               <tr key={index}>
                 <td>{index}</td>
                 <td>
-                  <select
+                  <Select
                     value={channel?.type || 'unset'}
-                    onChange={(e) => {
-                      if (e.target.value === 'unset') {
+                    onChange={(value) => {
+                      if (value === 'unset') {
                         delete mode.channels[index];
                         save(`Delete mapping for channel ${index}.`);
                         return;
                       }
 
-                      const newType = e.target.value as ChannelTypes;
+                      const newType = value as ChannelTypes;
                       if (mode.channels[index] == null) {
                         mode.channels[index] = create(
                           DmxFixtureDefinition_ChannelSchema,
@@ -522,18 +523,19 @@ function EditDefinitionDialog({
                       channel.type = newType;
                       save(`Change type of mapping for channel ${index}.`);
                     }}
-                  >
-                    <option value="unset">Unset</option>
-                    <option value="other">Other</option>
-                    {[...COLOR_CHANNELS, ...AMOUNT_CHANNELS, ...ANGLE_CHANNELS]
-                      .flatMap((t) => [t, `${t}-fine`])
-                      .map((t, i) => (
-                        <option key={i} value={t}>
-                          {t}
-                        </option>
-                      ))}
-                    <option value="color_wheel">color wheel</option>
-                  </select>
+                    options={[
+                      { value: 'unset', label: 'Unset' },
+                      { value: 'other', label: 'Other' },
+                      ...[
+                        ...COLOR_CHANNELS,
+                        ...AMOUNT_CHANNELS,
+                        ...ANGLE_CHANNELS,
+                      ]
+                        .flatMap((t) => [t, `${t}-fine`])
+                        .map((t) => ({ value: t, label: t })),
+                      { value: 'color_wheel', label: 'color wheel' },
+                    ]}
+                  />
                 </td>
                 <td>
                   {channel != null && (

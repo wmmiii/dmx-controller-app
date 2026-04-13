@@ -68,6 +68,7 @@ import { Button, IconButton } from './Button';
 import { EffectState } from './EffectState';
 import { NumberInput } from './Input';
 import { Modal } from './Modal';
+import { Select } from './Select';
 import { SequenceEditor } from './SequenceEditor';
 import { Spacer } from './Spacer';
 import styles from './TimecodeEffect.module.css';
@@ -739,10 +740,10 @@ function SequenceEffectDetails({
     <>
       <EffectTimingDetails effect={effect} showPhase={showPhase} />
       <hr />
-      <select
+      <Select
         value={String(effect.sequenceId)}
-        onChange={(e) => {
-          if (e.target.value === 'new') {
+        onChange={(value) => {
+          if (value === 'new') {
             const id = randomUint64();
             project.sequences[String(id)] = create(SequenceSchema, {
               name: 'New sequence',
@@ -758,22 +759,19 @@ function SequenceEffectDetails({
             setEditorOpen(true);
             return;
           }
-          const sequenceId = BigInt(e.target.value);
+          const sequenceId = BigInt(value);
           effect.sequenceId = sequenceId;
           const sequence = project.sequences[String(sequenceId)];
           save(`Set tile effect sequence to ${sequence.name}.`);
         }}
-      >
-        <option value="0">&lt;unset&gt;</option>
-        {Object.entries(project.sequences)
-          .sort(([_a, a], [_b, b]) => a.name.localeCompare(b.name))
-          .map(([id, { name }]) => (
-            <option key={id} value={id}>
-              {name}
-            </option>
-          ))}
-        <option value="new">+ New sequence</option>
-      </select>
+        options={[
+          { value: '0', label: '<unset>' },
+          ...Object.entries(project.sequences)
+            .sort(([_a, a], [_b, b]) => a.name.localeCompare(b.name))
+            .map(([id, { name }]) => ({ value: id, label: name })),
+          { value: 'new', label: '+ New sequence' },
+        ]}
+      />
       <Button
         onClick={() => setEditorOpen(true)}
         disabled={effect.sequenceId === 0n}
@@ -870,15 +868,15 @@ function PresetEffectDetails({
 
   return (
     <>
-      <select
-        value={effectCase}
-        onChange={(e) => {
-          console.log('EFFECT ', e.target.value);
-          if (e.target.value === effectCase) {
+      <Select
+        value={effectCase ?? ''}
+        onChange={(value) => {
+          console.log('EFFECT ', value);
+          if (value === effectCase) {
             return;
           }
 
-          switch (e.target.value as typeof effectCase) {
+          switch (value as typeof effectCase) {
             case 'rainbowEffect':
               presetEffect.effect = {
                 case: 'rainbowEffect',
@@ -914,17 +912,16 @@ function PresetEffectDetails({
               };
               break;
             default:
-              throw new Error(
-                `Unrecognized preset effect type: ${e.target.value}`,
-              );
+              throw new Error(`Unrecognized preset effect type: ${value}`);
           }
 
           save('Change preset effect type.');
         }}
-      >
-        <option value="circleEffect">Circle Effect</option>
-        <option value="rainbowEffect">Rainbow Effect</option>
-      </select>
+        options={[
+          { value: 'circleEffect', label: 'Circle Effect' },
+          { value: 'rainbowEffect', label: 'Rainbow Effect' },
+        ]}
+      />
       <hr />
       {(effectCase === 'circleEffect' || effectCase === 'rainbowEffect') && (
         <EffectTimingDetails effect={effect!} showPhase={showPhase} />
@@ -1164,29 +1161,32 @@ function EffectTimingDetails({ effect, showPhase }: EffectTimingDetailsProps) {
     <>
       <label>
         <span>Easing</span>
-        <select
-          value={effect.timingMode?.easing}
-          onChange={(e) => {
-            effect.timingMode!.easing = parseInt(e.target.value);
+        <Select
+          value={
+            effect.timingMode?.easing ?? EffectTiming_EasingFunction.LINEAR
+          }
+          onChange={(value) => {
+            effect.timingMode!.easing = value;
             save('Change effect easing type.');
           }}
-        >
-          <option value={EffectTiming_EasingFunction.LINEAR}>Linear</option>
-          <option value={EffectTiming_EasingFunction.EASE_IN}>Ease in</option>
-          <option value={EffectTiming_EasingFunction.EASE_OUT}>Ease out</option>
-          <option value={EffectTiming_EasingFunction.EASE_IN_OUT}>
-            Ease in/out
-          </option>
-          <option value={EffectTiming_EasingFunction.SINE}>Sine</option>
-        </select>
+          options={[
+            { value: EffectTiming_EasingFunction.LINEAR, label: 'Linear' },
+            { value: EffectTiming_EasingFunction.EASE_IN, label: 'Ease in' },
+            { value: EffectTiming_EasingFunction.EASE_OUT, label: 'Ease out' },
+            {
+              value: EffectTiming_EasingFunction.EASE_IN_OUT,
+              label: 'Ease in/out',
+            },
+            { value: EffectTiming_EasingFunction.SINE, label: 'Sine' },
+          ]}
+        />
       </label>
       <label>
         <span>Timing mode</span>
-        <select
-          value={effect.timingMode?.timing.case}
-          onChange={(e) => {
+        <Select
+          value={effect.timingMode?.timing.case ?? 'absolute'}
+          onChange={(newTiming) => {
             const currentCase = effect.timingMode?.timing.case;
-            const newTiming = e.target.value;
             if (currentCase === newTiming) {
               return;
             }
@@ -1218,11 +1218,12 @@ function EffectTimingDetails({ effect, showPhase }: EffectTimingDetailsProps) {
 
             save(`Change effect timing to ${newTiming}.`);
           }}
-        >
-          <option value={'absolute'}>Absolute</option>
-          <option value={'beat'}>Beat</option>
-          <option value={'oneShot'}>One Shot</option>
-        </select>
+          options={[
+            { value: 'absolute', label: 'Absolute' },
+            { value: 'beat', label: 'Beat' },
+            { value: 'oneShot', label: 'One Shot' },
+          ]}
+        />
       </label>
 
       {effect.timingMode?.timing.case === 'absolute' && (
@@ -1289,20 +1290,26 @@ function EffectTimingDetails({ effect, showPhase }: EffectTimingDetailsProps) {
           </label>
           <label>
             <span>Phase type</span>
-            <select
-              value={effect.timingMode?.phaseType}
-              onChange={(e) => {
-                effect.timingMode!.phaseType = parseInt(e.target.value);
+            <Select
+              value={
+                effect.timingMode?.phaseType ??
+                EffectTiming_PhaseType.ACROSS_GROUP
+              }
+              onChange={(value) => {
+                effect.timingMode!.phaseType = value;
                 save('Change effect phase type.');
               }}
-            >
-              <option value={EffectTiming_PhaseType.ACROSS_GROUP}>
-                Across group
-              </option>
-              <option value={EffectTiming_PhaseType.BETWEEN_FIXTURES}>
-                Between fixtures
-              </option>
-            </select>
+              options={[
+                {
+                  value: EffectTiming_PhaseType.ACROSS_GROUP,
+                  label: 'Across group',
+                },
+                {
+                  value: EffectTiming_PhaseType.BETWEEN_FIXTURES,
+                  label: 'Between fixtures',
+                },
+              ]}
+            />
           </label>
         </>
       )}

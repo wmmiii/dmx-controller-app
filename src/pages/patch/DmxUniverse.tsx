@@ -9,6 +9,7 @@ import {
 import { Button } from '../../components/Button';
 import { NumberInput, TextInput } from '../../components/Input';
 import { Modal } from '../../components/Modal';
+import { Select } from '../../components/Select';
 import { Warning } from '../../components/Warning';
 import { ProjectContext } from '../../contexts/ProjectContext';
 import { ANGLE_CHANNELS } from '../../engine/channel';
@@ -280,10 +281,10 @@ function EditFixtureDialog({
       </label>
       <label>
         <span>Profile</span>
-        <select
+        <Select
           value={fixture.fixtureDefinitionId.toString()}
-          onChange={(e) => {
-            fixture.fixtureDefinitionId = BigInt(e.target.value);
+          onChange={(value) => {
+            fixture.fixtureDefinitionId = BigInt(value);
             fixture.fixtureMode = Object.keys(
               project.fixtureDefinitions!.dmxFixtureDefinitions[
                 fixture.fixtureDefinitionId.toString()
@@ -297,22 +298,20 @@ function EditFixtureDialog({
               `Change fixture profile for ${fixture.name} to ${definitionName}`,
             );
           }}
-        >
-          <option disabled={true} key="unset" value={''}>
-            &lt;unset&gt;
-          </option>
-          {Object.entries(project.fixtureDefinitions!.dmxFixtureDefinitions)
-            .sort(([_a, a], [_b, b]) => a.name.localeCompare(b.name))
-            .map(([id, definition]) => (
-              <option key={id} value={id}>
-                {definition.name}
-              </option>
-            ))}
-        </select>
-        <select
+          options={[
+            { value: '', label: '<unset>', disabled: true },
+            ...Object.entries(project.fixtureDefinitions!.dmxFixtureDefinitions)
+              .sort(([_a, a], [_b, b]) => a.name.localeCompare(b.name))
+              .map(([id, definition]) => ({
+                value: id,
+                label: definition.name,
+              })),
+          ]}
+        />
+        <Select
           value={fixture.fixtureMode}
-          onChange={(e) => {
-            fixture.fixtureMode = e.target.value;
+          onChange={(value) => {
+            fixture.fixtureMode = value;
             let modeName = '<unset>';
             if (fixture.fixtureMode !== '') {
               modeName =
@@ -322,22 +321,20 @@ function EditFixtureDialog({
             }
             save(`Change fixture profile for ${fixture.name} to ${modeName}`);
           }}
-        >
-          <option disabled={true} key="unset" value={''}>
-            &lt;unset&gt;
-          </option>
-          {Object.entries(
-            project.fixtureDefinitions!.dmxFixtureDefinitions[
-              fixture.fixtureDefinitionId.toString()
-            ]?.modes || {},
-          )
-            .sort(([_a, a], [_b, b]) => a.name.localeCompare(b.name))
-            .map(([id, mode]) => (
-              <option key={id} value={id}>
-                {mode.name}
-              </option>
-            ))}
-        </select>
+          options={[
+            { value: '', label: '<unset>', disabled: true },
+            ...Object.entries(
+              project.fixtureDefinitions!.dmxFixtureDefinitions[
+                fixture.fixtureDefinitionId.toString()
+              ]?.modes || {},
+            )
+              .sort(([_a, a], [_b, b]) => a.name.localeCompare(b.name))
+              .map(([id, mode]) => ({
+                value: id,
+                label: mode.name,
+              })),
+          ]}
+        />
         {(fixture.fixtureDefinitionId.toString() == '' ||
           fixture.fixtureMode == '') && (
           <Warning title="Fixture does not have profile set!" />

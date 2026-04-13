@@ -12,6 +12,7 @@ import { Button } from '../components/Button';
 import { TextInput } from '../components/Input';
 import LightTimeline from '../components/LightTimeline';
 import { Modal } from '../components/Modal';
+import { Select } from '../components/Select';
 import { PaletteContext } from '../contexts/PaletteContext';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { ShortcutContext } from '../contexts/ShortcutContext';
@@ -154,26 +155,26 @@ export default function ShowPage(): JSX.Element {
           <>
             Show:
             <br />
-            <select
-              onChange={(e) => {
-                if (e.target.value === '-1') {
+            <Select
+              onChange={(value) => {
+                if (value === '-1') {
                   createShow(project);
                 } else {
-                  project.selectedShow = BigInt(e.target.value);
+                  project.selectedShow = BigInt(value);
                 }
                 save(
                   `Set selected show to ${project.shows[project.selectedShow.toString()].name}.`,
                 );
               }}
               value={project.selectedShow.toString() || '0'}
-            >
-              {Object.entries(project?.shows || {}).map(([id, s]) => (
-                <option key={id} value={id}>
-                  {s.name}
-                </option>
-              ))}
-              <option value={-1}>+ Create New Show</option>
-            </select>
+              options={[
+                ...Object.entries(project?.shows || {}).map(([id, s]) => ({
+                  value: id,
+                  label: s.name,
+                })),
+                { value: '-1', label: '+ Create New Show' },
+              ]}
+            />
           </>
         }
         leftOptions={
@@ -183,22 +184,22 @@ export default function ShowPage(): JSX.Element {
             </Button>
             Audio Track:
             <br />
-            <select
-              onChange={(e) => {
+            <Select
+              onChange={(value) => {
                 show.audioTrack = create(Show_AudioTrackSchema, {
-                  audioFileId: BigInt(e.target.value),
+                  audioFileId: BigInt(value),
                 });
                 save(`Set audio track for show ${show.name}.`);
               }}
-              value={show?.audioTrack?.audioFileId.toString()}
-            >
-              <option value={UNSET_INDEX}>&lt;Unset&gt;</option>
-              {idMapToArray(project?.assets?.audioFiles).map(([id, f]) => (
-                <option key={id} value={id}>
-                  {f.name}
-                </option>
-              ))}
-            </select>
+              value={show?.audioTrack?.audioFileId.toString() ?? UNSET_INDEX}
+              options={[
+                { value: UNSET_INDEX, label: '<Unset>' },
+                ...idMapToArray(project?.assets?.audioFiles).map(([id, f]) => ({
+                  value: id.toString(),
+                  label: f.name,
+                })),
+              ]}
+            />
           </>
         }
         outputs={show.outputs}

@@ -10,6 +10,7 @@ import { BiPlus, BiTrash } from 'react-icons/bi';
 import { Button } from '../../components/Button';
 import { EditableText } from '../../components/Input';
 import { Modal } from '../../components/Modal';
+import { Select } from '../../components/Select';
 import { Tabs, TabsType } from '../../components/Tabs';
 import { ProjectContext } from '../../contexts/ProjectContext';
 import { randomUint64 } from '../../util/numberUtils';
@@ -108,10 +109,10 @@ export default function PatchPage(): JSX.Element {
         tabs={tabs}
         before={
           <div className={styles.patch}>
-            <select
+            <Select
               value={project.activePatch.toString()}
-              onChange={(e) => {
-                if (e.target.value === 'new') {
+              onChange={(value) => {
+                if (value === 'new') {
                   const id = randomUint64();
                   project.patches[id.toString()] = create(PatchSchema, {
                     name: 'New Patch',
@@ -120,20 +121,20 @@ export default function PatchPage(): JSX.Element {
                   project.activePatch = id;
                   save('Create a new patch.');
                 } else {
-                  project.activePatch = BigInt(e.target.value);
+                  project.activePatch = BigInt(value);
                   save(
                     `Change active patch to ${getActivePatch(project).name}.`,
                   );
                 }
               }}
-            >
-              {Object.entries(project.patches).map(([i, p]) => (
-                <option key={i} value={i.toString()}>
-                  {p.name}
-                </option>
-              ))}
-              <option value="new">+ Add new patch</option>
-            </select>
+              options={[
+                ...Object.entries(project.patches).map(([i, p]) => ({
+                  value: i.toString(),
+                  label: p.name,
+                })),
+                { value: 'new', label: '+ Add new patch' },
+              ]}
+            />
             <EditableText
               value={getActivePatch(project).name}
               onChange={(v) => {

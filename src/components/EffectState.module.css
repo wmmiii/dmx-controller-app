@@ -81,3 +81,25 @@
 .custom-channels-title {
   margin-top: var(--space-1);
 }
+
+.color-option {
+  display: inline-flex;
+  gap: var(--space-1);
+  align-items: center;
+}
+
+.color-circle {
+  display: inline-block;
+  flex-shrink: 0;
+  width: var(--dim-text-size-sm);
+  height: var(--dim-text-size-sm);
+  border: 1px solid var(--col-border);
+  border-radius: 50%;
+}
+
+.placeholder-circle {
+  display: inline-block;
+  flex-shrink: 0;
+  width: var(--dim-text-size-sm);
+  height: var(--dim-text-size-sm);
+}

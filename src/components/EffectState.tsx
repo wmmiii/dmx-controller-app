@@ -21,11 +21,14 @@ import {
 } from '../engine/channel';
 
 import { BiPlus, BiX } from 'react-icons/bi';
+import { PaletteContext } from '../contexts/PaletteContext';
 import { ProjectContext } from '../contexts/ProjectContext';
+import { colorToHex } from '../util/colorUtil';
 import { Button, IconButton } from './Button';
 import { ColorSwatch } from './ColorSwatch';
 import styles from './EffectState.module.css';
 import { NumberInput, NumberInputMode } from './Input';
+import { Select } from './Select';
 
 type ColorSelectorType = 'none' | 'color' | PaletteColor;
 
@@ -182,6 +185,7 @@ interface ColorChannelProps {
 
 function ColorChannel({ values }: ColorChannelProps) {
   const { save } = useContext(ProjectContext);
+  const { palette } = useContext(PaletteContext);
 
   const colorType = (
     state: FixtureStateProto['lightColor'],
@@ -204,12 +208,12 @@ function ColorChannel({ values }: ColorChannelProps) {
       <span style={{ gridColumnStart: 1, gridColumnEnd: 2 }}>Color</span>
       {values.map((s, i) => (
         <div key={i} style={{ gridColumnStart: i + 2, gridColumnEnd: i + 3 }}>
-          <select
-            value={colorType(s.lightColor)}
-            onChange={(e) => {
-              if (e.target.value === 'none') {
+          <Select
+            value={String(colorType(s.lightColor))}
+            onChange={(value) => {
+              if (value === 'none') {
                 s.lightColor = { case: undefined, value: undefined };
-              } else if (e.target.value === 'color') {
+              } else if (value === 'color') {
                 s.lightColor = {
                   case: 'color',
                   value: create(ColorSchema, {
@@ -221,20 +225,98 @@ function ColorChannel({ values }: ColorChannelProps) {
               } else {
                 s.lightColor = {
                   case: 'paletteColor',
-                  value: Number(e.target.value) as unknown as PaletteColor,
+                  value: Number(value) as unknown as PaletteColor,
                 };
               }
               save(`Set color of effect.`);
             }}
-          >
-            <option value="none">None</option>
-            <option value="color">Custom Color</option>
-            <option value={PaletteColor.PALETTE_PRIMARY}>Primary</option>
-            <option value={PaletteColor.PALETTE_SECONDARY}>Secondary</option>
-            <option value={PaletteColor.PALETTE_TERTIARY}>Tertiary</option>
-            <option value={PaletteColor.PALETTE_WHITE}>White</option>
-            <option value={PaletteColor.PALETTE_BLACK}>Black</option>
-          </select>
+            options={[
+              {
+                value: 'none',
+                label: (
+                  <span className={styles.colorOption}>
+                    <span className={styles.placeholderCircle} />
+                    None
+                  </span>
+                ),
+              },
+              {
+                value: 'color',
+                label: (
+                  <span className={styles.colorOption}>
+                    <span className={styles.placeholderCircle} />
+                    Custom Color
+                  </span>
+                ),
+              },
+              {
+                value: String(PaletteColor.PALETTE_PRIMARY),
+                label: (
+                  <span className={styles.colorOption}>
+                    <span
+                      className={styles.colorCircle}
+                      style={{
+                        backgroundColor: colorToHex(palette.primary!.color!),
+                      }}
+                    />
+                    Primary
+                  </span>
+                ),
+              },
+              {
+                value: String(PaletteColor.PALETTE_SECONDARY),
+                label: (
+                  <span className={styles.colorOption}>
+                    <span
+                      className={styles.colorCircle}
+                      style={{
+                        backgroundColor: colorToHex(palette.secondary!.color!),
+                      }}
+                    />
+                    Secondary
+                  </span>
+                ),
+              },
+              {
+                value: String(PaletteColor.PALETTE_TERTIARY),
+                label: (
+                  <span className={styles.colorOption}>
+                    <span
+                      className={styles.colorCircle}
+                      style={{
+                        backgroundColor: colorToHex(palette.tertiary!.color!),
+                      }}
+                    />
+                    Tertiary
+                  </span>
+                ),
+              },
+              {
+                value: String(PaletteColor.PALETTE_WHITE),
+                label: (
+                  <span className={styles.colorOption}>
+                    <span
+                      className={styles.colorCircle}
+                      style={{ backgroundColor: '#ffffff' }}
+                    />
+                    White
+                  </span>
+                ),
+              },
+              {
+                value: String(PaletteColor.PALETTE_BLACK),
+                label: (
+                  <span className={styles.colorOption}>
+                    <span
+                      className={styles.colorCircle}
+                      style={{ backgroundColor: '#000000' }}
+                    />
+                    Black
+                  </span>
+                ),
+              },
+            ]}
+          />
           {s.lightColor.case === 'color' && (
             <div className={styles.customColor}>
               <ColorSwatch
