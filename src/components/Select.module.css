@@ -1,0 +1,109 @@
+.trigger {
+  display: inline-flex;
+  gap: var(--space-1);
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  padding: var(--space-1) var(--space-2);
+  color: var(--col-text);
+  font-size: var(--dim-text-size-lg);
+  border: 1px solid var(--col-border-higher);
+  border-radius: var(--dim-border-radius);
+  outline: none;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--col-interactive-hover);
+    background-color: var(--col-bg-tint-hover);
+    border-color: var(--col-interactive-hover);
+  }
+
+  &:focus,
+  &[data-popup-open] {
+    background-color: var(--col-bg-tint-hover);
+    border-color: var(--col-interactive);
+  }
+
+  &[data-disabled] {
+    color: var(--col-text-dim);
+    background-color: transparent;
+    border-color: var(--col-border-disabled);
+    cursor: default;
+  }
+}
+
+.icon {
+  display: flex;
+  align-items: center;
+  color: var(--col-text-dim);
+  font-size: var(--dim-text-size-md);
+  transition: transform var(--transition-fast);
+
+  [data-popup-open] > & {
+    transform: rotate(180deg);
+  }
+}
+
+.positioner {
+  z-index: var(--z-index-popover);
+}
+
+.popup {
+  box-sizing: border-box;
+  min-width: var(--anchor-width);
+  max-height: 300px;
+  padding: var(--space-0-5);
+  overflow: auto;
+  color: var(--col-text);
+  background-color: var(--col-bg-higher);
+  border-radius: var(--dim-border-radius);
+  outline: none;
+  filter: drop-shadow(var(--drop-shadow));
+}
+
+.item {
+  padding: var(--space-1);
+  list-style: none;
+  border-radius: var(--dim-border-radius);
+  outline: none;
+  cursor: pointer;
+  user-select: none;
+
+  &:hover,
+  &[data-highlighted] {
+    background-color: var(--col-bg-active);
+  }
+
+  &[data-selected] {
+    color: var(--col-interactive);
+    font-weight: var(--font-weight-heavy);
+
+    &:hover,
+    &[data-highlighted] {
+      color: var(--col-interactive-hover);
+    }
+  }
+
+  &[data-disabled] {
+    color: var(--col-text-dim);
+    cursor: default;
+
+    &:hover,
+    &[data-highlighted] {
+      background-color: transparent;
+    }
+  }
+}
+
+.group {
+  &:not(:first-child) {
+    margin-top: var(--space-1);
+  }
+}
+
+.groupLabel {
+  padding: var(--space-1-5) var(--space-1) var(--space-1);
+  color: var(--col-text-dim);
+  font-weight: var(--font-weight-heavy);
+  letter-spacing: 0.05em;
+}

@@ -19,12 +19,7 @@ import { JSX, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Button, IconButton } from '../components/Button';
 import { ControllerConnection } from '../components/ControllerConnection';
-import {
-  EditableText,
-  NumberInput,
-  TextInput,
-  ToggleInput,
-} from '../components/Input';
+import { EditableText, NumberInput, TextInput } from '../components/Input';
 import { LiveBeat } from '../components/LiveBeat';
 import { Modal } from '../components/Modal';
 import {
@@ -34,6 +29,7 @@ import {
 import { PaletteSwatch } from '../components/Palette';
 import { TileGrid } from '../components/TileGrid';
 import { EffectDetails } from '../components/TimecodeEffect';
+import { Toggle } from '../components/Toggle';
 import { ControllerContext } from '../contexts/ControllerContext';
 import { PaletteContext } from '../contexts/PaletteContext';
 import { ProjectContext } from '../contexts/ProjectContext';
@@ -388,7 +384,7 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
           </div>
         )}
         <div className={styles.row}>
-          <ToggleInput
+          <Toggle
             className={styles.switch}
             value={tile.timingDetails.case === 'oneShot'}
             onChange={(oneShot) => {

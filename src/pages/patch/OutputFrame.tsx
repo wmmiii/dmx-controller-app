@@ -1,4 +1,5 @@
-import { NumberInput, ToggleInput } from '../../components/Input';
+import { NumberInput } from '../../components/Input';
+import { Toggle } from '../../components/Toggle';
 import styles from './OutputFrame.module.css';
 
 interface OutputFrameProps {
@@ -23,7 +24,7 @@ export function OutputFrame({
       <div className={styles.settings}>
         <label>
           <span>Enabled</span>
-          <ToggleInput
+          <Toggle
             className={styles.enabledToggle}
             value={outputEnabled}
             onChange={setOutputEnabled}

@@ -66,11 +66,12 @@ import IconRgb from '../icons/IconRgb';
 import { randomUint64 } from '../util/numberUtils';
 import { Button, IconButton } from './Button';
 import { EffectState } from './EffectState';
-import { NumberInput, ToggleInput } from './Input';
+import { NumberInput } from './Input';
 import { Modal } from './Modal';
 import { SequenceEditor } from './SequenceEditor';
 import { Spacer } from './Spacer';
 import styles from './TimecodeEffect.module.css';
+import { Toggle } from './Toggle';
 
 interface TimecodeEffectProps {
   className: string;
@@ -665,7 +666,7 @@ function RandomEffectDetails({
 
       <label>
         <span>Independent Fixtures</span>
-        <ToggleInput
+        <Toggle
           value={effect.treatFixturesIndividually}
           onChange={(value) => {
             effect.treatFixturesIndividually = value;

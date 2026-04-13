@@ -29,7 +29,7 @@ import { Button, ControllerButton, IconButton } from './Button';
 import { Modal } from './Modal';
 
 import styles from './ControllerConnection.module.css';
-import { ToggleInput } from './Input';
+import { Toggle } from './Toggle';
 
 interface ControllerConnectionProps {
   context: BindingContext;
@@ -273,7 +273,7 @@ function ControllerBindingModal({
               >
                 <span>{channel}</span>
                 {isTileStrength && inputType === InputType.CONTINUOUS && (
-                  <ToggleInput
+                  <Toggle
                     labels={{ left: 'Normal', right: 'Invert' }}
                     value={tileStrengthAction?.invert ?? false}
                     onChange={(v) => {
@@ -286,7 +286,7 @@ function ControllerBindingModal({
                   />
                 )}
                 {isTileStrength && inputType === InputType.BINARY && (
-                  <ToggleInput
+                  <Toggle
                     labels={{ left: 'Toggle', right: 'Hold' }}
                     value={tileStrengthAction?.hold ?? false}
                     onChange={(v) => {

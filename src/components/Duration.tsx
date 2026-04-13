@@ -2,7 +2,8 @@ import { Duration } from '@dmx-controller/proto/duration_pb';
 import { useContext } from 'react';
 import { ProjectContext } from '../contexts/ProjectContext';
 import styles from './Duration.module.css';
-import { NumberInput, ToggleInput } from './Input';
+import { NumberInput } from './Input';
+import { Toggle } from './Toggle';
 
 interface DurationInputProps {
   duration: Duration;
@@ -19,7 +20,7 @@ export function DurationInput({ duration, className }: DurationInputProps) {
 
   return (
     <div className={classes.join(' ')}>
-      <ToggleInput
+      <Toggle
         title="Specify duration in beats or seconds."
         labels={{
           left: 'Beats',

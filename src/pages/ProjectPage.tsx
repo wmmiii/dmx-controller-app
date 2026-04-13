@@ -6,10 +6,26 @@ import {
   SettingsSchema,
 } from '@dmx-controller/proto/settings_pb';
 import { Button } from '../components/Button';
-import { TextInput, ToggleInput } from '../components/Input';
+import { TextInput } from '../components/Input';
+import { Select } from '../components/Select';
+import { Toggle } from '../components/Toggle';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { escapeForFilesystem } from '../util/fileUtils';
 import styles from './ProjectPage.module.css';
+
+const NUMBER_INPUT_OPTIONS = [
+  {
+    value: NumberInputMode.NORMALIZED,
+    name: 'normalized',
+    label: '0 to 1 (half is 0.5)',
+  },
+  { value: NumberInputMode.DMX, name: 'dmx', label: 'dmx value (half is 128)' },
+  {
+    value: NumberInputMode.PERCENT,
+    name: 'percent',
+    label: 'percent (half is 50%)',
+  },
+];
 
 export default function ProjectPage(): JSX.Element {
   const { project, save } = useContext(ProjectContext);
@@ -36,7 +52,7 @@ export default function ProjectPage(): JSX.Element {
         <tr>
           <th>Interface style</th>
           <td>
-            <ToggleInput
+            <Toggle
               labels={{ left: 'Mouse', right: 'Touch' }}
               value={project.settings?.touchInterface ?? false}
               onChange={(value) => {
@@ -55,46 +71,24 @@ export default function ProjectPage(): JSX.Element {
         <tr>
           <th>Number input mode</th>
           <td>
-            <select
+            <Select
               value={
                 project.settings?.numberInputMode ?? NumberInputMode.PERCENT
               }
-              onChange={(e) => {
+              options={NUMBER_INPUT_OPTIONS}
+              onChange={(mode) => {
                 let settings = project.settings;
                 if (settings == null) {
                   settings = project.settings = create(SettingsSchema, {});
                 }
-                const mode = parseInt(e.target.value) as NumberInputMode;
 
-                let label;
-                switch (mode) {
-                  case NumberInputMode.NORMALIZED:
-                    label = '[0, 1]';
-                    break;
-                  case NumberInputMode.DMX:
-                    label = '0 to 255';
-                    break;
-                  case NumberInputMode.PERCENT:
-                    label = 'percent';
-                    break;
-                  default:
-                    throw Error(`Unrecognized input mode: ${mode}`);
-                }
-
+                const option = NUMBER_INPUT_OPTIONS.find(
+                  (o) => o.value === mode,
+                );
                 settings.numberInputMode = mode;
-                save(`Set number input mode to ${label}.`);
+                save(`Set number input mode to ${option?.name ?? mode}.`);
               }}
-            >
-              <option value={NumberInputMode.NORMALIZED}>
-                0 to 1 (half is 0.5)
-              </option>
-              <option value={NumberInputMode.DMX}>
-                dmx value (half is 128)
-              </option>
-              <option value={NumberInputMode.PERCENT}>
-                percent (half is 50%)
-              </option>
-            </select>
+            />
           </td>
         </tr>
         <tr>

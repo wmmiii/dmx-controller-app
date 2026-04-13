@@ -333,11 +333,14 @@ export function deleteBindings(
 
     // Iterate through all controller IDs
     for (const controllerBindings of Object.values(bindingsMap.bindings)) {
-      if (!controllerBindings || typeof controllerBindings !== 'object')
+      if (!controllerBindings || typeof controllerBindings !== 'object') {
         continue;
+      }
 
       const bindings = controllerBindings.bindings;
-      if (!bindings) continue;
+      if (!bindings) {
+        continue;
+      }
 
       // Find and delete channels with tileStrength actions matching this tileId
       for (const [channel, binding] of Object.entries(bindings)) {

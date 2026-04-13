@@ -44,7 +44,9 @@ export function Combobox<T>({
 
   // Find the matching option object for the current value
   const selectedOption = useMemo(() => {
-    if (value === undefined) return null;
+    if (value === undefined) {
+      return null;
+    }
     const allOptions = grouped
       ? (options as ComboboxGroup<T>[]).flatMap((g) => g.items)
       : (options as ComboboxOption<T>[]);

@@ -26,6 +26,9 @@ export default tseslint.config(
       },
     },
     rules: {
+      // Require braces for all control flow statements
+      curly: 'error',
+
       // Detect deprecated function usage
       '@typescript-eslint/no-deprecated': 'error',
 
