@@ -77,12 +77,18 @@ export function VersatileElement<T>({
       }}
       onPointerUp={(e) => {
         if (state === 'click' && onClick) {
-          onClick();
+          // Defer to the next tick so any trailing click event (which fires after
+          // pointerup and would target the dialog's InternalBackdrop overlay)
+          // fires before the dialog opens, preventing Base UI from seeing it as
+          // an "outside click" that immediately closes the dialog.
+          const handler = onClick;
+          setTimeout(() => handler(), 0);
         } else if (state === 'press') {
           if (onPress) {
             onPress();
           } else if (onClick) {
-            onClick();
+            const handler = onClick;
+            setTimeout(() => handler(), 0);
           }
         }
         reset();

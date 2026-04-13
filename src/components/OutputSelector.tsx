@@ -48,7 +48,7 @@ export function OutputSelector({
         label: 'All Fixtures',
       },
     ];
-    for (const [groupId, group] of Object.entries(project.groups)) {
+    for (const [groupId, group] of Object.entries(project.groups).sort(([_a, a], [_b, b]) => a.name.localeCompare(b.name))) {
       groups.push({
         value: create(OutputTargetSchema, {
           output: {
@@ -73,7 +73,7 @@ export function OutputSelector({
         case 'serialDmxOutput':
           for (const [dmxFixtureId, dmxFixture] of Object.entries(
             output.output.value.fixtures,
-          )) {
+          ).sort(([_a, a], [_b, b]) => a.name.localeCompare(b.name))) {
             fixtures.push({
               value: create(OutputTargetSchema, {
                 output: {
@@ -96,7 +96,7 @@ export function OutputSelector({
         case 'wledOutput':
           for (const [wledFixtureId, segment] of Object.entries(
             output.output.value.segments,
-          )) {
+          ).sort(([_a, a], [_b, b]) => a.name.localeCompare(b.name))) {
             fixtures.push({
               value: create(OutputTargetSchema, {
                 output: {

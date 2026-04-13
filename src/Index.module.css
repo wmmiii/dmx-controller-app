@@ -83,6 +83,7 @@ button {
 }
 
 select {
+  background-color: var(--col-bg-higher);
   padding-right: 2rem; /* Spacing for the caret */
 
   /* Caret */
