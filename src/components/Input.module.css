@@ -23,8 +23,26 @@
   max-width: 5em;
 }
 
+.number-input-wrapper {
+  position: relative;
+}
+
+.number-input-suffix {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 0 0.5em;
+  color: var(--col-text-dim);
+  user-select: none;
+  pointer-events: none;
+}
+
 .parse-error {
-  border-bottom-color: var(--col-warning);
+  border-color: var(--col-warning) !important;
 }
 
 .toggle-input {

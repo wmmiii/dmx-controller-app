@@ -23,7 +23,6 @@ import { Button, IconButton } from '../../components/Button';
 import { ColorSwatch } from '../../components/ColorSwatch';
 import { NumberInput, TextInput } from '../../components/Input';
 import { Modal } from '../../components/Modal';
-import RangeInput from '../../components/RangeInput';
 import { VersatileElement } from '../../components/VersatileElement';
 import {
   AMOUNT_CHANNELS,
@@ -408,11 +407,7 @@ function EditDefinitionDialog({
         <label>
           <span>Total channels</span>
           <NumberInput
-            min={Math.max(
-              0,
-              ...Object.keys(mode.channels).map((i) => parseInt(i)),
-            )}
-            max={512}
+            mode="dmx_channel"
             value={mode.numChannels}
             onChange={(v) => {
               mode.numChannels = v;
@@ -426,8 +421,7 @@ function EditDefinitionDialog({
         <label>
           <span>Test fixture index</span>
           <NumberInput
-            min={1}
-            max={512}
+            mode="dmx_channel"
             value={testIndex + 1}
             onChange={(v) => setTestIndex(v - 1)}
           />
@@ -544,8 +538,7 @@ function EditDefinitionDialog({
                 <td>
                   {channel != null && (
                     <NumberInput
-                      min={0}
-                      max={255}
+                      mode="dmx"
                       value={channel.defaultValue}
                       onChange={(v) => {
                         channel.defaultValue = v;
@@ -566,8 +559,7 @@ function EditDefinitionDialog({
                 />
                 <td>
                   <NumberInput
-                    min={0}
-                    max={255}
+                    mode="dmx"
                     value={testValues[i] || 0}
                     onChange={(v) => {
                       setTestValues((testValues) => {
@@ -614,8 +606,7 @@ function ChannelMapping({
         <>
           <td>
             <NumberInput
-              min={-720}
-              max={720}
+              mode="degree"
               value={mapping.value.minDegrees}
               onChange={(v) => {
                 if (mapping.case === 'angleMapping') {
@@ -629,8 +620,7 @@ function ChannelMapping({
           </td>
           <td>
             <NumberInput
-              min={-720}
-              max={720}
+              mode="degree"
               value={mapping.value.maxDegrees}
               onChange={(v) => {
                 if (mapping.case === 'angleMapping') {
@@ -650,24 +640,23 @@ function ChannelMapping({
         <>
           <td colSpan={2}></td>
           <td>
-            <RangeInput
+            <NumberInput
+              mode="dmx"
               title={`Minimum value for ${type} channel.`}
               value={mapping.value.minValue}
               onChange={(value) => {
-                console.log('ON CHANGE', value);
                 if (mapping.case === 'amountMapping') {
                   mapping.value.minValue = value;
                 }
               }}
               onFinalize={(value) => {
-                console.log('ON FINALIZE', value);
                 save(`Set channel ${index} min value to ${value}.`);
               }}
-              max="255"
             />
           </td>
           <td>
-            <RangeInput
+            <NumberInput
+              mode="dmx"
               title={`Maximum value for ${type} channel.`}
               value={mapping.value.maxValue}
               onChange={(value) => {
@@ -678,7 +667,6 @@ function ChannelMapping({
               onFinalize={(value) =>
                 save(`Set channel ${index} max value to ${value}.`)
               }
-              max="255"
             />
           </td>
         </>
@@ -725,8 +713,7 @@ function ColorWheelEditor({ wheel, onClose }: ColorWheelEditorProps) {
               <tr key={i}>
                 <td>
                   <NumberInput
-                    min={0}
-                    max={512}
+                    mode="dmx_channel"
                     value={c.value}
                     onChange={(value) => {
                       c.value = value;

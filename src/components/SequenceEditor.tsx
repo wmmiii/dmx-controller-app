@@ -145,22 +145,20 @@ export function SequenceEditor({
         <label>
           Sequence length in beats
           <NumberInput
+            mode="beat"
             value={sequence.nativeBeats}
             onChange={(i) => {
               sequence.nativeBeats = i;
             }}
             onFinalize={(i) => save(`Set number of beats in sequence to ${i}.`)}
-            min={1}
-            max={16}
           />
         </label>
         <label>
           Subdivide beat
           <NumberInput
+            mode="counting"
             value={beatSubdivisions}
             onChange={setBeatSubdivisions}
-            min={1}
-            max={16}
           />
         </label>
       </div>

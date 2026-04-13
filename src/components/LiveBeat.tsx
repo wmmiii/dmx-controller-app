@@ -103,9 +103,7 @@ export function LiveBeat({ className }: LiveBeatProps): JSX.Element {
       </div>
 
       <NumberInput
-        type="integer"
-        min={0}
-        max={300}
+        mode="bpm"
         value={Math.floor(60_000 / (project.liveBeat!.lengthMs || NaN))}
         onChange={(v) => setBeat(60_000 / v)}
       />

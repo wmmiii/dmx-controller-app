@@ -9,6 +9,8 @@ import {
   useState,
 } from 'react';
 
+import { NumberInputMode as NumberInputModeProto } from '@dmx-controller/proto/settings_pb';
+import clsx from 'clsx';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { DRAG_DISTANCE_PX_SQ, LONG_PRESS_MS } from '../util/browserUtils';
 import styles from './Input.module.css';
@@ -151,114 +153,303 @@ export function EditableText({ value, onChange }: EditableTextProps) {
   }
 }
 
-export type NumberInputType = 'float' | 'integer';
+// The mode controls how the value is displayed.
+export type NumberInputMode =
+  | 'beat'
+  | 'bpm'
+  | 'counting'
+  | 'degree'
+  | 'dmx'
+  | 'dmx_channel'
+  | 'float'
+  | 'integer'
+  | 'normalized'
+  | 'percent'
+  | 'seconds';
 
-interface NumberInputProps {
+export interface NumberInputProps {
   className?: string;
   title?: string;
   disabled?: boolean;
-  type?: NumberInputType;
+  mode?: NumberInputMode;
+  normalized?: boolean;
   value: number;
   onChange: (value: number) => void;
   onFinalize?: (value: number) => void;
-  min: number;
-  max: number;
+}
+
+function getNumberDisplayConfig(
+  inputMode: NumberInputMode | undefined,
+  systemMode: NumberInputModeProto,
+) {
+  if (!inputMode) {
+    switch (systemMode) {
+      case NumberInputModeProto.PERCENT:
+        inputMode = 'percent';
+        break;
+      case NumberInputModeProto.DMX:
+        inputMode = 'dmx';
+        break;
+      case NumberInputModeProto.NORMALIZED:
+        inputMode = 'normalized';
+        break;
+    }
+  }
+
+  switch (inputMode) {
+    case 'beat':
+      return {
+        min: 0,
+        max: 128,
+        step: 1,
+        integer: false,
+        indicator: '𝅗𝅥𝅗𝅥',
+      };
+    case 'bpm':
+      return {
+        min: 80,
+        max: 207,
+        step: 1,
+        integer: true,
+        indicator: '𝅗𝅥𝅗𝅥',
+      };
+    case 'counting':
+      return {
+        min: 0,
+        max: 1024,
+        step: 1,
+        integer: true,
+        indicator: '#',
+      };
+    case 'degree':
+      return {
+        min: -720,
+        max: 720,
+        step: 15,
+        integer: false,
+        indicator: '°',
+      };
+    case 'dmx':
+      return {
+        min: 0,
+        max: 255,
+        step: 16,
+        integer: true,
+        indicator: '@',
+      };
+    case 'dmx_channel':
+      return {
+        min: 1,
+        max: 512,
+        step: 1,
+        integer: true,
+        indicator: '@',
+      };
+    case 'float':
+      return {
+        min: -1024,
+        max: 1024,
+        step: 0.25,
+        integer: false,
+        indicator: '.',
+      };
+    case 'integer':
+      return {
+        min: -1024,
+        max: 1024,
+        step: 1,
+        integer: true,
+        indicator: '#',
+      };
+    case 'normalized':
+      return {
+        min: 0,
+        max: 1,
+        step: 0.125,
+        integer: false,
+        indicator: '.',
+      };
+    case 'percent':
+      return {
+        min: 0,
+        max: 100,
+        step: 10,
+        integer: false,
+        indicator: '%',
+      };
+    case 'seconds':
+      return {
+        min: 0,
+        max: 300,
+        step: 1,
+        integer: false,
+        indicator: '⏲',
+      };
+    default:
+      throw Error(`Unrecognized number type: ${inputMode}`);
+  }
 }
 
 export function NumberInput({
   className,
   title,
   disabled,
-  type,
+  mode,
+  normalized: normalizedProp,
   value,
   onChange,
   onFinalize,
-  min,
-  max,
 }: NumberInputProps): JSX.Element {
-  const { update } = useContext(ProjectContext);
-  const inputRef = createRef<HTMLInputElement>();
-  const [input, setInput] = useState(String(value));
+  const { update, numberInputMode } = useContext(ProjectContext);
 
-  const step = useMemo(() => (max > 1 ? 1 : 1 / 16), [max]);
+  // If normalized is not explicitly provided, infer from mode:
+  // - undefined mode means system default (percent/dmx/normalized) for 0-1 values
+  // - explicit mode means values are already in the correct range
+  const normalized = normalizedProp ?? mode === undefined;
 
-  // Sync internal state when value prop changes externally
-  useEffect(() => setInput(String(value)), [value]);
+  const { min, max, step, integer, indicator } = useMemo(
+    () => getNumberDisplayConfig(mode, numberInputMode),
+    [mode, numberInputMode],
+  );
 
-  const parseValue = useCallback(
-    (input: string) => {
-      try {
-        if (type === 'float') {
-          return parseFloat(input);
-        } else {
-          return parseInt(input);
-        }
-      } catch (e) {
+  const mapToDisplay = useCallback(
+    (v: number) => {
+      let mapped: number;
+      if (normalized) {
+        mapped = v * (max - min) + min;
+      } else {
+        mapped = v;
+      }
+      return String(integer ? Math.round(mapped) : mapped);
+    },
+    [normalized, max, min, integer],
+  );
+
+  // Parse display string to internal value (no range validation)
+  const parseDisplay = useCallback(
+    (s: string): number => {
+      const v = integer ? parseInt(s) : parseFloat(s);
+      if (isNaN(v)) {
         return NaN;
       }
+      if (normalized) {
+        return (v - min) / (max - min);
+      }
+      return v;
     },
-    [type],
+    [integer, min, max, normalized],
   );
+
+  // Check if display string is in valid range
+  const isInRange = useCallback(
+    (s: string): boolean => {
+      const v = integer ? parseInt(s) : parseFloat(s);
+      return !isNaN(v) && v >= min && v <= max;
+    },
+    [integer, min, max],
+  );
+
+  // Clamp internal value to valid range
+  const clamp = useCallback(
+    (v: number): number => {
+      if (normalized) {
+        return Math.max(0, Math.min(1, v));
+      }
+      return Math.max(min, Math.min(max, v));
+    },
+    [normalized, min, max],
+  );
+
+  const inputRef = createRef<HTMLInputElement>();
+
+  const [input, setInput] = useState(String(mapToDisplay(value)));
+
+  // Step by delta in display units, snapping to step grid to avoid floating point errors
+  const stepBy = useCallback(
+    (delta: number) => {
+      const displayValue = integer ? parseInt(input) : parseFloat(input);
+      if (isNaN(displayValue)) return;
+
+      const snapped = Math.round((displayValue + delta) / step) * step;
+      const clampedDisplay = Math.max(min, Math.min(max, snapped));
+      const internal = normalized
+        ? (clampedDisplay - min) / (max - min)
+        : clampedDisplay;
+
+      onChange(internal);
+      setInput(String(integer ? Math.round(clampedDisplay) : clampedDisplay));
+      update();
+    },
+    [input, integer, step, min, max, normalized, onChange, update],
+  );
+
+  // Re-sync display string when the external value or display config changes.
+  useEffect(() => setInput(mapToDisplay(value)), [value, mapToDisplay]);
 
   const onChangeImpl = (newInput: string) => {
     setInput(newInput);
-
-    const parsed = parseValue(newInput);
-    // Only fire onChange if value is valid and within range
-    if (!isNaN(parsed) && parsed >= min && parsed <= max) {
-      onChange(parsed);
+    if (isInRange(newInput)) {
+      onChange(parseDisplay(newInput));
       update();
     }
   };
 
-  // Check if current input is valid
-  const parsed = parseValue(input);
-  const isValid = !isNaN(parsed) && parsed >= min && parsed <= max;
+  const isValid = isInRange(input);
 
-  const classes = [styles.input, styles.numberInput];
-  if (!isValid) {
-    classes.push(styles.parseError);
-  }
-  if (className) {
-    classes.push(className);
-  }
-
-  return (
+  const inputEl = (
     <input
       ref={inputRef}
-      className={classes.join(' ')}
+      className={clsx(
+        className,
+        { [styles.parseError]: !isValid },
+        styles.numberInput,
+        styles.input,
+      )}
       title={title}
       disabled={disabled}
       onKeyDown={(e) => {
         switch (e.code) {
           case 'Enter':
-            inputRef.current?.blur();
-            break;
           case 'Escape':
             inputRef.current?.blur();
             break;
           case 'ArrowUp':
-            const upValue = String(parseValue(input) + step);
-            onChangeImpl(upValue);
-            update();
+            stepBy(step);
             break;
           case 'ArrowDown':
-            const downValue = String(parseValue(input) - step);
-            onChangeImpl(downValue);
-            update();
+            stepBy(-step);
             break;
         }
       }}
       value={input}
       onInput={(e) => onChangeImpl((e.target as HTMLInputElement).value)}
       onBlur={() => {
-        if (onFinalize) {
-          const inputValue = parseValue(input);
-          onFinalize(isNaN(inputValue) ? value : inputValue);
+        const parsed = parseDisplay(input);
+        if (isNaN(parsed)) {
+          // Invalid input - revert to original value
+          setInput(mapToDisplay(value));
+          onFinalize?.(value);
+        } else {
+          // Valid number - clamp if out of range
+          const clamped = clamp(parsed);
+          setInput(mapToDisplay(clamped));
+          onChange(clamped);
+          onFinalize?.(clamped);
+          update();
         }
       }}
     />
   );
+
+  if (indicator != null) {
+    return (
+      <span className={styles.numberInputWrapper}>
+        {inputEl}
+        <span className={styles.numberInputSuffix}>{indicator}</span>
+      </span>
+    );
+  }
+  return inputEl;
 }
 
 interface ToggleInputProps {

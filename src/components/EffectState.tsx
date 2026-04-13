@@ -25,7 +25,7 @@ import { ProjectContext } from '../contexts/ProjectContext';
 import { Button, IconButton } from './Button';
 import { ColorSwatch } from './ColorSwatch';
 import styles from './EffectState.module.css';
-import { NumberInput, NumberInputType } from './Input';
+import { NumberInput, NumberInputMode } from './Input';
 
 type ColorSelectorType = 'none' | 'color' | PaletteColor;
 
@@ -75,6 +75,7 @@ export function EffectState({
         .map((channel) => (
           <Channel
             key={channel}
+            mode="degree"
             name={channel}
             values={states.map((s) => ({
               value: (s.state as any)[channel],
@@ -89,9 +90,6 @@ export function EffectState({
                 }
               },
             }))}
-            min={-720}
-            max={720}
-            type="float"
           />
         ))}
       {(
@@ -115,9 +113,6 @@ export function EffectState({
               }
             },
           }))}
-          min={0}
-          max={1}
-          type="float"
         />
       ))}
       {(
@@ -128,6 +123,7 @@ export function EffectState({
         <Channel
           key={channel}
           name={channel}
+          mode="counting"
           values={states.map((s) => ({
             value: (s.state as any)[channel],
             onChange: (value) => {
@@ -141,9 +137,6 @@ export function EffectState({
               }
             },
           }))}
-          min={0}
-          max={512}
-          type="integer"
         />
       ))}
       <CustomChannels states={states.map((s) => s.state)} />
@@ -158,12 +151,10 @@ interface ChannelProps {
     onChange: (value: number | undefined) => void;
     onFinalize: (value: number | undefined) => void;
   }>;
-  min: number;
-  max: number;
-  type: NumberInputType;
+  mode?: NumberInputMode;
 }
 
-function Channel({ name, values, min, max, type }: ChannelProps) {
+function Channel({ name, values, mode }: ChannelProps) {
   const displayName = name.charAt(0).toUpperCase() + name.slice(1);
   return (
     <>
@@ -175,9 +166,7 @@ function Channel({ name, values, min, max, type }: ChannelProps) {
           key={i}
           stateIndex={i}
           name={name}
-          min={min}
-          max={max}
-          type={type}
+          mode={mode}
           value={v.value}
           onChange={v.onChange}
           onFinalize={v.onFinalize}
@@ -256,9 +245,6 @@ function ColorChannel({ values }: ColorChannelProps) {
               <label>
                 White:&nbsp;
                 <NumberInput
-                  min={0}
-                  max={1}
-                  type="float"
                   value={s.lightColor.value.white || 0}
                   onChange={(value) => {
                     (s.lightColor.value as Color).white = value;
@@ -277,9 +263,7 @@ function ColorChannel({ values }: ColorChannelProps) {
 interface ChannelValueProps {
   stateIndex: number;
   name: string;
-  min: number;
-  max: number;
-  type: NumberInputType;
+  mode?: NumberInputMode;
   value: number | undefined;
   onChange: (value: number | undefined) => void;
   onFinalize: (value: number | undefined) => void;
@@ -288,9 +272,7 @@ interface ChannelValueProps {
 function ChannelValue({
   stateIndex,
   name,
-  min,
-  max,
-  type,
+  mode,
   value,
   onChange,
   onFinalize,
@@ -303,9 +285,7 @@ function ChannelValue({
       {value !== undefined ? (
         <div className={styles.value}>
           <NumberInput
-            min={min}
-            max={max}
-            type={type}
+            mode={mode}
             value={value}
             onChange={onChange}
             onFinalize={onFinalize}
@@ -367,6 +347,7 @@ function CustomChannels({ states }: CustomChannelsProps) {
             <label style={{ gridColumnStart: 1, gridColumnEnd: 2 }}>
               Index
               <NumberInput
+                mode="dmx_channel"
                 value={index}
                 onChange={() => {}}
                 onFinalize={(newIndex) => {
@@ -383,9 +364,6 @@ function CustomChannels({ states }: CustomChannelsProps) {
                   }
                   save(`Move channel ${index} to ${newIndex}.`);
                 }}
-                min={1}
-                max={512}
-                type="integer"
               />
             </label>
             {states.map((s, i) => {
@@ -395,9 +373,7 @@ function CustomChannels({ states }: CustomChannelsProps) {
                   key={i}
                   stateIndex={i}
                   name={`Channel ${index}`}
-                  min={0}
-                  max={255}
-                  type="integer"
+                  mode="dmx"
                   value={channel?.value}
                   onChange={(value) => {
                     if (value !== undefined) {

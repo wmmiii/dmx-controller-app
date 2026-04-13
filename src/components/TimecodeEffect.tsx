@@ -556,9 +556,7 @@ function StrobeEffectDetails({
         <span>State A duration (frames)</span>
         <NumberInput
           title="speed"
-          type="integer"
-          min={1}
-          max={10}
+          mode="counting"
           value={effect.stateAFames}
           onChange={(value) => {
             effect.stateAFames = value;
@@ -572,9 +570,7 @@ function StrobeEffectDetails({
         <span>State B duration (frames)</span>
         <NumberInput
           title="speed"
-          type="integer"
-          min={1}
-          max={10}
+          mode="counting"
           value={effect.stateBFames}
           onChange={(value) => {
             effect.stateBFames = value;
@@ -608,9 +604,7 @@ function RandomEffectDetails({
         <span>Effect A min (Seconds)</span>
         <NumberInput
           title="speed"
-          type="float"
-          min={0}
-          max={500}
+          mode="seconds"
           value={effect.effectAMin / 1000}
           onChange={(value) => {
             const ms = Math.floor(value * 1000);
@@ -625,9 +619,7 @@ function RandomEffectDetails({
         <span>Effect A max (Seconds)</span>
         <NumberInput
           title="speed"
-          type="float"
-          min={effect.effectAMin / 1000}
-          max={500}
+          mode="seconds"
           value={(effect.effectAMin + effect.effectAVariation) / 1000}
           onChange={(value) => {
             effect.effectAVariation =
@@ -643,9 +635,7 @@ function RandomEffectDetails({
         <span>Effect B min (Seconds)</span>
         <NumberInput
           title="speed"
-          type="float"
-          min={0}
-          max={500}
+          mode="seconds"
           value={effect.effectBMin / 1000}
           onChange={(value) => {
             const ms = Math.floor(value * 1000);
@@ -660,9 +650,7 @@ function RandomEffectDetails({
         <span>Effect B max (Seconds)</span>
         <NumberInput
           title="speed"
-          type="float"
-          min={effect.effectBMin / 1000}
-          max={500}
+          mode="seconds"
           value={(effect.effectBMin + effect.effectBVariation) / 1000}
           onChange={(value) => {
             effect.effectBVariation =
@@ -691,9 +679,7 @@ function RandomEffectDetails({
         <span>Random Seed</span>
         <NumberInput
           title="speed"
-          type="integer"
-          min={0}
-          max={4_294_967_295}
+          mode="counting"
           value={effect.seed}
           onChange={(value) => {
             effect.seed = value;
@@ -831,9 +817,7 @@ function PresetEffectDetails({
           <label>
             <span>Min Pan</span>
             <NumberInput
-              type="float"
-              max={720}
-              min={-720}
+              mode="degree"
               value={effect.minPan}
               onChange={(v) => {
                 effect.minPan = v;
@@ -844,9 +828,7 @@ function PresetEffectDetails({
           <label>
             <span>Max Pan</span>
             <NumberInput
-              type="float"
-              max={720}
-              min={-720}
+              mode="degree"
               value={effect.maxPan}
               onChange={(v) => {
                 effect.maxPan = v;
@@ -857,9 +839,7 @@ function PresetEffectDetails({
           <label>
             <span>Min Tilt</span>
             <NumberInput
-              type="float"
-              max={720}
-              min={-720}
+              mode="degree"
               value={effect.minTilt}
               onChange={(v) => {
                 effect.minTilt = v;
@@ -870,9 +850,7 @@ function PresetEffectDetails({
           <label>
             <span>Max Tilt</span>
             <NumberInput
-              type="float"
-              max={720}
-              min={-720}
+              mode="degree"
               value={effect.maxTilt}
               onChange={(v) => {
                 effect.maxTilt = v;
@@ -1249,9 +1227,7 @@ function EffectTimingDetails({ effect, showPhase }: EffectTimingDetailsProps) {
         <label>
           <span>Duration (seconds)</span>
           <NumberInput
-            type="float"
-            max={300}
-            min={0}
+            mode="seconds"
             value={effect.timingMode.timing.value.durationMs / 1_000}
             onChange={(v) => {
               if (effect.timingMode?.timing.case !== 'absolute') {
@@ -1268,9 +1244,7 @@ function EffectTimingDetails({ effect, showPhase }: EffectTimingDetailsProps) {
         <label>
           <span>Beats</span>
           <NumberInput
-            type="float"
-            max={64}
-            min={0}
+            mode="beat"
             value={effect.timingMode.timing.value.multiplier}
             onChange={(v) => {
               if (effect.timingMode?.timing.case !== 'beat') {
@@ -1302,9 +1276,7 @@ function EffectTimingDetails({ effect, showPhase }: EffectTimingDetailsProps) {
         <label>
           <span>Phase</span>
           <NumberInput
-            type="float"
-            max={256}
-            min={-256}
+            mode="float"
             value={effect.timingMode!.phase || 0}
             onChange={(v) => {
               effect.timingMode!.phase = v;

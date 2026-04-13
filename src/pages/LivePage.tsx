@@ -370,9 +370,7 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
         <div className={styles.row}>
           <label>Priority</label>
           <NumberInput
-            min={-1000}
-            max={1000}
-            type="integer"
+            mode="integer"
             value={tileMap.priority}
             onChange={(v) => {
               tileMap.priority = v;

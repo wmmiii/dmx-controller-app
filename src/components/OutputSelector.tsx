@@ -48,7 +48,9 @@ export function OutputSelector({
         label: 'All Fixtures',
       },
     ];
-    for (const [groupId, group] of Object.entries(project.groups).sort(([_a, a], [_b, b]) => a.name.localeCompare(b.name))) {
+    for (const [groupId, group] of Object.entries(project.groups).sort(
+      ([_a, a], [_b, b]) => a.name.localeCompare(b.name),
+    )) {
       groups.push({
         value: create(OutputTargetSchema, {
           output: {

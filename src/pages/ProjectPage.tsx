@@ -1,7 +1,10 @@
 import { JSX, useContext } from 'react';
 
 import { create } from '@bufbuild/protobuf';
-import { SettingsSchema } from '@dmx-controller/proto/settings_pb';
+import {
+  NumberInputMode,
+  SettingsSchema,
+} from '@dmx-controller/proto/settings_pb';
 import { Button } from '../components/Button';
 import { TextInput, ToggleInput } from '../components/Input';
 import { ProjectContext } from '../contexts/ProjectContext';
@@ -47,6 +50,51 @@ export default function ProjectPage(): JSX.Element {
                 );
               }}
             />
+          </td>
+        </tr>
+        <tr>
+          <th>Number input mode</th>
+          <td>
+            <select
+              value={
+                project.settings?.numberInputMode ?? NumberInputMode.PERCENT
+              }
+              onChange={(e) => {
+                let settings = project.settings;
+                if (settings == null) {
+                  settings = project.settings = create(SettingsSchema, {});
+                }
+                const mode = parseInt(e.target.value) as NumberInputMode;
+
+                let label;
+                switch (mode) {
+                  case NumberInputMode.NORMALIZED:
+                    label = '[0, 1]';
+                    break;
+                  case NumberInputMode.DMX:
+                    label = '0 to 255';
+                    break;
+                  case NumberInputMode.PERCENT:
+                    label = 'percent';
+                    break;
+                  default:
+                    throw Error(`Unrecognized input mode: ${mode}`);
+                }
+
+                settings.numberInputMode = mode;
+                save(`Set number input mode to ${label}.`);
+              }}
+            >
+              <option value={NumberInputMode.NORMALIZED}>
+                0 to 1 (half is 0.5)
+              </option>
+              <option value={NumberInputMode.DMX}>
+                dmx value (half is 128)
+              </option>
+              <option value={NumberInputMode.PERCENT}>
+                percent (half is 50%)
+              </option>
+            </select>
           </td>
         </tr>
         <tr>

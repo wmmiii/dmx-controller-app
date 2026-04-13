@@ -355,8 +355,7 @@ function EditFixtureDialog({
       <label>
         <span>Channel</span>
         <NumberInput
-          min={1}
-          max={512}
+          mode="dmx_channel"
           value={fixture.channelOffset + 1}
           onChange={(v) => {
             fixture.channelOffset = v - 1;
@@ -375,8 +374,7 @@ function EditFixtureDialog({
           <label key={i}>
             <span>{t.charAt(0).toUpperCase() + t.slice(1)} Offset</span>
             <NumberInput
-              min={-360}
-              max={360}
+              mode="degree"
               value={fixture.channelOffsets[t] || 0}
               onChange={(v) => {
                 fixture.channelOffsets[t] = v;

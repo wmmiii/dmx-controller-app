@@ -276,9 +276,8 @@ function Tracks({
           <span>
             Subdivide beat&nbsp;
             <NumberInput
+              mode="counting"
               disabled={!snapToBeat}
-              min={1}
-              max={16}
               value={beatSubdivisions}
               onChange={setBeatSubdivisions}
             />
