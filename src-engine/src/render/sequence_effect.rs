@@ -32,13 +32,14 @@ pub fn apply_sequence_effect<T: RenderTarget<T>>(
 
     let fixtures = get_fixtures(project, output_target);
 
-    for (fixture_index, fixture) in fixtures.iter().enumerate() {
+    for info in fixtures.values() {
         let t = calculate_timing(
             &sequence_effect.timing_mode.unwrap(),
             system_t,
             effect_t,
             beat_t / f64::from(sequence.native_beats),
-            fixture_index as f64 / fixtures.len() as f64,
+            info.phase,
+            info.index,
         );
 
         #[allow(clippy::cast_lossless)]
@@ -56,18 +57,10 @@ pub fn apply_sequence_effect<T: RenderTarget<T>>(
                 continue;
             };
 
-            let single_target = &OutputTarget {
-                output: Some(crate::proto::output_target::Output::Fixtures(
-                    crate::proto::output_target::FixtureMapping {
-                        fixture_ids: vec![*fixture],
-                    },
-                )),
-            };
-
             apply_effect(
                 project,
                 render_target,
-                single_target,
+                &info.output_target,
                 sequence_t,
                 Some(
                     &(f64::from(u32::try_from(sequence_t).unwrap() - effect.start_ms)

@@ -28,22 +28,14 @@ pub fn apply_random_effect<T: RenderTarget<T>>(
     if random_effect.treat_fixtures_individually {
         let fixtures = get_fixtures(project, output_target);
 
-        for (i, fixture) in fixtures.iter().enumerate() {
-            let single_target = &OutputTarget {
-                output: Some(crate::proto::output_target::Output::Fixtures(
-                    crate::proto::output_target::FixtureMapping {
-                        fixture_ids: vec![*fixture],
-                    },
-                )),
-            };
-
+        for info in fixtures.values() {
             apply_random_effect_impl(
                 project,
                 render_target,
-                single_target,
+                &info.output_target,
                 system_t,
                 frame,
-                i as u64,
+                info.index as u64,
                 beat_t,
                 random_effect,
                 color_palette,

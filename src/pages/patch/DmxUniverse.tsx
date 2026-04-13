@@ -98,15 +98,6 @@ export function DmxUniverse({
       }
     }
 
-    // Remove channels that aren't doing anything.
-    for (let c = 500; c > 10; c -= 10) {
-      if (channels.slice(c - 10).every((ci) => ci.length === 0)) {
-        channels.length = c;
-      } else {
-        break;
-      }
-    }
-
     return channels;
   }, [project]);
 

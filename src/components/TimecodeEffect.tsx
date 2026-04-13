@@ -11,6 +11,7 @@ import {
   EffectTiming_BeatSchema,
   EffectTiming_EasingFunction,
   EffectTiming_OneShotSchema,
+  EffectTiming_PhaseType,
   Effect_PresetEffect,
   Effect_PresetEffectSchema,
   Effect_PresetEffect_CircleEffect,
@@ -1273,17 +1274,36 @@ function EffectTimingDetails({ effect, showPhase }: EffectTimingDetailsProps) {
       </label>
 
       {showPhase && (
-        <label>
-          <span>Phase</span>
-          <NumberInput
-            mode="float"
-            value={effect.timingMode!.phase || 0}
-            onChange={(v) => {
-              effect.timingMode!.phase = v;
-            }}
-            onFinalize={(v) => save(`Change effect phase to ${v}.`)}
-          />
-        </label>
+        <>
+          <label>
+            <span>Phase</span>
+            <NumberInput
+              mode="float"
+              value={effect.timingMode!.phase || 0}
+              onChange={(v) => {
+                effect.timingMode!.phase = v;
+              }}
+              onFinalize={(v) => save(`Change effect phase to ${v}.`)}
+            />
+          </label>
+          <label>
+            <span>Phase type</span>
+            <select
+              value={effect.timingMode?.phaseType}
+              onChange={(e) => {
+                effect.timingMode!.phaseType = parseInt(e.target.value);
+                save('Change effect phase type.');
+              }}
+            >
+              <option value={EffectTiming_PhaseType.ACROSS_GROUP}>
+                Across group
+              </option>
+              <option value={EffectTiming_PhaseType.BETWEEN_FIXTURES}>
+                Between fixtures
+              </option>
+            </select>
+          </label>
+        </>
       )}
     </>
   );

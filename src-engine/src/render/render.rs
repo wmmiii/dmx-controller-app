@@ -193,10 +193,9 @@ fn render_group_debug<T: RenderTarget<T>>(render_target: &mut T, project: &Proje
         output: Some(output_target::Output::Group(group_id)),
     };
     let fixtures = get_fixtures(project, &group_target);
-    for (index, fixture) in fixtures.iter().enumerate() {
-        // Normalize hue to [0, 1) range (handle wraparound)
-        #[allow(clippy::cast_precision_loss)]
-        let h = index as f64 / fixtures.len() as f64;
+    for (fixture_id, info) in &fixtures {
+        // Use phase for hue (already normalized to [0, 1) range)
+        let h = info.phase;
 
         // Scale to [0, 6) to represent the 6 segments of the color wheel
         let h_scaled = h * 6.0;
@@ -223,6 +222,6 @@ fn render_group_debug<T: RenderTarget<T>>(render_target: &mut T, project: &Proje
             ..Default::default()
         };
 
-        render_target.apply_state(fixture, &state, &ColorPalette::default());
+        render_target.apply_state(fixture_id, &state, &ColorPalette::default());
     }
 }

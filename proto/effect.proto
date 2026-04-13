@@ -48,6 +48,11 @@ message EffectTiming {
     SINE = 4;
   }
 
+  enum PhaseType {
+    ACROSS_GROUP = 0;
+    BETWEEN_FIXTURES = 1;
+  }
+
   // Cycle is defined by an absolute duration.
   message Absolute { uint32 duration_ms = 1; }
 
@@ -66,6 +71,7 @@ message EffectTiming {
   EasingFunction easing = 4;
   bool mirrored = 5;
   double phase = 6;
+  PhaseType phase_type = 7;
 }
 
 message TimecodedEffect {

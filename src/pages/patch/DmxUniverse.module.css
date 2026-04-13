@@ -1,6 +1,6 @@
 .dmx-universe {
   display: grid;
-  grid-template-columns: repeat(10, auto);
+  grid-template-columns: repeat(16, auto);
   gap: var(--space-1);
   padding: var(--space-1);
 }

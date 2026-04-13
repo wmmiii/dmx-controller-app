@@ -18,31 +18,23 @@ pub fn apply_ramp_effect<T: RenderTarget<T>>(
 ) {
     let fixtures = get_fixtures(project, output_target);
 
-    for (i, fixture) in fixtures.iter().enumerate() {
-        #[allow(clippy::cast_precision_loss)]
+    for info in fixtures.values() {
         let t = calculate_timing(
             &ramp_effect.timing_mode.unwrap(),
             system_t,
             effect_t,
             beat_t,
-            i as f64 / fixtures.len() as f64,
+            info.phase,
+            info.index,
         );
 
         let mut start = render_target.clone();
         let mut end = render_target.clone();
 
-        let single_target = &OutputTarget {
-            output: Some(crate::proto::output_target::Output::Fixtures(
-                crate::proto::output_target::FixtureMapping {
-                    fixture_ids: vec![*fixture],
-                },
-            )),
-        };
-
         apply_state(
             project,
             &mut start,
-            single_target,
+            &info.output_target,
             ramp_effect.state_start.as_ref().unwrap(),
             color_palette,
         );
@@ -50,7 +42,7 @@ pub fn apply_ramp_effect<T: RenderTarget<T>>(
         apply_state(
             project,
             &mut end,
-            single_target,
+            &info.output_target,
             ramp_effect.state_end.as_ref().unwrap(),
             color_palette,
         );

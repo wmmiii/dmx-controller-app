@@ -65,14 +65,14 @@ fn apply_rainbow_effect<T: RenderTarget<T>>(
 ) {
     let fixtures = get_fixtures(project, output_target);
 
-    for (i, fixture) in fixtures.iter().enumerate() {
-        #[allow(clippy::cast_precision_loss)]
+    for info in fixtures.values() {
         let t = calculate_timing(
             &rainbow_effect.timing_mode.unwrap(),
             system_t,
             effect_t,
             beat_t,
-            i as f64 / fixtures.len() as f64,
+            info.phase,
+            info.index,
         );
 
         // Convert HSV to RGB for rainbow effect
@@ -84,15 +84,7 @@ fn apply_rainbow_effect<T: RenderTarget<T>>(
             ..Default::default()
         };
 
-        let single_target = &OutputTarget {
-            output: Some(crate::proto::output_target::Output::Fixtures(
-                crate::proto::output_target::FixtureMapping {
-                    fixture_ids: vec![*fixture],
-                },
-            )),
-        };
-
-        apply_state(project, render_target, single_target, &state, color_palette);
+        apply_state(project, render_target, &info.output_target, &state, color_palette);
     }
 }
 
@@ -108,14 +100,14 @@ fn apply_circle_effect<T: RenderTarget<T>>(
 ) {
     let fixtures = get_fixtures(project, output_target);
 
-    for (i, fixture) in fixtures.iter().enumerate() {
-        #[allow(clippy::cast_precision_loss)]
+    for info in fixtures.values() {
         let t = calculate_timing(
             &circle_effect.timing_mode.unwrap(),
             system_t,
             effect_t,
             beat_t,
-            i as f64 / fixtures.len() as f64,
+            info.phase,
+            info.index,
         );
 
         let angle = t * 2.0 * std::f64::consts::PI;
@@ -134,15 +126,7 @@ fn apply_circle_effect<T: RenderTarget<T>>(
             ..Default::default()
         };
 
-        let single_target = &OutputTarget {
-            output: Some(crate::proto::output_target::Output::Fixtures(
-                crate::proto::output_target::FixtureMapping {
-                    fixture_ids: vec![*fixture],
-                },
-            )),
-        };
-
-        apply_state(project, render_target, single_target, &state, color_palette);
+        apply_state(project, render_target, &info.output_target, &state, color_palette);
     }
 }
 
