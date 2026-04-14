@@ -4,11 +4,28 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DMX Controller App</title>
+    <title>DMX Controller App — Free Desktop Lighting Control Software</title>
     <meta
       name="description"
-      content="A free desktop application for controlling DMX lighting fixtures. Supports Serial DMX, sACN/E1.31, and WLED with real-time beat detection and MIDI control."
+      content="Free desktop app for DMX lighting control. Supports Serial DMX, sACN/E1.31, and WLED. Import GDTF fixtures, sync effects to music with tap tempo, and control everything via MIDI."
     />
+    <meta name="author" content="Will Martin" />
+    <meta name="theme-color" content="#1a1a2e" />
+    <link rel="canonical" href="https://wmmiii.github.io/dmx-controller-app/" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="DMX Controller App" />
+    <meta property="og:title" content="DMX Controller App — Free Desktop Lighting Control Software" />
+    <meta property="og:description" content="Free desktop app for DMX lighting control. Supports Serial DMX, sACN/E1.31, and WLED. Import GDTF fixtures, sync effects to music with tap tempo, and control everything via MIDI." />
+    <meta property="og:url" content="https://wmmiii.github.io/dmx-controller-app/" />
+    <meta property="og:image" content="https://wmmiii.github.io/dmx-controller-app/icon.svg" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="DMX Controller App — Free Desktop Lighting Control Software" />
+    <meta name="twitter:description" content="Free desktop app for DMX lighting control. Supports Serial DMX, sACN/E1.31, and WLED. Import GDTF fixtures, sync effects to music with tap tempo, and control everything via MIDI." />
+    <meta name="twitter:image" content="https://wmmiii.github.io/dmx-controller-app/icon.svg" />
 
     <!-- Local styles first to prevent flash of unstyled content -->
     <link rel="stylesheet" href="vars.css" />
@@ -34,6 +51,45 @@
     </noscript>
 
     <link rel="icon" type="image/png" href="icon.svg" />
+
+    <!-- Structured data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "DMX Controller App",
+        "description": "A free desktop application for controlling DMX lighting fixtures. Supports Serial DMX, sACN/E1.31, and WLED output protocols. Import fixtures using GDTF, sync effects to music with tap tempo, and control everything live with MIDI controllers.",
+        "url": "https://wmmiii.github.io/dmx-controller-app/",
+        "downloadUrl": "https://github.com/wmmiii/dmx-controller-app/releases",
+        "codeRepository": "https://github.com/wmmiii/dmx-controller-app",
+        "applicationCategory": "MultimediaApplication",
+        "applicationSubCategory": "Lighting Control Software",
+        "operatingSystem": ["Windows", "macOS", "Linux"],
+        "softwareRequirements": "Windows 10+, macOS 10.15+, or Debian Linux",
+        "featureList": [
+          "Serial DMX output via USB-DMX adapter",
+          "sACN/E1.31 network output with unlimited universes",
+          "WLED output with auto-discovery of segments",
+          "GDTF fixture profile import",
+          "Beat-synchronized effects with tap tempo",
+          "MIDI controller input",
+          "Live tile-based performance interface",
+          "Rainbow and Circle preset effects",
+          "Full 512-channel DMX universe per output"
+        ],
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "license": "https://www.apache.org/licenses/LICENSE-2.0",
+        "author": {
+          "@type": "Person",
+          "name": "Will Martin",
+          "url": "https://github.com/wmmiii"
+        }
+      }
+    </script>
   </head>
   <body>
     <div class="container">
