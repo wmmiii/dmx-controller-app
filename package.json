@@ -46,7 +46,7 @@
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.1",
     "babel-plugin-react-compiler": "^1.0.0",
-    "esbuild": "0.27.4",
+    "esbuild": "0.28.0",
     "eslint": "^10.1.0",
     "jest-environment-jsdom": "30.3.0",
     "knip": "^6.0.1",
@@ -55,7 +55,7 @@
     "prettier-plugin-rational-order": "^1.0.3",
     "protoc": "^34.0.0",
     "ts-jest": "29.4.6",
-    "typescript": "5.9.3",
+    "typescript": "6.0.2",
     "typescript-eslint": "^8.57.1",
     "vite": "8.0.1"
   }
