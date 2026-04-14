@@ -6,7 +6,7 @@
     "target": "ESNext",
     "lib": ["DOM", "ESNext"],
     "skipLibCheck": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "sourceMap": true,
     "inlineSources": true,
     "strict": true,
