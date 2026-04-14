@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://wmmiii.github.io/dmx-controller-app/sitemap.xml

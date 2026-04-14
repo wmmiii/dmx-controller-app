@@ -1,5 +1,4 @@
 import { Popover as BasePopover } from '@base-ui/react';
-import { Side } from '@base-ui/react/floating-ui-react';
 import clsx from 'clsx';
 import { RefObject } from 'react';
 import styles from './Popover.module.css';
@@ -8,7 +7,7 @@ interface PopoverProps {
   open?: boolean;
   onOpenChange: (open: boolean) => void;
   initialFocus?: RefObject<HTMLElement | null>;
-  side?: Side;
+  side?: BasePopover.Positioner.Props['side'];
   arrow?: boolean;
   className?: string;
   popover: React.ReactNode;

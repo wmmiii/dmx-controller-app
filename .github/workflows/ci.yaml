@@ -14,6 +14,9 @@ jobs:
       - name: Setup
         uses: ./.github/setup
 
+      - name: Generate protobufs
+        run: pnpm run proto:generate
+
       - name: Type check
         run: pnpm run type-check
 
