@@ -1,6 +1,7 @@
 import { Popover as BasePopover } from '@base-ui/react';
-import { Side } from '@base-ui/react/floating-ui-react';
 import clsx from 'clsx';
+
+type Side = 'top' | 'bottom' | 'left' | 'right' | 'inline-end' | 'inline-start';
 import { RefObject } from 'react';
 import styles from './Popover.module.css';
 
