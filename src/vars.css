@@ -38,6 +38,7 @@
   --col-bg-tint-hover: rgba(255, 255, 255, 0.1);
 
   /* Dimensions */
+  --dim-border-radius-sm: 2px;
   --dim-border-radius: 4px;
   --dim-border-radius-lg: 6px;
 

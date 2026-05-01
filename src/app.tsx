@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router';
 
 import Index from './Index';
+import { AudioInputProvider } from './contexts/AudioInputContext';
 import { BeatProvider } from './contexts/BeatContext';
 import { ControllerProvider } from './contexts/ControllerContext';
 import { ProjectProvider } from './contexts/ProjectContext';
@@ -24,9 +25,11 @@ root.render(
         <ProjectProvider>
           <SerialProvider>
             <BeatProvider>
-              <ControllerProvider>
-                <Index />
-              </ControllerProvider>
+              <AudioInputProvider>
+                <ControllerProvider>
+                  <Index />
+                </ControllerProvider>
+              </AudioInputProvider>
             </BeatProvider>
           </SerialProvider>
         </ProjectProvider>

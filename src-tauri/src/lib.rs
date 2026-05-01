@@ -1,4 +1,8 @@
+#[cfg(desktop)]
+mod audio_input;
 mod beat;
+#[cfg(desktop)]
+mod fft;
 #[cfg(desktop)]
 mod midi;
 mod output_loop;
@@ -108,6 +112,18 @@ pub fn run() {
                 app.manage(midi_state_arc);
             }
 
+            #[cfg(desktop)]
+            {
+                let audio_input_state = audio_input::AudioInputState::new(app.handle().clone());
+                let audio_input_state_arc = Arc::new(Mutex::new(audio_input_state));
+                {
+                    let state_clone = audio_input_state_arc.clone();
+                    let audio = audio_input_state_arc.blocking_lock();
+                    audio.start_device_watcher(state_clone);
+                }
+                app.manage(audio_input_state_arc);
+            }
+
             let serial_state = serial::SerialState::new();
             let serial_state_arc = Arc::new(Mutex::new(serial_state));
 
@@ -167,6 +183,8 @@ pub fn run() {
             beat::get_beat_t,
             beat::set_first_beat,
             beat::set_bpm,
+            #[cfg(desktop)]
+            audio_input::list_audio_inputs,
             #[cfg(desktop)]
             midi::connect_midi,
             #[cfg(desktop)]

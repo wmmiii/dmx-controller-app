@@ -6,7 +6,7 @@
   box-sizing: border-box;
   padding: var(--space-1) var(--space-2);
   color: var(--col-text);
-  font-size: var(--dim-text-size-lg);
+  font-size: var(--dim-text-size-sm);
   border: 1px solid var(--col-border-higher);
   border-radius: var(--dim-border-radius);
   outline: none;

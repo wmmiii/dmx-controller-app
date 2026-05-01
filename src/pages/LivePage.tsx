@@ -9,6 +9,7 @@ import {
   SceneSchema,
   Scene_TileMapSchema,
   Scene_TileSchema,
+  Scene_Tile_AudioDetailsSchema,
   Scene_Tile_EffectChannel,
   Scene_Tile_EffectChannelSchema,
   Scene_Tile_LoopDetailsSchema,
@@ -36,10 +37,14 @@ import { ProjectContext } from '../contexts/ProjectContext';
 import { getAvailableChannels } from '../engine/fixtures/fixture';
 import { deleteBindings } from '../external_controller/externalController';
 
-import { BiPencil, BiPlus, BiTrash } from 'react-icons/bi';
+import { BiPencil, BiPlus, BiTrash, BiX } from 'react-icons/bi';
+import { AudioLevels } from '../components/AudioLevels';
 import { DurationInput } from '../components/Duration';
+import { RangeSlider } from '../components/RangeSlider';
+import { Select } from '../components/Select';
 import { Spacer } from '../components/Spacer';
 import { Tabs, TabsType } from '../components/Tabs';
+import { AudioInputContext } from '../contexts/AudioInputContext';
 import { useRenderMode } from '../hooks/renderMode';
 import { DEFAULT_COLOR_PALETTE } from '../util/colorUtil';
 import { randomUint64 } from '../util/numberUtils';
@@ -51,6 +56,12 @@ const NEW_SCENE_KEY = 'new';
 export function LivePage(): JSX.Element {
   const { project, save } = useContext(ProjectContext);
   const projectRef = useRef<Project>(project);
+  const {
+    availableDevices: audioDevices,
+    selectedDevice: selectedAudioDevice,
+    select: selectAudio,
+    deselect: deselectAudio,
+  } = useContext(AudioInputContext);
 
   const [selectedId, setSelectedId] = useState<bigint>(0n);
   const [editPalette, setEditPalette] = useState(false);
@@ -272,6 +283,25 @@ export function LivePage(): JSX.Element {
         after={
           <>
             <Spacer />
+            {selectedAudioDevice != '' && (
+              <AudioLevels className={styles.audioLevels} />
+            )}
+            <Select
+              className={styles.audioSelect}
+              value={selectedAudioDevice ?? ''}
+              onChange={(value) => {
+                if (value === '') {
+                  deselectAudio();
+                } else {
+                  selectAudio(value);
+                }
+              }}
+              options={[
+                { value: '', label: 'No Audio Input' },
+                ...audioDevices.map((d) => ({ value: d.name, label: d.name })),
+              ]}
+              placeholder="Audio Input"
+            />
             <LiveBeat className={styles.beat} />
           </>
         }
@@ -383,6 +413,80 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
             />
           </div>
         )}
+        <hr />
+        <div className={styles.row}>
+          <label>Audio reactivity</label>
+        </div>
+        {tile.audioDetails == null ? (
+          <div className={styles.audioRow}>
+            <Button
+              onClick={() => {
+                tile.audioDetails = create(Scene_Tile_AudioDetailsSchema, {
+                  lowBand: 0,
+                  highBand: 15,
+                  minRange: 0,
+                  maxRange: 1,
+                });
+                save(`Make ${tile.name} audio reactive.`);
+              }}
+            >
+              Make audio reactive
+            </Button>
+          </div>
+        ) : (
+          <>
+            <div className={styles.row}>
+              <RangeSlider
+                value={[
+                  tile.audioDetails.lowBand,
+                  tile.audioDetails.highBand + 1,
+                ]}
+                onChange={([low, high]) => {
+                  tile.audioDetails!.lowBand = low;
+                  tile.audioDetails!.highBand = high - 1;
+                  save(
+                    `Change ${tile.name} audio band range to ${low}–${high}.`,
+                  );
+                }}
+                min={0}
+                max={16}
+                step={1}
+              />
+            </div>
+            <div className={styles.row}>
+              <AudioLevels
+                minRange={tile.audioDetails.lowBand}
+                maxRange={tile.audioDetails.highBand}
+              />
+            </div>
+            <div className={styles.audioRow}>
+              <NumberInput
+                value={tile.audioDetails.minRange}
+                onChange={(v) => {
+                  tile.audioDetails!.minRange = v;
+                  save(`Change min volume mapping of ${tile.name} to ${v}`);
+                }}
+              />
+              <NumberInput
+                value={tile.audioDetails.maxRange}
+                onChange={(v) => {
+                  tile.audioDetails!.maxRange = v;
+                  save(`Change max volume mapping of ${tile.name} to ${v}`);
+                }}
+              />
+              <IconButton
+                title="Remove audio reactivity."
+                onClick={() => {
+                  tile.audioDetails = undefined;
+                  save(`Make ${tile.name} not audio reactive`);
+                }}
+              >
+                <BiX />
+              </IconButton>
+            </div>
+          </>
+        )}
+        <hr />
         <div className={styles.row}>
           <Toggle
             className={styles.switch}

@@ -1,3 +1,4 @@
+pub mod audio;
 pub mod beat;
 pub mod midi;
 pub mod project;

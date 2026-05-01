@@ -34,8 +34,10 @@ tauri-plugin-process = "2"
 tokio = { version = "1.48.0", features = ["time", "macros", "sync"] }
 
 [target.'cfg(not(target_os = "ios"))'.dependencies]
+cpal = "0.15"
 midir = "0.10.2"
 open_dmx = "1.1.1"
+rustfft = "6"
 serialport = "4.7.3"
 tauri-plugin-keepawake = "0.1.0"
 

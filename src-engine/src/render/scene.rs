@@ -1,6 +1,7 @@
 use std::cmp::Ordering;
 
 use crate::{
+    audio::AudioAnalysis,
     beat::effective_beat_metadata,
     project::DEFAULT_COLOR_PALETTE,
     proto::{
@@ -51,6 +52,7 @@ pub fn render_scene<T: RenderTarget<T>>(
     system_t: u64,
     frame: u32,
     project: &Project,
+    audio_analysis: &AudioAnalysis,
 ) -> Result<(), String> {
     let Some(scene) = project.scenes.get(&scene_id) else {
         return Err(format!("Could not find scene {scene_id}"));
@@ -101,7 +103,7 @@ pub fn render_scene<T: RenderTarget<T>>(
         };
 
         // Calculate amount (fade in/out)
-        let amount: f64 = match &tile.transition {
+        let mut amount: f64 = match &tile.transition {
             Some(Transition::AbsoluteStrength(a)) => f64::from(*a),
             Some(Transition::StartFadeInMs(fade_in_time)) => match &tile.timing_details {
                 Some(TimingDetails::OneShot(OneShotDetails {
@@ -141,6 +143,27 @@ pub fn render_scene<T: RenderTarget<T>>(
                 _ => 0.0,
             },
             _ => panic!("Unknown transition type!"),
+        };
+
+        amount *= match tile.audio_details {
+            Some(audio_details) => {
+                let low = audio_details.low_band as usize;
+                let high = (audio_details.high_band as usize).min(audio_analysis.bands.len() - 1);
+                let attenuation = if low <= high {
+                    audio_analysis.bands[low..=high]
+                        .iter()
+                        .copied()
+                        .fold(0.0_f32, f32::max)
+                } else {
+                    audio_analysis.all
+                };
+                f64::from(
+                    ((attenuation - audio_details.min_range)
+                        / (audio_details.max_range - audio_details.min_range))
+                        .clamp(0.0, 1.1),
+                )
+            }
+            None => 1.0,
         };
 
         if amount == 0.0 {
