@@ -70,6 +70,12 @@ export function OutputSelector({
     for (const [outputId, output] of Object.entries(
       getActivePatch(project).outputs,
     )) {
+      if (output.output.case == null) {
+        throw Error(
+          `Output ${outputId} has no type set (corrupted or legacy data). ` +
+            `Delete this output on the Patch page and recreate it.`,
+        );
+      }
       switch (output.output.case) {
         case 'sacnDmxOutput':
         case 'serialDmxOutput':
@@ -118,8 +124,12 @@ export function OutputSelector({
             });
           }
           break;
-        default:
-          throw Error('Unknown output type in output selector!');
+        default: {
+          const exhaustiveCheck: never = output.output;
+          throw Error(
+            `Unknown output type in output selector! ${(exhaustiveCheck as { case: unknown }).case}`,
+          );
+        }
       }
     }
 

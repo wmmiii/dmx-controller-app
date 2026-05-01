@@ -83,8 +83,31 @@ export default function PatchPage(): JSX.Element {
           contents: <WledEditor outputId={outputId} />,
         };
         break;
-      default:
-        throw Error(`Unknown output type in PatchPage! ${output.output.case}`);
+      case undefined:
+        // Corrupted or legacy output with no type - show error tab so user can delete it
+        tabs[outputId.toString()] = {
+          name: (
+            <OutputTabHeader
+              output={output}
+              outputId={outputId}
+              tabKey={tabKey}
+              setTabKey={setTabKey}
+            />
+          ),
+          contents: (
+            <p style={{ color: 'var(--red-9)', padding: '1rem' }}>
+              This output has no type set (corrupted or legacy data). Please
+              delete it using the trash icon in the tab header and recreate it.
+            </p>
+          ),
+        };
+        break;
+      default: {
+        const exhaustiveCheck: never = output.output;
+        throw Error(
+          `Unknown output type in PatchPage! ${(exhaustiveCheck as { case: unknown }).case}`,
+        );
+      }
     }
   }
   tabs[NEW_OUTPUT_KEY] = {

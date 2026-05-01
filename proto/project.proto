@@ -53,6 +53,10 @@ message Project {
   // Shared across all scenes (e.g., beat controls)
   ControllerBindingsMap live_page_controller_bindings = 58;
 
+  // Name of the selected audio input device for audio-responsive effects.
+  // Empty string means no device selected.
+  string selected_audio_input = 62;
+
   reserved 52; // uint32 active_scene = 52;
   reserved 51; // repeated Scene scenes = 51;
   reserved 11; // uint32 update_frequency_ms = 11;

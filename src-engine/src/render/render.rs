@@ -1,6 +1,7 @@
 use std::fmt;
 use std::sync::{LazyLock, Mutex};
 
+use crate::audio::AudioAnalysis;
 use crate::{
     project,
     proto::{
@@ -64,6 +65,8 @@ pub static RENDER_MODE_REF: LazyLock<Mutex<RenderMode>> =
     LazyLock::new(|| Mutex::new(RenderMode::default()));
 
 pub fn render_dmx(output_id: u64, system_t: u64, frame: u32) -> Result<[u8; 512], RenderError> {
+    let audio_analysis = crate::audio::get_audio_analysis();
+
     // Use nested Result to carry RenderError through the String-based with_project
     let nested_result: Result<Result<[u8; 512], RenderError>, String> =
         project::with_project(|project| {
@@ -94,10 +97,15 @@ pub fn render_dmx(output_id: u64, system_t: u64, frame: u32) -> Result<[u8; 512]
 
             let mut render_target = DmxRenderTarget::new(fixtures, fixture_definitions);
 
-            Ok(
-                render(output_id, &mut render_target, system_t, frame, project)
-                    .map(|()| render_target.get_universe()),
+            Ok(render(
+                output_id,
+                &mut render_target,
+                system_t,
+                frame,
+                project,
+                &audio_analysis,
             )
+            .map(|()| render_target.get_universe()))
         });
 
     // Flatten: String error -> RenderError::LockError, then unwrap inner Result
@@ -109,6 +117,8 @@ pub fn render_wled(
     system_t: u64,
     frame: u32,
 ) -> Result<WledRenderTarget, RenderError> {
+    let audio_analysis = crate::audio::get_audio_analysis();
+
     // Use nested Result to carry RenderError through the String-based with_project
     let nested_result: Result<Result<WledRenderTarget, RenderError>, String> =
         project::with_project(|project| {
@@ -147,10 +157,15 @@ pub fn render_wled(
                     .collect(),
             };
 
-            Ok(
-                render(output_id, &mut render_target, system_t, frame, project)
-                    .map(|()| render_target),
+            Ok(render(
+                output_id,
+                &mut render_target,
+                system_t,
+                frame,
+                project,
+                &audio_analysis,
             )
+            .map(|()| render_target))
         });
 
     // Flatten: String error -> RenderError::LockError, then unwrap inner Result
@@ -163,6 +178,7 @@ fn render<T: RenderTarget<T>>(
     system_t: u64,
     frame: u32,
     project: &Project,
+    audio_analysis: &AudioAnalysis,
 ) -> Result<(), RenderError> {
     let render_mode = RENDER_MODE_REF
         .lock()
@@ -180,10 +196,15 @@ fn render<T: RenderTarget<T>>(
             render_group_debug(render_target, project, *group_id);
             Ok(())
         }
-        Some(Mode::Scene(Scene { scene_id })) => {
-            render_scene(*scene_id, render_target, system_t, frame, project)
-                .map_err(RenderError::SceneError)
-        }
+        Some(Mode::Scene(Scene { scene_id })) => render_scene(
+            *scene_id,
+            render_target,
+            system_t,
+            frame,
+            project,
+            audio_analysis,
+        )
+        .map_err(RenderError::SceneError),
         Some(Mode::Show(_)) => todo!("Show not implemented yet!"),
     }
 }

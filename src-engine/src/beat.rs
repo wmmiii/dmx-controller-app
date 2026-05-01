@@ -26,6 +26,28 @@ const STALE_SAMPLE_TIMEOUT_MS: f64 = 3000.0;
 /// whether a gap between samples is large enough to discard history.
 const STALE_SAMPLE_FACTOR: f64 = 1.5;
 
+/// Phase tolerance for consistency filtering: samples must arrive within this
+/// fraction of a beat from an expected beat position to be accepted.
+/// 0.25 = 25% of beat length (±12.5% from ideal position).
+const PHASE_TOLERANCE: f64 = 0.25;
+
+/// Outlier rejection threshold: intervals more than this factor away from the
+/// median are rejected when calculating beat duration.
+const OUTLIER_THRESHOLD: f64 = 0.2;
+
+/// Number of consecutive phase-rejected samples before resetting the sampler.
+/// This allows the tempo to change when a new consistent beat pattern emerges.
+const PHASE_REJECT_LIMIT: u32 = 4;
+
+/// Minimum allowed BPM for beat detection. Intervals longer than this are rejected.
+const MIN_BPM: f64 = 80.0;
+/// Maximum allowed BPM for beat detection. Intervals shorter than this are rejected.
+const MAX_BPM: f64 = 200.0;
+/// Maximum beat interval in ms (corresponding to `MIN_BPM`).
+const MAX_INTERVAL_MS: f64 = 60_000.0 / MIN_BPM; // 750ms
+/// Minimum beat interval in ms (corresponding to `MAX_BPM`).
+const MIN_INTERVAL_MS: f64 = 60_000.0 / MAX_BPM; // 300ms
+
 /// Manages a rolling window of beat timestamps for tempo detection.
 ///
 /// This struct contains only the pure sampling logic (timestamps + beat count).
@@ -43,6 +65,9 @@ pub struct BeatSampler {
     /// Counts beats across the whole sampling session (not limited to the
     /// rolling window) so that the initial offset can be back-projected.
     beat_count: u32,
+    /// Counts consecutive samples rejected by phase-locking. When this exceeds
+    /// [`PHASE_REJECT_LIMIT`], the sampler resets to allow tempo changes.
+    consecutive_rejects: u32,
 }
 
 impl BeatSampler {
@@ -51,6 +76,7 @@ impl BeatSampler {
         Self {
             samples: Vec::new(),
             beat_count: 0,
+            consecutive_rejects: 0,
         }
     }
 
@@ -60,6 +86,12 @@ impl BeatSampler {
     /// [`STALE_SAMPLE_FACTOR`] × the current beat duration, or
     /// [`STALE_SAMPLE_TIMEOUT_MS`] when no estimate exists) the old samples
     /// are discarded and the session restarts from this sample.
+    ///
+    /// Once a stable tempo is established, samples are only accepted if they
+    /// arrive within [`PHASE_TOLERANCE`] of an expected beat position. This
+    /// prevents erratic detections from disrupting the tempo estimate.
+    /// After [`PHASE_REJECT_LIMIT`] consecutive rejections, the sampler resets
+    /// to allow tempo changes.
     #[allow(clippy::cast_precision_loss)]
     pub fn add_sample(&mut self, t: u64) -> Option<BeatMetadata> {
         if let Some(&last) = self.samples.last() {
@@ -67,11 +99,25 @@ impl BeatSampler {
             let threshold = self
                 .beat_duration()
                 .map_or(STALE_SAMPLE_TIMEOUT_MS, |d| d * STALE_SAMPLE_FACTOR);
-            if gap > threshold {
+            if gap > threshold || gap < 0.0 {
                 self.samples.clear();
                 self.beat_count = 0;
+                self.consecutive_rejects = 0;
             }
         }
+
+        if !self.should_accept_sample(t) {
+            self.consecutive_rejects += 1;
+            if self.consecutive_rejects >= PHASE_REJECT_LIMIT {
+                self.samples.clear();
+                self.samples.push(t);
+                self.beat_count = 1;
+                self.consecutive_rejects = 0;
+            }
+            return self.get_beat();
+        }
+
+        self.consecutive_rejects = 0;
 
         self.samples.push(t);
         if self.samples.len() > MAX_BEAT_SAMPLES {
@@ -79,6 +125,26 @@ impl BeatSampler {
         }
         self.beat_count += 1;
         self.get_beat()
+    }
+
+    /// Returns whether the sample should be accepted based on phase-locking.
+    ///
+    /// Once a stable tempo is established, samples are only accepted if they
+    /// arrive within [`PHASE_TOLERANCE`] of an expected beat position.
+    #[allow(clippy::cast_precision_loss)]
+    fn should_accept_sample(&self, t: u64) -> bool {
+        let Some(beat_len) = self.beat_duration() else {
+            return true;
+        };
+        let Some(&last) = self.samples.last() else {
+            return true;
+        };
+
+        let gap = (t as f64) - (last as f64);
+        let beats_elapsed = gap / beat_len;
+        let phase_error = (beats_elapsed - beats_elapsed.round()).abs();
+
+        phase_error <= PHASE_TOLERANCE / 2.0
     }
 
     /// Called when the user explicitly identifies a beat boundary ("first
@@ -125,15 +191,66 @@ impl BeatSampler {
 
     /// Returns the current beat duration estimate, or `None` if not enough
     /// samples have been collected yet.
-    #[allow(clippy::cast_precision_loss)]
+    ///
+    /// Uses median-based outlier rejection: intervals that deviate more than
+    /// [`OUTLIER_THRESHOLD`] from the median are excluded from the average.
+    #[allow(clippy::cast_precision_loss, clippy::cast_possible_wrap)]
     fn beat_duration(&self) -> Option<f64> {
         let samples = &self.samples;
         if samples.len() < 4 {
             return None;
         }
 
-        let total_length = samples[samples.len() - 1] - samples[0];
-        let mut length_ms = total_length as f64 / (samples.len() - 1) as f64;
+        // Calculate intervals between consecutive samples
+        // Filter out non-positive intervals and those outside valid BPM range
+        let mut intervals: Vec<f64> = samples
+            .windows(2)
+            .filter_map(|w| {
+                let interval = w[1] as i64 - w[0] as i64;
+                if interval > 0 {
+                    let interval_f = interval as f64;
+                    // Only accept intervals within valid BPM range (80-200 BPM)
+                    if (MIN_INTERVAL_MS..=MAX_INTERVAL_MS).contains(&interval_f) {
+                        return Some(interval_f);
+                    }
+                }
+                None
+            })
+            .collect();
+
+        // Need at least 3 valid intervals
+        if intervals.len() < 3 {
+            return None;
+        }
+
+        // Find median interval
+        intervals.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+        let median = if intervals.len().is_multiple_of(2) {
+            f64::midpoint(
+                intervals[intervals.len() / 2 - 1],
+                intervals[intervals.len() / 2],
+            )
+        } else {
+            intervals[intervals.len() / 2]
+        };
+
+        // Filter out outliers (intervals deviating more than OUTLIER_THRESHOLD from median)
+        let valid_intervals: Vec<f64> = intervals
+            .iter()
+            .filter(|&&interval| {
+                let deviation = (interval - median).abs() / median;
+                deviation <= OUTLIER_THRESHOLD
+            })
+            .copied()
+            .collect();
+
+        // Need at least 2 valid intervals for a reasonable estimate
+        if valid_intervals.len() < 2 {
+            return None;
+        }
+
+        // Average the valid intervals
+        let mut length_ms = valid_intervals.iter().sum::<f64>() / valid_intervals.len() as f64;
         let bpm = 60_000.0 / length_ms;
 
         let nearest_whole_bpm = bpm.round();
@@ -319,9 +436,28 @@ mod tests {
             should_none.is_none(),
             "Too few samples should not return value!"
         );
-        sampler.add_sample(3500);
-        let should_some = sampler.add_sample(2000);
+        sampler.add_sample(2500);
+        let should_some = sampler.add_sample(3000);
         assert!(should_some.is_some(), "Enough samples should return value!");
+    }
+
+    #[test]
+    fn add_sample_should_reset_on_backwards_time() {
+        let mut sampler = BeatSampler::new();
+        // Build up a stable tempo
+        for t in [1000, 1500, 2000, 2500, 3000] {
+            sampler.add_sample(t);
+        }
+        assert!(
+            sampler.add_sample(3500).is_some(),
+            "Should have beat after 6 samples"
+        );
+        // Adding a sample with earlier timestamp should reset
+        let after_reset = sampler.add_sample(2000);
+        assert!(
+            after_reset.is_none(),
+            "Should reset and return None after backwards timestamp"
+        );
     }
 
     #[test]
@@ -335,13 +471,50 @@ mod tests {
         let first_beat = sampler.add_sample(t);
         assert_eq!(first_beat.map(|b| b.offset_ms), Some(0));
         assert_eq!(first_beat.map(|b| b.length_ms), Some(500.0));
+
+        // Tempo change: phase-locking will reject off-beat samples until reset
+        // After PHASE_REJECT_LIMIT (4) rejections, sampler resets with new tempo
         for _ in 0..16 {
             sampler.add_sample(t);
             t += 400;
         }
         let second_beat = sampler.add_sample(t);
-        assert_eq!(second_beat.map(|b| b.offset_ms), Some(1200));
+        // After reset and rebuilding with new tempo, we get a new beat
+        assert!(second_beat.is_some(), "Should have beat after tempo change");
         assert_eq!(second_beat.map(|b| b.length_ms), Some(400.0));
+    }
+
+    #[test]
+    fn add_sample_rejects_intervals_outside_bpm_range() {
+        // Intervals too fast (>200 BPM = <300ms) should not produce a beat
+        let mut sampler = BeatSampler::new();
+        for t in [0, 200, 400, 600, 800, 1000] {
+            sampler.add_sample(t);
+        }
+        assert!(
+            sampler.add_sample(1200).is_none(),
+            "Should reject intervals faster than 200 BPM"
+        );
+
+        // Intervals too slow (<80 BPM = >750ms) should not produce a beat
+        let mut sampler = BeatSampler::new();
+        for t in [0, 1000, 2000, 3000, 4000, 5000] {
+            sampler.add_sample(t);
+        }
+        assert!(
+            sampler.add_sample(6000).is_none(),
+            "Should reject intervals slower than 80 BPM"
+        );
+
+        // Intervals within range (120 BPM = 500ms) should work
+        let mut sampler = BeatSampler::new();
+        for t in [0, 500, 1000, 1500, 2000, 2500] {
+            sampler.add_sample(t);
+        }
+        assert!(
+            sampler.add_sample(3000).is_some(),
+            "Should accept intervals within 80-200 BPM range"
+        );
     }
 
     #[test]

@@ -1,0 +1,48 @@
+.root {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.control {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 20px;
+  cursor: pointer;
+}
+
+.track {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  background-color: var(--col-bg-border);
+  border-radius: 2px;
+}
+
+.indicator {
+  position: absolute;
+  height: 100%;
+  background-color: var(--col-accent);
+  border-radius: 2px;
+}
+
+.thumb {
+  position: absolute;
+  box-sizing: border-box;
+  width: 12px;
+  height: 12px;
+  background-color: var(--col-text);
+  border: 2px solid var(--col-accent);
+  border-radius: 50%;
+  outline: none;
+}
+
+.thumb:hover {
+  background-color: var(--col-accent);
+}
+
+.thumb:focus-visible {
+  outline: 2px solid var(--col-accent);
+  outline-offset: 2px;
+}
