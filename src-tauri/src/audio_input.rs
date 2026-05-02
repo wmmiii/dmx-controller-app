@@ -4,9 +4,11 @@ use dmx_engine::project;
 use serde::Serialize;
 use std::sync::Arc;
 use std::sync::Mutex as StdMutex;
-use tauri::{AppHandle, Emitter};
+use std::time::{SystemTime, UNIX_EPOCH};
+use tauri::{AppHandle, Emitter, Manager};
 use tokio::sync::Mutex;
 
+use crate::beat::SharedBeatSampler;
 use crate::fft::FftAnalyzer;
 
 #[derive(Serialize, Clone, Debug)]
@@ -105,6 +107,7 @@ impl AudioInputState {
                     // Need to disconnect (desired is None or changed)
                     (Some(_), None) => {
                         stop_stream(&audio_state);
+                        end_audio_beat(&audio_state);
                         *audio_state.active_device.lock().unwrap() = None;
                         log::info!("Audio input deselected");
                     }
@@ -126,12 +129,14 @@ impl AudioInputState {
                                     log::error!(
                                         "Failed to connect to audio device '{device_name}': {e}"
                                     );
+                                    end_audio_beat(&audio_state);
                                     *audio_state.active_device.lock().unwrap() = None;
                                 }
                             }
                         } else if current_active.is_some() {
                             // Desired device not available, stop current stream
                             stop_stream(&audio_state);
+                            end_audio_beat(&audio_state);
                             *audio_state.active_device.lock().unwrap() = None;
                             log::info!("Audio device '{device_name}' not available, disconnected");
                         }
@@ -168,6 +173,21 @@ pub fn list_audio_inputs() -> Result<Vec<AudioInputDevice>, String> {
     Ok(result)
 }
 
+/// Mark the beat sampler as audio-inactive and notify the frontend.
+/// Called whenever the audio stream stops so manual tap tempo becomes
+/// available again.
+fn end_audio_beat(state: &AudioInputState) {
+    if let Ok(handle_guard) = state.app_handle.lock()
+        && let Some(app_handle) = handle_guard.as_ref()
+    {
+        let beat_sampler = app_handle.state::<SharedBeatSampler>();
+        if let Ok(mut sampler) = beat_sampler.lock() {
+            sampler.audio_active = false;
+        }
+        let _ = app_handle.emit("audio-beat-active", false);
+    }
+}
+
 /// Stop the current stream thread by sending a stop signal and waiting for the
 /// thread to exit, ensuring the underlying cpal stream is dropped before we
 /// return.
@@ -193,8 +213,15 @@ fn start_stream(state: &AudioInputState, device_name: &str) -> Result<(), String
         .ok_or("App handle not initialized")?
         .clone();
 
-    let (stop_tx, stop_rx) = std::sync::mpsc::channel::<()>();
+    // Activate audio beat mode: manual tap commands will be ignored until the
+    // stream stops and end_audio_beat() is called.
+    let beat_sampler: SharedBeatSampler = Arc::clone(&*app_handle.state::<SharedBeatSampler>());
+    if let Ok(mut sampler) = beat_sampler.lock() {
+        sampler.audio_active = true;
+    }
+    let _ = app_handle.emit("audio-beat-active", true);
 
+    let (stop_tx, stop_rx) = std::sync::mpsc::channel::<()>();
     let device_name_owned = device_name.to_string();
 
     // Spawn a dedicated thread that owns the cpal Stream (which is !Send).
@@ -202,7 +229,9 @@ fn start_stream(state: &AudioInputState, device_name: &str) -> Result<(), String
     let handle = std::thread::Builder::new()
         .name("audio-input-stream".into())
         .spawn(move || {
-            if let Err(e) = run_stream_thread(&device_name_owned, app_handle, &stop_rx) {
+            if let Err(e) =
+                run_stream_thread(&device_name_owned, app_handle, &stop_rx, beat_sampler)
+            {
                 log::error!("Audio input stream thread error: {e}");
             }
         })
@@ -219,6 +248,7 @@ fn run_stream_thread(
     device_name: &str,
     app_handle: AppHandle,
     stop_rx: &std::sync::mpsc::Receiver<()>,
+    beat_sampler: SharedBeatSampler,
 ) -> Result<(), String> {
     let host = cpal::default_host();
     let device = host
@@ -235,15 +265,30 @@ fn run_stream_thread(
     let channels = config.channels() as usize;
 
     let stream = match config.sample_format() {
-        cpal::SampleFormat::F32 => {
-            build_input_stream::<f32>(&device, &config.into(), app_handle, sample_rate, channels)?
-        }
-        cpal::SampleFormat::I16 => {
-            build_input_stream::<i16>(&device, &config.into(), app_handle, sample_rate, channels)?
-        }
-        cpal::SampleFormat::U16 => {
-            build_input_stream::<u16>(&device, &config.into(), app_handle, sample_rate, channels)?
-        }
+        cpal::SampleFormat::F32 => build_input_stream::<f32>(
+            &device,
+            &config.into(),
+            app_handle,
+            sample_rate,
+            channels,
+            beat_sampler,
+        )?,
+        cpal::SampleFormat::I16 => build_input_stream::<i16>(
+            &device,
+            &config.into(),
+            app_handle,
+            sample_rate,
+            channels,
+            beat_sampler,
+        )?,
+        cpal::SampleFormat::U16 => build_input_stream::<u16>(
+            &device,
+            &config.into(),
+            app_handle,
+            sample_rate,
+            channels,
+            beat_sampler,
+        )?,
         format => return Err(format!("Unsupported sample format: {format:?}")),
     };
 
@@ -264,6 +309,7 @@ fn build_input_stream<T: cpal::SizedSample + Send + 'static>(
     app_handle: AppHandle,
     sample_rate: u32,
     channels: usize,
+    beat_sampler: SharedBeatSampler,
 ) -> Result<cpal::Stream, String>
 where
     f32: cpal::FromSample<T>,
@@ -279,18 +325,31 @@ where
     let stream = device
         .build_input_stream(
             config,
-            #[allow(clippy::cast_precision_loss)]
+            #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
             move |data: &[T], _: &cpal::InputCallbackInfo| {
                 let Ok(mut analyzer) = analyzer.lock() else {
                     return;
                 };
 
-                // Mix to mono and feed into analyzer
+                // Mix to mono and feed into analyzer.
                 for frame in data.chunks(channels) {
                     let mono: f32 =
                         frame.iter().map(|&s| f32::from_sample(s)).sum::<f32>() / channels as f32;
 
                     if let Some(analysis) = analyzer.push_sample(mono) {
+                        // Bass beat detected: feed timestamp into the BPM tracker,
+                        // mirroring the manual tap-tempo path so the render engine
+                        // stays beat-synchronised to the incoming audio.
+                        if analysis.beat_bass {
+                            if let Ok(t) = SystemTime::now()
+                                .duration_since(UNIX_EPOCH)
+                                .map(|d| d.as_millis() as u64)
+                                && let Ok(mut sampler) = beat_sampler.lock()
+                            {
+                                sampler.add_sample(&app_handle, t);
+                            }
+                        }
+
                         let _ = app_handle.emit("audio-input-analysis", &analysis);
                         dmx_engine::audio::update_audio_analysis(analysis);
                     }

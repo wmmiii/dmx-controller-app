@@ -18,6 +18,10 @@ pub(crate) type SharedBeatSampler = Arc<StdMutex<TauriBeatSampler>>;
 pub struct TauriBeatSampler {
     inner: BeatSampler,
     pub sampling: bool,
+    /// Set to `true` while an audio input device is connected and providing
+    /// automatic beat detection. Manual tap commands are ignored in this state
+    /// so the two sources don't interfere with BPM tracking.
+    pub audio_active: bool,
 }
 
 impl TauriBeatSampler {
@@ -25,6 +29,7 @@ impl TauriBeatSampler {
         Self {
             inner: BeatSampler::new(),
             sampling: false,
+            audio_active: false,
         }
     }
 
@@ -40,22 +45,30 @@ impl TauriBeatSampler {
     }
 }
 
-/// Add a beat sample for tempo detection (called from keyboard shortcut)
+/// Add a beat sample for tempo detection (called from keyboard shortcut).
+///
+/// No-ops silently when audio beat detection is active (`audio_active = true`)
+/// so that manual taps and microphone-derived beats don't interfere with each
+/// other's BPM estimates.
 #[tauri::command]
 #[allow(clippy::cast_possible_truncation)]
 pub async fn add_beat_sample(
     app_handle: AppHandle,
     beat_sampler: State<'_, SharedBeatSampler>,
 ) -> Result<(), String> {
-    let t = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_err(|e| e.to_string())?
-        .as_millis() as u64;
-
     let beat_sampler = Arc::clone(&beat_sampler);
     let mut sampler = beat_sampler
         .lock()
         .map_err(|e| format!("Failed to lock beat sampler: {e}"))?;
+
+    if sampler.audio_active {
+        return Ok(());
+    }
+
+    let t = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|e| e.to_string())?
+        .as_millis() as u64;
     sampler.add_sample(&app_handle, t);
 
     Ok(())
