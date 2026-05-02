@@ -12,6 +12,14 @@ pub struct AudioAnalysis {
     pub bands: [f32; NUM_BANDS],
     /// Overall peak loudness across all frequencies.
     pub all: f32,
+    /// Full-spectrum onset detected this frame (spectral flux across all bands).
+    pub beat: bool,
+    /// Bass onset (~40–96 Hz, bands 0-2): kick drums, sub bass.
+    pub beat_bass: bool,
+    /// Mid onset (~220–1100 Hz, bands 4-9): snare, guitar, vocals.
+    pub beat_mid: bool,
+    /// Treble onset (~5–20 kHz, bands 12-15): hi-hats, cymbals.
+    pub beat_treble: bool,
     /// Unix timestamp in milliseconds when this analysis was calculated.
     pub calculated_at_ms: u64,
 }
@@ -21,6 +29,10 @@ impl Default for AudioAnalysis {
         Self {
             bands: [0.0; NUM_BANDS],
             all: 0.0,
+            beat: false,
+            beat_bass: false,
+            beat_mid: false,
+            beat_treble: false,
             calculated_at_ms: 0,
         }
     }
@@ -37,9 +49,7 @@ pub fn update_audio_analysis(mut analysis: AudioAnalysis) {
         .unwrap_or_default();
     analysis.calculated_at_ms = u64::try_from(now.as_millis()).unwrap_or(0);
 
-    let mut state = AUDIO_STATE
-        .lock()
-        .expect("audio state lock poisoned");
+    let mut state = AUDIO_STATE.lock().expect("audio state lock poisoned");
     *state = analysis;
 }
 
