@@ -1,4 +1,5 @@
 // Declare submodules
+pub mod display_render_target;
 pub mod dmx_render_target;
 mod preset_effect;
 mod project;
@@ -8,6 +9,8 @@ mod random_effect;
 pub mod render;
 mod render_target;
 pub mod scene;
+mod shaders;
+pub mod segment_mapping;
 mod sequence_effect;
 mod strobe_effect;
 mod util;

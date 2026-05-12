@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package dmx_controller;
+
+import "proto/pixel_mapping.proto";
+
+message DdpOutput {
+  string name = 1;
+  string ip_address = 2;
+  repeated PhysicalSegment segments = 3;
+}

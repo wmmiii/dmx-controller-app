@@ -1,3 +1,4 @@
+import { DisplayRenderTarget } from '@dmx-controller/proto/display_pb';
 import { WledRenderTarget } from '@dmx-controller/proto/wled_pb';
 export type DmxRenderOutput = Uint8Array;
 
@@ -15,6 +16,10 @@ const dmxSubscriptions: Map<
 const wledSubscriptions: Map<
   bigint,
   Array<(o: WledRenderTarget, fps: number) => void>
+> = new Map();
+const displaySubscriptions: Map<
+  bigint,
+  Array<(o: DisplayRenderTarget, fps: number) => void>
 > = new Map();
 
 // Unified error subscriptions for all output types
@@ -98,6 +103,28 @@ export function subscribeToWledRender(
   };
 }
 
+export function subscribeToDdpRender(
+  outputId: bigint,
+  listener: (o: DisplayRenderTarget, fps: number) => void,
+) {
+  const subscribers = displaySubscriptions.get(outputId);
+  if (subscribers) {
+    subscribers.push(listener);
+  } else {
+    displaySubscriptions.set(outputId, [listener]);
+  }
+
+  return () => {
+    const subs = displaySubscriptions.get(outputId);
+    if (subs) {
+      const index = subs.indexOf(listener);
+      if (index > -1) {
+        subs.splice(index, 1);
+      }
+    }
+  };
+}
+
 /**
  * Subscribe to render errors for any output type.
  * Pass null to clear the error state.
@@ -140,6 +167,18 @@ export function triggerWledSubscriptions(
 ) {
   const fps = recordAndSmoothFps(outputId);
   wledSubscriptions.get(outputId)?.forEach((f) => f(data, fps));
+}
+
+/**
+ * Trigger DDP subscriptions with already-rendered data.
+ * Used by Tauri event listeners to notify subscribers.
+ */
+export function triggerDisplaySubscriptions(
+  outputId: bigint,
+  data: DisplayRenderTarget,
+) {
+  const fps = recordAndSmoothFps(outputId);
+  displaySubscriptions.get(outputId)?.forEach((f) => f(data, fps));
 }
 
 /**

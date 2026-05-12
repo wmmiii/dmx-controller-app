@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package dmx_controller;
+
+// Defines how a strip of pixels is laid out in space.
+message PhysicalSegment {
+  // Mapping for strips.
+  message Line { uint32 length = 1; }
+
+  // Mapping for rectangular panels.
+  message Rectangle {
+    enum StripStart {
+      UPPER_LEFT = 0;
+      UPPER_RIGHT = 1;
+      LOWER_RIGHT = 2;
+      LOWER_LEFT = 3;
+    }
+
+    uint32 width = 1;
+    uint32 height = 2;
+    StripStart strip_start = 3;
+    bool vertical = 4;
+    bool serpentine = 5;
+  }
+
+  oneof shape {
+    Line line = 1;
+    Rectangle rectangle = 2;
+  }
+}

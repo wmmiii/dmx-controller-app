@@ -58,6 +58,7 @@ export function getAvailableChannels(
           fixtureId.fixture,
         ).forEach((c) => channels.add(c));
         break;
+      case 'ddpOutput':
       case 'wledOutput':
         WLED_CHANNELS.forEach((c) => channels.add(c));
         const colorChannels: ColorChannel[] = ['red', 'green', 'blue'];

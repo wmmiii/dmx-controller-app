@@ -5,6 +5,7 @@ package dmx_controller;
 import "proto/audio.proto";
 import "proto/beat.proto";
 import "proto/controller.proto";
+import "proto/display.proto";
 import "proto/effect.proto";
 import "proto/fixture_definitions.proto";
 import "proto/output.proto";
@@ -25,11 +26,12 @@ message Project {
   Settings settings = 3;
   reserved 4 to 10;
 
-  // Path descriptions
+  // Patch descriptions
   uint64 active_patch = 18;
   map<uint64, Patch> patches = 40;
   FixtureDefinitions fixture_definitions = 43;
   map<uint64, TargetGroup> groups = 19;
+  map<uint64, VirtualDisplay> displays = 23;
 
   Assets assets = 21;
 

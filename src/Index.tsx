@@ -14,6 +14,7 @@ import {
 } from 'react-icons/bi';
 import styles from './Index.module.css';
 import { Button, ControllerButton, IconButton } from './components/Button';
+import { DdpVisualizer } from './components/DdpVisualizer';
 import { DmxUniverseVisualizer } from './components/DmxUniverseVisualizer';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Modal } from './components/Modal';
@@ -200,6 +201,8 @@ export default function Index(): JSX.Element {
                 return (
                   <WledVisualizer key={i} wledOutputId={BigInt(outputId)} />
                 );
+              case 'ddpOutput':
+                return <DdpVisualizer key={i} ddpOutputId={BigInt(outputId)} />;
               default:
                 return null;
             }

@@ -66,6 +66,24 @@ export function OutputSelector({
       items: groups,
     });
 
+    const displays = Object.entries(project.displays)
+      .sort(([_a, a], [_b, b]) => a.name.localeCompare(b.name))
+      .map(([displayId, display]) => ({
+        value: create(OutputTargetSchema, {
+          output: {
+            case: 'display' as const,
+            value: BigInt(displayId),
+          },
+        }),
+        label: display.name,
+      }));
+    if (displays.length > 0) {
+      targets.push({
+        label: 'Displays',
+        items: displays,
+      });
+    }
+
     const fixtures: Array<ComboboxOption<OutputTarget>> = [];
     for (const [outputId, output] of Object.entries(
       getActivePatch(project).outputs,
@@ -77,6 +95,25 @@ export function OutputSelector({
         );
       }
       switch (output.output.case) {
+        case 'ddpOutput':
+          fixtures.push({
+            value: create(OutputTargetSchema, {
+              output: {
+                case: 'fixtures',
+                value: {
+                  fixtureIds: [
+                    {
+                      patch: project.activePatch,
+                      output: BigInt(outputId),
+                      fixture: 0n,
+                    },
+                  ],
+                },
+              },
+            }),
+            label: output.name,
+          });
+          break;
         case 'sacnDmxOutput':
         case 'serialDmxOutput':
           for (const [dmxFixtureId, dmxFixture] of Object.entries(
@@ -204,6 +241,8 @@ export function getOutputTargetName(
         return 'All Fixtures';
       }
       return project.groups[target.output.value.toString()].name;
+    case 'display':
+      return project.displays[target.output.value.toString()].name;
     default:
       return '<Unset>';
   }

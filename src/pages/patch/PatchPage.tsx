@@ -18,6 +18,8 @@ import {
   deleteFromOutputTargets,
   getActivePatch,
 } from '../../util/projectUtils';
+import { DdpEditor } from './DdpEditor';
+import { DisplayEditor } from './DisplayEditor';
 import { GroupEditor } from './GroupEditor';
 import styles from './PatchPage.module.css';
 import { SacnEditor } from './SacnEditor';
@@ -25,6 +27,7 @@ import { SerialEditor } from './SerialEditor';
 import { WledEditor } from './WledEditor';
 
 const GROUP_KEY = 'group';
+const DISPLAY_KEY = 'display';
 const NEW_OUTPUT_KEY = 'new';
 
 export default function PatchPage(): JSX.Element {
@@ -36,6 +39,10 @@ export default function PatchPage(): JSX.Element {
     [GROUP_KEY]: {
       name: 'Groups',
       contents: <GroupEditor />,
+    },
+    [DISPLAY_KEY]: {
+      name: 'Displays',
+      contents: <DisplayEditor />,
     },
   };
 
@@ -81,6 +88,19 @@ export default function PatchPage(): JSX.Element {
             />
           ),
           contents: <WledEditor outputId={outputId} />,
+        };
+        break;
+      case 'ddpOutput':
+        tabs[outputId.toString()] = {
+          name: (
+            <OutputTabHeader
+              output={output}
+              outputId={outputId}
+              tabKey={tabKey}
+              setTabKey={setTabKey}
+            />
+          ),
+          contents: <DdpEditor outputId={outputId} />,
         };
         break;
       case undefined:
@@ -252,6 +272,30 @@ export default function PatchPage(): JSX.Element {
                 }}
               >
                 WLED Output
+              </Button>
+              <Button
+                onClick={() => {
+                  const id = randomUint64();
+                  getActivePatch(project).outputs[id.toString()] = create(
+                    OutputSchema,
+                    {
+                      name: 'DDP Output',
+                      latencyMs: 0,
+                      enabled: true,
+                      output: {
+                        case: 'ddpOutput',
+                        value: {
+                          ipAddress: '',
+                        },
+                      },
+                    },
+                  );
+                  save('Create DDP output.');
+                  setTabKey(id.toString());
+                  setShowNewOutputDialog(false);
+                }}
+              >
+                DDP Output
               </Button>
             </>
           }

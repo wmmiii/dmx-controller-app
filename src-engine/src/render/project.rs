@@ -1,5 +1,6 @@
 use crate::proto::{
-    Project, QualifiedFixtureId, SacnDmxOutput, SerialDmxOutput, WledOutput, output::Output,
+    DdpOutput, Project, QualifiedFixtureId, SacnDmxOutput, SerialDmxOutput, WledOutput,
+    output::Output,
 };
 
 impl Project {
@@ -47,6 +48,13 @@ impl Project {
                                     fixture: u64::from(*segment_id),
                                 })
                                 .collect::<Vec<_>>()
+                        }
+                        Output::DdpOutput(DdpOutput { .. }) => {
+                            vec![QualifiedFixtureId {
+                                patch: patch_id,
+                                output: *output_id,
+                                fixture: 0,
+                            }]
                         }
                     })
                     .into_iter()

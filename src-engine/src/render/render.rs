@@ -5,7 +5,8 @@ use crate::audio::AudioAnalysis;
 use crate::{
     project,
     proto::{
-        Color, ColorPalette, FixtureState, OutputTarget, Project, RenderMode, WledRenderTarget,
+        Color, ColorPalette, DisplayBuffer, DisplayRenderTarget, FixtureState, OutputTarget,
+        Project, RenderMode, WledRenderTarget,
         fixture_state::LightColor,
         output::Output,
         output_target,
@@ -14,7 +15,7 @@ use crate::{
     },
     render::{
         dmx_render_target::DmxRenderTarget, render_target::RenderTarget, scene::render_scene,
-        util::get_fixtures,
+        shaders::render_display_shaders, util::get_fixtures,
     },
 };
 
@@ -169,6 +170,56 @@ pub fn render_wled(
         });
 
     // Flatten: String error -> RenderError::LockError, then unwrap inner Result
+    nested_result.map_err(RenderError::LockError)?
+}
+
+/// Render a virtual display to a `DisplayBuffer` (f32 RGB).
+pub fn render_display(
+    display_id: u64,
+    system_t: u64,
+    frame: u32,
+) -> Result<DisplayBuffer, RenderError> {
+    let audio_analysis = crate::audio::get_audio_analysis();
+
+    let nested_result: Result<Result<DisplayBuffer, RenderError>, String> =
+        project::with_project(|project| {
+            let Some(display) = project.displays.get(&display_id) else {
+                return Ok(Err(RenderError::OutputNotFound {
+                    output_id: display_id,
+                    patch_id: project.active_patch,
+                }));
+            };
+
+            let width = display.width;
+            let height = display.height;
+
+            // Collect uniforms from the effect system.
+            let mut uniforms = DisplayRenderTarget {
+                id: display_id,
+                color: None,
+                dimmer: 1.0,
+            };
+
+            let render_result = render(
+                display_id,
+                &mut uniforms,
+                system_t,
+                frame,
+                project,
+                &audio_analysis,
+            );
+
+            if let Err(e) = render_result {
+                return Ok(Err(e));
+            }
+
+            // TODO: Pass uniforms through shader stack to produce pixel buffer.
+            // For now, return a solid color based on the uniforms.
+            let buffer = render_display_shaders(display_id, width, height, system_t, &uniforms);
+
+            Ok(Ok(buffer))
+        });
+
     nested_result.map_err(RenderError::LockError)?
 }
 

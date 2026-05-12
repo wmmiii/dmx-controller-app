@@ -9,6 +9,7 @@ use tauri::{AppHandle, Emitter, Manager, State};
 use tokio::sync::Mutex as TokioMutex;
 use tokio::task::JoinHandle;
 
+use crate::ddp::DdpState;
 use crate::output_loop::OutputLoopManager;
 use crate::sacn::SacnState;
 use crate::serial::SerialState;
@@ -249,6 +250,7 @@ pub async fn rebuild_outputs(
     output_loop_manager: &Arc<TokioMutex<OutputLoopManager>>,
     sacn_state: &Arc<TokioMutex<SacnState>>,
     wled_state: &Arc<TokioMutex<WledState>>,
+    ddp_state: &Arc<TokioMutex<DdpState>>,
 ) -> Result<(), String> {
     // Auto-bind serial outputs to their last known ports if available
     let serial = serial_state.lock().await;
@@ -258,7 +260,12 @@ pub async fn rebuild_outputs(
     // Rebuild output loops
     let manager = output_loop_manager.lock().await;
     manager
-        .rebuild_all_loops(serial_state.clone(), sacn_state.clone(), wled_state.clone())
+        .rebuild_all_loops(
+            serial_state.clone(),
+            sacn_state.clone(),
+            wled_state.clone(),
+            ddp_state.clone(),
+        )
         .await?;
 
     Ok(())
@@ -276,6 +283,7 @@ pub async fn save_project(
     serial_state: State<'_, Arc<TokioMutex<SerialState>>>,
     sacn_state: State<'_, Arc<TokioMutex<SacnState>>>,
     wled_state: State<'_, Arc<TokioMutex<WledState>>>,
+    ddp_state: State<'_, Arc<TokioMutex<DdpState>>>,
 ) -> Result<(), String> {
     // 1. Update engine state + undo stack
     project::save(&project_binary, &description, undoable)?;
@@ -293,6 +301,7 @@ pub async fn save_project(
         output_loop_manager.inner(),
         sacn_state.inner(),
         wled_state.inner(),
+        ddp_state.inner(),
     )
     .await?;
 
@@ -309,6 +318,7 @@ pub async fn update_project(
     serial_state: State<'_, Arc<TokioMutex<SerialState>>>,
     sacn_state: State<'_, Arc<TokioMutex<SacnState>>>,
     wled_state: State<'_, Arc<TokioMutex<WledState>>>,
+    ddp_state: State<'_, Arc<TokioMutex<DdpState>>>,
 ) -> Result<(), String> {
     // 1. Update engine state only (no undo, no persistence)
     project::update(&project_binary)?;
@@ -322,6 +332,7 @@ pub async fn update_project(
         output_loop_manager.inner(),
         sacn_state.inner(),
         wled_state.inner(),
+        ddp_state.inner(),
     )
     .await?;
 
@@ -337,6 +348,7 @@ pub async fn undo_project(
     serial_state: State<'_, Arc<TokioMutex<SerialState>>>,
     sacn_state: State<'_, Arc<TokioMutex<SacnState>>>,
     wled_state: State<'_, Arc<TokioMutex<WledState>>>,
+    ddp_state: State<'_, Arc<TokioMutex<DdpState>>>,
 ) -> Result<(), String> {
     // 1. Perform undo in engine
     let result = project::undo()?;
@@ -354,6 +366,7 @@ pub async fn undo_project(
         output_loop_manager.inner(),
         sacn_state.inner(),
         wled_state.inner(),
+        ddp_state.inner(),
     )
     .await?;
 
@@ -369,6 +382,7 @@ pub async fn redo_project(
     serial_state: State<'_, Arc<TokioMutex<SerialState>>>,
     sacn_state: State<'_, Arc<TokioMutex<SacnState>>>,
     wled_state: State<'_, Arc<TokioMutex<WledState>>>,
+    ddp_state: State<'_, Arc<TokioMutex<DdpState>>>,
 ) -> Result<(), String> {
     // 1. Perform redo in engine
     let result = project::redo()?;
@@ -386,6 +400,7 @@ pub async fn redo_project(
         output_loop_manager.inner(),
         sacn_state.inner(),
         wled_state.inner(),
+        ddp_state.inner(),
     )
     .await?;
 
@@ -402,6 +417,7 @@ pub async fn load_project(
     serial_state: State<'_, Arc<TokioMutex<SerialState>>>,
     sacn_state: State<'_, Arc<TokioMutex<SacnState>>>,
     wled_state: State<'_, Arc<TokioMutex<WledState>>>,
+    ddp_state: State<'_, Arc<TokioMutex<DdpState>>>,
 ) -> Result<(), String> {
     // 1. Load into engine (resets undo stack)
     project::load(&project_binary)?;
@@ -419,6 +435,7 @@ pub async fn load_project(
         output_loop_manager.inner(),
         sacn_state.inner(),
         wled_state.inner(),
+        ddp_state.inner(),
     )
     .await?;
 
@@ -518,6 +535,7 @@ pub async fn import_project(
     serial_state: State<'_, Arc<TokioMutex<SerialState>>>,
     sacn_state: State<'_, Arc<TokioMutex<SacnState>>>,
     wled_state: State<'_, Arc<TokioMutex<WledState>>>,
+    ddp_state: State<'_, Arc<TokioMutex<DdpState>>>,
 ) -> Result<Option<Vec<u8>>, String> {
     use dmx_engine::proto;
     use prost::Message;
@@ -564,6 +582,7 @@ pub async fn import_project(
         output_loop_manager.inner(),
         sacn_state.inner(),
         wled_state.inner(),
+        ddp_state.inner(),
     )
     .await?;
 
@@ -579,6 +598,7 @@ pub async fn new_project(
     serial_state: State<'_, Arc<TokioMutex<SerialState>>>,
     sacn_state: State<'_, Arc<TokioMutex<SacnState>>>,
     wled_state: State<'_, Arc<TokioMutex<WledState>>>,
+    ddp_state: State<'_, Arc<TokioMutex<DdpState>>>,
 ) -> Result<(), String> {
     // 1. Reset engine to default project
     let project_binary = project::new_project()?;
@@ -598,6 +618,7 @@ pub async fn new_project(
         output_loop_manager.inner(),
         sacn_state.inner(),
         wled_state.inner(),
+        ddp_state.inner(),
     )
     .await?;
 

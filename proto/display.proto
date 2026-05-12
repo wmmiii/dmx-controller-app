@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package dmx_controller;
+
+import "proto/color.proto";
+
+// Maps a physical device segment to a virtual display.
+message VirtualMapping {
+  enum Rotate {
+    DEG_0 = 0;
+    DEG_90 = 1;
+    DEG_180 = 2;
+    DEG_270 = 3;
+  }
+
+  int32 top = 1;
+  int32 left = 2;
+
+  // Unused as of now.
+  Rotate rotate = 3;
+  bool flip_horizontally = 4;
+  bool flip_vertically = 5;
+}
+
+// Defines the physical displays that are mapped onto this virtual display.
+message PhysicalDisplayMapping {
+  uint64 patch = 1;
+  uint64 output = 2;
+  uint64 segment = 3;
+
+  VirtualMapping mapping = 4;
+}
+
+// Defines a virtual display which may consist of many physical display
+// segments.
+message VirtualDisplay {
+  string name = 1;
+  uint32 width = 2;
+  uint32 height = 3;
+
+  repeated PhysicalDisplayMapping mappings = 4;
+}
+
+// Uniforms passed into the display shader from the effect system.
+message DisplayRenderTarget {
+  uint64 id = 1;
+  Color color = 2;
+  float dimmer = 3;
+}
+
+// RGB pixel buffer for a virtual display.
+// Pixels are stored in row-major order, 3 floats per pixel (R, G, B).
+message DisplayBuffer {
+  uint64 id = 1;
+  uint32 width = 2;
+  uint32 height = 3;
+  repeated float pixels = 4;
+}

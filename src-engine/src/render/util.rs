@@ -119,6 +119,14 @@ pub fn apply_state<T: RenderTarget<T>>(
                 render_target.apply_state(qid, state, color_palette);
             }
         }
+        Output::Display(d) => {
+            let qid = QualifiedFixtureId {
+                patch: project.active_patch,
+                output: *d,
+                fixture: 0,
+            };
+            render_target.apply_state(&qid, state, color_palette);
+        }
         Output::Group(0) => {
             for fixture_id in project.get_all_qualified_ids() {
                 apply_state(
@@ -179,6 +187,29 @@ pub fn get_fixtures(
             result
         }
 
+        Output::Display(d) => {
+            let qid = QualifiedFixtureId {
+                patch: project.active_patch,
+                output: *d,
+                fixture: 0,
+            };
+
+            let mut result = HashMap::new();
+            result.insert(
+                qid,
+                FixtureInfo {
+                    index: 0,
+                    phase: 0.0,
+                    output_target: OutputTarget {
+                        output: Some(Output::Fixtures(FixtureMapping {
+                            fixture_ids: vec![qid],
+                        })),
+                    },
+                },
+            );
+            result
+        }
+
         Output::Group(0) => {
             let all_ids = project.get_all_qualified_ids();
             let count = all_ids.len();
@@ -191,7 +222,11 @@ pub fn get_fixtures(
                         id,
                         FixtureInfo {
                             index: i,
-                            phase: if count > 0 { i as f64 / count as f64 } else { 0.0 },
+                            phase: if count > 0 {
+                                i as f64 / count as f64
+                            } else {
+                                0.0
+                            },
                             output_target: OutputTarget {
                                 output: Some(Output::Fixtures(FixtureMapping {
                                     fixture_ids: vec![id],
@@ -243,6 +278,31 @@ pub fn get_fixtures(
                                 output_target: OutputTarget {
                                     output: Some(Output::Fixtures(FixtureMapping {
                                         fixture_ids: vec![id],
+                                    })),
+                                },
+                            },
+                        );
+                        direct_index += 1;
+                    }
+                    Some(Output::Display(d)) => {
+                        let qid = QualifiedFixtureId {
+                            patch: project.active_patch,
+                            output: *d,
+                            fixture: 0,
+                        };
+
+                        result.insert(
+                            qid,
+                            FixtureInfo {
+                                index: direct_index,
+                                phase: if direct_fixture_count > 0 {
+                                    direct_index as f64 / direct_fixture_count as f64
+                                } else {
+                                    0.0
+                                },
+                                output_target: OutputTarget {
+                                    output: Some(Output::Fixtures(FixtureMapping {
+                                        fixture_ids: vec![qid],
                                     })),
                                 },
                             },
@@ -555,10 +615,7 @@ mod tests {
         // Parent group with only nested groups (no direct fixtures)
         let parent_group = TargetGroup {
             name: "Parent".to_string(),
-            targets: vec![
-                make_group_target(2),
-                make_group_target(3),
-            ],
+            targets: vec![make_group_target(2), make_group_target(3)],
         };
         project.groups.insert(1, parent_group);
 
