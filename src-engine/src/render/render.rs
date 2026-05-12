@@ -4,7 +4,8 @@ use std::sync::{LazyLock, Mutex};
 use crate::{
     project,
     proto::{
-        Color, ColorPalette, FixtureState, OutputTarget, Project, RenderMode, WledRenderTarget,
+        Color, ColorPalette, DdpRenderTarget, FixtureState, OutputTarget, Project, RenderMode,
+        WledRenderTarget,
         fixture_state::LightColor,
         output::Output,
         output_target,
@@ -154,6 +155,45 @@ pub fn render_wled(
         });
 
     // Flatten: String error -> RenderError::LockError, then unwrap inner Result
+    nested_result.map_err(RenderError::LockError)?
+}
+
+pub fn render_ddp(
+    output_id: u64,
+    system_t: u64,
+    frame: u32,
+) -> Result<DdpRenderTarget, RenderError> {
+    let nested_result: Result<Result<DdpRenderTarget, RenderError>, String> =
+        project::with_project(|project| {
+            let ddp_output = match project
+                .patches
+                .get(&project.active_patch)
+                .and_then(|p| p.outputs.get(&output_id))
+                .and_then(|o| o.output.as_ref())
+            {
+                Some(Output::DdpOutput(output)) => output,
+                Some(_) => return Ok(Err(RenderError::WrongOutputType)),
+                None => {
+                    return Ok(Err(RenderError::OutputNotFound {
+                        output_id,
+                        patch_id: project.active_patch,
+                    }));
+                }
+            };
+
+            let mut render_target = DdpRenderTarget {
+                id: output_id,
+                color: None,
+                dimmer: 1.0,
+                size: ddp_output.mapping_2d.as_ref().map_or(0, |m| m.width * m.height),
+            };
+
+            Ok(
+                render(output_id, &mut render_target, system_t, frame, project)
+                    .map(|()| render_target),
+            )
+        });
+
     nested_result.map_err(RenderError::LockError)?
 }
 

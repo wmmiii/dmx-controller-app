@@ -1,10 +1,12 @@
 import { fromBinary, toBinary } from '@bufbuild/protobuf';
+import { DdpRenderTargetSchema } from '@dmx-controller/proto/ddp_pb';
 import { RenderMode, RenderModeSchema } from '@dmx-controller/proto/render_pb';
 import { WledRenderTargetSchema } from '@dmx-controller/proto/wled_pb';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import {
   RenderError,
+  triggerDdpSubscriptions,
   triggerDmxSubscriptions,
   triggerErrorSubscriptions,
   triggerWledSubscriptions,
@@ -17,6 +19,11 @@ interface DmxRenderEvent {
 }
 
 interface WledRenderEvent {
+  output_id: string;
+  data: number[];
+}
+
+interface DdpRenderEvent {
   output_id: string;
   data: number[];
 }
@@ -75,6 +82,19 @@ async function initRenderListeners(): Promise<void> {
 
     // Trigger subscriptions in renderRouter
     triggerWledSubscriptions(outputId, data);
+  });
+
+  // Listen for DDP render events from Tauri backend
+  await listen<DdpRenderEvent>('ddp-render', (event) => {
+    const payload = event.payload;
+    const outputId = BigInt(payload.output_id);
+    const data = fromBinary(
+      DdpRenderTargetSchema,
+      new Uint8Array(payload.data),
+    );
+
+    // Trigger subscriptions in renderRouter
+    triggerDdpSubscriptions(outputId, data);
   });
 
   // Listen for render error events from Tauri backend

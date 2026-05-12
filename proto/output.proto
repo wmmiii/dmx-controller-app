@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package dmx_controller;
 
+import "proto/ddp.proto";
 import "proto/dmx.proto";
 import "proto/wled.proto";
 
@@ -47,6 +48,7 @@ message Output {
     SacnDmxOutput sacnDmxOutput = 5;
     SerialDmxOutput serialDmxOutput = 3;
     WledOutput wledOutput = 4;
+    DdpOutput ddpOutput = 8;
   }
 }
 

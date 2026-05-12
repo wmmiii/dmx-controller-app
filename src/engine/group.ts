@@ -227,6 +227,18 @@ export function getAllFixtures(
       getActivePatch(project).outputs,
     )) {
       switch (output.output.case) {
+        case 'ddpOutput':
+          fixtureIds.add(
+            toJsonString(
+              QualifiedFixtureIdSchema,
+              create(QualifiedFixtureIdSchema, {
+                patch: project.activePatch,
+                output: BigInt(outputId),
+                fixture: 0n,
+              }),
+            ),
+          );
+          break;
         case 'sacnDmxOutput':
         case 'serialDmxOutput':
           for (const fixtureId of Object.keys(output.output.value.fixtures)) {

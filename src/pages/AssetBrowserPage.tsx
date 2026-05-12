@@ -73,7 +73,7 @@ function AudioFileList({
                   mime: file.type,
                   beatMetadata: {
                     lengthMs: 1000,
-                    offsetMs: BigInt(0),
+                    offsetMs: 0n,
                   },
                 });
 

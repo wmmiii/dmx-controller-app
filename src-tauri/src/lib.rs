@@ -1,4 +1,5 @@
 mod beat;
+mod ddp;
 #[cfg(desktop)]
 mod midi;
 mod output_loop;
@@ -129,6 +130,9 @@ pub fn run() {
                 .map_err(|e| Box::new(std::io::Error::other(e)) as Box<dyn std::error::Error>)?;
             app.manage(Arc::new(Mutex::new(wled_state)));
 
+            let ddp_state = ddp::DdpState::new();
+            app.manage(Arc::new(Mutex::new(ddp_state)));
+
             let output_loop_manager = output_loop::OutputLoopManager::new(app.handle().clone());
             let output_loop_manager_arc = Arc::new(Mutex::new(output_loop_manager));
             app.manage(output_loop_manager_arc.clone());
@@ -141,6 +145,7 @@ pub fn run() {
                     .clone(),
                 app.state::<Arc<Mutex<sacn::SacnState>>>().inner().clone(),
                 app.state::<Arc<Mutex<wled::WledState>>>().inner().clone(),
+                app.state::<Arc<Mutex<ddp::DdpState>>>().inner().clone(),
             );
 
             // Prevent the system from sleeping while the app is running so that

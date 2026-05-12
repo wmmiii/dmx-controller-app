@@ -1,6 +1,6 @@
 use dmx_engine::project;
 use dmx_engine::proto::output::Output as ProtoOutput;
-use dmx_engine::render::render::{RenderError, render_dmx, render_wled};
+use dmx_engine::render::render::{RenderError, render_ddp, render_dmx, render_wled};
 use prost::Message;
 use serde::Serialize;
 use std::collections::HashMap;
@@ -10,6 +10,7 @@ use tauri::{AppHandle, Emitter};
 use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
 
+use crate::ddp::DdpState;
 use crate::sacn::SacnState;
 use crate::serial::SerialState;
 use crate::wled::WledState;
@@ -18,6 +19,7 @@ use crate::wled::WledState;
 const DEFAULT_SERIAL_FPS: u32 = 44;
 const DEFAULT_SACN_FPS: u32 = 44;
 const DEFAULT_WLED_FPS: u32 = 42;
+const DEFAULT_DDP_FPS: u32 = 44;
 
 // Event payloads for rendering results
 #[derive(Clone, Serialize)]
@@ -28,6 +30,12 @@ struct DmxRenderEvent {
 
 #[derive(Clone, Serialize)]
 struct WledRenderEvent {
+    output_id: String,
+    data: Vec<u8>,
+}
+
+#[derive(Clone, Serialize)]
+struct DdpRenderEvent {
     output_id: String,
     data: Vec<u8>,
 }
@@ -49,6 +57,10 @@ pub enum OutputType {
         fps: u32,
     },
     Wled {
+        ip_address: String,
+        fps: u32,
+    },
+    Ddp {
         ip_address: String,
         fps: u32,
     },
@@ -80,11 +92,12 @@ impl OutputLoopManager {
         serial_state: Arc<Mutex<SerialState>>,
         sacn_state: Arc<Mutex<SacnState>>,
         wled_state: Arc<Mutex<WledState>>,
+        ddp_state: Arc<Mutex<DdpState>>,
     ) {
         tauri::async_runtime::spawn(async move {
             let manager = manager.lock().await;
             if let Err(e) = manager
-                .rebuild_all_loops(serial_state, sacn_state, wled_state)
+                .rebuild_all_loops(serial_state, sacn_state, wled_state, ddp_state)
                 .await
             {
                 log::error!("Failed to start output loops on startup: {e}");
@@ -99,6 +112,7 @@ impl OutputLoopManager {
         serial_state: Arc<Mutex<SerialState>>,
         sacn_state: Arc<Mutex<SacnState>>,
         wled_state: Arc<Mutex<WledState>>,
+        ddp_state: Arc<Mutex<DdpState>>,
     ) -> Result<(), String> {
         // Stop existing loop if running
         self.stop_loop(output_id).await?;
@@ -119,6 +133,7 @@ impl OutputLoopManager {
                 serial_state,
                 sacn_state,
                 wled_state,
+                ddp_state,
                 app_clone,
                 cancel_rx,
             )
@@ -162,6 +177,7 @@ impl OutputLoopManager {
         serial_state: Arc<Mutex<SerialState>>,
         sacn_state: Arc<Mutex<SacnState>>,
         wled_state: Arc<Mutex<WledState>>,
+        ddp_state: Arc<Mutex<DdpState>>,
     ) -> Result<(), String> {
         // Extract desired outputs from project (avoid holding lock during async I/O)
         let desired_outputs: HashMap<u64, OutputType> = project::with_project(|project| {
@@ -201,6 +217,14 @@ impl OutputLoopManager {
                             output.fps
                         } else {
                             DEFAULT_WLED_FPS
+                        },
+                    },
+                    Some(ProtoOutput::DdpOutput(ddp)) => OutputType::Ddp {
+                        ip_address: ddp.ip_address.clone(),
+                        fps: if output.fps > 0 {
+                            output.fps
+                        } else {
+                            DEFAULT_DDP_FPS
                         },
                     },
                     None => continue, // Skip outputs without a type
@@ -252,7 +276,10 @@ impl OutputLoopManager {
         // Stop loops that need to be stopped
         for output_id in to_stop {
             log::info!("Stopping output loop {output_id} (removed or changed)");
-            let is_serial = matches!(current_loops.get(&output_id), Some(OutputType::Serial { .. }));
+            let is_serial = matches!(
+                current_loops.get(&output_id),
+                Some(OutputType::Serial { .. })
+            );
             let will_restart = to_start.iter().any(|(id, _)| *id == output_id);
             self.stop_loop(output_id).await?;
             // Close the serial port when the output is disabled or deleted. Skip
@@ -273,6 +300,7 @@ impl OutputLoopManager {
                 serial_state.clone(),
                 sacn_state.clone(),
                 wled_state.clone(),
+                ddp_state.clone(),
             )
             .await?;
         }
@@ -324,13 +352,15 @@ impl OutputLoopManager {
         serial_state: Arc<Mutex<SerialState>>,
         sacn_state: Arc<Mutex<SacnState>>,
         wled_state: Arc<Mutex<WledState>>,
+        ddp_state: Arc<Mutex<DdpState>>,
         app: AppHandle,
         cancel_rx: tokio::sync::watch::Receiver<bool>,
     ) -> Result<(), String> {
         let target_fps = match &output_type {
             OutputType::Serial { fps }
             | OutputType::Sacn { fps, .. }
-            | OutputType::Wled { fps, .. } => *fps,
+            | OutputType::Wled { fps, .. }
+            | OutputType::Ddp { fps, .. } => *fps,
         };
 
         let frame_duration = Duration::from_millis(1000 / u64::from(target_fps));
@@ -415,6 +445,36 @@ impl OutputLoopManager {
                             let output_result =
                                 wled.output_wled_internal(ip_address, &wled_data).await;
                             drop(wled);
+                            output_result
+                        }
+                        Err(RenderError::OutputNotFound { .. }) => {
+                            // Output was deleted - exit loop gracefully
+                            log::info!(
+                                "Output loop {output_id} stopping: output no longer exists in project"
+                            );
+                            break;
+                        }
+                        Err(e) => Err(e.to_string()),
+                    }
+                }
+                OutputType::Ddp { ip_address, .. } => {
+                    // Render DDP
+                    match render_ddp(output_id, system_t, frame) {
+                        Ok(ddp_data) => {
+                            // Emit render event to frontend (encode to protobuf bytes)
+                            let event = DdpRenderEvent {
+                                output_id: output_id.to_string(),
+                                data: ddp_data.encode_to_vec(),
+                            };
+                            if let Err(e) = app.emit("ddp-render", event) {
+                                log::error!("Failed to emit DDP render event: {e}");
+                            }
+
+                            // Output via DDP
+                            let mut ddp = ddp_state.lock().await;
+                            let output_result =
+                                ddp.output_ddp_internal(ip_address, &ddp_data);
+                            drop(ddp);
                             output_result
                         }
                         Err(RenderError::OutputNotFound { .. }) => {

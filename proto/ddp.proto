@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package dmx_controller;
+
+import "proto/spatial_mapping.proto";
+import "proto/color.proto";
+
+message DdpOutput {
+  string ip_address = 1;
+  Mapping2D mapping_2d = 2;
+}
+
+message DdpRenderTarget {
+  uint64 id = 1;
+  Color color = 2;
+  float dimmer = 3;
+  uint32 size = 4;
+}

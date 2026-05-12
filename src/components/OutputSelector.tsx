@@ -71,6 +71,25 @@ export function OutputSelector({
       getActivePatch(project).outputs,
     )) {
       switch (output.output.case) {
+        case 'ddpOutput':
+          fixtures.push({
+            value: create(OutputTargetSchema, {
+              output: {
+                case: 'fixtures',
+                value: {
+                  fixtureIds: [
+                    {
+                      patch: project.activePatch,
+                      output: BigInt(outputId),
+                      fixture: 0n,
+                    },
+                  ],
+                },
+              },
+            }),
+            label: output.name,
+          });
+          break;
         case 'sacnDmxOutput':
         case 'serialDmxOutput':
           for (const [dmxFixtureId, dmxFixture] of Object.entries(

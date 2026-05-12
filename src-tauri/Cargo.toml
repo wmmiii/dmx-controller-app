@@ -19,6 +19,7 @@ tauri-build = { version = "2.4.1", features = [] }
 
 [dependencies]
 chrono = "0.4.44"
+ddp-rs = "1.2.1"
 dmx-engine = { path = "../src-engine" }
 log = "0.4"
 prost = "0.14.1"
