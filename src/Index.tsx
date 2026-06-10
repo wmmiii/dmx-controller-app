@@ -8,10 +8,8 @@ import {
   BiError,
   BiFile,
   BiHappyBeaming,
-  BiLink,
   BiLogoGithub,
   BiMenu,
-  BiUnlink,
   BiUpload,
 } from 'react-icons/bi';
 import styles from './Index.module.css';
@@ -24,7 +22,6 @@ import { Spacer } from './components/Spacer';
 import { WledVisualizer } from './components/WledVisualizer';
 import { ControllerContext } from './contexts/ControllerContext';
 import { ProjectContext } from './contexts/ProjectContext';
-import { SerialContext } from './contexts/SerialContext';
 import AssetBrowserPage from './pages/AssetBrowserPage';
 import { ControllerPage } from './pages/ControllerPage';
 import { LivePage } from './pages/LivePage';
@@ -35,7 +32,6 @@ import { dismissDialog, isDialogDismissed } from './util/dialogUtil';
 import { getActivePatch } from './util/projectUtils';
 
 export default function Index(): JSX.Element {
-  const { port, connect, disconnect } = useContext(SerialContext);
   const { connectedDevices, connect: connectMidi } =
     useContext(ControllerContext);
   const { project, downloadProject, openProject, newProject, lastOperation } =
@@ -85,12 +81,6 @@ export default function Index(): JSX.Element {
       title: 'Open',
       icon: <BiUpload />,
       onSelect: openProject,
-    },
-    { type: 'separator' },
-    {
-      title: 'Connect to serial',
-      icon: port ? <BiLink /> : <BiUnlink />,
-      onSelect: () => (port ? disconnect() : connect()),
     },
     { type: 'separator' },
     {

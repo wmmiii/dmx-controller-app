@@ -108,7 +108,6 @@ This project uses **Vite** as its primary build system for the frontend. Key com
 **External Hardware:**
 
 - `src/external_controller/externalController.ts` - Controller binding lookup and management (action processing is handled in Rust via `src-tauri/src/midi.rs`)
-- `src/contexts/SerialContext.tsx` - DMX output via Web Serial API (browser)
 - `src-tauri/src/serial.rs` - Native Serial DMX output (desktop)
 - `src-tauri/src/sacn.rs` - sACN/E1.31 output
 - `src-tauri/src/wled.rs` - WLED output

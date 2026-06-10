@@ -7,7 +7,6 @@ import { AudioInputProvider } from './contexts/AudioInputContext';
 import { BeatProvider } from './contexts/BeatContext';
 import { ControllerProvider } from './contexts/ControllerContext';
 import { ProjectProvider } from './contexts/ProjectContext';
-import { SerialProvider } from './contexts/SerialContext';
 import { ShortcutProvider } from './contexts/ShortcutContext';
 import './vars.css';
 
@@ -23,15 +22,13 @@ root.render(
     <BrowserRouter basename="/">
       <ShortcutProvider>
         <ProjectProvider>
-          <SerialProvider>
-            <BeatProvider>
-              <AudioInputProvider>
-                <ControllerProvider>
-                  <Index />
-                </ControllerProvider>
-              </AudioInputProvider>
-            </BeatProvider>
-          </SerialProvider>
+          <BeatProvider>
+            <AudioInputProvider>
+              <ControllerProvider>
+                <Index />
+              </ControllerProvider>
+            </AudioInputProvider>
+          </BeatProvider>
         </ProjectProvider>
       </ShortcutProvider>
     </BrowserRouter>
