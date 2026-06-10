@@ -273,19 +273,43 @@ impl Default for BeatSampler {
 ///
 /// Returns `None` when `live_beat` has not been initialised yet.
 #[must_use]
-#[allow(clippy::cast_precision_loss)]
 pub fn effective_beat_metadata(project: &Project, t: u64) -> Option<BeatMetadata> {
-    let live_beat = project.live_beat?;
-    let Some(from_beat) = project.prev_live_beat else {
+    effective_beat_metadata_from_parts(
+        project.live_beat,
+        project.prev_live_beat,
+        project.beat_transition_start_ms,
+        project.beat_transition_duration_ms,
+        t,
+    )
+}
+
+/// Returns the effective [`BeatMetadata`] for the current render frame,
+/// interpolating through an active beat transition if one is set.
+///
+/// This variant takes the individual beat fields instead of a full `Project`,
+/// making it usable from WASM without needing to serialize the entire project.
+///
+/// Returns `None` when `live_beat` is `None`.
+#[must_use]
+#[allow(clippy::cast_precision_loss)]
+pub fn effective_beat_metadata_from_parts(
+    live_beat: Option<BeatMetadata>,
+    prev_live_beat: Option<BeatMetadata>,
+    beat_transition_start_ms: u64,
+    beat_transition_duration_ms: u64,
+    t: u64,
+) -> Option<BeatMetadata> {
+    let live_beat = live_beat?;
+    let Some(from_beat) = prev_live_beat else {
         return Some(live_beat);
     };
 
-    let duration = project.beat_transition_duration_ms;
+    let duration = beat_transition_duration_ms;
     if duration == 0 {
         return Some(live_beat);
     }
 
-    let elapsed = t.saturating_sub(project.beat_transition_start_ms);
+    let elapsed = t.saturating_sub(beat_transition_start_ms);
     let progress = (elapsed as f64 / duration as f64).min(1.0);
 
     if progress >= 1.0 {
@@ -312,11 +336,65 @@ pub fn effective_beat_metadata(project: &Project, t: u64) -> Option<BeatMetadata
 /// beat metadata is available.
 #[allow(clippy::cast_precision_loss)]
 pub fn beat_t(beat: &BeatMetadata, t: u64) -> Result<f64, String> {
-    if beat.length_ms <= 0.0 {
+    beat_t_from_parts(beat.length_ms, beat.offset_ms, t)
+}
+
+/// Calculates the effective beat position in one step, combining interpolation
+/// and beat_t calculation without creating intermediate objects.
+///
+/// This is the most efficient entry point for WASM, taking all raw parameters
+/// and returning the beat_t directly.
+#[allow(clippy::cast_precision_loss, clippy::too_many_arguments)]
+pub fn effective_beat_t_from_parts(
+    live_length_ms: f64,
+    live_offset_ms: u64,
+    prev_length_ms: f64,
+    prev_offset_ms: u64,
+    transition_start_ms: u64,
+    transition_duration_ms: u64,
+    t: u64,
+) -> Result<f64, String> {
+    // If no transition is active, use the live beat directly
+    if transition_duration_ms == 0 || prev_length_ms <= 0.0 {
+        return beat_t_from_parts(live_length_ms, live_offset_ms, t);
+    }
+
+    let elapsed = t.saturating_sub(transition_start_ms);
+    let progress = (elapsed as f64 / transition_duration_ms as f64).min(1.0);
+
+    // If transition is complete, use the live beat
+    if progress >= 1.0 {
+        return beat_t_from_parts(live_length_ms, live_offset_ms, t);
+    }
+
+    // Interpolate beat metadata
+    let length_ms = prev_length_ms + (live_length_ms - prev_length_ms) * progress;
+
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    let offset_ms = (prev_offset_ms as f64
+        + (live_offset_ms as f64 - prev_offset_ms as f64) * progress)
+        .round()
+        .max(0.0) as u64;
+
+    beat_t_from_parts(length_ms, offset_ms, t)
+}
+
+/// Returns the current position within the beat cycle as a value in `[0.0, 1.0)`.
+///
+/// This variant takes raw values instead of a `BeatMetadata` struct, making it
+/// usable from WASM without needing to construct intermediate objects.
+///
+/// # Parameters
+/// - `length_ms`: Duration of one beat in milliseconds
+/// - `offset_ms`: Timestamp (ms since UNIX epoch) when the beat cycle started
+/// - `t`: Current time in milliseconds since UNIX epoch
+#[allow(clippy::cast_precision_loss)]
+pub fn beat_t_from_parts(length_ms: f64, offset_ms: u64, t: u64) -> Result<f64, String> {
+    if length_ms <= 0.0 {
         return Err("Beat length is not set!".to_string());
     }
-    let elapsed = t as f64 - beat.offset_ms as f64;
-    Ok(elapsed / beat.length_ms)
+    let elapsed = t as f64 - offset_ms as f64;
+    Ok(elapsed / length_ms)
 }
 
 /// Populates the `live_beat`, `prev_live_beat`, `beat_transition_start_ms`,

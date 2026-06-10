@@ -39,7 +39,7 @@ This project uses **Vite** as its primary build system for the frontend. Key com
 
 - Core rendering library in `src-engine/` (Rust) — handles DMX universe rendering, effects, scenes, output targets
 - Tauri desktop builds use the native Rust engine directly via `src-tauri/`
-- **Deprecated:** `src/wasm-engine/` — browser WASM bindings are no longer maintained; do not import from or reference this directory
+- `src/wasm-engine/` — minimal WASM module for beat timing calculations; allows frontend to compute beat positions without IPC overhead
 
 **Desktop App (Tauri)**
 
@@ -122,7 +122,6 @@ This project uses **Vite** as its primary build system for the frontend. Key com
 - Radix UI Themes for component library and dialogs
 - CSS modules for styling with shared variables in `src/vars.css`
 - Path aliases: `@dmx-controller/proto/*` for generated protobuf types
-- **Deprecated alias:** `@dmx-controller/wasm-engine` — do not use; WASM engine has been removed
 
 **Protobuf Integration:**
 

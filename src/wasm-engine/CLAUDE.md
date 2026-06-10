@@ -1,29 +1,52 @@
-# DEPRECATED - Do Not Use
+# WASM Engine
 
-This directory contains the **deprecated** browser-WASM engine bindings. This code is no longer maintained or built.
+This directory contains a minimal WASM module exposing shared engine functions for use in the browser. It allows the frontend to perform calculations without IPC overhead to the Tauri backend.
 
-## Why This Is Deprecated
+## Purpose
 
-The browser-WASM approach has been removed due to:
+The WASM module currently exposes beat timing functions:
 
-- Limitations with Web Serial and Web MIDI APIs
-- Inability to maintain reliable render loops at required frame rates
-- The Tauri desktop application now handles all rendering and hardware I/O
+- `beat_t(length_ms, offset_ms, t)` - Calculate beat position given beat metadata and current time
+- `effective_beat_t(...)` - Calculate beat position during tempo transitions
 
-## Instructions for Agents
+These functions mirror the logic in `src-engine/src/beat.rs` but are compiled to WASM for direct use in the browser.
 
-**DO NOT:**
+## Building
 
-- Import from this directory or `@dmx-controller/wasm-engine`
-- Use code patterns from this directory as precedent
-- Attempt to build or run this code
-- Reference this code when implementing new features
+```bash
+pnpm run wasm:build
+```
 
-**The authoritative engine code is in:**
+This uses `wasm-pack` to compile the Rust code to WASM and generate TypeScript bindings.
 
-- `src-engine/` - Shared Rust rendering engine (used by Tauri)
-- `src-tauri/` - Tauri backend with hardware I/O
+## Usage
 
-## Historical Reference Only
+The TypeScript wrapper at `src/wasm/engine.ts` provides a convenient interface:
 
-This code is preserved for historical reference. If you need to understand how the WASM bindings worked, you may read this code, but do not use it as a template for new implementations.
+```typescript
+import { getBeatTSync } from '../wasm/engine';
+
+// Get current beat position using project beat metadata
+const beatT = getBeatTSync(project);
+```
+
+## Architecture Notes
+
+- **Shared logic**: This crate depends on `src-engine` to reuse the beat calculation functions
+- **Optimized API**: Uses `_from_parts` functions that take raw values instead of structs
+- **Type-safe**: Generated TypeScript bindings provide full type safety
+
+## When to Use
+
+Use WASM engine functions for:
+
+- Real-time UI updates that need low latency (beat indicators, visual pulses)
+- Animations synchronized to the beat
+- Any calculation that would otherwise require an IPC round-trip
+
+Continue using the Tauri backend for:
+
+- DMX rendering (requires hardware access)
+- Beat detection / tap tempo (requires timing coordination)
+- Project persistence
+- MIDI and serial communication

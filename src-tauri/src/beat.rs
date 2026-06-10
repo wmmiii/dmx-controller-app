@@ -4,8 +4,7 @@ pub use dmx_engine::beat::BeatSampler;
 
 use crate::project::emit_project_update;
 use dmx_engine::beat::{
-    beat_t, effective_beat_metadata, set_bpm as engine_set_bpm,
-    set_first_beat as engine_set_first_beat, transition_beat,
+    set_bpm as engine_set_bpm, set_first_beat as engine_set_first_beat, transition_beat,
 };
 use dmx_engine::project;
 use std::sync::{Arc, Mutex as StdMutex};
@@ -76,22 +75,7 @@ pub async fn add_beat_sample(
     Ok(())
 }
 
-/// Returns the current beat position `[0.0, 1.0)` using the engine clock.
-#[tauri::command]
-#[allow(clippy::cast_possible_truncation, clippy::unnecessary_wraps)]
-pub fn get_beat_t() -> Result<f64, String> {
-    let t = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_err(|e| e.to_string())?
-        .as_millis() as u64;
-
-    project::with_project(|project| {
-        let beat = effective_beat_metadata(project, t).ok_or("Beat not set!")?;
-        beat_t(&beat, t)
-    })
-}
-
-/// Returns the current beat position `[0.0, 1.0)` using the engine clock.
+/// Sets the current moment as "beat 1" to align the beat offset.
 #[tauri::command]
 pub fn set_first_beat() -> Result<(), String> {
     project::with_project_mut(engine_set_first_beat)

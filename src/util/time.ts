@@ -11,9 +11,15 @@ export function listenToTick(listener: TickListener) {
   };
 }
 
-setInterval(() => {
-  requestAnimationFrame(() => {
-    const t = BigInt(new Date().getTime());
+let lastTime = 0;
+const INTERVAL = 1000 / 30; // 1 second / 30 FPS
+
+function tick(time: number) {
+  if (time - lastTime >= INTERVAL) {
+    lastTime = time;
+    const t = BigInt(Date.now());
     tickListeners.forEach((l) => l(t));
-  });
-}, 33);
+  }
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);

@@ -10,8 +10,8 @@ import { ShortcutContext } from '../contexts/ShortcutContext';
 
 import { BiPulse } from 'react-icons/bi';
 import { ProjectContext } from '../contexts/ProjectContext';
-import { getBeatT } from '../system_interfaces/beat_detection';
 import { listenToTick } from '../util/time';
+import { getBeatTSync } from '../wasm/engine';
 import { ControllerConnection } from './ControllerConnection';
 import { NumberInput } from './Input';
 import styles from './LiveBeat.module.css';
@@ -27,9 +27,9 @@ export function LiveBeat({ className }: LiveBeatProps): JSX.Element {
   const indicatorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    return listenToTick(async () => {
-      const beatT = await getBeatT();
-      if (!indicatorRef.current || !beatT) {
+    return listenToTick(() => {
+      const beatT = getBeatTSync(project);
+      if (!indicatorRef.current || beatT === null) {
         return;
       }
       indicatorRef.current.style.opacity = String(1 - (beatT % 1));
