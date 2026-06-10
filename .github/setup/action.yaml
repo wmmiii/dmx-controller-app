@@ -21,6 +21,13 @@ runs:
       with:
         toolchain: stable
 
+    - name: Add WASM target
+      shell: bash
+      run: rustup target add wasm32-unknown-unknown
+
+    - name: Install wasm-pack
+      uses: jetli/wasm-pack-action@v0.4.0
+
     - name: Install Tauri system dependencies (Linux only)
       if: runner.os == 'Linux'
       shell: bash

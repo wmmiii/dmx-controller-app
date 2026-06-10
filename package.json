@@ -1,7 +1,7 @@
 {
   "private": true,
   "scripts": {
-    "build": "pnpm run proto:generate && vite build",
+    "build": "pnpm run proto:generate && pnpm run wasm:build && vite build",
     "cleanup": "pnpm run lint && pnpm run format",
     "dev": "pnpm run proto:generate && vite",
     "format": "npx prettier . --write",
