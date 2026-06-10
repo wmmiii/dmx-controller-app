@@ -527,27 +527,33 @@ fn parse_midi_message(
     } else if (176..192).contains(&command) {
         // Control Change - handle MSB/LSB for 14-bit values
         if data1 < 32 {
-            // MSB (0-31)
+            // MSB (0-31) - 14-bit resolution with paired LSB at CC+32
             let msb_buffer = input_state.get_msb_buffer(device_name);
             msb_buffer.insert(data1, data2);
 
             let lsb_buffer = input_state.get_lsb_buffer(device_name);
             let lsb = lsb_buffer.get(&(data1 + 32)).copied().unwrap_or(0);
 
-            value = f64::from(data2) + f64::from(lsb) / 127.0;
+            // 14-bit value: (MSB << 7) | LSB, range 0-16383
+            let combined = (u16::from(data2) << 7) | u16::from(lsb);
+            value = (f64::from(combined) / 16383.0).clamp(0.0, 1.0);
             cct = Some(ControlCommandType::Msb);
         } else if (32..64).contains(&data1) {
-            // LSB (32-63)
+            // LSB (32-63) - 14-bit resolution paired with MSB at CC-32
             let lsb_buffer = input_state.get_lsb_buffer(device_name);
             lsb_buffer.insert(data1, data2);
 
             let msb_buffer = input_state.get_msb_buffer(device_name);
             let msb = msb_buffer.get(&(data1 - 32)).copied().unwrap_or(0);
 
-            value = f64::from(msb) + f64::from(data2) / 127.0;
+            // 14-bit value: (MSB << 7) | LSB, range 0-16383
+            let combined = (u16::from(msb) << 7) | u16::from(data2);
+            value = (f64::from(combined) / 16383.0).clamp(0.0, 1.0);
             cct = Some(ControlCommandType::Lsb);
+        } else {
+            // Standard 7-bit CC (64-127)
+            value /= 127.0;
         }
-        value /= 127.0;
     } else {
         // Unsupported command type
         return (0.0, None);
