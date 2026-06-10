@@ -1,13 +1,5 @@
 import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
-import {
-  JSX,
-  createRef,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { JSX, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import WaveSurfer from 'wavesurfer.js';
 import MinimapPlugin from 'wavesurfer.js/dist/plugins/minimap.js';
 import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions.js';
@@ -52,7 +44,7 @@ export function AudioTrackVisualizer({
   className,
 }: AudioTrackVisualizerProps): JSX.Element {
   const { setShortcuts } = useContext(ShortcutContext);
-  const containerRef = createRef<HTMLDivElement>();
+  const containerRef = useRef<HTMLDivElement>(null);
   const [ws, setWs] = useState<WaveSurfer | null>(null);
   const [regions, setRegions] = useState<RegionsPlugin | null>(null);
   const visibleDuration = useRef<number>(1);

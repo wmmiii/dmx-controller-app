@@ -10,7 +10,7 @@ import {
   Scene_TileSchema,
   type Scene_Tile,
 } from '@dmx-controller/proto/scene_pb';
-import { createRef, useCallback, useContext, useEffect, useMemo } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useRef } from 'react';
 import { SiMidi } from 'react-icons/si';
 
 import { ControllerContext } from '../contexts/ControllerContext';
@@ -43,7 +43,7 @@ export function Tile({ tileId, tile, onSelect, x, y, priority }: TileProps) {
   const { project, save } = useContext(ProjectContext);
   const { connectedDevices } = useContext(ControllerContext);
   const { palette } = useContext(PaletteContext);
-  const activeRef = createRef<HTMLDivElement>();
+  const activeRef = useRef<HTMLDivElement>(null);
 
   const toggle = useCallback(() => {
     toggleTile(project.activeScene, tileId);

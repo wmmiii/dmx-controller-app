@@ -1,10 +1,10 @@
 import React, {
-  createRef,
   JSX,
   useCallback,
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
@@ -40,7 +40,7 @@ export function SequenceEditor({
 }: SequenceEditorProps): JSX.Element {
   const { project, save } = useContext(ProjectContext);
   const { setShortcuts } = useContext(ShortcutContext);
-  const panelElement = createRef<HTMLDivElement>();
+  const panelElement = useRef<HTMLDivElement>(null);
   const [panelWidth, setPanelWidth] = useState(100);
   const [selectedEffectAddress, setSelectedEffectAddress] = useState<{
     layer: number;

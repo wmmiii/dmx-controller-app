@@ -1,6 +1,5 @@
 import {
   JSX,
-  createRef,
   useCallback,
   useContext,
   useEffect,
@@ -22,7 +21,7 @@ interface TextInputProps {
 
 export function TextInput({ value, onChange }: TextInputProps): JSX.Element {
   const [input, setInput] = useState(String(value));
-  const inputRef = createRef<HTMLInputElement>();
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => setInput(String(value)), [value]);
 
@@ -360,7 +359,7 @@ export function NumberInput({
     [normalized, min, max],
   );
 
-  const inputRef = createRef<HTMLInputElement>();
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const [input, setInput] = useState(String(mapToDisplay(value)));
 

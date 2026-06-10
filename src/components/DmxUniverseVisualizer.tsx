@@ -1,6 +1,6 @@
 import { create } from '@bufbuild/protobuf';
 import { ColorSchema } from '@dmx-controller/proto/color_pb';
-import { createRef, useContext, useEffect, useMemo, useState } from 'react';
+import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { ProjectContext } from '../contexts/ProjectContext';
 import { ChannelTypes } from '../engine/channel';
@@ -45,7 +45,7 @@ export function DmxUniverseVisualizer({
   dmxOutputId,
 }: DmxUniverseVisualizerProps) {
   const { project } = useContext(ProjectContext);
-  const fpsRef = createRef<HTMLLIElement>();
+  const fpsRef = useRef<HTMLLIElement>(null);
   const [error, setError] = useState<RenderError | null>(null);
 
   const dmxOutput = getOutput(project, dmxOutputId).output.value as
@@ -158,7 +158,7 @@ interface FixtureDotProps {
 }
 
 function FixtureDot({ dmxOutputId, f }: FixtureDotProps) {
-  const fixtureRef = createRef<HTMLLIElement>();
+  const fixtureRef = useRef<HTMLLIElement>(null);
 
   useEffect(() => {
     return subscribeToDmxRender(dmxOutputId, (universe, _) => {

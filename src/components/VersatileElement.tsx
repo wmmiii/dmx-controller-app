@@ -1,4 +1,4 @@
-import React, { createRef, CSSProperties, useContext, useEffect } from 'react';
+import React, { CSSProperties, useContext, useEffect, useRef } from 'react';
 import { VersatileContainerContext } from '../contexts/VersatileContianer';
 import styles from './VersatileElement.module.css';
 
@@ -27,7 +27,7 @@ export function VersatileElement<T>({
   onDragComplete,
   children,
 }: VersatileElementProps<T>) {
-  const elementRef = createRef<HTMLDivElement>();
+  const elementRef = useRef<HTMLDivElement>(null);
   const {
     id: activeId,
     activeElement,

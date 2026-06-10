@@ -3,7 +3,7 @@ import {
   InputBindingSchema,
   InputType,
 } from '@dmx-controller/proto/controller_pb';
-import { JSX, createRef, useContext, useEffect, useMemo } from 'react';
+import { JSX, useContext, useEffect, useMemo, useRef } from 'react';
 
 import { BeatContext } from '../contexts/BeatContext';
 import { ShortcutContext } from '../contexts/ShortcutContext';
@@ -24,7 +24,7 @@ export function LiveBeat({ className }: LiveBeatProps): JSX.Element {
   const { project } = useContext(ProjectContext);
   const { setBeat, addBeatSample, sampling } = useContext(BeatContext);
   const { setShortcuts } = useContext(ShortcutContext);
-  const indicatorRef = createRef<HTMLDivElement>();
+  const indicatorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     return listenToTick(async () => {

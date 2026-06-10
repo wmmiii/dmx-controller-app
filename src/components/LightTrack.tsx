@@ -1,5 +1,5 @@
 import { create } from '@bufbuild/protobuf';
-import { JSX, createRef, useContext } from 'react';
+import { JSX, useContext, useRef } from 'react';
 import {
   OutputSelector,
   getOutputTargetName,
@@ -54,7 +54,7 @@ export function LightTrack({
   swapDown,
 }: LightTrackProps): JSX.Element {
   const { project, save } = useContext(ProjectContext);
-  const trackRef = createRef<HTMLDivElement>();
+  const trackRef = useRef<HTMLDivElement>(null);
 
   return (
     <div className={styles.lightTrack}>

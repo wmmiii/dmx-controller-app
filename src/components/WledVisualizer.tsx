@@ -1,4 +1,4 @@
-import { createRef, useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 
 import { ProjectContext } from '../contexts/ProjectContext';
 
@@ -20,7 +20,7 @@ interface WledVisualizerProps {
 
 export function WledVisualizer({ wledOutputId }: WledVisualizerProps) {
   const { project } = useContext(ProjectContext);
-  const fpsRef = createRef<HTMLLIElement>();
+  const fpsRef = useRef<HTMLLIElement>(null);
 
   const [wledRenderOutput, setWledRenderOutput] =
     useState<WledRenderTarget | null>(null);

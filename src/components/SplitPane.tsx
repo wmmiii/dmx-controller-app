@@ -1,4 +1,4 @@
-import { JSX, createRef, useEffect, useState } from 'react';
+import { JSX, useEffect, useRef, useState } from 'react';
 
 import styles from './SplitPane.module.css';
 
@@ -15,7 +15,7 @@ export function HorizontalSplitPane({
   left,
   right,
 }: HorizontalSplitPaneProps): JSX.Element {
-  const containerRef = createRef<HTMLDivElement>();
+  const containerRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
   const [amount, setAmount] = useState(defaultAmount || 0.5);
 

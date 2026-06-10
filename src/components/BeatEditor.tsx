@@ -3,11 +3,11 @@ import { type AudioFile } from '@dmx-controller/proto/audio_pb';
 import { BeatMetadataSchema } from '@dmx-controller/proto/beat_pb';
 import {
   JSX,
-  createRef,
   useCallback,
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import WaveSurfer from 'wavesurfer.js';
@@ -46,7 +46,7 @@ interface BeatEditorProps {
 export function BeatEditor({ file, onCancel }: BeatEditorProps): JSX.Element {
   const { saveAssets } = useContext(ProjectContext);
   const { setShortcuts } = useContext(ShortcutContext);
-  const waveRef = createRef<HTMLDivElement>();
+  const waveRef = useRef<HTMLDivElement>(null);
   const [zoomLevel, setZoomLevel] = useState(64);
   const [waveSurfer, setWaveSurfer] = useState<WaveSurfer | null>(null);
   const [waveSurferRegions, setWaveSurferRegions] =

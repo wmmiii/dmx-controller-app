@@ -1,5 +1,5 @@
 import { create } from '@bufbuild/protobuf';
-import { createRef, JSX, useContext, useEffect, useState } from 'react';
+import { JSX, useContext, useEffect, useRef, useState } from 'react';
 
 import { ProjectContext } from '../contexts/ProjectContext';
 
@@ -51,7 +51,7 @@ export function Layer({
   const { save } = useContext(ProjectContext);
   const { setShortcuts } = useContext(ShortcutContext);
   const [newEffect, setNewEffect] = useState<NewEffect | null>(null);
-  const layerRef = createRef<HTMLDivElement>();
+  const layerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const index = selectedEffect ? layer.effects.indexOf(selectedEffect) : -1;
