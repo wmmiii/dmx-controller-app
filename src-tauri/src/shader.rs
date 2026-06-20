@@ -13,9 +13,10 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
+use dmx_engine::project;
 use dmx_engine::proto::visualizer_node::Node;
 use dmx_engine::proto::{Visualizer, VisualizerCompilationResult, VisualizerNode};
-use dmx_engine::visualizer::builtin::BUILTIN_VISUALIZERS;
+use dmx_engine::visualizer::builtin::{BUILTIN_VISUALIZERS, is_builtin};
 use dmx_engine::visualizer::shader_wrap::{preamble_line_count, wrap_user_shader};
 use dmx_engine::visualizer::uniforms::ShaderUniforms;
 use prost::Message;
@@ -108,6 +109,9 @@ pub struct ShaderState {
     device: wgpu::Device,
     queue: wgpu::Queue,
     compiled_shaders: HashMap<u64, CompiledShader>,
+    /// GLSL source last successfully compiled for each user shader ID.
+    /// Used by `sync_visualizer_shaders` to detect new/changed/removed shaders.
+    compiled_glsl: HashMap<u64, String>,
 
     /// Bind group layout / pipeline layout shared by all user shaders.
     shader_bind_group_layout: wgpu::BindGroupLayout,
@@ -156,11 +160,7 @@ impl ShaderState {
         let shader_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 label: Some("visualizer_shader_bgl"),
-                entries: &[
-                    uniform_entry(0),
-                    texture_entry(1),
-                    sampler_entry(2),
-                ],
+                entries: &[uniform_entry(0), texture_entry(1), sampler_entry(2)],
             });
         let shader_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -246,6 +246,7 @@ impl ShaderState {
             device,
             queue,
             compiled_shaders: HashMap::new(),
+            compiled_glsl: HashMap::new(),
             shader_bind_group_layout,
             shader_pipeline_layout,
             vertex_module,
@@ -258,14 +259,14 @@ impl ShaderState {
         };
 
         // Built-in visualizers are always available; compile them up front so
-        // leaf nodes referencing reserved IDs (1-999) render immediately.
-        for builtin in BUILTIN_VISUALIZERS {
-            let result = state.compile_shader(builtin.id, builtin.glsl_source);
+        // leaf nodes referencing their IDs render immediately.
+        for (id, builtin) in BUILTIN_VISUALIZERS.iter() {
+            let result = state.compile_shader(*id, builtin.glsl_source);
             if !result.success {
                 log::error!(
                     "Failed to compile built-in visualizer '{}' (id {}): {}",
                     builtin.name,
-                    builtin.id,
+                    id,
                     result.error_message
                 );
             }
@@ -284,18 +285,19 @@ impl ShaderState {
         let module = match frontend.parse(&options, &wrapped) {
             Ok(module) => module,
             Err(errors) => {
-                let error_line = errors
+                let error_line = errors.errors.first().map_or(0, |e| {
+                    e.meta
+                        .location(&wrapped)
+                        .line_number
+                        .saturating_sub(preamble_line_count())
+                });
+                let error_message = errors
                     .errors
                     .first()
-                    .map_or(0, |e| {
-                        e.meta
-                            .location(&wrapped)
-                            .line_number
-                            .saturating_sub(preamble_line_count())
-                    });
+                    .map_or_else(|| "Unknown error".to_string(), |e| e.kind.to_string());
                 return VisualizerCompilationResult {
                     success: false,
-                    error_message: errors.to_string(),
+                    error_message,
                     error_line,
                 };
             }
@@ -335,7 +337,9 @@ impl ShaderState {
             "main",
         );
 
-        self.compiled_shaders.insert(id, CompiledShader { pipeline });
+        self.compiled_shaders
+            .insert(id, CompiledShader { pipeline });
+        self.compiled_glsl.insert(id, glsl_source.to_string());
 
         VisualizerCompilationResult {
             success: true,
@@ -602,38 +606,80 @@ impl ShaderState {
 #[allow(clippy::needless_pass_by_value)]
 pub fn compile_visualizer(
     shader_state: State<'_, Arc<Mutex<ShaderState>>>,
-    id: u64,
+    id: String,
     glsl_source: String,
-) -> Vec<u8> {
+) -> Result<Vec<u8>, String> {
+    let id: u64 = id
+        .parse()
+        .map_err(|_| format!("Invalid visualizer ID: {id}"))?;
     let mut state = shader_state.lock().expect("shader state lock poisoned");
-    state.compile_shader(id, &glsl_source).encode_to_vec()
+    Ok(state.compile_shader(id, &glsl_source).encode_to_vec())
 }
 
-/// Return the built-in visualizers as prost-encoded `Visualizer` messages so
-/// the frontend can list and clone them.
+/// Return the built-in visualizers as a map from ID string to prost-encoded
+/// `Visualizer` messages. The map shape matches `project.visualizers` so the
+/// frontend can treat builtins and user visualizers uniformly.
 #[tauri::command]
-pub fn get_builtin_visualizers() -> Vec<Vec<u8>> {
+pub fn get_builtin_visualizers() -> std::collections::HashMap<String, Vec<u8>> {
     BUILTIN_VISUALIZERS
         .iter()
-        .map(|b| {
-            Visualizer {
-                id: b.id,
+        .map(|(id, b)| {
+            let encoded = Visualizer {
                 name: b.name.to_string(),
                 glsl_source: b.glsl_source.to_string(),
-                is_builtin: true,
             }
-            .encode_to_vec()
+            .encode_to_vec();
+            (id.to_string(), encoded)
         })
         .collect()
 }
 
-/// Queue a compiled visualizer for removal. Takes effect after the current
-/// render completes.
-#[tauri::command]
-#[allow(clippy::needless_pass_by_value)]
-pub fn delete_visualizer(shader_state: State<'_, Arc<Mutex<ShaderState>>>, id: u64) {
+/// Synchronise GPU compiled shaders with `project.visualizers`.
+///
+/// Called from `rebuild_outputs` so that every project mutation — including
+/// undo, redo, load, and import — keeps shader state consistent without
+/// requiring explicit compile/delete calls in the UI.
+pub fn sync_visualizer_shaders(shader_state: &Mutex<ShaderState>) {
+    let current: HashMap<u64, String> = match project::with_project(|project| {
+        Ok(project
+            .visualizers
+            .iter()
+            .map(|(&id, viz)| (id, viz.glsl_source.clone()))
+            .collect())
+    }) {
+        Ok(map) => map,
+        Err(e) => {
+            log::error!("shader sync: failed to read project: {e}");
+            return;
+        }
+    };
+
     let mut state = shader_state.lock().expect("shader state lock poisoned");
-    state.mark_for_deletion(id);
+
+    // Remove user shaders whose IDs are no longer in the project.
+    let to_delete: Vec<u64> = state
+        .compiled_shaders
+        .keys()
+        .filter(|&&id| !is_builtin(id) && !current.contains_key(&id))
+        .copied()
+        .collect();
+    for id in to_delete {
+        state.mark_for_deletion(id);
+        state.compiled_glsl.remove(&id);
+    }
+
+    // Compile shaders that are new or whose source has changed.
+    for (id, glsl) in &current {
+        if state.compiled_glsl.get(id).map(String::as_str) != Some(glsl.as_str()) {
+            let result = state.compile_shader(*id, glsl);
+            if !result.success {
+                log::warn!(
+                    "visualizer {id} failed to compile during project sync: {}",
+                    result.error_message
+                );
+            }
+        }
+    }
 }
 
 fn align_up(value: u32, alignment: u32) -> u32 {

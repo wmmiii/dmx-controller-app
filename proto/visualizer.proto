@@ -4,10 +4,8 @@ package dmx_controller;
 
 // Stored shader definition.
 message Visualizer {
-  uint64 id = 1;
-  string name = 2;
-  string glsl_source = 3;
-  bool is_builtin = 4; // Read-only in UI.
+  string name = 1;
+  string glsl_source = 2;
 }
 
 // Compilation result returned from a Tauri command.

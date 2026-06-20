@@ -238,7 +238,6 @@ pub fn run() {
             render::set_render_mode,
             shader::compile_visualizer,
             shader::get_builtin_visualizers,
-            shader::delete_visualizer,
             shader_spike::test_shader_spike,
             #[cfg(desktop)]
             serial::list_ports,

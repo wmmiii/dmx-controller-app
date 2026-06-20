@@ -436,6 +436,10 @@ If naga's GLSL support proves too limited, swapping to glslang is moderate effor
 
 **Result**: ✅ Done. `proto/visualizer.proto` created; `display.proto`, `project.proto`, `effect.proto` updated; TS bindings regenerated and Rust `build.rs` auto-compiles the new proto. Both `cargo check` (src-engine) and `pnpm run type-check` pass. Note: `src-engine/src/render/render.rs` required adding `visualizer_tree: None` to its `DisplayRenderTarget` literal.
 
+**Adjustments made post-implementation:**
+
+- **`Visualizer` no longer carries `id` or `is_builtin` fields.** IDs are map keys (in `project.visualizers` and in the builtins map returned by `get_builtin_visualizers`), so embedding them in the message was redundant and error-prone. `is_builtin` is inferred at runtime by checking whether the ID is a key in the builtins map. The proto now has only `name` (field 1) and `glsl_source` (field 2); fields were renumbered since user visualizer storage is new and no saved data exists to migrate.
+
 ### 1.1 Create `proto/visualizer.proto`
 
 ```protobuf
@@ -524,6 +528,8 @@ pnpm run proto:generate
 **Result**: ✅ Done. Shareable modules created under `src-engine/src/visualizer/` (`mod.rs`, `uniforms.rs`, `shader_wrap.rs`, `builtin.rs`, `shaders/*.glsl`); GPU rendering in `src-tauri/src/shader.rs`. Both desktop and `aarch64-apple-ios-sim` targets `cargo check` clean.
 
 **Adjustments vs. the snippets below:**
+
+- **`BUILTIN_VISUALIZERS` is a `LazyLock<HashMap<u64, BuiltinVisualizer>>`, not a slice.** The ID is the map key rather than a field on the struct, so entries can be added or removed without any risk of ID drift. `is_builtin(id)` now does a map lookup instead of a range check; `BUILTIN_ID_RANGE` is gone. Iteration in `ShaderState::new()` and `get_builtin_visualizers` uses `.iter()` on the `HashMap`.
 
 - **`naga` has no `validate` feature** — validation is always available. Removed it from both dep blocks.
 - **`ShaderSource::Naga` is feature-gated** (`naga-ir`). Rather than enable it, we validate the parsed module with naga (for line-numbered errors) and then hand the wrapped GLSL to wgpu via `ShaderSource::Glsl`, which re-parses it.
@@ -821,7 +827,12 @@ Each shader is a `visualizer()` function only (no main, no uniforms declared).
 - **CPU fallback path retained.** `src/render/shaders.rs` was made `pub mod` so `display_loop.rs` can call `render_display_shaders` directly for displays with no visualizer tree (or when GPU init failed). `render_display_buffer` / `rgba8_to_display_buffer` helpers in `display_loop.rs` route per-display between the GPU readback and the CPU renderer. GPU readback runs inside `tokio::task::block_in_place`.
 - **Built-ins are compiled at GPU init.** `ShaderState::new()` compiles every `BUILTIN_VISUALIZERS` entry up front so leaf nodes referencing reserved IDs (1–999) render immediately; errors are logged, not fatal.
 - **GPU init is non-fatal.** `lib.rs` manages `Arc<std::sync::Mutex<ShaderState>>` only if `ShaderState::new()` succeeds; on failure it logs and every display uses the CPU fallback (state simply absent from `try_state`).
-- **Tauri commands return prost-encoded bytes, not typed structs.** `compile_visualizer` returns `Vec<u8>` (encoded `VisualizerCompilationResult`); `get_builtin_visualizers` returns `Vec<Vec<u8>>` (encoded `Visualizer`s); `delete_visualizer` returns `()`. This matches how the rest of the IPC boundary passes protobufs. They use a blocking `std::sync::Mutex`, not async.
+- **Tauri commands return prost-encoded bytes, not typed structs.** `compile_visualizer` returns `Result<Vec<u8>, String>` (encoded `VisualizerCompilationResult` on success); `get_builtin_visualizers` returns `HashMap<String, Vec<u8>>` (ID string → encoded `Visualizer`); `delete_visualizer` was removed entirely (see below). They use a blocking `std::sync::Mutex`, not async.
+- **`compile_visualizer` takes `id: String`, not `id: u64`.** JavaScript's `JSON.stringify` cannot serialize `BigInt`, so the frontend passes the ID as a decimal string and Rust parses it to `u64` internally.
+- **`get_builtin_visualizers` returns a map, not a list.** The return type is `HashMap<String, Vec<u8>>` (keyed by ID string) rather than `Vec<Vec<u8>>`. This matches the shape of `project.visualizers` on the frontend so builtins and user visualizers are handled uniformly.
+- **`delete_visualizer` Tauri command removed.** Explicit delete calls from the UI were unsafe across undo/redo: a user could delete a visualizer then undo, leaving the GPU shader state out of sync. Deletion is now handled by `sync_visualizer_shaders` (see below).
+- **`sync_visualizer_shaders` added; called from `rebuild_outputs`.** Every project mutation (save, undo, redo, load, import, new) calls `rebuild_outputs`, which now also calls `sync_visualizer_shaders`. This function diffs `project.visualizers` against `ShaderState.compiled_glsl` (a new field tracking the last-compiled GLSL per ID) and compiles new/changed shaders and queues removed ones for deletion. No explicit compile or delete calls are needed in the UI except for the "Compile & Save" button (which still calls `compile_visualizer` directly for immediate error feedback).
+- **`ShaderState` gains `compiled_glsl: HashMap<u64, String>`.** Tracks the GLSL source last successfully compiled for each user shader ID, enabling change detection in `sync_visualizer_shaders`.
 - **`#![allow(dead_code)]` removed from `shader.rs`** now that everything is wired.
 - **`time` semantics note** in `uniforms.rs` updated to "wall-clock ms wrapped modulo one day".
 
@@ -983,7 +994,9 @@ pub fn delete_visualizer(
 
 ---
 
-## Phase 4: Frontend - Monaco Editor
+## Phase 4: Frontend - Monaco Editor ✅ COMPLETE
+
+**Result**: ✅ Done. Installed `@monaco-editor/react`, `monaco-editor`, and `vite-plugin-monaco-editor`. Added Monaco plugin to `vite.config.ts` with `languageWorkers: []` (base editor only, no TS/CSS/HTML workers needed for GLSL). Created `src/components/MonacoEditor.tsx` as a lazy-loaded wrapper with reactive error markers via `useEffect` on a stored editor ref.
 
 ### 4.1 Install dependencies
 
@@ -1056,7 +1069,21 @@ export function MonacoEditor({
 
 ---
 
-## Phase 5: Frontend - Visualizers Tab
+## Phase 5: Frontend - Visualizers Tab ✅ COMPLETE
+
+**Result**: ✅ Done. Created `src/system_interfaces/shader.ts` (Tauri IPC wrappers), `src/pages/patch/VisualizerEditor.tsx` (two-pane editor), and `src/pages/patch/VisualizerEditor.module.css`. Added "Visualizers" tab to PatchPage. Removed the Phase 0 spike tab and deleted `ShaderSpikeTest.tsx`. TypeScript type-check passes clean.
+
+**Design notes:**
+
+- Built-in visualizers loaded from `get_builtin_visualizers` on mount as `Record<string, Visualizer>` (map keyed by ID string); displayed read-only
+- User visualizers stored in `project.visualizers` (proto map), editable via Monaco
+- `isBuiltin` is computed by checking if `selectedId.toString()` is a key in the builtins map — never stored on the visualizer itself
+- "Copy to Edit" / "Duplicate" saves to project and relies on `sync_visualizer_shaders` (called via `rebuild_outputs` on every save) to compile the new shader; no explicit `compileVisualizer` call on copy
+- "Compile & Save" still calls `compile_visualizer` explicitly for immediate error feedback in the editor; saving to project also triggers `sync_visualizer_shaders` which would recompile if source changed
+- Delete removes from `project.visualizers` and saves; `sync_visualizer_shaders` handles GPU cleanup — no explicit `deleteVisualizer` call
+- `deleteVisualizer` export removed from `src/system_interfaces/shader.ts`; `compileVisualizer` passes `id.toString()` to avoid `BigInt` JSON serialization failure
+- `key={selectedId}` on `VisualizerEditorPane` forces fresh state when switching visualizers
+- Error line numbers from `VisualizerCompilationResult.errorLine` surfaced as Monaco markers
 
 ### 5.1 Create `src/pages/patch/VisualizerEditor.tsx`
 
@@ -1119,6 +1146,178 @@ export async function deleteVisualizer(id: bigint): Promise<void> {
   await invoke('delete_visualizer', { visualizerId: id });
 }
 ```
+
+---
+
+## Phase 5.5: Frontend WebGL2 Live Preview
+
+Add a real-time shader preview canvas to `VisualizerEditorPane`. The preview renders a single shader (no tree) in the browser via WebGL2, giving instant feedback without any Tauri IPC round-trips. Compilation also happens in the browser, so errors appear immediately on each edit rather than requiring a "Compile & Save" click.
+
+### GLSL dialect differences (WebGL2 vs wgpu/Vulkan)
+
+The wrapper boilerplate changes; user `visualizer()` function code is unaffected:
+
+| Concern              | GLSL 4.50 (wgpu)                                                      | GLSL ES 3.00 (WebGL2)                                                     |
+| -------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Version + precision  | `#version 450`                                                        | `#version 300 es` + `precision highp float;`                              |
+| Uniform block        | `layout(set=0, binding=0) uniform Uniforms { ... }`                   | Individual `uniform` declarations (avoids std140 array-padding issues)    |
+| Texture+sampler      | Separate `texture2D` + `sampler`; combined via `sampler2D(tex, samp)` | Combined `uniform sampler2D t_previous`                                   |
+| Output               | `layout(location = 0) out vec4 fragColor;`                            | `out vec4 fragColor;`                                                     |
+| `float` array in UBO | Packed in std430/bytemuck layout                                      | Each element pads to 16 bytes in std140 — use individual uniforms instead |
+
+**Shader code portability**: `visualizer()` function bodies use standard GLSL math, `gl_FragCoord`, helper functions, and dynamic array indexing (`u_audio_bands[band]`). All of these work identically in GLSL ES 3.00. No changes to shader code are needed.
+
+### 5.5.1 Create `src/pages/patch/wrapShaderWebGL2.ts`
+
+The WebGL2 equivalent of `src-engine/src/visualizer/shader_wrap.rs`. Kept separate so it can be imported without pulling in the React component.
+
+```ts
+const PREAMBLE_LINES = 18; // must match the preamble string below
+
+const PREAMBLE = `#version 300 es
+precision highp float;
+
+uniform vec4 u_color;
+uniform float u_audio_bands[16];
+uniform float u_beat_t;
+uniform vec4 u_palette_primary;
+uniform vec4 u_palette_secondary;
+uniform vec4 u_palette_tertiary;
+uniform vec2 u_resolution;
+uniform float u_time;
+uniform sampler2D t_previous;
+
+out vec4 fragColor;
+
+`;
+
+const EPILOGUE = `
+
+void main() {
+    vec2 uv = gl_FragCoord.xy / u_resolution;
+    vec4 prev = texture(t_previous, uv);
+    fragColor = visualizer(uv, gl_FragCoord.xy, prev);
+}
+`;
+
+// Full-screen triangle: no vertex buffer needed.
+export const VERTEX_SHADER_SRC = `#version 300 es
+void main() {
+    vec2 pos[3];
+    pos[0] = vec2(-1.0, -1.0);
+    pos[1] = vec2( 3.0, -1.0);
+    pos[2] = vec2(-1.0,  3.0);
+    gl_Position = vec4(pos[gl_VertexID], 0.0, 1.0);
+}`;
+
+export function wrapShaderWebGL2(glslSource: string): string {
+  return PREAMBLE + glslSource + EPILOGUE;
+}
+
+// Translate a WebGL error line number (into the wrapped shader) back to the
+// user's editor line number.
+export function toUserLine(wrappedLine: number): number {
+  return Math.max(1, wrappedLine - PREAMBLE_LINES);
+}
+```
+
+### 5.5.2 Create `src/pages/patch/VisualizerPreview.tsx`
+
+Self-contained WebGL2 canvas component. The canvas fills the right side of the editor pane below the action buttons.
+
+**Props:**
+
+```ts
+interface VisualizerPreviewProps {
+  glslSource: string;
+  color: Color;
+  palettePrimary: Color;
+  paletteSecondary: Color;
+  paletteTertiary: Color;
+  onCompileError: (line: number, message: string) => void;
+  onCompileSuccess: () => void;
+}
+```
+
+**Rendering loop (`useEffect` → `requestAnimationFrame`):**
+
+- On mount: acquire `webgl2` context; compile vertex shader (once, never changes); create a 1×1 black `t_previous` texture.
+- When `glslSource` changes (debounced ~300 ms): recompile fragment shader via `gl.compileShader()`; extract errors from `gl.getShaderInfoLog()` and call `onCompileError` / `onCompileSuccess`.
+- Each animation frame: update `u_time` (`performance.now() % 86_400_000`), `u_beat_t` (ramps 0→1 at mock BPM driven by a `useRef` accumulator), `u_audio_bands` (static mock or animated sine pattern), and color uniforms from props; then `gl.drawArrays(gl.TRIANGLES, 0, 3)`.
+- On unmount: cancel `requestAnimationFrame`; delete WebGL resources.
+
+**Error parsing:**
+
+WebGL error logs have no fixed format across vendors, but typically contain a line number. A best-effort regex extracts it:
+
+```ts
+function parseWebGLError(
+  log: string,
+): { line: number; message: string } | null {
+  // Common formats: "ERROR: 0:42: ..." or "0:42(3): error ..."
+  const m = log.match(/(?:ERROR:\s*\d+:(\d+)|(\d+):\d+\(\d+\))/);
+  if (!m) return null;
+  const wrappedLine = parseInt(m[1] ?? m[2], 10);
+  return { line: toUserLine(wrappedLine), message: log.trim() };
+}
+```
+
+**Uniform helpers:**
+
+```ts
+function setUniforms(
+  gl: WebGL2RenderingContext,
+  prog: WebGLProgram,
+  u: Uniforms,
+) {
+  const loc = (name: string) => gl.getUniformLocation(prog, name);
+  gl.uniform4fv(loc('u_color'), u.color);
+  gl.uniform1fv(loc('u_audio_bands'), u.audioBands);
+  gl.uniform1f(loc('u_beat_t'), u.beatT);
+  gl.uniform4fv(loc('u_palette_primary'), u.palettePrimary);
+  gl.uniform4fv(loc('u_palette_secondary'), u.paletteSecondary);
+  gl.uniform4fv(loc('u_palette_tertiary'), u.paletteTertiary);
+  gl.uniform2f(loc('u_resolution'), gl.canvas.width, gl.canvas.height);
+  gl.uniform1f(loc('u_time'), u.time);
+  gl.uniform1i(loc('t_previous'), 0); // texture unit 0
+}
+```
+
+Cache `getUniformLocation` results after each compile rather than calling per frame.
+
+### 5.5.3 Add preview controls to `VisualizerEditorPane`
+
+Below the Monaco editor in `VisualizerEditorPane`, add:
+
+```
+[ Preview canvas (square, ~300px) ] [ Controls ]
+                                      Color:           [color picker]  ← u_color (rgb)
+                                      Dimmer:          [slider 0–1]    ← u_color.a
+                                      Palette Primary: [color picker]
+                                      Palette Secondary:[color picker]
+                                      Palette Tertiary:[color picker]
+                                      Mock BPM:        [slider 60–180] ← drives u_beat_t
+```
+
+`u_audio_bands` is driven by an animated noise pattern (e.g., `0.5 + 0.5 * sin(time * freq + band)`) — no picker needed.
+
+State owned by `VisualizerEditorPane` (or a new `useVisualizerPreviewState` hook):
+
+- `previewColor`: `[r, g, b, a]` (default `[1, 1, 1, 1]`)
+- `previewPalette`: three `[r, g, b, 1]` defaults matching the app's `DEFAULT_COLOR_PALETTE`
+- `mockBpm`: number (default 120)
+
+The `onCompileError` callback from `VisualizerPreview` feeds into the same error state already used for Monaco markers, so both the browser-compile error and the Rust compile error show in the same place. Browser errors update immediately on edit; Rust errors update on "Compile & Save".
+
+**Priority**: browser compile error wins while the editor is dirty; Rust compile result wins after "Compile & Save".
+
+### 5.5.4 Modify `src/pages/patch/VisualizerEditor.module.css`
+
+Add layout for the preview row (canvas + controls side-by-side) below the Monaco editor wrapper. The canvas should maintain a 16:9 or 1:1 aspect ratio via `aspect-ratio` CSS property.
+
+### 5.5.5 No changes needed to `src/system_interfaces/shader.ts` or `MonacoEditor.tsx`
+
+The preview is entirely self-contained within `VisualizerEditor.tsx` and the new helper files.
 
 ---
 

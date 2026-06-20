@@ -1,40 +1,38 @@
 //! Built-in, read-only visualizers baked into the app. Users can copy these to
-//! create editable versions. Built-in IDs are reserved (1-999) so they never
-//! collide with user-created visualizer IDs.
+//! create editable versions. IDs are the map keys so they can never drift if
+//! entries are added or removed.
+
+use std::collections::HashMap;
+use std::sync::LazyLock;
 
 pub struct BuiltinVisualizer {
-    pub id: u64,
     pub name: &'static str,
     pub glsl_source: &'static str,
 }
 
-pub const BUILTIN_VISUALIZERS: &[BuiltinVisualizer] = &[
-    BuiltinVisualizer {
-        id: 1,
-        name: "Rainbow Gradient",
-        glsl_source: include_str!("shaders/rainbow.glsl"),
-    },
-    BuiltinVisualizer {
-        id: 2,
-        name: "Audio Bars",
-        glsl_source: include_str!("shaders/audio_bars.glsl"),
-    },
-    BuiltinVisualizer {
-        id: 3,
-        name: "Beat Pulse",
-        glsl_source: include_str!("shaders/beat_pulse.glsl"),
-    },
-    BuiltinVisualizer {
-        id: 4,
-        name: "Plasma",
-        glsl_source: include_str!("shaders/plasma.glsl"),
-    },
-];
-
-/// IDs 1-999 are reserved for built-in visualizers.
-pub const BUILTIN_ID_RANGE: std::ops::Range<u64> = 1..1000;
+pub static BUILTIN_VISUALIZERS: LazyLock<HashMap<u64, BuiltinVisualizer>> =
+    LazyLock::new(|| {
+        let mut m = HashMap::new();
+        m.insert(1, BuiltinVisualizer {
+            name: "Rainbow Gradient",
+            glsl_source: include_str!("shaders/rainbow.glsl"),
+        });
+        m.insert(2, BuiltinVisualizer {
+            name: "Audio Bars",
+            glsl_source: include_str!("shaders/audio_bars.glsl"),
+        });
+        m.insert(3, BuiltinVisualizer {
+            name: "Beat Pulse",
+            glsl_source: include_str!("shaders/beat_pulse.glsl"),
+        });
+        m.insert(4, BuiltinVisualizer {
+            name: "Plasma",
+            glsl_source: include_str!("shaders/plasma.glsl"),
+        });
+        m
+    });
 
 #[must_use]
 pub fn is_builtin(id: u64) -> bool {
-    BUILTIN_ID_RANGE.contains(&id)
+    BUILTIN_VISUALIZERS.contains_key(&id)
 }
