@@ -15,6 +15,11 @@ const ABS_DB_FLOOR: f32 = -60.0;
 const EMA_ALPHA: f32 = 0.2;
 /// Linear falloff per frame so values decay gracefully after transients.
 const FALLOFF_PER_FRAME: f32 = 0.05;
+/// Exponent for per-band frequency boost applied to the visualization output.
+/// Real-world audio rolls off at ~3 dB/octave (pink noise), so higher bands
+/// need a compensating lift. At 0.2 the top band (~6.7 kHz) gets ~3× more
+/// gain than the bottom band (~89 Hz). Beat detection is unaffected.
+const FREQ_BOOST_EXPONENT: f32 = 0.2;
 
 // ---------------------------------------------------------------------------
 // Signal conditioning constants (FastLED SignalConditioner)
@@ -58,7 +63,7 @@ const BEAT_COOLDOWN_FRAMES: usize = 4;
 
 // Band ranges for per-band beat detectors.
 const BASS_START: usize = 0;
-const BASS_END: usize = 4; // ~32–134 Hz: sub-bass, kick drum body
+const BASS_END: usize = 4; // ~80–253 Hz: kick drum body
 const MID_START: usize = 4;
 const MID_END: usize = 10; // ~134–1157 Hz: snare, guitar, vocals
 const TREBLE_START: usize = 13;
@@ -308,6 +313,8 @@ pub struct FftAnalyzer {
     band_edges: [f32; NUM_BANDS + 1],
     prev_bands: [f32; NUM_BANDS],
     prev_all: f32,
+    /// Fixed per-band gain multipliers derived from band center frequencies.
+    band_gain: [f32; NUM_BANDS],
     conditioner: SignalConditioner,
     noise_floor: NoiseFloorTracker,
     beat_full: SpectralFluxDetector,
@@ -331,14 +338,14 @@ impl FftAnalyzer {
             })
             .collect();
 
-        // Logarithmic band edges 32 Hz → 8 kHz: edge[i] = 32 · 250^(i/16).
-        // Capped at 8 kHz to match common recording equipment that rolls off
-        // significantly above this point, rather than wasting bands on inaudible
-        // content.
+        // Logarithmic band edges 80 Hz → 8 kHz: edge[i] = 80 · 100^(i/16).
+        // Starts at 80 Hz rather than 32 Hz because most consumer microphones
+        // (including the MacBook Pro built-in mic) capture little below ~80 Hz,
+        // leaving the lowest band empty. Capped at 8 kHz as before.
         let mut band_edges = [0.0_f32; NUM_BANDS + 1];
         #[allow(clippy::cast_precision_loss)]
         for (i, edge) in band_edges.iter_mut().enumerate() {
-            *edge = 32.0 * 250.0_f32.powf(i as f32 / NUM_BANDS as f32);
+            *edge = 80.0 * 100.0_f32.powf(i as f32 / NUM_BANDS as f32);
         }
 
         // 2-second flux history for adaptive beat thresholding.
@@ -346,6 +353,19 @@ impl FftAnalyzer {
         let frame_rate = sample_rate as f32 / fft_size as f32;
         #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
         let flux_history_len = (2.0 * frame_rate).ceil() as usize;
+
+        // Per-band gain: geometric-mean center frequency raised to FREQ_BOOST_EXPONENT,
+        // relative to band 0's center so band 0 always has gain 1.0.
+        #[allow(clippy::cast_precision_loss)]
+        let band_gain = {
+            let mut gains = [1.0f32; NUM_BANDS];
+            let band0_center = (band_edges[0] * band_edges[1]).sqrt();
+            for i in 0..NUM_BANDS {
+                let center = (band_edges[i] * band_edges[i + 1]).sqrt();
+                gains[i] = (center / band0_center).powf(FREQ_BOOST_EXPONENT);
+            }
+            gains
+        };
 
         Self {
             fft_size,
@@ -359,6 +379,7 @@ impl FftAnalyzer {
             band_edges,
             prev_bands: [0.0; NUM_BANDS],
             prev_all: 0.0,
+            band_gain,
             conditioner: SignalConditioner::new(),
             noise_floor: NoiseFloorTracker::new(),
             beat_full: SpectralFluxDetector::new(flux_history_len, 0, NUM_BANDS),
@@ -445,13 +466,14 @@ impl FftAnalyzer {
         let beat_mid = !effective_silent && self.beat_mid.detect(&raw_bands);
         let beat_treble = !effective_silent && self.beat_treble.detect(&raw_bands);
 
-        // 7. Fixed dB normalization and EMA+falloff smoothing.
+        // 7. Fixed dB normalization, frequency boost, and EMA+falloff smoothing.
         let mut bands = [0.0_f32; NUM_BANDS];
         for i in 0..NUM_BANDS {
             let normalized = if effective_silent {
                 0.0
             } else {
-                ((db_bands[i] - ABS_DB_FLOOR) / (-ABS_DB_FLOOR)).clamp(0.0, 1.0)
+                (((db_bands[i] - ABS_DB_FLOOR) / (-ABS_DB_FLOOR)) * self.band_gain[i])
+                    .clamp(0.0, 1.0)
             };
             bands[i] = smooth(normalized, self.prev_bands[i]);
         }
