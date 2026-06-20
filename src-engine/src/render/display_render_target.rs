@@ -107,6 +107,14 @@ impl RenderTarget<DisplayRenderTarget> for DisplayRenderTarget {
         if let Some(dimmer) = state.dimmer {
             self.dimmer = dimmer as f32;
         }
+
+        // A non-empty visualizer chain on this state replaces the target's tree.
+        // An empty list leaves any previously-applied tree untouched so that a
+        // plain color effect in the same tile doesn't clear the visualizer.
+        if !state.visualizer_ids.is_empty() {
+            self.visualizer_tree =
+                crate::visualizer::tree::build_effect_visualizer_tree(&state.visualizer_ids);
+        }
     }
 
     fn interpolate(&mut self, a: &DisplayRenderTarget, b: &DisplayRenderTarget, t: f64) {
@@ -128,6 +136,15 @@ impl RenderTarget<DisplayRenderTarget> for DisplayRenderTarget {
         };
 
         self.dimmer = ((1.0 - t) * f64::from(a.dimmer) + t * f64::from(b.dimmer)) as f32;
+
+        // Blend the two visualizer trees. Identical structures collapse to a
+        // single render; differing structures become a Lerp baked with `t`.
+        // Applied per-tile in the scene loop, this builds the tile composite.
+        self.visualizer_tree = crate::visualizer::tree::build_interpolated_tree(
+            a.visualizer_tree.clone(),
+            b.visualizer_tree.clone(),
+            t as f32,
+        );
     }
 
     fn apply_fixture_debug(&mut self, _fixture_debug: &crate::proto::render_mode::FixtureDebug) {

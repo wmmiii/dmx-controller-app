@@ -3,6 +3,7 @@ use crate::proto::DisplayRenderTarget;
 
 /// Placeholder for GPU shader rendering pipeline.
 /// Will be replaced with wgpu-based shader execution.
+#[must_use]
 #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
 pub fn render_display_shaders(
     display_id: u64,

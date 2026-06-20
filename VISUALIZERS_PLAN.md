@@ -21,11 +21,19 @@ Add GLSL shader-based "Visualizers" that render on displays, with a code editor 
 
 ---
 
-## Phase 0: iOS Compatibility Spike
+## Phase 0: iOS Compatibility Spike ✅ COMPLETE
 
 Verify wgpu works on iOS before committing to this architecture. This is a minimal test to confirm Metal backend initialization.
 
 **Goal**: Confirm wgpu can initialize headless on iOS and create GPU textures. This must pass before proceeding with other phases.
+
+**Result**: ✅ **PASSED**. wgpu initializes headless on the iOS simulator with `Backend: Metal`. Desktop (macOS Metal) also passes. The architecture is viable; proceed with later phases.
+
+**Adjustments made during the spike (apply these in later phases):**
+
+- **wgpu 26 API differs from the snippets below.** `request_adapter` returns a `Result` (not `Option`), so use `.map_err(...)?` instead of `.ok_or(...)?`. `request_device` takes a single `&DeviceDescriptor` argument (the trailing `None` trace parameter was removed). See the actual working code in `src-tauri/src/shader_spike.rs`.
+- **`wasm:build` is now a prerequisite of `pnpm dev`.** The `dev` script was updated to `proto:generate && wasm:build && vite` so `tauri:dev`/`tauri:ios` (which run `pnpm dev` via `beforeDevCommand`) build the WASM engine before Vite starts. Requires `wasm-pack` and the `wasm32-unknown-unknown` target installed locally.
+- **Mobile serial stub gained `try_close_port`.** The `#[cfg(mobile)]` `SerialState` no-op stub in `src-tauri/src/lib.rs` now also stubs `try_close_port` (matching the existing stub pattern), since `output_loop.rs` calls it ungated. Stubbing — not `#[cfg]` gating the call site — is the chosen approach for serial-on-iOS.
 
 ---
 
@@ -63,10 +71,12 @@ pub async fn test_wgpu_init() -> Result<String, String> {
             force_fallback_adapter: false,
         })
         .await
-        .ok_or("No GPU adapter found")?;
+        // wgpu 26: request_adapter returns Result, not Option.
+        .map_err(|e| format!("No GPU adapter found: {e}"))?;
 
     let (device, _queue) = adapter
-        .request_device(&wgpu::DeviceDescriptor::default(), None)
+        // wgpu 26: request_device takes a single &DeviceDescriptor (no trace arg).
+        .request_device(&wgpu::DeviceDescriptor::default())
         .await
         .map_err(|e| format!("Device request failed: {e}"))?;
 
@@ -259,12 +269,12 @@ If testing via Xcode (or if the app crashes):
 
 Run through this checklist and mark items complete:
 
-- [ ] **Desktop build succeeds**: `pnpm run tauri:dev` compiles without errors
-- [ ] **Desktop test passes**: Button click shows "SUCCESS" with Metal (macOS) or Vulkan (Linux) backend
-- [ ] **iOS build succeeds**: `pnpm run tauri:ios` compiles and launches simulator
-- [ ] **iOS test passes**: Button click shows "SUCCESS" with Metal backend
-- [ ] **No crashes**: App remains stable after test
-- [ ] **Texture creation works**: The success message appears (texture creation is part of the test)
+- [x] **Desktop build succeeds**: `pnpm run tauri:dev` compiles without errors
+- [x] **Desktop test passes**: Button click shows "SUCCESS" with Metal (macOS) or Vulkan (Linux) backend
+- [x] **iOS build succeeds**: `pnpm run tauri:ios` compiles and launches simulator
+- [x] **iOS test passes**: Button click shows "SUCCESS" with Metal backend
+- [x] **No crashes**: App remains stable after test
+- [x] **Texture creation works**: The success message appears (texture creation is part of the test)
 
 **If ALL items pass**: Phase 0 is complete. Proceed to Phase 1.
 
@@ -318,7 +328,9 @@ Users write a `visualizer()` function, not `main()`. The system wraps it with bo
 **User writes:**
 
 ```glsl
-vec4 visualizer(vec2 uv, vec4 prev_pixel) {
+vec4 visualizer(vec2 uv, vec2 frag_coord, vec4 prev_pixel) {
+    // uv         = normalized screen coords (gl_FragCoord.xy / u_resolution)
+    // frag_coord = raw pixel coords (gl_FragCoord.xy)
     // prev_pixel = output from previous shader in sequence (or black)
     vec3 color = u_palette_primary.rgb * u_audio_bands[0];
     return vec4(color, 1.0);
@@ -353,7 +365,7 @@ layout(location = 0) out vec4 fragColor;
 void main() {
     vec2 uv = gl_FragCoord.xy / u_resolution;
     vec4 prev = texture(sampler2D(t_previous, s_previous), uv);
-    fragColor = visualizer(uv, prev);
+    fragColor = visualizer(uv, gl_FragCoord.xy, prev);
 }
 ```
 
@@ -420,7 +432,9 @@ If naga's GLSL support proves too limited, swapping to glslang is moderate effor
 
 ---
 
-## Phase 1: Proto Schema Changes
+## Phase 1: Proto Schema Changes ✅ COMPLETE
+
+**Result**: ✅ Done. `proto/visualizer.proto` created; `display.proto`, `project.proto`, `effect.proto` updated; TS bindings regenerated and Rust `build.rs` auto-compiles the new proto. Both `cargo check` (src-engine) and `pnpm run type-check` pass. Note: `src-engine/src/render/render.rs` required adding `visualizer_tree: None` to its `DisplayRenderTarget` literal.
 
 ### 1.1 Create `proto/visualizer.proto`
 
@@ -505,7 +519,19 @@ pnpm run proto:generate
 
 ---
 
-## Phase 2: Rust Engine - Shader Infrastructure
+## Phase 2: Rust Engine - Shader Infrastructure ✅ COMPLETE
+
+**Result**: ✅ Done. Shareable modules created under `src-engine/src/visualizer/` (`mod.rs`, `uniforms.rs`, `shader_wrap.rs`, `builtin.rs`, `shaders/*.glsl`); GPU rendering in `src-tauri/src/shader.rs`. Both desktop and `aarch64-apple-ios-sim` targets `cargo check` clean.
+
+**Adjustments vs. the snippets below:**
+
+- **`naga` has no `validate` feature** — validation is always available. Removed it from both dep blocks.
+- **`ShaderSource::Naga` is feature-gated** (`naga-ir`). Rather than enable it, we validate the parsed module with naga (for line-numbered errors) and then hand the wrapped GLSL to wgpu via `ShaderSource::Glsl`, which re-parses it.
+- **Vertex + blend shaders are WGSL**, not GLSL. A no-vertex-buffer fullscreen triangle (positions from `vertex_index`) replaces the planned vertex buffer / fullscreen quad. The blend shader is WGSL (`BLEND_WGSL`) instead of the GLSL snippet below.
+- **Black texture is 1x1** (only ever sampled, never a render target). An empty/black tree result returns a CPU-side zero buffer directly rather than reading back the 1x1 texture.
+- **No `RwLock` render lock** — `ShaderState` lives behind a `Mutex` in app state, so renders and deletions are already serialized. `mark_for_deletion` queues IDs flushed at the end of `render_and_readback`.
+- **`shader.rs` carried a temporary `#![allow(dead_code)]`** during Phase 2; removed in Phase 3 once `display_loop` + Tauri commands consumed it.
+- The render helpers (`render_shader`, `blend_textures`) are associated functions taking explicit `&Device`/`&Queue`/view refs (not `&self` methods) so the recursive `render_tree(&mut self, …)` can borrow pool fields disjointly.
 
 ### 2.1 Add dependencies to `src-tauri/Cargo.toml`
 
@@ -515,11 +541,11 @@ bytemuck = { version = "1.21", features = ["derive"] }
 
 [target.'cfg(target_os = "ios")'.dependencies]
 wgpu = { version = "26.0", default-features = false, features = ["metal", "wgsl", "glsl"] }
-naga = { version = "26.0", default-features = false, features = ["glsl-in", "spv-out", "validate"] }
+naga = { version = "26.0", default-features = false, features = ["glsl-in", "spv-out"] }
 
 [target.'cfg(not(target_os = "ios"))'.dependencies]
 wgpu = { version = "26.0", features = ["vulkan", "metal", "wgsl", "glsl"] }
-naga = { version = "26.0", features = ["glsl-in", "spv-out", "validate"] }
+naga = { version = "26.0", features = ["glsl-in", "spv-out"] }
 ```
 
 ### 2.2 Create `src-tauri/src/shader.rs`
@@ -783,7 +809,21 @@ Each shader is a `visualizer()` function only (no main, no uniforms declared).
 
 ---
 
-## Phase 3: Rust Engine - Integration
+## Phase 3: Rust Engine - Integration ✅ COMPLETE
+
+**Status:** Implemented and verified. `cargo check` passes for both desktop and `aarch64-apple-ios-sim`; the 9 `visualizer::tree` unit tests pass. The original design below is kept for reference; actual deviations are noted here.
+
+**Adjustments:**
+
+- **Uniforms are built in the engine, not the Tauri layer.** Rather than gathering audio/beat/palette inside `display_loop.rs` (steps 3.3.1–3.3.4), a new `pub fn render_display_target(display_id, system_t, frame) -> Result<DisplayRenderData>` in `src-engine/src/render/render.rs` does it all under the project lock. `DisplayRenderData` is now `pub` with public fields and carries a fully-built `ShaderUniforms` (`shader_uniforms`). Helpers `build_shader_uniforms` and `palette_rgba` live alongside it. This keeps all project-state access in one place and minimizes lock time. `render_display` was reduced to a thin CPU-fallback wrapper over `render_display_target`.
+- **`ShaderUniforms.time` is wall-clock ms wrapped modulo one day.** `system_t` (unix ms) can't fit an f32 without ~256ms quantization, so it's stored as `(system_t % 86_400_000) as f32`. f32 (not u64) because the value is a GPU uniform consumed by GLSL, where 64-bit ints aren't portable. The modulo keeps full ms precision and wall-clock phase alignment.
+- **Palette comes from the active scene's `active_color_palette`** (no transition lerp baked into uniforms), falling back to `DEFAULT_COLOR_PALETTE`.
+- **CPU fallback path retained.** `src/render/shaders.rs` was made `pub mod` so `display_loop.rs` can call `render_display_shaders` directly for displays with no visualizer tree (or when GPU init failed). `render_display_buffer` / `rgba8_to_display_buffer` helpers in `display_loop.rs` route per-display between the GPU readback and the CPU renderer. GPU readback runs inside `tokio::task::block_in_place`.
+- **Built-ins are compiled at GPU init.** `ShaderState::new()` compiles every `BUILTIN_VISUALIZERS` entry up front so leaf nodes referencing reserved IDs (1–999) render immediately; errors are logged, not fatal.
+- **GPU init is non-fatal.** `lib.rs` manages `Arc<std::sync::Mutex<ShaderState>>` only if `ShaderState::new()` succeeds; on failure it logs and every display uses the CPU fallback (state simply absent from `try_state`).
+- **Tauri commands return prost-encoded bytes, not typed structs.** `compile_visualizer` returns `Vec<u8>` (encoded `VisualizerCompilationResult`); `get_builtin_visualizers` returns `Vec<Vec<u8>>` (encoded `Visualizer`s); `delete_visualizer` returns `()`. This matches how the rest of the IPC boundary passes protobufs. They use a blocking `std::sync::Mutex`, not async.
+- **`#![allow(dead_code)]` removed from `shader.rs`** now that everything is wired.
+- **`time` semantics note** in `uniforms.rs` updated to "wall-clock ms wrapped modulo one day".
 
 ### 3.1 Create `src-engine/src/visualizer/tree.rs`
 

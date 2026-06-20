@@ -11,6 +11,7 @@ import { Button } from '../../components/Button';
 import { EditableText } from '../../components/Input';
 import { Modal } from '../../components/Modal';
 import { Select } from '../../components/Select';
+import { ShaderSpikeTest } from '../../components/ShaderSpikeTest';
 import { Tabs, TabsType } from '../../components/Tabs';
 import { ProjectContext } from '../../contexts/ProjectContext';
 import { deleteDdpOutput } from '../../engine/display';
@@ -56,6 +57,11 @@ export default function PatchPage(): JSX.Element {
         contents: <DisplayEditor />,
       },
     }),
+    // TEMPORARY (Phase 0 spike): wgpu/iOS compatibility test tab. Remove after Phase 0.
+    spike: {
+      name: 'GPU Test',
+      contents: <ShaderSpikeTest />,
+    },
   };
 
   for (const [outputIdString, output] of Object.entries(

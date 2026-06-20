@@ -185,10 +185,11 @@ This guidance applies only to code you are actively modifying—do not refactor 
 - Do not make sequential tool calls that could be parallelized — this wastes time and tokens
 - Example: editing three Cargo.toml files should be three Edit calls in one message, not three separate messages
 
-**Finalize changes with cleanup:**
+**Formatting & linting are handled by the user:**
 
-- Before completing a task, run `pnpm run cleanup` to catch dead code, deprecated usage, and formatting issues
-- Fix any issues found before marking the task complete
+- Do NOT run `pnpm run cleanup`, `pnpm run format`, `pnpm run lint`, or `cargo clippy` to fix style/lint output — the user runs these themselves (it's cheaper for them).
+- Do not spend effort resolving formatting issues or non-blocking clippy/ESLint warnings (e.g. `must_use`, `pub_underscore_fields`, pedantic cast lints).
+- Still ensure code actually compiles and tests pass: `cargo check` and `pnpm run test` / `pnpm run type-check` are fair game when verifying correctness. Fix real errors (compile failures, type errors, test failures), not lint warnings.
 
 ## Website & Documentation
 

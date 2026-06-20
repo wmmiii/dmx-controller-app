@@ -3,7 +3,7 @@
   "scripts": {
     "build": "pnpm run proto:generate && pnpm run wasm:build && vite build",
     "cleanup": "pnpm run lint && pnpm run format",
-    "dev": "pnpm run proto:generate && vite",
+    "dev": "pnpm run proto:generate && pnpm run wasm:build && vite",
     "format": "npx prettier . --write",
     "lint": "pnpm run lint:rust && pnpm run lint:ts && pnpm run lint:dead",
     "lint:dead": "knip",

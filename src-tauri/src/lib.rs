@@ -1,10 +1,10 @@
 #[cfg(desktop)]
+mod audio_analysis;
+#[cfg(desktop)]
 mod audio_input;
 mod beat;
 mod ddp;
 mod display_loop;
-#[cfg(desktop)]
-mod audio_analysis;
 #[cfg(desktop)]
 mod midi;
 mod output_loop;
@@ -13,6 +13,8 @@ mod render;
 mod sacn;
 #[cfg(desktop)]
 mod serial;
+mod shader;
+mod shader_spike;
 mod wled;
 
 /// No-op stub for mobile — serial DMX hardware is not available on iOS/Android
@@ -30,6 +32,10 @@ mod serial {
         }
 
         pub fn output_dmx_internal(&self, _output_id: &str, _data: &[u8]) -> Result<(), String> {
+            Ok(())
+        }
+
+        pub fn try_close_port(&self, _output_id: &str) -> Result<(), String> {
             Ok(())
         }
     }
@@ -151,6 +157,16 @@ pub fn run() {
             let ddp_state_arc = Arc::new(Mutex::new(ddp_state));
             app.manage(ddp_state_arc.clone());
 
+            // Initialize the GPU shader state for visualizer rendering. If the
+            // GPU is unavailable, log and continue — displays fall back to the
+            // CPU renderer.
+            match tauri::async_runtime::block_on(shader::ShaderState::new()) {
+                Ok(shader_state) => {
+                    app.manage(Arc::new(StdMutex::new(shader_state)));
+                }
+                Err(e) => log::error!("Failed to initialize GPU shader state: {e}"),
+            }
+
             let display_loop_manager = display_loop::DisplayLoopManager::new(app.handle().clone());
             let display_loop_manager_arc = Arc::new(Mutex::new(display_loop_manager));
             app.manage(display_loop_manager_arc.clone());
@@ -220,6 +236,10 @@ pub fn run() {
             project::new_project,
             render::render_dmx,
             render::set_render_mode,
+            shader::compile_visualizer,
+            shader::get_builtin_visualizers,
+            shader::delete_visualizer,
+            shader_spike::test_shader_spike,
             #[cfg(desktop)]
             serial::list_ports,
             project::frontend_ready_for_update,

@@ -1,17 +1,20 @@
 use dmx_engine::project;
 use dmx_engine::proto::output::Output as ProtoOutput;
 use dmx_engine::proto::{DdpOutput, DisplayBuffer, PhysicalDisplayMapping};
-use dmx_engine::render::render::{RenderError, render_display};
+use dmx_engine::render::render::{DisplayRenderData, RenderError, render_display_target};
+use dmx_engine::render::shaders::render_display_shaders;
 use prost::Message;
 use serde::Serialize;
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::sync::Mutex as StdMutex;
 use std::time::{Duration, Instant};
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
 
 use crate::ddp::DdpState;
+use crate::shader::ShaderState;
 
 const DEFAULT_DISPLAY_FPS: u32 = 30;
 /// FPS for emitting display render events to frontend for visualization.
@@ -249,27 +252,37 @@ impl DisplayLoopManager {
                 break;
             }
 
+            // GPU shader state is optional: if it failed to initialize we fall
+            // back to the CPU renderer for every display.
+            let shader_state = app.try_state::<Arc<StdMutex<ShaderState>>>();
+
             // Render all displays
             let mut buffers: HashMap<u64, DisplayBuffer> = HashMap::new();
             for display_id in &config.display_ids {
-                match render_display(*display_id, system_t, frame) {
-                    Ok(buffer) => {
-                        let event = DisplayRenderEvent {
-                            display_id: display_id.to_string(),
-                            data: buffer.downsample(MAX_VISUALIZATION_SIZE).encode_to_vec(),
-                        };
-                        if let Err(e) = app.emit("display-render", event) {
-                            log::error!("Failed to emit display render event: {e}");
-                        }
-                        buffers.insert(*display_id, buffer);
-                    }
-                    Err(RenderError::OutputNotFound { .. }) => {
-                        // Display was deleted, skip it
-                    }
+                let data = match render_display_target(*display_id, system_t, frame) {
+                    Ok(data) => data,
+                    Err(RenderError::OutputNotFound { .. }) => continue, // deleted
                     Err(e) => {
                         log::error!("Failed to render display {display_id}: {e}");
+                        continue;
                     }
+                };
+
+                let buffer = render_display_buffer(
+                    *display_id,
+                    &data,
+                    system_t,
+                    shader_state.as_deref(),
+                );
+
+                let event = DisplayRenderEvent {
+                    display_id: display_id.to_string(),
+                    data: buffer.downsample(MAX_VISUALIZATION_SIZE).encode_to_vec(),
+                };
+                if let Err(e) = app.emit("display-render", event) {
+                    log::error!("Failed to emit display render event: {e}");
                 }
+                buffers.insert(*display_id, buffer);
             }
 
             // Output to all DDP devices
@@ -321,4 +334,41 @@ impl DisplayLoopManager {
             log::error!("Failed to emit render error clear event: {e}");
         }
     }
+}
+
+/// Render a single display to a `DisplayBuffer`. Uses the GPU shader pipeline
+/// when the display has a visualizer tree and GPU state is available; otherwise
+/// falls back to the CPU renderer.
+fn render_display_buffer(
+    display_id: u64,
+    data: &DisplayRenderData,
+    system_t: u64,
+    shader_state: Option<&Arc<StdMutex<ShaderState>>>,
+) -> DisplayBuffer {
+    if let (Some(tree), Some(shader_state)) = (&data.uniforms.visualizer_tree, shader_state) {
+        // Readback blocks on GPU work; keep it off the async executor threads.
+        let rgba = tokio::task::block_in_place(|| {
+            let mut state = shader_state.lock().expect("shader state lock poisoned");
+            state.render_and_readback(tree, &data.shader_uniforms, data.width, data.height)
+        });
+        rgba8_to_display_buffer(display_id, data.width, data.height, &rgba)
+    } else {
+        render_display_shaders(display_id, data.width, data.height, system_t, &data.uniforms)
+    }
+}
+
+/// Convert tightly-packed RGBA8 bytes (4 bytes/pixel, row-major) into a
+/// `DisplayBuffer` (f32 RGB, alpha dropped).
+fn rgba8_to_display_buffer(id: u64, width: u32, height: u32, rgba: &[u8]) -> DisplayBuffer {
+    let mut buffer = DisplayBuffer::new(id, width, height);
+    for (i, px) in rgba.chunks_exact(4).enumerate() {
+        let base = i * 3;
+        if base + 2 >= buffer.pixels.len() {
+            break;
+        }
+        buffer.pixels[base] = f32::from(px[0]) / 255.0;
+        buffer.pixels[base + 1] = f32::from(px[1]) / 255.0;
+        buffer.pixels[base + 2] = f32::from(px[2]) / 255.0;
+    }
+    buffer
 }

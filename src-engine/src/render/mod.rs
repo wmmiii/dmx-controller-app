@@ -9,7 +9,7 @@ mod random_effect;
 pub mod render;
 mod render_target;
 pub mod scene;
-mod shaders;
+pub mod shaders;
 pub mod segment_mapping;
 mod sequence_effect;
 mod strobe_effect;

@@ -12,6 +12,7 @@ import "proto/output.proto";
 import "proto/scene.proto";
 import "proto/settings.proto";
 import "proto/show.proto";
+import "proto/visualizer.proto";
 
 message Project {
   message Assets {
@@ -32,6 +33,10 @@ message Project {
   FixtureDefinitions fixture_definitions = 43;
   map<uint64, TargetGroup> groups = 19;
   map<uint64, VirtualDisplay> displays = 23;
+
+  // User-defined GLSL visualizers. Built-in visualizers are not stored here;
+  // they are provided by the engine at runtime.
+  map<uint64, Visualizer> visualizers = 63;
 
   Assets assets = 21;
 

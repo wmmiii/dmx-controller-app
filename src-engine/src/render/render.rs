@@ -2,11 +2,15 @@ use std::fmt;
 use std::sync::{LazyLock, Mutex};
 
 use crate::audio::AudioAnalysis;
+use crate::beat::effective_beat_metadata;
+use crate::project::DEFAULT_COLOR_PALETTE;
+use crate::visualizer::uniforms::ShaderUniforms;
 use crate::{
     project,
     proto::{
         Color, ColorPalette, DisplayBuffer, DisplayRenderTarget, FixtureState, OutputTarget,
         Project, RenderMode, WledRenderTarget,
+        color_palette::ColorDescription,
         fixture_state::LightColor,
         output::Output,
         output_target,
@@ -174,70 +178,151 @@ pub fn render_wled(
 }
 
 /// Data extracted from the project needed for display rendering.
-/// Kept minimal to reduce time spent holding the project lock.
-struct DisplayRenderData {
-    width: u32,
-    height: u32,
-    uniforms: DisplayRenderTarget,
+/// Kept minimal to reduce time spent holding the project lock. The expensive
+/// pixel work (GPU shader render or CPU fallback) happens after this is built,
+/// outside the lock.
+pub struct DisplayRenderData {
+    pub width: u32,
+    pub height: u32,
+    /// Effect-system state (color, dimmer, visualizer tree) for this display.
+    pub uniforms: DisplayRenderTarget,
+    /// Flattened uniforms shared by every node of the visualizer tree.
+    pub shader_uniforms: ShaderUniforms,
 }
 
-/// Render a virtual display to a `DisplayBuffer` (f32 RGB).
+/// Extract everything needed to render a display, briefly holding the project
+/// lock. Callers then render pixels (GPU or CPU) without the lock held.
+pub fn render_display_target(
+    display_id: u64,
+    system_t: u64,
+    frame: u32,
+) -> Result<DisplayRenderData, RenderError> {
+    let audio_analysis = crate::audio::get_audio_analysis();
+
+    let nested_result: Result<Result<DisplayRenderData, RenderError>, String> =
+        project::with_project(|project| {
+            let Some(display) = project.displays.get(&display_id) else {
+                return Ok(Err(RenderError::OutputNotFound {
+                    output_id: display_id,
+                    patch_id: project.active_patch,
+                }));
+            };
+
+            let width = display.width;
+            let height = display.height;
+
+            // Collect uniforms from the effect system.
+            let mut uniforms = DisplayRenderTarget {
+                id: display_id,
+                color: None,
+                dimmer: 1.0,
+                visualizer_tree: None,
+            };
+
+            let render_result = render(
+                display_id,
+                &mut uniforms,
+                system_t,
+                frame,
+                project,
+                &audio_analysis,
+            );
+
+            if let Err(e) = render_result {
+                return Ok(Err(e));
+            }
+
+            let shader_uniforms =
+                build_shader_uniforms(project, &uniforms, &audio_analysis, width, height, system_t);
+
+            Ok(Ok(DisplayRenderData {
+                width,
+                height,
+                uniforms,
+                shader_uniforms,
+            }))
+        });
+
+    nested_result.map_err(RenderError::LockError)?
+}
+
+/// Render a virtual display to a `DisplayBuffer` (f32 RGB) using the CPU
+/// fallback path. The GPU path lives in the Tauri layer (`shader.rs`) which
+/// consumes `render_display_target` directly.
 pub fn render_display(
     display_id: u64,
     system_t: u64,
     frame: u32,
 ) -> Result<DisplayBuffer, RenderError> {
-    let audio_analysis = crate::audio::get_audio_analysis();
+    let data = render_display_target(display_id, system_t, frame)?;
+    Ok(render_display_shaders(
+        display_id,
+        data.width,
+        data.height,
+        system_t,
+        &data.uniforms,
+    ))
+}
 
-    // First, extract data from the project while holding the lock briefly.
-    let render_data: Result<DisplayRenderData, RenderError> = {
-        let nested_result: Result<Result<DisplayRenderData, RenderError>, String> =
-            project::with_project(|project| {
-                let Some(display) = project.displays.get(&display_id) else {
-                    return Ok(Err(RenderError::OutputNotFound {
-                        output_id: display_id,
-                        patch_id: project.active_patch,
-                    }));
-                };
+/// Build the flattened shader uniforms from the final interpolated display
+/// state. Computed once per display and shared by every shader in the tree.
+#[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
+fn build_shader_uniforms(
+    project: &Project,
+    target: &DisplayRenderTarget,
+    audio: &AudioAnalysis,
+    width: u32,
+    height: u32,
+    system_t: u64,
+) -> ShaderUniforms {
+    let dimmer = target.dimmer;
+    let color = target.color.map_or([0.0, 0.0, 0.0, dimmer], |c| {
+        [c.red as f32, c.green as f32, c.blue as f32, dimmer]
+    });
 
-                let width = display.width;
-                let height = display.height;
+    let beat_t = effective_beat_metadata(project, system_t)
+        .filter(|bm| bm.length_ms > 0.0)
+        .map_or(0.0, |bm| {
+            let elapsed = system_t.saturating_sub(bm.offset_ms) as f64;
+            (elapsed / bm.length_ms).rem_euclid(1.0) as f32
+        });
 
-                // Collect uniforms from the effect system.
-                let mut uniforms = DisplayRenderTarget {
-                    id: display_id,
-                    color: None,
-                    dimmer: 1.0,
-                };
+    // Palette from the active scene's active palette (no transition lerp here).
+    let palette = project
+        .scenes
+        .get(&project.active_scene)
+        .and_then(|scene| {
+            scene
+                .color_palettes
+                .iter()
+                .find(|p| p.id == scene.active_color_palette)
+        })
+        .cloned()
+        .unwrap_or_else(|| DEFAULT_COLOR_PALETTE.clone());
 
-                let render_result = render(
-                    display_id,
-                    &mut uniforms,
-                    system_t,
-                    frame,
-                    project,
-                    &audio_analysis,
-                );
+    ShaderUniforms {
+        color,
+        audio_bands: audio.bands,
+        beat_t,
+        palette_primary: palette_rgba(palette.primary.as_ref()),
+        palette_secondary: palette_rgba(palette.secondary.as_ref()),
+        palette_tertiary: palette_rgba(palette.tertiary.as_ref()),
+        resolution: [width as f32, height as f32],
+        // `system_t` is the unix timestamp in ms. An f32 only has ~24 bits of
+        // mantissa, so the raw value (~1.7e12) would quantize to ~256ms steps —
+        // useless for animation. Wrapping modulo a day keeps full ms precision
+        // while staying phase-aligned to wall-clock time (so beat/clock-driven
+        // shaders stay in sync); the once-per-day discontinuity is harmless.
+        time: (system_t % 86_400_000) as f32,
+        ..Default::default()
+    }
+}
 
-                if let Err(e) = render_result {
-                    return Ok(Err(e));
-                }
-
-                Ok(Ok(DisplayRenderData {
-                    width,
-                    height,
-                    uniforms,
-                }))
-            });
-
-        nested_result.map_err(RenderError::LockError)?
-    };
-
-    // Now perform expensive pixel rendering OUTSIDE the project lock.
-    let data = render_data?;
-    let buffer = render_display_shaders(display_id, data.width, data.height, system_t, &data.uniforms);
-
-    Ok(buffer)
+#[allow(clippy::cast_possible_truncation)]
+fn palette_rgba(desc: Option<&ColorDescription>) -> [f32; 4] {
+    desc.and_then(|d| d.color.as_ref()).map_or([0.0, 0.0, 0.0, 1.0], |c| {
+        [c.red as f32, c.green as f32, c.blue as f32, 1.0]
+    })
 }
 
 fn render<T: RenderTarget<T>>(

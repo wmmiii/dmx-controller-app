@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package dmx_controller;
+
+// Stored shader definition.
+message Visualizer {
+  uint64 id = 1;
+  string name = 2;
+  string glsl_source = 3;
+  bool is_builtin = 4; // Read-only in UI.
+}
+
+// Compilation result returned from a Tauri command.
+message VisualizerCompilationResult {
+  bool success = 1;
+  string error_message = 2;
+  uint32 error_line = 3;
+}
+
+// Tree node for composing visualizers at render time.
+//
+// Note: Uniforms are NOT stored per-node; they're computed once from the final
+// DisplayRenderTarget state and passed to all shader renders. Tile amounts are
+// baked into VisualizerLerp.t values during tree construction.
+message VisualizerNode {
+  oneof node {
+    uint64 leaf = 1;                 // Shader ID (renders with shared uniforms).
+    VisualizerLerp lerp = 2;         // Blend two subtrees.
+    VisualizerSequence sequence = 3; // Chain shaders.
+    bool black_buffer = 4;           // Constant black (presence matters, value ignored).
+  }
+}
+
+// Render both subtrees, then blend pixels. t values include baked tile amounts
+// for composition.
+message VisualizerLerp {
+  VisualizerNode a = 1;
+  VisualizerNode b = 2;
+  float t = 3; // 0.0 = fully A, 1.0 = fully B.
+}
+
+// Chain shaders: output of each becomes the input to the next. Used when an
+// effect defines multiple visualizers.
+message VisualizerSequence {
+  repeated VisualizerNode nodes = 1;
+}

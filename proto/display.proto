@@ -3,6 +3,7 @@ syntax = "proto3";
 package dmx_controller;
 
 import "proto/color.proto";
+import "proto/visualizer.proto";
 
 // Maps a physical device segment to a virtual display.
 message VirtualMapping {
@@ -49,6 +50,9 @@ message DisplayRenderTarget {
   uint64 id = 1;
   Color color = 2;
   float dimmer = 3;
+
+  // Tree of visualizers to render. Absent means no visualizers (output black).
+  VisualizerNode visualizer_tree = 4;
 }
 
 // RGB pixel buffer for a virtual display.

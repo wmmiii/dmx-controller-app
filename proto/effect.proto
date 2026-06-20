@@ -33,6 +33,11 @@ message FixtureState {
   optional uint32 wled_effect = 14;
   optional uint32 wled_palette = 15;
 
+  // Chain of visualizers applied when this state targets a display. Multiple
+  // IDs form a Sequence (output of each feeds the next). Interpolation between
+  // effect states (e.g. ramps) uses Lerp per-fragment.
+  repeated uint64 visualizer_ids = 17;
+
   reserved 8; // optional StrobeSpeed deprecated_strobe = 8 [deprecated = true];
   reserved 2; // RGB rgb = 2 [deprecated = true];
   reserved 3; // RGBW rgbw = 3 [deprecated = true];
