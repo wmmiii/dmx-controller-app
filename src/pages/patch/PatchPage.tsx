@@ -13,6 +13,7 @@ import { Modal } from '../../components/Modal';
 import { Select } from '../../components/Select';
 import { Tabs, TabsType } from '../../components/Tabs';
 import { ProjectContext } from '../../contexts/ProjectContext';
+import { deleteDdpOutput } from '../../engine/display';
 import { randomUint64 } from '../../util/numberUtils';
 import {
   deleteFromOutputTargets,
@@ -348,6 +349,7 @@ function OutputTabHeader({
             size="1em"
             onClick={(ev) => {
               deleteFromOutputTargets(project, (id) => id.output === outputId);
+              deleteDdpOutput(project, outputId);
 
               delete getActivePatch(project).outputs[outputId.toString()];
 

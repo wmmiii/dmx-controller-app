@@ -11,6 +11,7 @@ import { Button } from '../../components/Button';
 import { NumberInput, TextInput } from '../../components/Input';
 import { Select } from '../../components/Select';
 import { ProjectContext } from '../../contexts/ProjectContext';
+import { deleteDdpSegment } from '../../engine/display';
 import { getOutput } from '../../util/projectUtils';
 import { OutputFrame } from './OutputFrame';
 
@@ -83,10 +84,8 @@ export function DdpEditor({ outputId }: DdpEditorProps) {
               <Button
                 variant="warning"
                 onClick={() => {
-                  // TODO: allow users to delete segments.
-                  alert(
-                    'Deleting segments is challenging and not supported yet!',
-                  );
+                  deleteDdpSegment(project, outputId, i);
+                  save(`Delete segment ${i + 1} from ${output.name}.`);
                 }}
               >
                 Delete Segment {i + 1}
