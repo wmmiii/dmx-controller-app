@@ -4,12 +4,13 @@ use dmx_engine::project;
 use serde::Serialize;
 use std::sync::Arc;
 use std::sync::Mutex as StdMutex;
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Manager};
 use tokio::sync::Mutex;
 
-use crate::beat::SharedBeatSampler;
 use crate::audio_analysis::FftAnalyzer;
+use crate::beat::SharedBeatSampler;
 
 /// Get the best available audio host for this system.
 fn get_audio_host() -> cpal::Host {
@@ -34,8 +35,16 @@ pub struct AudioInputState {
     /// Handle for the stream thread, joined during shutdown so the cpal stream
     /// is fully dropped before a new one is started.
     stream_thread: StdMutex<Option<std::thread::JoinHandle<()>>>,
+    /// Gate shared with the active stream's callback. Set to false before
+    /// joining the thread so no in-flight `CoreAudio` callbacks can emit stale
+    /// events to the frontend after a device switch.
+    stream_emit_flag: StdMutex<Option<Arc<AtomicBool>>>,
     /// Name of the device currently streaming (to detect when project changes).
     active_device: StdMutex<Option<String>>,
+    /// Linear gain multiplier shared with the audio callback. Stored as f32
+    /// bits in an `AtomicU32` for lock-free reads on the realtime audio thread.
+    /// Updated by the watcher loop from `project.audio_input_gain_db`.
+    gain_linear: Arc<AtomicU32>,
     app_handle: StdMutex<Option<AppHandle>>,
     watcher_cancel_tx: StdMutex<Option<tokio::sync::watch::Sender<bool>>>,
 }
@@ -45,7 +54,9 @@ impl AudioInputState {
         Self {
             stream_stop_tx: StdMutex::new(None),
             stream_thread: StdMutex::new(None),
+            stream_emit_flag: StdMutex::new(None),
             active_device: StdMutex::new(None),
+            gain_linear: Arc::new(AtomicU32::new(1.0f32.to_bits())),
             app_handle: StdMutex::new(Some(app_handle)),
             watcher_cancel_tx: StdMutex::new(None),
         }
@@ -94,12 +105,21 @@ impl AudioInputState {
                     known_devices.clone_from(&current_names);
                 }
 
-                // Read the desired device from the project proto
-                let desired_device: String =
-                    project::with_project(|p| Ok(p.selected_audio_input.clone()))
-                        .unwrap_or_default();
+                // Read both audio settings from the project in one transaction.
+                let (desired_device, gain_db) = project::with_project(|p| {
+                    Ok((p.selected_audio_input.clone(), p.audio_input_gain_db))
+                })
+                .unwrap_or_default();
 
                 let audio_state = state.lock().await;
+
+                // Update the gain atomic so the audio callback picks it up without
+                // taking a lock on the realtime thread.
+                let gain_linear = 10.0f32.powf(gain_db / 20.0);
+                audio_state
+                    .gain_linear
+                    .store(gain_linear.to_bits(), Ordering::Relaxed);
+
                 let current_active = audio_state.active_device.lock().unwrap().clone();
 
                 let desired = if desired_device.is_empty() {
@@ -125,6 +145,7 @@ impl AudioInputState {
                             // Stop existing stream first if switching
                             if current_active.is_some() {
                                 stop_stream(&audio_state);
+                                *audio_state.active_device.lock().unwrap() = None;
                             }
                             match start_stream(&audio_state, device_name) {
                                 Ok(()) => {
@@ -195,10 +216,19 @@ fn end_audio_beat(state: &AudioInputState) {
     }
 }
 
-/// Stop the current stream thread by sending a stop signal and waiting for the
-/// thread to exit, ensuring the underlying cpal stream is dropped before we
-/// return.
+/// Stop the current stream thread by:
+/// 1. Immediately setting the emit flag to false so no in-flight `CoreAudio`
+///    callbacks can emit stale events after the switch.
+/// 2. Sending a stop signal to unblock the thread.
+/// 3. Joining the thread, ensuring the cpal stream is fully dropped before
+///    we return.
 fn stop_stream(state: &AudioInputState) {
+    // Gate the callback before touching the thread so that any `CoreAudio`
+    // callback already in-flight returns without emitting.
+    if let Some(flag) = state.stream_emit_flag.lock().unwrap().take() {
+        flag.store(false, Ordering::SeqCst);
+    }
+
     if let Some(tx) = state.stream_stop_tx.lock().unwrap().take() {
         let _ = tx.send(());
     }
@@ -228,6 +258,12 @@ fn start_stream(state: &AudioInputState, device_name: &str) -> Result<(), String
     }
     let _ = app_handle.emit("audio-beat-active", true);
 
+    // Create a fresh emit gate for this stream. The callback holds a clone and
+    // checks it before emitting; stop_stream() sets it to false.
+    let emit_flag = Arc::new(AtomicBool::new(true));
+    *state.stream_emit_flag.lock().unwrap() = Some(Arc::clone(&emit_flag));
+
+    let gain_linear = Arc::clone(&state.gain_linear);
     let (stop_tx, stop_rx) = std::sync::mpsc::channel::<()>();
     let device_name_owned = device_name.to_string();
 
@@ -236,9 +272,14 @@ fn start_stream(state: &AudioInputState, device_name: &str) -> Result<(), String
     let handle = std::thread::Builder::new()
         .name("audio-input-stream".into())
         .spawn(move || {
-            if let Err(e) =
-                run_stream_thread(&device_name_owned, app_handle, &stop_rx, beat_sampler)
-            {
+            if let Err(e) = run_stream_thread(
+                &device_name_owned,
+                app_handle,
+                &stop_rx,
+                beat_sampler,
+                emit_flag,
+                gain_linear,
+            ) {
                 log::error!("Audio input stream thread error: {e}");
             }
         })
@@ -256,6 +297,8 @@ fn run_stream_thread(
     app_handle: AppHandle,
     stop_rx: &std::sync::mpsc::Receiver<()>,
     beat_sampler: SharedBeatSampler,
+    emit_flag: Arc<AtomicBool>,
+    gain_linear: Arc<AtomicU32>,
 ) -> Result<(), String> {
     let host = get_audio_host();
     let device = host
@@ -270,31 +313,113 @@ fn run_stream_thread(
 
     let sample_rate = config.sample_rate().0;
     let channels = config.channels() as usize;
+    let sample_format = config.sample_format();
 
-    let stream = match config.sample_format() {
+    log::info!(
+        "Audio device '{device_name}': format={sample_format:?}, rate={sample_rate}Hz, channels={channels}"
+    );
+
+    let config_stream = config.into();
+    let stream = match sample_format {
         cpal::SampleFormat::F32 => build_input_stream::<f32>(
             &device,
-            &config.into(),
+            &config_stream,
             app_handle,
             sample_rate,
             channels,
             beat_sampler,
+            emit_flag,
+            gain_linear,
+        )?,
+        cpal::SampleFormat::F64 => build_input_stream::<f64>(
+            &device,
+            &config_stream,
+            app_handle,
+            sample_rate,
+            channels,
+            beat_sampler,
+            emit_flag,
+            gain_linear,
+        )?,
+        cpal::SampleFormat::I8 => build_input_stream::<i8>(
+            &device,
+            &config_stream,
+            app_handle,
+            sample_rate,
+            channels,
+            beat_sampler,
+            emit_flag,
+            gain_linear,
         )?,
         cpal::SampleFormat::I16 => build_input_stream::<i16>(
             &device,
-            &config.into(),
+            &config_stream,
             app_handle,
             sample_rate,
             channels,
             beat_sampler,
+            emit_flag,
+            gain_linear,
+        )?,
+        cpal::SampleFormat::I32 => build_input_stream::<i32>(
+            &device,
+            &config_stream,
+            app_handle,
+            sample_rate,
+            channels,
+            beat_sampler,
+            emit_flag,
+            gain_linear,
+        )?,
+        cpal::SampleFormat::I64 => build_input_stream::<i64>(
+            &device,
+            &config_stream,
+            app_handle,
+            sample_rate,
+            channels,
+            beat_sampler,
+            emit_flag,
+            gain_linear,
+        )?,
+        cpal::SampleFormat::U8 => build_input_stream::<u8>(
+            &device,
+            &config_stream,
+            app_handle,
+            sample_rate,
+            channels,
+            beat_sampler,
+            emit_flag,
+            gain_linear,
         )?,
         cpal::SampleFormat::U16 => build_input_stream::<u16>(
             &device,
-            &config.into(),
+            &config_stream,
             app_handle,
             sample_rate,
             channels,
             beat_sampler,
+            emit_flag,
+            gain_linear,
+        )?,
+        cpal::SampleFormat::U32 => build_input_stream::<u32>(
+            &device,
+            &config_stream,
+            app_handle,
+            sample_rate,
+            channels,
+            beat_sampler,
+            emit_flag,
+            gain_linear,
+        )?,
+        cpal::SampleFormat::U64 => build_input_stream::<u64>(
+            &device,
+            &config_stream,
+            app_handle,
+            sample_rate,
+            channels,
+            beat_sampler,
+            emit_flag,
+            gain_linear,
         )?,
         format => return Err(format!("Unsupported sample format: {format:?}")),
     };
@@ -317,6 +442,8 @@ fn build_input_stream<T: cpal::SizedSample + Send + 'static>(
     sample_rate: u32,
     channels: usize,
     beat_sampler: SharedBeatSampler,
+    emit_flag: Arc<AtomicBool>,
+    gain_linear: Arc<AtomicU32>,
 ) -> Result<cpal::Stream, String>
 where
     f32: cpal::FromSample<T>,
@@ -334,14 +461,27 @@ where
             config,
             #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
             move |data: &[T], _: &cpal::InputCallbackInfo| {
+                // Drop the callback immediately if this stream has been deactivated.
+                // This prevents stale events from reaching the frontend after a
+                // device switch, even if CoreAudio delivers a final callback after
+                // AudioOutputUnitStop returns.
+                if !emit_flag.load(Ordering::SeqCst) {
+                    return;
+                }
+
                 let Ok(mut analyzer) = analyzer.lock() else {
                     return;
                 };
 
-                // Mix to mono and feed into analyzer.
+                // Read gain once per callback buffer to avoid repeated atomic loads.
+                let gain = f32::from_bits(gain_linear.load(Ordering::Relaxed));
+
+                // USB microphones are mono sources presented by the OS as stereo.
+                // Averaging the two channels causes phase cancellation when the
+                // driver duplicates the capsule signal with inverted polarity on
+                // the second channel, so we use channel 0 only.
                 for frame in data.chunks(channels) {
-                    let mono: f32 =
-                        frame.iter().map(|&s| f32::from_sample(s)).sum::<f32>() / channels as f32;
+                    let mono: f32 = frame.first().map_or(0.0, |&s| f32::from_sample(s)) * gain;
 
                     if let Some(analysis) = analyzer.push_sample(mono) {
                         // Bass beat detected: feed timestamp into the BPM tracker,

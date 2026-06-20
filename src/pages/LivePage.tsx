@@ -61,6 +61,8 @@ export function LivePage(): JSX.Element {
     selectedDevice: selectedAudioDevice,
     select: selectAudio,
     deselect: deselectAudio,
+    gainDb,
+    setGainDb,
   } = useContext(AudioInputContext);
 
   const [selectedId, setSelectedId] = useState<bigint>(0n);
@@ -285,6 +287,16 @@ export function LivePage(): JSX.Element {
             <Spacer />
             {selectedAudioDevice && (
               <AudioLevels className={styles.audioLevels} />
+            )}
+            {selectedAudioDevice && (
+              <label className={styles.audioGain}>
+                <NumberInput
+                  mode="db"
+                  title="Gain dB"
+                  value={gainDb}
+                  onChange={setGainDb}
+                />
+              </label>
             )}
             <Select
               className={styles.audioSelect}

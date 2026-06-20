@@ -157,6 +157,7 @@ export type NumberInputMode =
   | 'beat'
   | 'bpm'
   | 'counting'
+  | 'db'
   | 'degree'
   | 'dmx'
   | 'dmx_channel'
@@ -219,6 +220,14 @@ function getNumberDisplayConfig(
         step: 1,
         integer: true,
         indicator: '#',
+      };
+    case 'db':
+      return {
+        min: 0,
+        max: 40,
+        step: 1,
+        integer: true,
+        indicator: 'dB',
       };
     case 'degree':
       return {

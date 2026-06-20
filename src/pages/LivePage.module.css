@@ -46,6 +46,15 @@
   justify-self: center;
 }
 
+.audio-gain {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: 2px;
+  align-items: center;
+  font-size: 0.75em;
+}
+
 .beat {
   flex-shrink: 0;
 }

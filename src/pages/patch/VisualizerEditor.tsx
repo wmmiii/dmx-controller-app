@@ -194,7 +194,7 @@ function PreviewColumn({
           <NumberInput
             title="Dimmer"
             value={dimmer}
-            onChange={(e) => setDimmer(parseFloat(e.target.value))}
+            onChange={setDimmer}
           />
         </label>
         <label className={styles.controlGroup}>
@@ -295,7 +295,9 @@ function VisualizerEditorPane({
   };
 
   const handleCompileSave = async () => {
-    if (isBuiltin || visualizer == null) {return;}
+    if (isBuiltin || visualizer == null) {
+      return;
+    }
     setIsCompiling(true);
     setCompileResult(null);
     try {

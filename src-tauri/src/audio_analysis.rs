@@ -1,7 +1,7 @@
 pub use dmx_engine::audio::AudioAnalysis;
 use dmx_engine::audio::NUM_BANDS;
-use rustfft::num_complex::Complex;
 use rustfft::FftPlanner;
+use rustfft::num_complex::Complex;
 use std::f32::consts::PI;
 use std::sync::Arc;
 
@@ -58,11 +58,11 @@ const BEAT_COOLDOWN_FRAMES: usize = 4;
 
 // Band ranges for per-band beat detectors.
 const BASS_START: usize = 0;
-const BASS_END: usize = 3; // ~40–96 Hz: kick drum, sub bass
+const BASS_END: usize = 4; // ~32–134 Hz: sub-bass, kick drum body
 const MID_START: usize = 4;
-const MID_END: usize = 10; // ~220–1260 Hz: snare, guitar, vocals
-const TREBLE_START: usize = 12;
-const TREBLE_END: usize = NUM_BANDS; // ~5–20 kHz: hi-hats, cymbals
+const MID_END: usize = 10; // ~134–1157 Hz: snare, guitar, vocals
+const TREBLE_START: usize = 13;
+const TREBLE_END: usize = NUM_BANDS; // ~2.9–8 kHz: hi-hats, cymbals
 
 // ---------------------------------------------------------------------------
 // Peak-meter smoothing
@@ -287,9 +287,9 @@ impl SpectralFluxDetector {
 /// independent `SpectralFluxDetector` instances monitor:
 ///
 /// * **Full** — all 16 bands (general onset).
-/// * **Bass** — bands 0-2 (~40–96 Hz): kick drum, sub bass.
-/// * **Mid** — bands 4-9 (~220–1260 Hz): snare, guitar, vocals.
-/// * **Treble** — bands 12-15 (~5–20 kHz): hi-hats, cymbals.
+/// * **Bass** — bands 0-3 (~32–134 Hz): sub-bass, kick drum.
+/// * **Mid** — bands 4-9 (~134–1157 Hz): snare, guitar, vocals.
+/// * **Treble** — bands 13-15 (~2.9–8 kHz): hi-hats, cymbals.
 ///
 /// Each detector uses adaptive thresholding (mean + 1.5 σ over a 2-second
 /// flux history) and per-detector cooldown to prevent double-triggering.
@@ -331,11 +331,14 @@ impl FftAnalyzer {
             })
             .collect();
 
-        // Logarithmic band edges 40 Hz → 20 kHz: edge[i] = 40 · 500^(i/16).
+        // Logarithmic band edges 32 Hz → 8 kHz: edge[i] = 32 · 250^(i/16).
+        // Capped at 8 kHz to match common recording equipment that rolls off
+        // significantly above this point, rather than wasting bands on inaudible
+        // content.
         let mut band_edges = [0.0_f32; NUM_BANDS + 1];
         #[allow(clippy::cast_precision_loss)]
         for (i, edge) in band_edges.iter_mut().enumerate() {
-            *edge = 40.0 * 500.0_f32.powf(i as f32 / NUM_BANDS as f32);
+            *edge = 32.0 * 250.0_f32.powf(i as f32 / NUM_BANDS as f32);
         }
 
         // 2-second flux history for adaptive beat thresholding.
@@ -443,7 +446,6 @@ impl FftAnalyzer {
         let beat_treble = !effective_silent && self.beat_treble.detect(&raw_bands);
 
         // 7. Fixed dB normalization and EMA+falloff smoothing.
-        // (Sliding window normalization temporarily disabled.)
         let mut bands = [0.0_f32; NUM_BANDS];
         for i in 0..NUM_BANDS {
             let normalized = if effective_silent {
