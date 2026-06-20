@@ -1,5 +1,9 @@
 import { create } from '@bufbuild/protobuf';
 import {
+  ColorPaletteSchema,
+  ColorSchema,
+} from '@dmx-controller/proto/color_pb';
+import {
   Visualizer,
   VisualizerCompilationResult,
   VisualizerSchema,
@@ -8,6 +12,8 @@ import clsx from 'clsx';
 import { useContext, useEffect, useState } from 'react';
 import { BiCopy, BiTrash } from 'react-icons/bi';
 import { Button } from '../../components/Button';
+import { ColorSwatch } from '../../components/ColorSwatch';
+import { EditableText, NumberInput } from '../../components/Input';
 import { MonacoEditor } from '../../components/MonacoEditor';
 import { ProjectContext } from '../../contexts/ProjectContext';
 import {
@@ -16,6 +22,7 @@ import {
 } from '../../system_interfaces/shader';
 import { randomUint64 } from '../../util/numberUtils';
 import styles from './VisualizerEditor.module.css';
+import { VisualizerPreview } from './VisualizerPreview';
 
 const DEFAULT_GLSL = `// Available uniforms:
 //   vec4  u_color             — display color RGB + dimmer
@@ -106,7 +113,15 @@ function VisualizerList({
                 })}
                 onClick={() => onSelect(BigInt(id))}
               >
-                {v.name}
+                <EditableText
+                  value={v.name}
+                  onChange={(name) => {
+                    if (name) {
+                      v.name = name;
+                      save(`Set visualizer name to "${name}".`);
+                    }
+                  }}
+                />
               </li>
             ))}
           </ul>
@@ -134,6 +149,90 @@ function VisualizerList({
   );
 }
 
+interface PreviewColumnProps {
+  glslSource: string;
+  onCompileError: (line: number, message: string) => void;
+  onCompileSuccess: () => void;
+}
+
+function PreviewColumn({
+  glslSource,
+  onCompileError,
+  onCompileSuccess,
+}: PreviewColumnProps) {
+  const [previewColor] = useState(() =>
+    create(ColorSchema, { red: 1, green: 1, blue: 1 }),
+  );
+  const [dimmer, setDimmer] = useState(1.0);
+  const [previewPalette] = useState(() =>
+    create(ColorPaletteSchema, {
+      primary: { color: { red: 1, green: 0, blue: 1 } },
+      secondary: { color: { red: 0, green: 1, blue: 1 } },
+      tertiary: { color: { red: 1, green: 1, blue: 0 } },
+    }),
+  );
+
+  const palettePrimary =
+    previewPalette.primary?.color ?? create(ColorSchema, {});
+  const paletteSecondary =
+    previewPalette.secondary?.color ?? create(ColorSchema, {});
+  const paletteTertiary =
+    previewPalette.tertiary?.color ?? create(ColorSchema, {});
+
+  return (
+    <div className={styles.previewColumn}>
+      <div className={styles.previewControls}>
+        <label className={styles.controlGroup}>
+          Color
+          <ColorSwatch
+            color={previewColor}
+            updateDescription="Update preview color"
+          />
+        </label>
+        <label className={styles.controlGroup}>
+          Dimmer
+          <NumberInput
+            title="Dimmer"
+            value={dimmer}
+            onChange={(e) => setDimmer(parseFloat(e.target.value))}
+          />
+        </label>
+        <label className={styles.controlGroup}>
+          Primary
+          <ColorSwatch
+            color={palettePrimary}
+            updateDescription="Update preview primary"
+          />
+        </label>
+        <label className={styles.controlGroup}>
+          Secondary
+          <ColorSwatch
+            color={paletteSecondary}
+            updateDescription="Update preview secondary"
+          />
+        </label>
+        <label className={styles.controlGroup}>
+          Tertiary
+          <ColorSwatch
+            color={paletteTertiary}
+            updateDescription="Update preview tertiary"
+          />
+        </label>
+      </div>
+      <VisualizerPreview
+        glslSource={glslSource}
+        color={previewColor}
+        dimmer={dimmer}
+        palettePrimary={palettePrimary}
+        paletteSecondary={paletteSecondary}
+        paletteTertiary={paletteTertiary}
+        onCompileError={onCompileError}
+        onCompileSuccess={onCompileSuccess}
+      />
+    </div>
+  );
+}
+
 interface VisualizerEditorPaneProps {
   selectedId: bigint | null;
   setSelected: (id: bigint) => void;
@@ -157,10 +256,20 @@ function VisualizerEditorPane({
   const [compileResult, setCompileResult] =
     useState<VisualizerCompilationResult | null>(null);
   const [isCompiling, setIsCompiling] = useState(false);
+  const [browserError, setBrowserError] = useState<{
+    line: number;
+    message: string;
+  } | null>(null);
 
   if (selectedId == null || visualizer == null) {
     return <div className={styles.emptyPane}>Select a visualizer to edit.</div>;
   }
+
+  const displayedError =
+    browserError ??
+    (compileResult && !compileResult.success
+      ? { line: compileResult.errorLine, message: compileResult.errorMessage }
+      : null);
 
   const handleCopy = () => {
     const newId = randomUint64();
@@ -186,17 +295,14 @@ function VisualizerEditorPane({
   };
 
   const handleCompileSave = async () => {
-    if (isBuiltin || visualizer == null) {
-      return;
-    }
+    if (isBuiltin || visualizer == null) {return;}
     setIsCompiling(true);
     setCompileResult(null);
     try {
-      console.log('compiling');
       const result = await compileVisualizer(selectedId, editSource);
-      console.log('result', result);
       setCompileResult(result);
       if (result.success) {
+        setBrowserError(null);
         visualizer.glslSource = editSource;
         save(`Update visualizer "${visualizer.name}".`);
       }
@@ -207,55 +313,55 @@ function VisualizerEditorPane({
 
   return (
     <div className={styles.visualizerEditor}>
-      <div className={styles.editorHeader}>
-        {!isBuiltin && (
-          <Button variant="warning" icon={<BiTrash />} onClick={handleDelete}>
-            Delete
+      <PreviewColumn
+        glslSource={editSource}
+        onCompileError={(line, message) => setBrowserError({ line, message })}
+        onCompileSuccess={() => setBrowserError(null)}
+      />
+      <div className={styles.monacoColumn}>
+        <div className={styles.editorHeader}>
+          {!isBuiltin && (
+            <Button variant="warning" icon={<BiTrash />} onClick={handleDelete}>
+              Delete
+            </Button>
+          )}
+          <div className={styles.editorHeaderSpacer} />
+          <Button icon={<BiCopy />} onClick={handleCopy}>
+            {isBuiltin ? 'Copy to Edit' : 'Duplicate'}
           </Button>
+          {!isBuiltin && (
+            <Button
+              variant="primary"
+              onClick={handleCompileSave}
+              disabled={isCompiling}
+            >
+              {isCompiling ? 'Compiling...' : 'Compile & Save'}
+            </Button>
+          )}
+        </div>
+        {isBuiltin && (
+          <div className={styles.readonlyBanner}>
+            Read-only. Click &ldquo;Copy to Edit&rdquo; to create an editable
+            copy.
+          </div>
         )}
-        <div className={styles.editorHeaderSpacer} />
-        <Button icon={<BiCopy />} onClick={handleCopy}>
-          {isBuiltin ? 'Copy to Edit' : 'Duplicate'}
-        </Button>
-        {!isBuiltin && (
-          <Button
-            variant="primary"
-            onClick={handleCompileSave}
-            disabled={isCompiling}
-          >
-            {isCompiling ? 'Compiling...' : 'Compile & Save'}
-          </Button>
+        <div className={styles.editorWrapper}>
+          <MonacoEditor
+            value={editSource}
+            onChange={(v) => setEditSource(v ?? '')}
+            readOnly={isBuiltin}
+            error={displayedError ?? undefined}
+          />
+        </div>
+        {displayedError && (
+          <div className={styles.errorDisplay}>
+            Line {displayedError.line}: {displayedError.message}
+          </div>
+        )}
+        {compileResult?.success && !browserError && (
+          <div className={styles.compileSuccess}>Compiled and saved.</div>
         )}
       </div>
-      {isBuiltin && (
-        <div className={styles.readonlyBanner}>
-          Read-only. Click &ldquo;Copy to Edit&rdquo; to create an editable
-          copy.
-        </div>
-      )}
-      <div className={styles.editorWrapper}>
-        <MonacoEditor
-          value={editSource}
-          onChange={(v) => setEditSource(v ?? '')}
-          readOnly={isBuiltin}
-          error={
-            compileResult && !compileResult.success
-              ? {
-                  line: compileResult.errorLine,
-                  message: compileResult.errorMessage,
-                }
-              : undefined
-          }
-        />
-      </div>
-      {compileResult && !compileResult.success && (
-        <div className={styles.errorDisplay}>
-          Line {compileResult.errorLine}: {compileResult.errorMessage}
-        </div>
-      )}
-      {compileResult?.success && (
-        <div className={styles.compileSuccess}>Compiled and saved.</div>
-      )}
     </div>
   );
 }

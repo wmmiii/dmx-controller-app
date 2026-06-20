@@ -29,6 +29,14 @@ pub static BUILTIN_VISUALIZERS: LazyLock<HashMap<u64, BuiltinVisualizer>> =
             name: "Plasma",
             glsl_source: include_str!("shaders/plasma.glsl"),
         });
+        m.insert(5, BuiltinVisualizer {
+            name: "Vignette",
+            glsl_source: include_str!("shaders/vignette.glsl"),
+        });
+        m.insert(6, BuiltinVisualizer {
+            name: "Audio Polar",
+            glsl_source: include_str!("shaders/audio_polar.glsl"),
+        });
         m
     });
 

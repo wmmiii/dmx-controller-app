@@ -10,7 +10,5 @@ vec3 hsv2rgb(vec3 c) {
 vec4 visualizer(vec2 uv, vec2 frag_coord, vec4 prev_pixel) {
     float hue = fract(uv.x + u_time * 0.0001);
     vec3 rainbow = hsv2rgb(vec3(hue, 1.0, 1.0));
-    // Tint towards the primary palette color.
-    vec3 color = mix(rainbow, rainbow * u_palette_primary.rgb, 0.5);
-    return vec4(color * u_color.a, 1.0);
+    return vec4(rainbow * u_color.a, 1.0);
 }
