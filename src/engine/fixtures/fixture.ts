@@ -10,6 +10,7 @@ import {
   ALL_CHANNELS,
   AmountChannel,
   ChannelTypes,
+  COLOR_CHANNELS,
   ColorChannel,
   WLED_CHANNELS,
 } from '../channel';
@@ -39,6 +40,9 @@ export function getAvailableChannels(
     case 'group':
       fixtureIds = getAllFixtures(project, target.output.value);
       break;
+    case 'display':
+      // Displays support RGB color and dimmer channels
+      return [...COLOR_CHANNELS, 'dimmer'];
     default:
       throw Error(
         `Unknown target type in getAvailableChannels! ${target['output']['case']}`,
@@ -58,13 +62,15 @@ export function getAvailableChannels(
           fixtureId.fixture,
         ).forEach((c) => channels.add(c));
         break;
-      case 'ddpOutput':
       case 'wledOutput':
         WLED_CHANNELS.forEach((c) => channels.add(c));
         const colorChannels: ColorChannel[] = ['red', 'green', 'blue'];
         colorChannels.forEach((c) => channels.add(c));
         const amountChannels: AmountChannel[] = ['dimmer'];
         amountChannels.forEach((c) => channels.add(c));
+        break;
+      case 'ddpOutput':
+        // DDP devices don't themselves have channels.
         break;
       default:
         throw Error('Tried to get channels of unknown output type!');

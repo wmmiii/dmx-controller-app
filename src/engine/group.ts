@@ -44,6 +44,9 @@ export function addToGroup(
         case 'group':
           frontier.push(output.value);
           break;
+        case 'display':
+          // Displays are not fixtures, skip them.
+          break;
         default:
           throw Error('Unknown output type in addAllFixtures!');
       }
@@ -65,6 +68,7 @@ export function addToGroup(
         }
         return true;
       case 'group':
+      case 'display':
         return true;
       default:
         throw Error('Unknown output type in addToGroup!');
@@ -309,6 +313,9 @@ export function getAllFixtures(
             break;
           case 'group':
             frontier.push(t.output.value);
+            break;
+          case 'display':
+            // Displays are not fixtures, skip them.
             break;
           default:
             throw Error('Unknown output type in getAllFixtures!');

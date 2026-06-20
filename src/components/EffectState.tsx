@@ -142,6 +142,7 @@ export function EffectState({
           }))}
         />
       ))}
+      {/* TODO: Remove this when the output does not contain a DMX fixture. */}
       <CustomChannels states={states.map((s) => s.state)} />
     </div>
   );
