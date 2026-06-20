@@ -5,7 +5,7 @@ use crate::proto::{
 
 impl Project {
     #[must_use]
-    pub fn get_all_qualified_ids(&self) -> Vec<QualifiedFixtureId> {
+    pub fn get_all_qualified_fixture_ids(&self) -> Vec<QualifiedFixtureId> {
         let patch_id = self.active_patch;
 
         let mut outputs: Vec<_> = self
@@ -49,13 +49,8 @@ impl Project {
                                 })
                                 .collect::<Vec<_>>()
                         }
-                        Output::DdpOutput(DdpOutput { .. }) => {
-                            vec![QualifiedFixtureId {
-                                patch: patch_id,
-                                output: *output_id,
-                                fixture: 0,
-                            }]
-                        }
+                        // DDP outputs are not fixtures - users target virtual displays instead
+                        Output::DdpOutput(DdpOutput { .. }) => vec![],
                     })
                     .into_iter()
                     .flatten()

@@ -20,6 +20,7 @@ impl DisplayBuffer {
     }
 
     /// Sample pixel at (x, y). Returns None if out of bounds (including negative coordinates).
+    #[allow(clippy::cast_sign_loss)]
     #[must_use]
     pub fn sample(&self, x: i32, y: i32) -> Option<(f32, f32, f32)> {
         if x < 0 || y < 0 {

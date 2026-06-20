@@ -340,10 +340,10 @@ pub fn beat_t(beat: &BeatMetadata, t: u64) -> Result<f64, String> {
 }
 
 /// Calculates the effective beat position in one step, combining interpolation
-/// and beat_t calculation without creating intermediate objects.
+/// and `beat_t` calculation without creating intermediate objects.
 ///
 /// This is the most efficient entry point for WASM, taking all raw parameters
-/// and returning the beat_t directly.
+/// and returning the `beat_t` directly.
 #[allow(clippy::cast_precision_loss, clippy::too_many_arguments)]
 pub fn effective_beat_t_from_parts(
     live_length_ms: f64,

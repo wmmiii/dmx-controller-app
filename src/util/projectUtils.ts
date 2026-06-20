@@ -22,12 +22,6 @@ export function getOutput(project: Project, outputId: bigint) {
   return output;
 }
 
-export function getSerialOutputId(project: Project) {
-  return Object.entries(getActivePatch(project).outputs)
-    .filter(([_, output]) => output.output.case === 'serialDmxOutput')
-    .map(([id, _]) => BigInt(id))[0];
-}
-
 /**
  * Iterates through all occurrences of output targets and removes any that match the provided predicate.
  */

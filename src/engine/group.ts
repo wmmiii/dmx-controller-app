@@ -81,6 +81,7 @@ export function getApplicableMembers(
 ): OutputTarget[] {
   const groupMembers: bigint[] = [groupId];
   const fixtureMembers: QualifiedFixtureId[] = [];
+  const displayMembers: bigint[] = [];
 
   // First collect all existing members of the group.
   const frontier: bigint[] = [groupId];
@@ -100,8 +101,11 @@ export function getApplicableMembers(
           groupMembers.push(output.value);
           frontier.push(output.value);
           break;
-        default:
-          throw Error('Unknown output type in addAllFixtures!');
+        case 'display':
+          displayMembers.push(output.value);
+          break;
+        case undefined:
+          break;
       }
     }
   }
@@ -180,10 +184,24 @@ export function getApplicableMembers(
           );
         }
         break;
-      default:
-        throw Error(
-          `Unknown output when trying to get all group members! ${output.output.case}`,
-        );
+      // DDP outputs are not added to groups - users add virtual displays instead
+      case 'ddpOutput':
+      case undefined:
+        break;
+    }
+  }
+
+  // Add virtual displays that are not already in the group
+  for (const displayId of Object.keys(project.displays).map(BigInt)) {
+    if (!displayMembers.includes(displayId)) {
+      applicable.push(
+        create(OutputTargetSchema, {
+          output: {
+            case: 'display',
+            value: displayId,
+          },
+        }),
+      );
     }
   }
 

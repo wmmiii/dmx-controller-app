@@ -1,5 +1,5 @@
 import { fromBinary, toBinary } from '@bufbuild/protobuf';
-import { DisplayRenderTargetSchema } from '@dmx-controller/proto/display_pb';
+import { DisplayBufferSchema } from '@dmx-controller/proto/display_pb';
 import { RenderMode, RenderModeSchema } from '@dmx-controller/proto/render_pb';
 import { WledRenderTargetSchema } from '@dmx-controller/proto/wled_pb';
 import { invoke } from '@tauri-apps/api/core';
@@ -23,8 +23,8 @@ interface WledRenderEvent {
   data: number[];
 }
 
-interface DdpRenderEvent {
-  output_id: string;
+interface DisplayRenderEvent {
+  display_id: string;
   data: number[];
 }
 
@@ -38,19 +38,6 @@ export async function setRenderMode(renderMode: RenderMode) {
   await invoke<number[]>('set_render_mode', {
     renderModeBinary: Array.from(renderModeBytes),
   });
-}
-
-export async function renderDmx(
-  outputId: bigint,
-  systemT: bigint,
-  frame: number,
-): Promise<Uint8Array> {
-  const result = await invoke<number[]>('render_dmx', {
-    outputId: outputId.toString(),
-    systemT: Number(systemT),
-    frame,
-  });
-  return new Uint8Array(result);
 }
 
 // Initialize Tauri render event listeners at module load
@@ -84,17 +71,14 @@ async function initRenderListeners(): Promise<void> {
     triggerWledSubscriptions(outputId, data);
   });
 
-  // Listen for DDP render events from Tauri backend
-  await listen<DdpRenderEvent>('ddp-render', (event) => {
+  // Listen for display render events from Tauri backend
+  await listen<DisplayRenderEvent>('display-render', (event) => {
     const payload = event.payload;
-    const outputId = BigInt(payload.output_id);
-    const data = fromBinary(
-      DisplayRenderTargetSchema,
-      new Uint8Array(payload.data),
-    );
+    const displayId = BigInt(payload.display_id);
+    const data = fromBinary(DisplayBufferSchema, new Uint8Array(payload.data));
 
     // Trigger subscriptions in renderRouter
-    triggerDisplaySubscriptions(outputId, data);
+    triggerDisplaySubscriptions(displayId, data);
   });
 
   // Listen for render error events from Tauri backend

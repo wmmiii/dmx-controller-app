@@ -6,7 +6,7 @@ import {
   PhysicalSegment_RectangleSchema,
   PhysicalSegmentSchema,
 } from '@dmx-controller/proto/pixel_mapping_pb';
-import { useContext } from 'react';
+import React, { useContext } from 'react';
 import { Button } from '../../components/Button';
 import { NumberInput, TextInput } from '../../components/Input';
 import { Select } from '../../components/Select';
@@ -78,7 +78,7 @@ export function DdpEditor({ outputId }: DdpEditorProps) {
             />
           </label>
           {ddpOutput.segments.map((s, i) => (
-            <>
+            <React.Fragment key={i}>
               <h3>Segment {i + 1} </h3>
               <Button
                 variant="warning"
@@ -99,7 +99,7 @@ export function DdpEditor({ outputId }: DdpEditorProps) {
                 }
                 segment={s}
               />
-            </>
+            </React.Fragment>
           ))}
         </>
       }
@@ -190,7 +190,7 @@ function DdpSegment({ save, segment }: DdpSegmentProps) {
               }}
             />
           </label>
-          {/* TODO: Add other properties */}
+          {/* TODO: Expose strip_start, vertical, and serpentine options from PhysicalSegment.Rectangle */}
         </>
       )}
     </>

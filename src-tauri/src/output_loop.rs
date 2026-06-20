@@ -41,6 +41,12 @@ struct RenderErrorEvent {
     message: String,
 }
 
+#[derive(Clone, Serialize)]
+struct DisplayRenderEvent {
+    display_id: String,
+    data: Vec<u8>,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum OutputType {
     Serial {
@@ -454,38 +460,40 @@ impl OutputLoopManager {
                 }
                 OutputType::Ddp { .. } => {
                     // Get DDP output config and mappings from project
-                    let ddp_config: Result<(DdpOutput, Vec<(u64, PhysicalDisplayMapping)>), String> =
-                        project::with_project(|project| {
-                            let patch = project
-                                .patches
-                                .get(&project.active_patch)
-                                .ok_or_else(|| "Active patch not found".to_string())?;
+                    let ddp_config: Result<
+                        (DdpOutput, Vec<(u64, PhysicalDisplayMapping)>),
+                        String,
+                    > = project::with_project(|project| {
+                        let patch = project
+                            .patches
+                            .get(&project.active_patch)
+                            .ok_or_else(|| "Active patch not found".to_string())?;
 
-                            let output = patch
-                                .outputs
-                                .get(&output_id)
-                                .ok_or_else(|| "Output not found".to_string())?;
+                        let output = patch
+                            .outputs
+                            .get(&output_id)
+                            .ok_or_else(|| "Output not found".to_string())?;
 
-                            let ddp_output = match &output.output {
-                                Some(ProtoOutput::DdpOutput(ddp)) => ddp.clone(),
-                                _ => return Err("Output is not DDP type".to_string()),
-                            };
+                        let ddp_output = match &output.output {
+                            Some(ProtoOutput::DdpOutput(ddp)) => ddp.clone(),
+                            _ => return Err("Output is not DDP type".to_string()),
+                        };
 
-                            // Collect all mappings that reference this output, along with display ID
-                            let mappings: Vec<_> = project
-                                .displays
-                                .iter()
-                                .flat_map(|(display_id, display)| {
-                                    display
-                                        .mappings
-                                        .iter()
-                                        .filter(|mapping| mapping.output == output_id)
-                                        .map(move |mapping| (*display_id, mapping.clone()))
-                                })
-                                .collect();
+                        // Collect all mappings that reference this output, along with display ID
+                        let mappings: Vec<_> = project
+                            .displays
+                            .iter()
+                            .flat_map(|(display_id, display)| {
+                                display
+                                    .mappings
+                                    .iter()
+                                    .filter(|mapping| mapping.output == output_id)
+                                    .map(move |mapping| (*display_id, *mapping))
+                            })
+                            .collect();
 
-                            Ok((ddp_output, mappings))
-                        });
+                        Ok((ddp_output, mappings))
+                    });
 
                     match ddp_config {
                         Ok((ddp_output, mappings_with_display)) => {
@@ -496,6 +504,14 @@ impl OutputLoopManager {
                             for (display_id, _) in &mappings_with_display {
                                 match render_display(*display_id, system_t, frame) {
                                     Ok(buffer) => {
+                                        // Emit display-render event for frontend visualization
+                                        let event = DisplayRenderEvent {
+                                            display_id: display_id.to_string(),
+                                            data: buffer.encode_to_vec(),
+                                        };
+                                        if let Err(e) = app.emit("display-render", event) {
+                                            log::error!("Failed to emit display render event: {e}");
+                                        }
                                         buffers.insert(*display_id, buffer);
                                     }
                                     Err(RenderError::OutputNotFound { .. }) => {

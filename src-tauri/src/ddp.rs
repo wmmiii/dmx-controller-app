@@ -40,7 +40,8 @@ impl DdpState {
     /// * `buffers` - Map of virtual display ID to rendered pixel buffer
     /// * `ddp_output` - DDP output configuration (contains IP address and segments)
     /// * `output_id` - The output ID for this DDP device
-    /// * `mappings` - Tuples of (display_id, mapping) for this output
+    /// * `mappings` - Tuples of (`display_id`, mapping) for this output
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     pub fn output_ddp_internal(
         &mut self,
         buffers: &HashMap<u64, DisplayBuffer>,

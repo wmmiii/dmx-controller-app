@@ -14,7 +14,7 @@ import {
 } from 'react-icons/bi';
 import styles from './Index.module.css';
 import { Button, ControllerButton, IconButton } from './components/Button';
-import { DdpVisualizer } from './components/DdpVisualizer';
+import { DisplayVisualizer } from './components/DisplayVisualizer';
 import { DmxUniverseVisualizer } from './components/DmxUniverseVisualizer';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Modal } from './components/Modal';
@@ -201,12 +201,17 @@ export default function Index(): JSX.Element {
                 return (
                   <WledVisualizer key={i} wledOutputId={BigInt(outputId)} />
                 );
+              // DDP outputs don't render directly - they consume virtual displays
               case 'ddpOutput':
-                return <DdpVisualizer key={i} ddpOutputId={BigInt(outputId)} />;
               default:
                 return null;
             }
           })}
+        {Object.entries(project.displays)
+          .sort(([_a, a], [_b, b]) => a.name.localeCompare(b.name))
+          .map(([displayId]) => (
+            <DisplayVisualizer key={displayId} displayId={BigInt(displayId)} />
+          ))}
         <Spacer />
         <div className={styles.message}>{lastOperation}</div>
         <ControllerButton

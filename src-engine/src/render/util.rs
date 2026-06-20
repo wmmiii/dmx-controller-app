@@ -128,7 +128,8 @@ pub fn apply_state<T: RenderTarget<T>>(
             render_target.apply_state(&qid, state, color_palette);
         }
         Output::Group(0) => {
-            for fixture_id in project.get_all_qualified_ids() {
+            // Apply to all fixtures
+            for fixture_id in project.get_all_qualified_fixture_ids() {
                 apply_state(
                     project,
                     render_target,
@@ -136,6 +137,18 @@ pub fn apply_state<T: RenderTarget<T>>(
                         output: Some(Output::Fixtures(FixtureMapping {
                             fixture_ids: [fixture_id].to_vec(),
                         })),
+                    },
+                    state,
+                    color_palette,
+                );
+            }
+            // Also apply to all virtual displays
+            for display_id in project.displays.keys() {
+                apply_state(
+                    project,
+                    render_target,
+                    &OutputTarget {
+                        output: Some(Output::Display(*display_id)),
                     },
                     state,
                     color_palette,
@@ -211,31 +224,58 @@ pub fn get_fixtures(
         }
 
         Output::Group(0) => {
-            let all_ids = project.get_all_qualified_ids();
-            let count = all_ids.len();
+            let fixture_ids = project.get_all_qualified_fixture_ids();
+            let display_ids: Vec<u64> = project.displays.keys().copied().collect();
+            let total_count = fixture_ids.len() + display_ids.len();
 
-            all_ids
-                .into_iter()
-                .enumerate()
-                .map(|(i, id)| {
-                    (
-                        id,
-                        FixtureInfo {
-                            index: i,
-                            phase: if count > 0 {
-                                i as f64 / count as f64
-                            } else {
-                                0.0
-                            },
-                            output_target: OutputTarget {
-                                output: Some(Output::Fixtures(FixtureMapping {
-                                    fixture_ids: vec![id],
-                                })),
-                            },
+            let mut result = HashMap::new();
+
+            // Add all fixtures
+            for (i, id) in fixture_ids.into_iter().enumerate() {
+                result.insert(
+                    id,
+                    FixtureInfo {
+                        index: i,
+                        phase: if total_count > 0 {
+                            i as f64 / total_count as f64
+                        } else {
+                            0.0
                         },
-                    )
-                })
-                .collect()
+                        output_target: OutputTarget {
+                            output: Some(Output::Fixtures(FixtureMapping {
+                                fixture_ids: vec![id],
+                            })),
+                        },
+                    },
+                );
+            }
+
+            // Add all displays
+            let fixture_count = result.len();
+            for (i, display_id) in display_ids.into_iter().enumerate() {
+                let qid = QualifiedFixtureId {
+                    patch: project.active_patch,
+                    output: display_id,
+                    fixture: 0,
+                };
+                let index = fixture_count + i;
+                result.insert(
+                    qid,
+                    FixtureInfo {
+                        index,
+                        phase: if total_count > 0 {
+                            index as f64 / total_count as f64
+                        } else {
+                            0.0
+                        },
+                        output_target: OutputTarget {
+                            output: Some(Output::Display(display_id)),
+                        },
+                    },
+                );
+            }
+
+            result
         }
 
         Output::Group(id) => {

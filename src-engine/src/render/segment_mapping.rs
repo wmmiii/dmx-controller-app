@@ -114,6 +114,7 @@ fn iter_rectangle_positions(rect: &Rectangle) -> Vec<(u32, u32)> {
 /// Transform physical segment coordinates to virtual display coordinates.
 /// Applies offset, rotation, and flip transformations.
 /// Returns signed coordinates since offsets can be negative for alignment.
+#[allow(clippy::cast_possible_wrap)]
 fn transform_to_virtual(
     physical_x: u32,
     physical_y: u32,

@@ -96,23 +96,7 @@ export function OutputSelector({
       }
       switch (output.output.case) {
         case 'ddpOutput':
-          fixtures.push({
-            value: create(OutputTargetSchema, {
-              output: {
-                case: 'fixtures',
-                value: {
-                  fixtureIds: [
-                    {
-                      patch: project.activePatch,
-                      output: BigInt(outputId),
-                      fixture: 0n,
-                    },
-                  ],
-                },
-              },
-            }),
-            label: output.name,
-          });
+          // DDP outputs are not selectable as fixtures - users select virtual displays instead
           break;
         case 'sacnDmxOutput':
         case 'serialDmxOutput':

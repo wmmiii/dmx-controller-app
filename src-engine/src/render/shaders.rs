@@ -3,7 +3,7 @@ use crate::proto::DisplayRenderTarget;
 
 /// Placeholder for GPU shader rendering pipeline.
 /// Will be replaced with wgpu-based shader execution.
-#[allow(clippy::cast_possible_truncation)]
+#[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
 pub fn render_display_shaders(
     display_id: u64,
     width: u32,
@@ -35,6 +35,11 @@ pub fn render_display_shaders(
 }
 
 /// Convert HSV to RGB. H is in [0, 1], S and V are in [0, 1].
+#[allow(
+    clippy::many_single_char_names,
+    clippy::cast_possible_truncation,
+    clippy::cast_precision_loss
+)]
 fn hsv_to_rgb(h: f32, s: f32, v: f32) -> (f32, f32, f32) {
     let h = h * 6.0;
     let i = h.floor() as i32;
