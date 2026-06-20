@@ -173,6 +173,14 @@ pub fn render_wled(
     nested_result.map_err(RenderError::LockError)?
 }
 
+/// Data extracted from the project needed for display rendering.
+/// Kept minimal to reduce time spent holding the project lock.
+struct DisplayRenderData {
+    width: u32,
+    height: u32,
+    uniforms: DisplayRenderTarget,
+}
+
 /// Render a virtual display to a `DisplayBuffer` (f32 RGB).
 pub fn render_display(
     display_id: u64,
@@ -181,46 +189,55 @@ pub fn render_display(
 ) -> Result<DisplayBuffer, RenderError> {
     let audio_analysis = crate::audio::get_audio_analysis();
 
-    let nested_result: Result<Result<DisplayBuffer, RenderError>, String> =
-        project::with_project(|project| {
-            let Some(display) = project.displays.get(&display_id) else {
-                return Ok(Err(RenderError::OutputNotFound {
-                    output_id: display_id,
-                    patch_id: project.active_patch,
-                }));
-            };
+    // First, extract data from the project while holding the lock briefly.
+    let render_data: Result<DisplayRenderData, RenderError> = {
+        let nested_result: Result<Result<DisplayRenderData, RenderError>, String> =
+            project::with_project(|project| {
+                let Some(display) = project.displays.get(&display_id) else {
+                    return Ok(Err(RenderError::OutputNotFound {
+                        output_id: display_id,
+                        patch_id: project.active_patch,
+                    }));
+                };
 
-            let width = display.width;
-            let height = display.height;
+                let width = display.width;
+                let height = display.height;
 
-            // Collect uniforms from the effect system.
-            let mut uniforms = DisplayRenderTarget {
-                id: display_id,
-                color: None,
-                dimmer: 1.0,
-            };
+                // Collect uniforms from the effect system.
+                let mut uniforms = DisplayRenderTarget {
+                    id: display_id,
+                    color: None,
+                    dimmer: 1.0,
+                };
 
-            let render_result = render(
-                display_id,
-                &mut uniforms,
-                system_t,
-                frame,
-                project,
-                &audio_analysis,
-            );
+                let render_result = render(
+                    display_id,
+                    &mut uniforms,
+                    system_t,
+                    frame,
+                    project,
+                    &audio_analysis,
+                );
 
-            if let Err(e) = render_result {
-                return Ok(Err(e));
-            }
+                if let Err(e) = render_result {
+                    return Ok(Err(e));
+                }
 
-            // TODO: Pass uniforms through shader stack to produce pixel buffer.
-            // For now, return a solid color based on the uniforms.
-            let buffer = render_display_shaders(display_id, width, height, system_t, &uniforms);
+                Ok(Ok(DisplayRenderData {
+                    width,
+                    height,
+                    uniforms,
+                }))
+            });
 
-            Ok(Ok(buffer))
-        });
+        nested_result.map_err(RenderError::LockError)?
+    };
 
-    nested_result.map_err(RenderError::LockError)?
+    // Now perform expensive pixel rendering OUTSIDE the project lock.
+    let data = render_data?;
+    let buffer = render_display_shaders(display_id, data.width, data.height, system_t, &data.uniforms);
+
+    Ok(buffer)
 }
 
 fn render<T: RenderTarget<T>>(

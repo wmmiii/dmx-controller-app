@@ -17,10 +17,12 @@ const wledSubscriptions: Map<
   bigint,
   Array<(o: WledRenderTarget, fps: number) => void>
 > = new Map();
-const displaySubscriptions: Map<
-  bigint,
-  Array<(o: DisplayBuffer, fps: number) => void>
-> = new Map();
+// Display subscriptions: all displays emitted together as a Map with shared FPS
+export type AllDisplayBuffers = Map<bigint, DisplayBuffer>;
+const displayBuffers: AllDisplayBuffers = new Map();
+const displaySubscribers: Array<
+  (buffers: AllDisplayBuffers, fps: number) => void
+> = [];
 
 // Unified error subscriptions for all output types
 const errorSubscriptions: Map<
@@ -104,23 +106,14 @@ export function subscribeToWledRender(
 }
 
 export function subscribeToDisplayRender(
-  displayId: bigint,
-  listener: (o: DisplayBuffer, fps: number) => void,
+  listener: (buffers: AllDisplayBuffers, fps: number) => void,
 ) {
-  const subscribers = displaySubscriptions.get(displayId);
-  if (subscribers) {
-    subscribers.push(listener);
-  } else {
-    displaySubscriptions.set(displayId, [listener]);
-  }
+  displaySubscribers.push(listener);
 
   return () => {
-    const subs = displaySubscriptions.get(displayId);
-    if (subs) {
-      const index = subs.indexOf(listener);
-      if (index > -1) {
-        subs.splice(index, 1);
-      }
+    const index = displaySubscribers.indexOf(listener);
+    if (index > -1) {
+      displaySubscribers.splice(index, 1);
     }
   };
 }
@@ -169,16 +162,20 @@ export function triggerWledSubscriptions(
   wledSubscriptions.get(outputId)?.forEach((f) => f(data, fps));
 }
 
+// Use a shared ID for all display FPS tracking since they render together
+const DISPLAY_FPS_ID = BigInt(0);
+
 /**
  * Trigger display subscriptions with already-rendered data.
- * Used by Tauri event listeners to notify subscribers.
+ * Accumulates buffer and notifies subscribers with all current buffers.
  */
 export function triggerDisplaySubscriptions(
   displayId: bigint,
   data: DisplayBuffer,
 ) {
-  const fps = recordAndSmoothFps(displayId);
-  displaySubscriptions.get(displayId)?.forEach((f) => f(data, fps));
+  displayBuffers.set(displayId, data);
+  const fps = recordAndSmoothFps(DISPLAY_FPS_ID);
+  displaySubscribers.forEach((f) => f(displayBuffers, fps));
 }
 
 /**

@@ -2,6 +2,7 @@
 mod audio_input;
 mod beat;
 mod ddp;
+mod display_loop;
 #[cfg(desktop)]
 mod audio_analysis;
 #[cfg(desktop)]
@@ -147,13 +148,24 @@ pub fn run() {
             app.manage(Arc::new(Mutex::new(wled_state)));
 
             let ddp_state = ddp::DdpState::new();
-            app.manage(Arc::new(Mutex::new(ddp_state)));
+            let ddp_state_arc = Arc::new(Mutex::new(ddp_state));
+            app.manage(ddp_state_arc.clone());
+
+            let display_loop_manager = display_loop::DisplayLoopManager::new(app.handle().clone());
+            let display_loop_manager_arc = Arc::new(Mutex::new(display_loop_manager));
+            app.manage(display_loop_manager_arc.clone());
+
+            // Start display loop for loaded project (handles all displays and DDP outputs)
+            display_loop::DisplayLoopManager::start_on_load(
+                display_loop_manager_arc,
+                ddp_state_arc,
+            );
 
             let output_loop_manager = output_loop::OutputLoopManager::new(app.handle().clone());
             let output_loop_manager_arc = Arc::new(Mutex::new(output_loop_manager));
             app.manage(output_loop_manager_arc.clone());
 
-            // Start output loops for loaded project
+            // Start output loops for loaded project (Serial, sACN, WLED - DDP is handled by display loop)
             output_loop::OutputLoopManager::start_on_load(
                 output_loop_manager_arc,
                 app.state::<Arc<Mutex<serial::SerialState>>>()
@@ -161,7 +173,6 @@ pub fn run() {
                     .clone(),
                 app.state::<Arc<Mutex<sacn::SacnState>>>().inner().clone(),
                 app.state::<Arc<Mutex<wled::WledState>>>().inner().clone(),
-                app.state::<Arc<Mutex<ddp::DdpState>>>().inner().clone(),
             );
 
             // Prevent the system from sleeping while the app is running so that

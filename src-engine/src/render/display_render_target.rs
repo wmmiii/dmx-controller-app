@@ -46,6 +46,47 @@ impl DisplayBuffer {
         self.pixels[idx + 1] = green;
         self.pixels[idx + 2] = blue;
     }
+
+    /// Downsample the buffer to fit within `max_size` dimensions.
+    /// Uses box filtering (averaging) for smooth results.
+    /// Returns self unchanged if already within `max_size`.
+    #[must_use]
+    pub fn downsample(&self, max_size: u32) -> Self {
+        let factor = (self.width.max(self.height) / max_size).max(1);
+        if factor <= 1 {
+            return self.clone();
+        }
+
+        let new_width = (self.width / factor).max(1);
+        let new_height = (self.height / factor).max(1);
+        let mut result = Self::new(self.id, new_width, new_height);
+
+        // Box filter: average each factor×factor block
+        for y in 0..new_height {
+            for x in 0..new_width {
+                let (mut r, mut g, mut b, mut n) = (0.0, 0.0, 0.0, 0.0);
+                for dy in 0..factor {
+                    for dx in 0..factor {
+                        // Sample using u32 coordinates directly to avoid i32 wrap concerns
+                        let src_x = x * factor + dx;
+                        let src_y = y * factor + dy;
+                        if src_x < self.width && src_y < self.height {
+                            let idx = ((src_y * self.width + src_x) * 3) as usize;
+                            r += self.pixels[idx];
+                            g += self.pixels[idx + 1];
+                            b += self.pixels[idx + 2];
+                            n += 1.0;
+                        }
+                    }
+                }
+                if n > 0.0 {
+                    result.set(x, y, r / n, g / n, b / n);
+                }
+            }
+        }
+
+        result
+    }
 }
 
 impl RenderTarget<DisplayRenderTarget> for DisplayRenderTarget {

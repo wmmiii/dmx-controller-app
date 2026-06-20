@@ -4,6 +4,7 @@
   gap: var(--space-1);
   align-items: center;
   margin: var(--space-1);
+  margin-top: 0;
 }
 
 .beat-indicator {

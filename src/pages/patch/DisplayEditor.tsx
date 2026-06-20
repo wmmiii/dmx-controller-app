@@ -14,6 +14,7 @@ import { BiError, BiTrash } from 'react-icons/bi';
 import { Button, IconButton } from '../../components/Button';
 import { EditableText, NumberInput } from '../../components/Input';
 import { Select } from '../../components/Select';
+import { Toggle } from '../../components/Toggle';
 import { ProjectContext } from '../../contexts/ProjectContext';
 import { randomUint64 } from '../../util/numberUtils';
 import { getActivePatch } from '../../util/projectUtils';
@@ -58,6 +59,7 @@ function DisplayList({
             <li
               className={clsx({
                 [styles.selected]: BigInt(id) === selectedDisplayId,
+                [styles.disabled]: !display.enabled,
               })}
               key={id}
               onClick={() => setSelectedDisplayId(BigInt(id))}
@@ -81,6 +83,7 @@ function DisplayList({
             name: 'New Display',
             width: 64,
             height: 64,
+            enabled: true,
           });
           setSelectedDisplayId(newId);
           save('Create new virtual display.');
@@ -130,6 +133,19 @@ function DisplayEditorPane({
         </Button>
       </div>
       <div className={styles.settings}>
+        <label>
+          <span>Enabled</span>
+          <Toggle
+            className={styles.enabledToggle}
+            value={display.enabled}
+            onChange={(enabled) => {
+              display.enabled = enabled;
+              save(
+                `${enabled ? 'Enabled' : 'Disabled'} display "${display.name}".`,
+              );
+            }}
+          />
+        </label>
         <label>
           <span>Width</span>
           <NumberInput

@@ -207,11 +207,7 @@ export default function Index(): JSX.Element {
                 return null;
             }
           })}
-        {Object.entries(project.displays)
-          .sort(([_a, a], [_b, b]) => a.name.localeCompare(b.name))
-          .map(([displayId]) => (
-            <DisplayVisualizer key={displayId} displayId={BigInt(displayId)} />
-          ))}
+        <DisplayVisualizer />
         <Spacer />
         <div className={styles.message}>{lastOperation}</div>
         <ControllerButton

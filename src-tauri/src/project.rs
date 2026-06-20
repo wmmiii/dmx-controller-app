@@ -10,6 +10,7 @@ use tokio::sync::Mutex as TokioMutex;
 use tokio::task::JoinHandle;
 
 use crate::ddp::DdpState;
+use crate::display_loop::DisplayLoopManager;
 use crate::output_loop::OutputLoopManager;
 use crate::sacn::SacnState;
 use crate::serial::SerialState;
@@ -248,6 +249,7 @@ pub async fn frontend_ready_for_update(app: AppHandle) -> Result<(), String> {
 pub async fn rebuild_outputs(
     serial_state: &Arc<TokioMutex<SerialState>>,
     output_loop_manager: &Arc<TokioMutex<OutputLoopManager>>,
+    display_loop_manager: &Arc<TokioMutex<DisplayLoopManager>>,
     sacn_state: &Arc<TokioMutex<SacnState>>,
     wled_state: &Arc<TokioMutex<WledState>>,
     ddp_state: &Arc<TokioMutex<DdpState>>,
@@ -260,12 +262,14 @@ pub async fn rebuild_outputs(
     // Rebuild output loops
     let manager = output_loop_manager.lock().await;
     manager
-        .rebuild_all_loops(
-            serial_state.clone(),
-            sacn_state.clone(),
-            wled_state.clone(),
-            ddp_state.clone(),
-        )
+        .rebuild_all_loops(serial_state.clone(), sacn_state.clone(), wled_state.clone())
+        .await?;
+    drop(manager);
+
+    // Rebuild display loop
+    let display_manager = display_loop_manager.lock().await;
+    display_manager
+        .rebuild_display_loop(ddp_state.clone())
         .await?;
 
     Ok(())
@@ -280,6 +284,7 @@ pub async fn save_project(
     app: AppHandle,
     persist_state: State<'_, Arc<TokioMutex<PersistState>>>,
     output_loop_manager: State<'_, Arc<TokioMutex<OutputLoopManager>>>,
+    display_loop_manager: State<'_, Arc<TokioMutex<DisplayLoopManager>>>,
     serial_state: State<'_, Arc<TokioMutex<SerialState>>>,
     sacn_state: State<'_, Arc<TokioMutex<SacnState>>>,
     wled_state: State<'_, Arc<TokioMutex<WledState>>>,
@@ -299,6 +304,7 @@ pub async fn save_project(
     rebuild_outputs(
         serial_state.inner(),
         output_loop_manager.inner(),
+        display_loop_manager.inner(),
         sacn_state.inner(),
         wled_state.inner(),
         ddp_state.inner(),
@@ -315,6 +321,7 @@ pub async fn update_project(
     project_binary: Vec<u8>,
     app: AppHandle,
     output_loop_manager: State<'_, Arc<TokioMutex<OutputLoopManager>>>,
+    display_loop_manager: State<'_, Arc<TokioMutex<DisplayLoopManager>>>,
     serial_state: State<'_, Arc<TokioMutex<SerialState>>>,
     sacn_state: State<'_, Arc<TokioMutex<SacnState>>>,
     wled_state: State<'_, Arc<TokioMutex<WledState>>>,
@@ -330,6 +337,7 @@ pub async fn update_project(
     rebuild_outputs(
         serial_state.inner(),
         output_loop_manager.inner(),
+        display_loop_manager.inner(),
         sacn_state.inner(),
         wled_state.inner(),
         ddp_state.inner(),
@@ -345,6 +353,7 @@ pub async fn undo_project(
     app: AppHandle,
     persist_state: State<'_, Arc<TokioMutex<PersistState>>>,
     output_loop_manager: State<'_, Arc<TokioMutex<OutputLoopManager>>>,
+    display_loop_manager: State<'_, Arc<TokioMutex<DisplayLoopManager>>>,
     serial_state: State<'_, Arc<TokioMutex<SerialState>>>,
     sacn_state: State<'_, Arc<TokioMutex<SacnState>>>,
     wled_state: State<'_, Arc<TokioMutex<WledState>>>,
@@ -364,6 +373,7 @@ pub async fn undo_project(
     rebuild_outputs(
         serial_state.inner(),
         output_loop_manager.inner(),
+        display_loop_manager.inner(),
         sacn_state.inner(),
         wled_state.inner(),
         ddp_state.inner(),
@@ -379,6 +389,7 @@ pub async fn redo_project(
     app: AppHandle,
     persist_state: State<'_, Arc<TokioMutex<PersistState>>>,
     output_loop_manager: State<'_, Arc<TokioMutex<OutputLoopManager>>>,
+    display_loop_manager: State<'_, Arc<TokioMutex<DisplayLoopManager>>>,
     serial_state: State<'_, Arc<TokioMutex<SerialState>>>,
     sacn_state: State<'_, Arc<TokioMutex<SacnState>>>,
     wled_state: State<'_, Arc<TokioMutex<WledState>>>,
@@ -398,6 +409,7 @@ pub async fn redo_project(
     rebuild_outputs(
         serial_state.inner(),
         output_loop_manager.inner(),
+        display_loop_manager.inner(),
         sacn_state.inner(),
         wled_state.inner(),
         ddp_state.inner(),
@@ -414,6 +426,7 @@ pub async fn load_project(
     app: AppHandle,
     persist_state: State<'_, Arc<TokioMutex<PersistState>>>,
     output_loop_manager: State<'_, Arc<TokioMutex<OutputLoopManager>>>,
+    display_loop_manager: State<'_, Arc<TokioMutex<DisplayLoopManager>>>,
     serial_state: State<'_, Arc<TokioMutex<SerialState>>>,
     sacn_state: State<'_, Arc<TokioMutex<SacnState>>>,
     wled_state: State<'_, Arc<TokioMutex<WledState>>>,
@@ -433,6 +446,7 @@ pub async fn load_project(
     rebuild_outputs(
         serial_state.inner(),
         output_loop_manager.inner(),
+        display_loop_manager.inner(),
         sacn_state.inner(),
         wled_state.inner(),
         ddp_state.inner(),
@@ -532,6 +546,7 @@ pub async fn import_project(
     app: AppHandle,
     persist_state: State<'_, Arc<TokioMutex<PersistState>>>,
     output_loop_manager: State<'_, Arc<TokioMutex<OutputLoopManager>>>,
+    display_loop_manager: State<'_, Arc<TokioMutex<DisplayLoopManager>>>,
     serial_state: State<'_, Arc<TokioMutex<SerialState>>>,
     sacn_state: State<'_, Arc<TokioMutex<SacnState>>>,
     wled_state: State<'_, Arc<TokioMutex<WledState>>>,
@@ -580,6 +595,7 @@ pub async fn import_project(
     rebuild_outputs(
         serial_state.inner(),
         output_loop_manager.inner(),
+        display_loop_manager.inner(),
         sacn_state.inner(),
         wled_state.inner(),
         ddp_state.inner(),
@@ -595,6 +611,7 @@ pub async fn new_project(
     app: AppHandle,
     persist_state: State<'_, Arc<TokioMutex<PersistState>>>,
     output_loop_manager: State<'_, Arc<TokioMutex<OutputLoopManager>>>,
+    display_loop_manager: State<'_, Arc<TokioMutex<DisplayLoopManager>>>,
     serial_state: State<'_, Arc<TokioMutex<SerialState>>>,
     sacn_state: State<'_, Arc<TokioMutex<SacnState>>>,
     wled_state: State<'_, Arc<TokioMutex<WledState>>>,
@@ -616,6 +633,7 @@ pub async fn new_project(
     rebuild_outputs(
         serial_state.inner(),
         output_loop_manager.inner(),
+        display_loop_manager.inner(),
         sacn_state.inner(),
         wled_state.inner(),
         ddp_state.inner(),

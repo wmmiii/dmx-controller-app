@@ -133,6 +133,7 @@ th {
     align-items: center;
     min-height: 0;
     padding: var(--space-1);
+    padding-bottom: 0;
 
     & > * {
       z-index: 1;

@@ -35,19 +35,30 @@ export default function PatchPage(): JSX.Element {
   const [tabKey, setTabKey] = useState(GROUP_KEY);
   const [showNewOutputDialog, setShowNewOutputDialog] = useState(false);
 
+  const activePatch = getActivePatch(project);
+
+  // Show Displays tab only if there are displays or DDP outputs
+  const hasDisplays = Object.keys(project.displays).length > 0;
+  const hasDdpOutputs = Object.values(activePatch.outputs).some(
+    (o) => o.output.case === 'ddpOutput',
+  );
+  const showDisplaysTab = hasDisplays || hasDdpOutputs;
+
   const tabs: TabsType = {
     [GROUP_KEY]: {
       name: 'Groups',
       contents: <GroupEditor />,
     },
-    [DISPLAY_KEY]: {
-      name: 'Displays',
-      contents: <DisplayEditor />,
-    },
+    ...(showDisplaysTab && {
+      [DISPLAY_KEY]: {
+        name: 'Displays',
+        contents: <DisplayEditor />,
+      },
+    }),
   };
 
   for (const [outputIdString, output] of Object.entries(
-    getActivePatch(project).outputs,
+    activePatch.outputs,
   ).sort(([_a, a], [_b, b]) => a.name.localeCompare(b.name))) {
     const outputId = BigInt(outputIdString);
     switch (output.output.case) {

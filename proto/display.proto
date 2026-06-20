@@ -35,6 +35,9 @@ message PhysicalDisplayMapping {
 // segments.
 message VirtualDisplay {
   string name = 1;
+
+  bool enabled = 5;
+  
   uint32 width = 2;
   uint32 height = 3;
 
