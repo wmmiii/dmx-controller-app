@@ -13,12 +13,19 @@ vec4 visualizer(vec2 uv, vec2 frag_coord, vec4 prev_pixel) {
     float theta = atan(c.x, c.y);  // 0 at top (+y), ±PI at bottom
     float t_angle = (1.0 - cos(theta)) / 2.0;
 
-    // Smoothly interpolate between adjacent audio bands.
+    // Gaussian blur across all bands so neighbouring lobes merge smoothly.
     // band[15] = highest frequency at top; band[0] = lowest at bottom.
+    // sigma=2.0 means each sample draws significantly from ~4 surrounding bands.
     float band_f = (1.0 - t_angle) * 15.0;
-    int b0 = int(clamp(band_f, 0.0, 15.0));
-    int b1 = min(b0 + 1, 15);
-    float level = mix(u_audio_bands[b0], u_audio_bands[b1], fract(band_f));
+    float level = 0.0;
+    float weight_sum = 0.0;
+    for (int i = 0; i < 16; i++) {
+        float d = band_f - float(i);
+        float w = exp(-d * d * 0.5);  // sigma=2: exponent = -d²/(2·sigma²) = -d²/8
+        level += u_audio_bands[i] * w;
+        weight_sum += w;
+    }
+    level /= weight_sum;
 
     // Radial zones: inner solid disc at r=0.25; flares extend out to r=1.0 at max.
     float inner_r = 0.25;

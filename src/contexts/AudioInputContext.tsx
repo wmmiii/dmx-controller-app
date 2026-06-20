@@ -21,6 +21,8 @@ interface AudioInputContextType {
   selectedDevice: string | null;
   select: (deviceName: string) => void;
   deselect: () => void;
+  gainDb: number;
+  setGainDb: (db: number) => void;
 }
 
 export const AudioInputContext = createContext<AudioInputContextType>({
@@ -28,6 +30,8 @@ export const AudioInputContext = createContext<AudioInputContextType>({
   selectedDevice: null,
   select: () => {},
   deselect: () => {},
+  gainDb: 0,
+  setGainDb: () => {},
 });
 
 export function AudioInputProvider({
@@ -64,9 +68,26 @@ export function AudioInputProvider({
     save('Deselect audio input device.');
   }, [project, save]);
 
+  const gainDb = project.audioInputGainDb;
+
+  const setGainDb = useCallback(
+    (db: number) => {
+      project.audioInputGainDb = db;
+      save('Set audio input gain.');
+    },
+    [project, save],
+  );
+
   return (
     <AudioInputContext.Provider
-      value={{ availableDevices, selectedDevice, select, deselect }}
+      value={{
+        availableDevices,
+        selectedDevice,
+        select,
+        deselect,
+        gainDb,
+        setGainDb,
+      }}
     >
       {children}
     </AudioInputContext.Provider>

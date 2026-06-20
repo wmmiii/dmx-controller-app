@@ -37,7 +37,9 @@ function parseWebGLError(
 ): { line: number; message: string } | null {
   // Common formats: "ERROR: 0:42: ..." or "0:42(3): error ..."
   const m = log.match(/(?:ERROR:\s*\d+:(\d+)|(\d+):\d+\(\d+\))/);
-  if (!m) {return null};
+  if (!m) {
+    return null;
+  }
   const wrappedLine = parseInt(m[1] ?? m[2], 10);
   return { line: toUserLine(wrappedLine), message: log.trim() };
 }
@@ -111,10 +113,14 @@ export function VisualizerPreview({
   const compileFragShader = useCallback((source: string) => {
     const gl = glRef.current;
     const vs = vsRef.current;
-    if (!gl || !vs) {return;}
+    if (!gl || !vs) {
+      return;
+    }
 
     const fs = gl.createShader(gl.FRAGMENT_SHADER);
-    if (!fs) {return;}
+    if (!fs) {
+      return;
+    }
 
     gl.shaderSource(fs, wrapShaderWebGL2(source));
     gl.compileShader(fs);
@@ -145,7 +151,9 @@ export function VisualizerPreview({
       return;
     }
 
-    if (programRef.current) {gl.deleteProgram(programRef.current);}
+    if (programRef.current) {
+      gl.deleteProgram(programRef.current);
+    }
     programRef.current = prog;
     uniformLocsRef.current = cacheUniformLocations(gl, prog);
     onCompileSuccessRef.current();
@@ -154,7 +162,9 @@ export function VisualizerPreview({
   // Initialize WebGL2 once on mount.
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) {return;}
+    if (!canvas) {
+      return;
+    }
 
     const gl = canvas.getContext('webgl2');
     if (!gl) {
@@ -243,17 +253,25 @@ export function VisualizerPreview({
 
     return () => {
       cancelAnimationFrame(animFrameRef.current);
-      if (programRef.current) {gl.deleteProgram(programRef.current);}
-      if (vsRef.current) {gl.deleteShader(vsRef.current);}
+      if (programRef.current) {
+        gl.deleteProgram(programRef.current);
+      }
+      if (vsRef.current) {
+        gl.deleteShader(vsRef.current);
+      }
     };
   }, []);
 
   // Recompile (debounced) whenever glslSource changes.
   useEffect(() => {
-    if (debounceRef.current) {clearTimeout(debounceRef.current);}
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
     debounceRef.current = setTimeout(() => compileFragShader(glslSource), 300);
     return () => {
-      if (debounceRef.current) {clearTimeout(debounceRef.current);}
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
     };
   }, [glslSource, compileFragShader]);
 
