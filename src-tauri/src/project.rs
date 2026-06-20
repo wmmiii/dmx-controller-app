@@ -2,7 +2,7 @@ use dmx_engine::project::{self, UndoState};
 use dmx_engine::tile::toggle_tile as engine_toggle_tile;
 use serde::Serialize;
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex as StdMutex};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Manager, State};
@@ -14,6 +14,7 @@ use crate::display_loop::DisplayLoopManager;
 use crate::output_loop::OutputLoopManager;
 use crate::sacn::SacnState;
 use crate::serial::SerialState;
+use crate::shader::ShaderState;
 use crate::wled::WledState;
 
 // =============================================================================
@@ -253,6 +254,7 @@ pub async fn rebuild_outputs(
     sacn_state: &Arc<TokioMutex<SacnState>>,
     wled_state: &Arc<TokioMutex<WledState>>,
     ddp_state: &Arc<TokioMutex<DdpState>>,
+    app: &AppHandle,
 ) -> Result<(), String> {
     // Auto-bind serial outputs to their last known ports if available
     let serial = serial_state.lock().await;
@@ -271,6 +273,12 @@ pub async fn rebuild_outputs(
     display_manager
         .rebuild_display_loop(ddp_state.clone())
         .await?;
+
+    // Sync GPU shader state with project.visualizers so undo/redo/load/copy
+    // all stay consistent without ad-hoc compile calls in the UI.
+    if let Some(shader_state) = app.try_state::<Arc<StdMutex<ShaderState>>>() {
+        crate::shader::sync_visualizer_shaders(&shader_state);
+    }
 
     Ok(())
 }
@@ -308,6 +316,7 @@ pub async fn save_project(
         sacn_state.inner(),
         wled_state.inner(),
         ddp_state.inner(),
+        &app,
     )
     .await?;
 
@@ -341,6 +350,7 @@ pub async fn update_project(
         sacn_state.inner(),
         wled_state.inner(),
         ddp_state.inner(),
+        &app,
     )
     .await?;
 
@@ -377,6 +387,7 @@ pub async fn undo_project(
         sacn_state.inner(),
         wled_state.inner(),
         ddp_state.inner(),
+        &app,
     )
     .await?;
 
@@ -413,6 +424,7 @@ pub async fn redo_project(
         sacn_state.inner(),
         wled_state.inner(),
         ddp_state.inner(),
+        &app,
     )
     .await?;
 
@@ -450,6 +462,7 @@ pub async fn load_project(
         sacn_state.inner(),
         wled_state.inner(),
         ddp_state.inner(),
+        &app,
     )
     .await?;
 
@@ -599,6 +612,7 @@ pub async fn import_project(
         sacn_state.inner(),
         wled_state.inner(),
         ddp_state.inner(),
+        &app,
     )
     .await?;
 
@@ -637,6 +651,7 @@ pub async fn new_project(
         sacn_state.inner(),
         wled_state.inner(),
         ddp_state.inner(),
+        &app,
     )
     .await?;
 

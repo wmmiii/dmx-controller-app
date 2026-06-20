@@ -6,7 +6,8 @@ vec4 visualizer(vec2 uv, vec2 frag_coord, vec4 prev_pixel) {
     float dist = length(centered);
     // Pulse fades out over the beat and is brightest at the start of the beat.
     float pulse = 1.0 - u_beat_t;
-    float ring = smoothstep(0.5 * u_beat_t + 0.05, 0.5 * u_beat_t, dist);
-    vec3 color = u_palette_primary.rgb * ring * pulse;
+    pulse *= pulse;
+    float gradient = smoothstep(0.5 * u_beat_t, 0.4 * u_beat_t, dist);
+    vec3 color = prev_pixel.rgb +  u_color.rgb * gradient * pulse * u_color.a;
     return vec4(color * u_color.a, 1.0);
 }

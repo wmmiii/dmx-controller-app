@@ -1,6 +1,7 @@
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import { defineConfig } from 'vite';
+import monacoEditorPlugin from 'vite-plugin-monaco-editor';
 
 export default defineConfig({
   plugins: [
@@ -9,6 +10,8 @@ export default defineConfig({
         plugins: [['babel-plugin-react-compiler', {}]],
       },
     }),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (monacoEditorPlugin as any)({ languageWorkers: [] }),
   ],
   root: '.',
   publicDir: 'public',

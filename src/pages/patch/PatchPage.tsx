@@ -11,7 +11,6 @@ import { Button } from '../../components/Button';
 import { EditableText } from '../../components/Input';
 import { Modal } from '../../components/Modal';
 import { Select } from '../../components/Select';
-import { ShaderSpikeTest } from '../../components/ShaderSpikeTest';
 import { Tabs, TabsType } from '../../components/Tabs';
 import { ProjectContext } from '../../contexts/ProjectContext';
 import { deleteDdpOutput } from '../../engine/display';
@@ -26,10 +25,12 @@ import { GroupEditor } from './GroupEditor';
 import styles from './PatchPage.module.css';
 import { SacnEditor } from './SacnEditor';
 import { SerialEditor } from './SerialEditor';
+import { VisualizerEditor } from './VisualizerEditor';
 import { WledEditor } from './WledEditor';
 
 const GROUP_KEY = 'group';
 const DISPLAY_KEY = 'display';
+const VISUALIZER_KEY = 'visualizer';
 const NEW_OUTPUT_KEY = 'new';
 
 export default function PatchPage(): JSX.Element {
@@ -56,12 +57,11 @@ export default function PatchPage(): JSX.Element {
         name: 'Displays',
         contents: <DisplayEditor />,
       },
+      [VISUALIZER_KEY]: {
+        name: 'Visualizers',
+        contents: <VisualizerEditor />,
+      },
     }),
-    // TEMPORARY (Phase 0 spike): wgpu/iOS compatibility test tab. Remove after Phase 0.
-    spike: {
-      name: 'GPU Test',
-      contents: <ShaderSpikeTest />,
-    },
   };
 
   for (const [outputIdString, output] of Object.entries(
