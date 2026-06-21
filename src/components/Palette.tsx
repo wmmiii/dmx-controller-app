@@ -68,7 +68,6 @@ export function PaletteSwatch({
         <Popover
           open={editPalette}
           onOpenChange={(open) => {
-            console.log('OPEN CHANGE ', open);
             if (!open) {
               save(`Edit color palette ${palette.name}.`);
             }

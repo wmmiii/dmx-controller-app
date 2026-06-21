@@ -12,6 +12,58 @@ use tokio::sync::Mutex;
 use crate::audio_analysis::FftAnalyzer;
 use crate::beat::SharedBeatSampler;
 
+/// Suppress ALSA and JACK error messages during audio device enumeration.
+#[cfg(target_os = "linux")]
+pub fn suppress_audio_lib_errors() {
+    use std::sync::Once;
+    static INIT: Once = Once::new();
+    INIT.call_once(|| {
+        // Suppress ALSA errors (dmix warnings, OSS probe failures).
+        // No-op handler; the real signature is variadic but we ignore all args.
+        unsafe extern "C" fn silent_alsa_handler(
+            _: *const std::ffi::c_char,
+            _: std::ffi::c_int,
+            _: *const std::ffi::c_char,
+            _: std::ffi::c_int,
+            _: *const std::ffi::c_char,
+        ) {
+        }
+        // Suppress JACK errors (server not running, connection failures).
+        unsafe extern "C" fn silent_jack_handler(_: *const std::ffi::c_char) {}
+
+        unsafe {
+            let handler: alsa_sys::snd_lib_error_handler_t =
+                std::mem::transmute(silent_alsa_handler as *const ());
+            alsa_sys::snd_lib_error_set_handler(handler);
+        }
+
+        // Dynamically load libjack to avoid hard dependency.
+        unsafe {
+            let lib = libc::dlopen(c"libjack.so.0".as_ptr(), libc::RTLD_NOW);
+            if !lib.is_null() {
+                type JackErrorFn = unsafe extern "C" fn(*const std::ffi::c_char);
+                type SetErrorFn = unsafe extern "C" fn(Option<JackErrorFn>);
+
+                let set_error = libc::dlsym(lib, c"jack_set_error_function".as_ptr());
+                let set_info = libc::dlsym(lib, c"jack_set_info_function".as_ptr());
+
+                if !set_error.is_null() {
+                    let f: SetErrorFn = std::mem::transmute(set_error);
+                    f(Some(silent_jack_handler));
+                }
+                if !set_info.is_null() {
+                    let f: SetErrorFn = std::mem::transmute(set_info);
+                    f(Some(silent_jack_handler));
+                }
+                // Intentionally don't dlclose - keep handlers active
+            }
+        }
+    });
+}
+
+#[cfg(not(target_os = "linux"))]
+pub fn suppress_audio_lib_errors() {}
+
 /// Get the best available audio host for this system.
 fn get_audio_host() -> cpal::Host {
     // Use platform default (ALSA on Linux, CoreAudio on macOS, WASAPI on Windows)
@@ -65,7 +117,10 @@ impl AudioInputState {
     pub fn start_device_watcher(&self, state: Arc<Mutex<Self>>) {
         let (cancel_tx, cancel_rx) = tokio::sync::watch::channel(false);
         {
-            let mut watcher = self.watcher_cancel_tx.lock().unwrap();
+            let mut watcher = self.watcher_cancel_tx.lock().unwrap_or_else(|e| {
+                log::error!("Watcher cancel lock poisoned, recovering");
+                e.into_inner()
+            });
             *watcher = Some(cancel_tx);
         }
         tauri::async_runtime::spawn(async move {
@@ -120,7 +175,14 @@ impl AudioInputState {
                     .gain_linear
                     .store(gain_linear.to_bits(), Ordering::Relaxed);
 
-                let current_active = audio_state.active_device.lock().unwrap().clone();
+                let current_active = audio_state
+                    .active_device
+                    .lock()
+                    .unwrap_or_else(|e| {
+                        log::error!("Active device lock poisoned, recovering");
+                        e.into_inner()
+                    })
+                    .clone();
 
                 let desired = if desired_device.is_empty() {
                     None
@@ -135,7 +197,10 @@ impl AudioInputState {
                     (Some(_), None) => {
                         stop_stream(&audio_state);
                         end_audio_beat(&audio_state);
-                        *audio_state.active_device.lock().unwrap() = None;
+                        *audio_state.active_device.lock().unwrap_or_else(|e| {
+                            log::error!("Active device lock poisoned, recovering");
+                            e.into_inner()
+                        }) = None;
                         log::info!("Audio input deselected");
                     }
                     // Need to connect or switch device
@@ -145,12 +210,17 @@ impl AudioInputState {
                             // Stop existing stream first if switching
                             if current_active.is_some() {
                                 stop_stream(&audio_state);
-                                *audio_state.active_device.lock().unwrap() = None;
+                                *audio_state.active_device.lock().unwrap_or_else(|e| {
+                                    log::error!("Active device lock poisoned, recovering");
+                                    e.into_inner()
+                                }) = None;
                             }
                             match start_stream(&audio_state, device_name) {
                                 Ok(()) => {
-                                    *audio_state.active_device.lock().unwrap() =
-                                        Some(device_name.clone());
+                                    *audio_state.active_device.lock().unwrap_or_else(|e| {
+                                        log::error!("Active device lock poisoned, recovering");
+                                        e.into_inner()
+                                    }) = Some(device_name.clone());
                                     log::info!("Audio input connected to device: {device_name}");
                                 }
                                 Err(e) => {
@@ -158,14 +228,20 @@ impl AudioInputState {
                                         "Failed to connect to audio device '{device_name}': {e}"
                                     );
                                     end_audio_beat(&audio_state);
-                                    *audio_state.active_device.lock().unwrap() = None;
+                                    *audio_state.active_device.lock().unwrap_or_else(|e| {
+                                        log::error!("Active device lock poisoned, recovering");
+                                        e.into_inner()
+                                    }) = None;
                                 }
                             }
                         } else if current_active.is_some() {
                             // Desired device not available, stop current stream
                             stop_stream(&audio_state);
                             end_audio_beat(&audio_state);
-                            *audio_state.active_device.lock().unwrap() = None;
+                            *audio_state.active_device.lock().unwrap_or_else(|e| {
+                                log::error!("Active device lock poisoned, recovering");
+                                e.into_inner()
+                            }) = None;
                             log::info!("Audio device '{device_name}' not available, disconnected");
                         }
                     }
@@ -225,14 +301,37 @@ fn end_audio_beat(state: &AudioInputState) {
 fn stop_stream(state: &AudioInputState) {
     // Gate the callback before touching the thread so that any `CoreAudio`
     // callback already in-flight returns without emitting.
-    if let Some(flag) = state.stream_emit_flag.lock().unwrap().take() {
+    if let Some(flag) = state
+        .stream_emit_flag
+        .lock()
+        .unwrap_or_else(|e| {
+            log::error!("Stream emit flag lock poisoned, recovering");
+            e.into_inner()
+        })
+        .take()
+    {
         flag.store(false, Ordering::SeqCst);
     }
 
-    if let Some(tx) = state.stream_stop_tx.lock().unwrap().take() {
+    if let Some(tx) = state
+        .stream_stop_tx
+        .lock()
+        .unwrap_or_else(|e| {
+            log::error!("Stream stop tx lock poisoned, recovering");
+            e.into_inner()
+        })
+        .take()
+    {
         let _ = tx.send(());
     }
-    let handle = state.stream_thread.lock().unwrap().take();
+    let handle = state
+        .stream_thread
+        .lock()
+        .unwrap_or_else(|e| {
+            log::error!("Stream thread lock poisoned, recovering");
+            e.into_inner()
+        })
+        .take();
     if let Some(handle) = handle {
         let _ = handle.join();
     }
@@ -261,7 +360,10 @@ fn start_stream(state: &AudioInputState, device_name: &str) -> Result<(), String
     // Create a fresh emit gate for this stream. The callback holds a clone and
     // checks it before emitting; stop_stream() sets it to false.
     let emit_flag = Arc::new(AtomicBool::new(true));
-    *state.stream_emit_flag.lock().unwrap() = Some(Arc::clone(&emit_flag));
+    *state.stream_emit_flag.lock().unwrap_or_else(|e| {
+        log::error!("Stream emit flag lock poisoned, recovering");
+        e.into_inner()
+    }) = Some(Arc::clone(&emit_flag));
 
     let gain_linear = Arc::clone(&state.gain_linear);
     let (stop_tx, stop_rx) = std::sync::mpsc::channel::<()>();
@@ -285,8 +387,14 @@ fn start_stream(state: &AudioInputState, device_name: &str) -> Result<(), String
         })
         .map_err(|e| format!("Failed to spawn audio stream thread: {e}"))?;
 
-    *state.stream_thread.lock().unwrap() = Some(handle);
-    *state.stream_stop_tx.lock().unwrap() = Some(stop_tx);
+    *state.stream_thread.lock().unwrap_or_else(|e| {
+        log::error!("Stream thread lock poisoned, recovering");
+        e.into_inner()
+    }) = Some(handle);
+    *state.stream_stop_tx.lock().unwrap_or_else(|e| {
+        log::error!("Stream stop tx lock poisoned, recovering");
+        e.into_inner()
+    }) = Some(stop_tx);
 
     Ok(())
 }
@@ -320,107 +428,33 @@ fn run_stream_thread(
     );
 
     let config_stream = config.into();
+
+    macro_rules! build_stream {
+        ($t:ty) => {
+            build_input_stream::<$t>(
+                &device,
+                &config_stream,
+                app_handle,
+                sample_rate,
+                channels,
+                beat_sampler,
+                emit_flag,
+                gain_linear,
+            )?
+        };
+    }
+
     let stream = match sample_format {
-        cpal::SampleFormat::F32 => build_input_stream::<f32>(
-            &device,
-            &config_stream,
-            app_handle,
-            sample_rate,
-            channels,
-            beat_sampler,
-            emit_flag,
-            gain_linear,
-        )?,
-        cpal::SampleFormat::F64 => build_input_stream::<f64>(
-            &device,
-            &config_stream,
-            app_handle,
-            sample_rate,
-            channels,
-            beat_sampler,
-            emit_flag,
-            gain_linear,
-        )?,
-        cpal::SampleFormat::I8 => build_input_stream::<i8>(
-            &device,
-            &config_stream,
-            app_handle,
-            sample_rate,
-            channels,
-            beat_sampler,
-            emit_flag,
-            gain_linear,
-        )?,
-        cpal::SampleFormat::I16 => build_input_stream::<i16>(
-            &device,
-            &config_stream,
-            app_handle,
-            sample_rate,
-            channels,
-            beat_sampler,
-            emit_flag,
-            gain_linear,
-        )?,
-        cpal::SampleFormat::I32 => build_input_stream::<i32>(
-            &device,
-            &config_stream,
-            app_handle,
-            sample_rate,
-            channels,
-            beat_sampler,
-            emit_flag,
-            gain_linear,
-        )?,
-        cpal::SampleFormat::I64 => build_input_stream::<i64>(
-            &device,
-            &config_stream,
-            app_handle,
-            sample_rate,
-            channels,
-            beat_sampler,
-            emit_flag,
-            gain_linear,
-        )?,
-        cpal::SampleFormat::U8 => build_input_stream::<u8>(
-            &device,
-            &config_stream,
-            app_handle,
-            sample_rate,
-            channels,
-            beat_sampler,
-            emit_flag,
-            gain_linear,
-        )?,
-        cpal::SampleFormat::U16 => build_input_stream::<u16>(
-            &device,
-            &config_stream,
-            app_handle,
-            sample_rate,
-            channels,
-            beat_sampler,
-            emit_flag,
-            gain_linear,
-        )?,
-        cpal::SampleFormat::U32 => build_input_stream::<u32>(
-            &device,
-            &config_stream,
-            app_handle,
-            sample_rate,
-            channels,
-            beat_sampler,
-            emit_flag,
-            gain_linear,
-        )?,
-        cpal::SampleFormat::U64 => build_input_stream::<u64>(
-            &device,
-            &config_stream,
-            app_handle,
-            sample_rate,
-            channels,
-            beat_sampler,
-            emit_flag,
-            gain_linear,
-        )?,
+        cpal::SampleFormat::F32 => build_stream!(f32),
+        cpal::SampleFormat::F64 => build_stream!(f64),
+        cpal::SampleFormat::I8 => build_stream!(i8),
+        cpal::SampleFormat::I16 => build_stream!(i16),
+        cpal::SampleFormat::I32 => build_stream!(i32),
+        cpal::SampleFormat::I64 => build_stream!(i64),
+        cpal::SampleFormat::U8 => build_stream!(u8),
+        cpal::SampleFormat::U16 => build_stream!(u16),
+        cpal::SampleFormat::U32 => build_stream!(u32),
+        cpal::SampleFormat::U64 => build_stream!(u64),
         format => return Err(format!("Unsupported sample format: {format:?}")),
     };
 

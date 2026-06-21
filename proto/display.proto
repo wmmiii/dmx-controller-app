@@ -38,7 +38,7 @@ message VirtualDisplay {
   string name = 1;
 
   bool enabled = 5;
-  
+
   uint32 width = 2;
   uint32 height = 3;
 
@@ -51,7 +51,6 @@ message DisplayRenderTarget {
   Color color = 2;
   float dimmer = 3;
 
-  // Tree of visualizers to render. Absent means no visualizers (output black).
   VisualizerNode visualizer_tree = 4;
 }
 

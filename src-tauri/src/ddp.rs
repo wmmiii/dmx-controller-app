@@ -71,10 +71,10 @@ impl DdpState {
                 // Look up the buffer for this display
                 if let Some(buffer) = buffers.get(display_id) {
                     let floats = map_segment_to_rgb(buffer, virtual_mapping, segment);
-                    // Convert f32 [0.0, 1.0] to u8 [0, 255] for DDP output
+                    // Convert f32 [0.0, 1.0] to u8 [0, 255] with gamma correction for WS281X LEDs
                     floats
                         .iter()
-                        .map(|f| (f.clamp(0.0, 1.0) * 255.0) as u8)
+                        .map(|f| gamma_correct(*f))
                         .collect()
                 } else {
                     // No buffer available, output black
@@ -92,6 +92,14 @@ impl DdpState {
         conn.write(&data).map_err(|e| e.to_string())?;
         Ok(())
     }
+}
+
+/// Gamma correction for WS281X LEDs.
+/// Gamma of 2.8 is typical for these LEDs to produce perceptually linear brightness.
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+fn gamma_correct(value: f32) -> u8 {
+    const GAMMA: f32 = 2.8;
+    (value.clamp(0.0, 1.0).powf(GAMMA) * 255.0) as u8
 }
 
 /// Generate black pixels for a segment (when no mapping exists)

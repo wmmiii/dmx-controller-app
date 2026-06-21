@@ -1,14 +1,18 @@
 const PREAMBLE = `#version 300 es
 precision highp float;
+precision highp int;
 
 uniform vec4 u_color;
-uniform float u_audio_bands[16];
 uniform float u_beat_t;
+uniform uint u_time_ms;
+uniform uint u_beat_count;
+uniform vec2 u_resolution;
+uniform float u_audio_bands[16];
 uniform vec4 u_palette_primary;
 uniform vec4 u_palette_secondary;
 uniform vec4 u_palette_tertiary;
-uniform vec2 u_resolution;
-uniform float u_time;
+uniform sampler2D u_previous_texture;
+uniform bool u_use_previous_texture;
 
 out vec4 fragColor;
 
@@ -25,7 +29,12 @@ const PREAMBLE_LINES = (PREAMBLE.match(/\n/g) ?? []).length;
 const EPILOGUE = `
 void main() {
     vec2 uv = gl_FragCoord.xy / u_resolution;
-    vec4 prev = checkerboard(gl_FragCoord.xy);
+    vec4 prev;
+    if (u_use_previous_texture) {
+        prev = texture(u_previous_texture, uv);
+    } else {
+        prev = checkerboard(gl_FragCoord.xy);
+    }
     fragColor = visualizer(uv, gl_FragCoord.xy, prev);
 }
 `;

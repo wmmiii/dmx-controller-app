@@ -39,6 +39,10 @@ tokio = { version = "1.48.0", features = ["time", "macros", "sync"] }
 wgpu = { version = "26.0", default-features = false, features = ["metal", "wgsl", "glsl"] }
 naga = { version = "26.0", default-features = false, features = ["glsl-in", "spv-out"] }
 
+[target.'cfg(target_os = "linux")'.dependencies]
+alsa-sys = "0.3"
+libc = "0.2"
+
 [target.'cfg(not(target_os = "ios"))'.dependencies]
 cpal = "0.15"
 midir = "0.10.2"

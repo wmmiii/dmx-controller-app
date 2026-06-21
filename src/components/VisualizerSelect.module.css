@@ -1,0 +1,25 @@
+.visualizer-select {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+}
+
+.item {
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-0-5);
+  align-items: center;
+
+  button {
+    flex-shrink: 0;
+    min-width: 0;
+  }
+}
+
+.name {
+  flex: 1;
+  overflow: hidden;
+  font-size: var(--dim-text-size-sm);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

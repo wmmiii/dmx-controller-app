@@ -334,7 +334,9 @@ function AddSegmentDropdown({ display }: AddSegmentDropdownProps) {
           (seg) =>
             !display.mappings.some(
               (m) =>
-                m.patch === project.activePatch && m.output === seg.outputId,
+                m.patch === project.activePatch &&
+                m.output === seg.outputId &&
+                Number(m.segment) === seg.segmentIndex,
             ),
         ),
     [activePatch, display.mappings, project.activePatch],

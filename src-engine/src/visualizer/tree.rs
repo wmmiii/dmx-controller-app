@@ -1,11 +1,3 @@
-//! Building and composing visualizer trees.
-//!
-//! A tree is built from the active tiles/effects each frame and stored in
-//! `DisplayRenderTarget.visualizer_tree`. Tile amounts and crossfade factors
-//! are baked into `Lerp.t` values during construction, so once the tree exists
-//! the renderer never needs to look back at tiles or effect state. Uniforms are
-//! computed once from the final display state and shared by every node.
-
 use crate::proto::visualizer_node::Node;
 use crate::proto::{VisualizerLerp, VisualizerNode, VisualizerSequence};
 
@@ -103,7 +95,7 @@ pub fn build_tile_composite_tree(tiles: &[(VisualizerNode, f32)]) -> Option<Visu
 }
 
 /// Structural equality used to decide whether interpolation needs two renders.
-/// Lerp nodes are never considered equal (their `t` always matters).
+/// Two trees are equal if they have identical structure and parameters.
 fn trees_equal(a: &VisualizerNode, b: &VisualizerNode) -> bool {
     match (&a.node, &b.node) {
         (Some(Node::Leaf(id_a)), Some(Node::Leaf(id_b))) => id_a == id_b,
@@ -115,6 +107,20 @@ fn trees_equal(a: &VisualizerNode, b: &VisualizerNode) -> bool {
                     .iter()
                     .zip(&seq_b.nodes)
                     .all(|(a, b)| trees_equal(a, b))
+        }
+        (Some(Node::Lerp(lerp_a)), Some(Node::Lerp(lerp_b))) => {
+            // Use a visually meaningful epsilon rather than f32::EPSILON (which is ~1.19e-7)
+            (lerp_a.t - lerp_b.t).abs() < 0.0001
+                && match (&lerp_a.a, &lerp_b.a) {
+                    (Some(a), Some(b)) => trees_equal(a, b),
+                    (None, None) => true,
+                    _ => false,
+                }
+                && match (&lerp_a.b, &lerp_b.b) {
+                    (Some(a), Some(b)) => trees_equal(a, b),
+                    (None, None) => true,
+                    _ => false,
+                }
         }
         _ => false,
     }
@@ -165,8 +171,7 @@ mod tests {
 
     #[test]
     fn fade_in_uses_black_side() {
-        let tree =
-            build_interpolated_tree(None, Some(VisualizerNode::leaf(2)), 0.25).unwrap();
+        let tree = build_interpolated_tree(None, Some(VisualizerNode::leaf(2)), 0.25).unwrap();
         match tree.node {
             Some(Node::Lerp(lerp)) => {
                 assert!(lerp.a.unwrap().is_black());
@@ -205,5 +210,73 @@ mod tests {
     fn tile_composite_all_inactive_is_none() {
         let tiles = vec![(VisualizerNode::leaf(1), 0.0)];
         assert!(build_tile_composite_tree(&tiles).is_none());
+    }
+
+    #[test]
+    fn identical_lerp_trees_collapse() {
+        // Simulates what happens when a ramp effect on DMX fixtures triggers
+        // interpolation on a display that already has a Lerp tree. Both sides
+        // should be recognized as equal, avoiding exponential tree growth.
+        let inner = VisualizerNode::lerp(VisualizerNode::black(), VisualizerNode::leaf(1), 0.5);
+        let inner_clone =
+            VisualizerNode::lerp(VisualizerNode::black(), VisualizerNode::leaf(1), 0.5);
+
+        let tree = build_interpolated_tree(Some(inner), Some(inner_clone), 0.3).unwrap();
+
+        // Should return one of the inputs, not wrap in another Lerp
+        match tree.node {
+            Some(Node::Lerp(lerp)) => {
+                assert!(
+                    (lerp.t - 0.5).abs() < f32::EPSILON,
+                    "should be inner lerp, not outer"
+                );
+                assert!(lerp.a.unwrap().is_black());
+                assert!(matches!(lerp.b.unwrap().node, Some(Node::Leaf(1))));
+            }
+            other => panic!("expected inner lerp, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn nearly_identical_lerp_t_values_collapse() {
+        // Lerp t values within 0.0001 tolerance should be considered equal,
+        // avoiding unnecessary re-renders for visually identical trees.
+        let inner_a = VisualizerNode::lerp(VisualizerNode::black(), VisualizerNode::leaf(1), 0.5);
+        let inner_b =
+            VisualizerNode::lerp(VisualizerNode::black(), VisualizerNode::leaf(1), 0.50005);
+
+        let tree = build_interpolated_tree(Some(inner_a), Some(inner_b), 0.3).unwrap();
+
+        // Should collapse to one of the inputs since t values are within tolerance
+        match tree.node {
+            Some(Node::Lerp(lerp)) => {
+                assert!(
+                    (lerp.t - 0.5).abs() < 0.001,
+                    "should be inner lerp (t≈0.5), not outer (t=0.3)"
+                );
+            }
+            other => panic!("expected inner lerp to collapse, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn different_lerp_t_values_do_not_collapse() {
+        // Lerp t values outside tolerance should NOT collapse
+        let inner_a = VisualizerNode::lerp(VisualizerNode::black(), VisualizerNode::leaf(1), 0.5);
+        let inner_b =
+            VisualizerNode::lerp(VisualizerNode::black(), VisualizerNode::leaf(1), 0.6);
+
+        let tree = build_interpolated_tree(Some(inner_a), Some(inner_b), 0.3).unwrap();
+
+        // Should create outer lerp since t values differ significantly
+        match tree.node {
+            Some(Node::Lerp(lerp)) => {
+                assert!(
+                    (lerp.t - 0.3).abs() < f32::EPSILON,
+                    "should be outer lerp (t=0.3), not inner"
+                );
+            }
+            other => panic!("expected outer lerp, got {other:?}"),
+        }
     }
 }

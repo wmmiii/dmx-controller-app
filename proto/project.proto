@@ -34,8 +34,7 @@ message Project {
   map<uint64, TargetGroup> groups = 19;
   map<uint64, VirtualDisplay> displays = 23;
 
-  // User-defined GLSL visualizers. Built-in visualizers are not stored here;
-  // they are provided by the engine at runtime.
+  // Visualizers
   map<uint64, Visualizer> visualizers = 63;
 
   Assets assets = 21;
@@ -64,8 +63,7 @@ message Project {
   // Empty string means no device selected.
   string selected_audio_input = 62;
 
-  // Gain applied to the audio input signal before analysis, in decibels.
-  // 0.0 dB = unity gain (no boost).
+  // Gain applied to the audio input signal before analysis, in dB.
   float audio_input_gain_db = 64;
 
   reserved 52; // uint32 active_scene = 52;

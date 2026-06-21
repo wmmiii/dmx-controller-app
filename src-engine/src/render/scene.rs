@@ -3,7 +3,7 @@ use std::cmp::Ordering;
 use crate::{
     audio::AudioAnalysis,
     beat::effective_beat_metadata,
-    project::DEFAULT_COLOR_PALETTE,
+    palette::interpolated_scene_palette,
     proto::{
         BeatMetadata, Duration, Effect, Project,
         scene::{
@@ -11,10 +11,7 @@ use crate::{
             tile::{EffectChannel, LoopDetails, OneShotDetails, TimingDetails, Transition},
         },
     },
-    render::{
-        render_target::RenderTarget,
-        util::{apply_effect, interpolate_palettes},
-    },
+    render::{render_target::RenderTarget, util::apply_effect},
 };
 
 impl Eq for TileMap {}
@@ -65,32 +62,7 @@ pub fn render_scene<T: RenderTarget<T>>(
     #[allow(clippy::cast_precision_loss)]
     let beat_t = (system_t - beat_metadata.offset_ms) as f64 / beat_metadata.length_ms;
 
-    // Interpolate color palette
-    let color_palette_t = {
-        #[allow(clippy::cast_sign_loss)]
-        #[allow(clippy::cast_possible_wrap)]
-        let since = (system_t as i64) - (scene.color_palette_start_transition as i64);
-        #[allow(clippy::cast_sign_loss)]
-        let since = if since < 0 { 0 } else { since as u64 };
-        #[allow(clippy::cast_precision_loss)]
-        (since as f64 / f64::from(scene.color_palette_transition_duration_ms)).min(1.0)
-    };
-
-    let color_palette = interpolate_palettes(
-        &scene
-            .color_palettes
-            .iter()
-            .find(|p| p.id == scene.last_active_color_palette)
-            .cloned()
-            .unwrap_or(DEFAULT_COLOR_PALETTE.clone()),
-        &scene
-            .color_palettes
-            .iter()
-            .find(|p| p.id == scene.active_color_palette)
-            .cloned()
-            .unwrap_or(DEFAULT_COLOR_PALETTE.clone()),
-        color_palette_t,
-    );
+    let color_palette = interpolated_scene_palette(project, scene_id, system_t);
 
     // Sort tiles by priority, then y (descending), then x (descending)
     let mut tile_map = scene.tile_map.clone();

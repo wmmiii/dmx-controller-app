@@ -14,7 +14,6 @@ mod sacn;
 #[cfg(desktop)]
 mod serial;
 mod shader;
-mod shader_spike;
 mod wled;
 
 /// No-op stub for mobile — serial DMX hardware is not available on iOS/Android
@@ -65,6 +64,10 @@ pub fn run() {
     unsafe {
         timeBeginPeriod(1);
     }
+
+    // Suppress ALSA/JACK error messages on Linux before audio device enumeration.
+    #[cfg(desktop)]
+    audio_input::suppress_audio_lib_errors();
 
     let builder = tauri::Builder::default();
 
@@ -157,12 +160,15 @@ pub fn run() {
             let ddp_state_arc = Arc::new(Mutex::new(ddp_state));
             app.manage(ddp_state_arc.clone());
 
-            // Initialize the GPU shader state for visualizer rendering. If the
-            // GPU is unavailable, log and continue — displays fall back to the
-            // CPU renderer.
+            // Initialize the GPU shader state for visualizer rendering.
             match tauri::async_runtime::block_on(shader::ShaderState::new()) {
                 Ok(shader_state) => {
-                    app.manage(Arc::new(StdMutex::new(shader_state)));
+                    let shader_state_arc = Arc::new(StdMutex::new(shader_state));
+                    app.manage(shader_state_arc.clone());
+
+                    // Sync user visualizers from the loaded project so they're
+                    // compiled before the display loop starts rendering.
+                    shader::sync_visualizer_shaders(&shader_state_arc);
                 }
                 Err(e) => log::error!("Failed to initialize GPU shader state: {e}"),
             }
@@ -238,7 +244,6 @@ pub fn run() {
             render::set_render_mode,
             shader::compile_visualizer,
             shader::get_builtin_visualizers,
-            shader_spike::test_shader_spike,
             #[cfg(desktop)]
             serial::list_ports,
             project::frontend_ready_for_update,

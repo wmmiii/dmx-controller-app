@@ -17,19 +17,23 @@ export interface VisualizerPreviewProps {
   palettePrimary: Color;
   paletteSecondary: Color;
   paletteTertiary: Color;
+  persistent: boolean;
   onCompileError: (line: number, message: string) => void;
   onCompileSuccess: () => void;
 }
 
 interface UniformLocations {
   color: WebGLUniformLocation | null;
+  timeMs: WebGLUniformLocation | null;
   audioBands: WebGLUniformLocation | null;
   beatT: WebGLUniformLocation | null;
+  beatCount: WebGLUniformLocation | null;
   palettePrimary: WebGLUniformLocation | null;
   paletteSecondary: WebGLUniformLocation | null;
   paletteTertiary: WebGLUniformLocation | null;
   resolution: WebGLUniformLocation | null;
-  time: WebGLUniformLocation | null;
+  previousTexture: WebGLUniformLocation | null;
+  usePreviousTexture: WebGLUniformLocation | null;
 }
 
 function parseWebGLError(
@@ -50,13 +54,16 @@ function cacheUniformLocations(
 ): UniformLocations {
   return {
     color: gl.getUniformLocation(prog, 'u_color'),
+    timeMs: gl.getUniformLocation(prog, 'u_time_ms'),
     audioBands: gl.getUniformLocation(prog, 'u_audio_bands'),
     beatT: gl.getUniformLocation(prog, 'u_beat_t'),
+    beatCount: gl.getUniformLocation(prog, 'u_beat_count'),
     palettePrimary: gl.getUniformLocation(prog, 'u_palette_primary'),
     paletteSecondary: gl.getUniformLocation(prog, 'u_palette_secondary'),
     paletteTertiary: gl.getUniformLocation(prog, 'u_palette_tertiary'),
     resolution: gl.getUniformLocation(prog, 'u_resolution'),
-    time: gl.getUniformLocation(prog, 'u_time'),
+    previousTexture: gl.getUniformLocation(prog, 'u_previous_texture'),
+    usePreviousTexture: gl.getUniformLocation(prog, 'u_use_previous_texture'),
   };
 }
 
@@ -67,6 +74,7 @@ export function VisualizerPreview({
   palettePrimary,
   paletteSecondary,
   paletteTertiary,
+  persistent,
   onCompileError,
   onCompileSuccess,
 }: VisualizerPreviewProps) {
@@ -80,6 +88,9 @@ export function VisualizerPreview({
   const beatPhaseRef = useRef(0);
   const lastTimeRef = useRef<number | null>(null);
   const audioBandsRef = useRef(new Float32Array(16));
+
+  // Persistent mode: texture to store previous frame
+  const previousTextureRef = useRef<WebGLTexture | null>(null);
 
   useEffect(() => {
     return addAudioAnalysisListener((analysis) => {
@@ -96,6 +107,7 @@ export function VisualizerPreview({
     palettePrimary,
     paletteSecondary,
     paletteTertiary,
+    persistent,
   });
   propsRef.current = {
     color,
@@ -103,6 +115,7 @@ export function VisualizerPreview({
     palettePrimary,
     paletteSecondary,
     paletteTertiary,
+    persistent,
   };
 
   const onCompileErrorRef = useRef(onCompileError);
@@ -119,6 +132,10 @@ export function VisualizerPreview({
 
     const fs = gl.createShader(gl.FRAGMENT_SHADER);
     if (!fs) {
+      onCompileErrorRef.current(
+        0,
+        'Failed to create fragment shader (WebGL context lost?)',
+      );
       return;
     }
 
@@ -136,6 +153,10 @@ export function VisualizerPreview({
     const prog = gl.createProgram();
     if (!prog) {
       gl.deleteShader(fs);
+      onCompileErrorRef.current(
+        0,
+        'Failed to create shader program (WebGL context lost?)',
+      );
       return;
     }
 
@@ -178,6 +199,31 @@ export function VisualizerPreview({
     gl.compileShader(vs);
     vsRef.current = vs;
 
+    // Helper to ensure previous texture exists and matches canvas size
+    const ensurePreviousTexture = (width: number, height: number) => {
+      if (!previousTextureRef.current) {
+        const tex = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.texImage2D(
+          gl.TEXTURE_2D,
+          0,
+          gl.RGBA,
+          width,
+          height,
+          0,
+          gl.RGBA,
+          gl.UNSIGNED_BYTE,
+          null,
+        );
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        previousTextureRef.current = tex;
+        gl.bindTexture(gl.TEXTURE_2D, null);
+      }
+    };
+
     compileFragShader(glslSource);
 
     const renderLoop = (time: number) => {
@@ -196,8 +242,10 @@ export function VisualizerPreview({
 
         const dt = lastTimeRef.current != null ? time - lastTimeRef.current : 0;
         lastTimeRef.current = time;
-        beatPhaseRef.current =
-          (beatPhaseRef.current + (dt * MOCK_BPM) / 60_000) % 1;
+        // Accumulate beat position, then split into count (integer) and phase (fractional)
+        beatPhaseRef.current += (dt * MOCK_BPM) / 60_000;
+        const beatT = beatPhaseRef.current % 1; // 0-1 fractional position
+        const beatCount = Math.floor(beatPhaseRef.current); // Integer beat number
 
         const {
           color,
@@ -205,10 +253,31 @@ export function VisualizerPreview({
           palettePrimary,
           paletteSecondary,
           paletteTertiary,
+          persistent,
         } = propsRef.current;
+
+        // Ensure previous texture exists for persistent mode
+        if (persistent && w > 0 && h > 0) {
+          ensurePreviousTexture(w, h);
+        }
 
         currentGl.viewport(0, 0, canvas.width, canvas.height);
         currentGl.useProgram(prog);
+
+        // Bind the previous frame texture if in persistent mode
+        if (persistent && previousTextureRef.current) {
+          currentGl.activeTexture(currentGl.TEXTURE0);
+          currentGl.bindTexture(
+            currentGl.TEXTURE_2D,
+            previousTextureRef.current,
+          );
+          if (locs.previousTexture !== null) {
+            currentGl.uniform1i(locs.previousTexture, 0);
+          }
+        }
+        if (locs.usePreviousTexture !== null) {
+          currentGl.uniform1i(locs.usePreviousTexture, persistent ? 1 : 0);
+        }
 
         currentGl.uniform4f(
           locs.color,
@@ -217,8 +286,10 @@ export function VisualizerPreview({
           color.blue,
           dimmer,
         );
+        currentGl.uniform1ui(locs.timeMs, Math.trunc(performance.now()));
         currentGl.uniform1fv(locs.audioBands, audioBandsRef.current);
-        currentGl.uniform1f(locs.beatT, beatPhaseRef.current);
+        currentGl.uniform1f(locs.beatT, beatT);
+        currentGl.uniform1ui(locs.beatCount, beatCount);
         currentGl.uniform4f(
           locs.palettePrimary,
           palettePrimary.red,
@@ -241,9 +312,29 @@ export function VisualizerPreview({
           1.0,
         );
         currentGl.uniform2f(locs.resolution, canvas.width, canvas.height);
-        currentGl.uniform1f(locs.time, performance.now() % 86_400_000);
 
+        // Render to canvas
         currentGl.drawArrays(currentGl.TRIANGLES, 0, 3);
+
+        // If persistent mode, copy the canvas to the previous texture for next frame
+        if (persistent && previousTextureRef.current) {
+          currentGl.bindTexture(
+            currentGl.TEXTURE_2D,
+            previousTextureRef.current,
+          );
+          // Copy the canvas pixels to the texture
+          currentGl.copyTexImage2D(
+            currentGl.TEXTURE_2D,
+            0,
+            currentGl.RGBA,
+            0,
+            0,
+            w,
+            h,
+            0,
+          );
+          currentGl.bindTexture(currentGl.TEXTURE_2D, null);
+        }
       }
 
       animFrameRef.current = requestAnimationFrame(renderLoop);
@@ -253,11 +344,16 @@ export function VisualizerPreview({
 
     return () => {
       cancelAnimationFrame(animFrameRef.current);
+      const currentGl = glRef.current;
+      if (!currentGl) return;
       if (programRef.current) {
-        gl.deleteProgram(programRef.current);
+        currentGl.deleteProgram(programRef.current);
       }
       if (vsRef.current) {
-        gl.deleteShader(vsRef.current);
+        currentGl.deleteShader(vsRef.current);
+      }
+      if (previousTextureRef.current) {
+        currentGl.deleteTexture(previousTextureRef.current);
       }
     };
   }, []);

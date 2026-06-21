@@ -2,6 +2,13 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router';
 
+// BigInt has no built-in JSON representation; patch toJSON so that any
+// JSON.stringify call (React internals, useMemo deps, etc.) converts bigints
+// to strings instead of throwing "cannot serialize BigInt".
+(BigInt.prototype as unknown as { toJSON: () => string }).toJSON = function () {
+  return this.toString();
+};
+
 import Index from './Index';
 import { preloadWasm } from './wasm/engine';
 

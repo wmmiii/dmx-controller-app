@@ -103,6 +103,21 @@ export function DdpEditor({ outputId }: DdpEditorProps) {
         </>
       }
     >
+      <Button
+        onClick={() => {
+          ddpOutput.segments.push(
+            create(PhysicalSegmentSchema, {
+              shape: {
+                case: 'line',
+                value: { length: 1 },
+              },
+            }),
+          );
+          save(`Add segment to ${output.name}.`);
+        }}
+      >
+        + Add Segment
+      </Button>
       <p>Total pixels: {totalPixels}</p>
     </OutputFrame>
   );

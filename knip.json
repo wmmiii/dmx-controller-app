@@ -6,5 +6,6 @@
     "@bufbuild/protoc-gen-connect-es",
     "@bufbuild/protoc-gen-es",
     "protoc"
-  ]
+  ],
+  "ignoreBinaries": ["wasm-pack"]
 }

@@ -408,49 +408,6 @@ pub fn calculate_timing(
     }
 }
 
-pub fn interpolate_palettes(a: &ColorPalette, b: &ColorPalette, t: f64) -> ColorPalette {
-    use crate::proto::{Color, ColorPalette, color_palette::ColorDescription};
-
-    let interpolate_color = |a: &Color, b: &Color, t: f64| -> Color {
-        Color {
-            red: (1.0 - t) * a.red + t * b.red,
-            green: (1.0 - t) * a.green + t * b.green,
-            blue: (1.0 - t) * a.blue + t * b.blue,
-            white: match (a.white, b.white) {
-                (Some(aw), Some(bw)) => Some((1.0 - t) * aw + t * bw),
-                (Some(aw), None) => Some((1.0 - t) * aw),
-                (None, Some(bw)) => Some(t * bw),
-                (None, None) => None,
-            },
-        }
-    };
-
-    let interpolate_desc = |a: Option<&ColorDescription>,
-                            b: Option<&ColorDescription>,
-                            t: f64|
-     -> Option<ColorDescription> {
-        match (a, b) {
-            (Some(a_desc), Some(b_desc)) => match (&a_desc.color, &b_desc.color) {
-                (Some(a_color), Some(b_color)) => Some(ColorDescription {
-                    color: Some(interpolate_color(a_color, b_color, t)),
-                }),
-                _ => None,
-            },
-            (Some(a_desc), None) => Some(*a_desc),
-            (None, Some(b_desc)) => Some(*b_desc),
-            (None, None) => None,
-        }
-    };
-
-    ColorPalette {
-        id: u64::MAX,
-        name: b.name.clone(),
-        primary: interpolate_desc(a.primary.as_ref(), b.primary.as_ref(), t),
-        secondary: interpolate_desc(a.secondary.as_ref(), b.secondary.as_ref(), t),
-        tertiary: interpolate_desc(a.tertiary.as_ref(), b.tertiary.as_ref(), t),
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

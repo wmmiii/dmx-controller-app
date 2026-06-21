@@ -178,30 +178,34 @@ export function LivePage(): JSX.Element {
         >
           Edit palettes
         </Button>
-        <Button
-          icon={<BiPlus />}
-          onClick={() => {
-            const activePalette = scene.colorPalettes.find(
-              (p) => p.id === scene.activeColorPalette,
-            );
+        {editPalette && (
+          <Button
+            icon={<BiPlus />}
+            onClick={() => {
+              const activePalette = scene.colorPalettes.find(
+                (p) => p.id === scene.activeColorPalette,
+              );
 
-            if (!activePalette) {
-              throw Error('Cannot find active color palette: ' + activePalette);
-            }
+              if (!activePalette) {
+                throw Error(
+                  'Cannot find active color palette: ' + activePalette,
+                );
+              }
 
-            const newPalette = clone(ColorPaletteSchema, activePalette);
-            newPalette.id = randomUint64();
-            newPalette.name = 'New color palette';
-            scene.colorPalettes.push(newPalette);
+              const newPalette = clone(ColorPaletteSchema, activePalette);
+              newPalette.id = randomUint64();
+              newPalette.name = 'New color palette';
+              scene.colorPalettes.push(newPalette);
 
-            scene.lastActiveColorPalette = scene.activeColorPalette;
-            scene.activeColorPalette = newPalette.id;
-            scene.colorPaletteStartTransition = BigInt(new Date().getTime());
-            save('Add new color palette');
-          }}
-        >
-          Palette
-        </Button>
+              scene.lastActiveColorPalette = scene.activeColorPalette;
+              scene.activeColorPalette = newPalette.id;
+              scene.colorPaletteStartTransition = BigInt(new Date().getTime());
+              save('Add new color palette');
+            }}
+          >
+            Palette
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -620,6 +624,7 @@ function EffectGroupEditor({ channels, name }: EffectGroupEditorProps) {
               effect={c.effect}
               showPhase={c.outputTarget?.output.case === 'group'}
               availableChannels={getAvailableChannels(c.outputTarget, project)}
+              isDisplay={c.outputTarget?.output.case === 'display'}
             />
           </div>
         );

@@ -9,12 +9,13 @@ import {
   VisualizerSchema,
 } from '@dmx-controller/proto/visualizer_pb';
 import clsx from 'clsx';
-import { useContext, useEffect, useState } from 'react';
-import { BiCopy, BiTrash } from 'react-icons/bi';
+import { useContext, useEffect, useRef, useState } from 'react';
+import { BiCopy, BiPlus, BiTrash } from 'react-icons/bi';
 import { Button } from '../../components/Button';
 import { ColorSwatch } from '../../components/ColorSwatch';
 import { EditableText, NumberInput } from '../../components/Input';
 import { MonacoEditor } from '../../components/MonacoEditor';
+import { Toggle } from '../../components/Toggle';
 import { ProjectContext } from '../../contexts/ProjectContext';
 import {
   compileVisualizer,
@@ -27,12 +28,13 @@ import { VisualizerPreview } from './VisualizerPreview';
 const DEFAULT_GLSL = `// Available uniforms:
 //   vec4  u_color             — display color RGB + dimmer
 //   float u_audio_bands[16]   — frequency bands, 0.0-1.0 (low to high)
-//   float u_beat_t            — beat phase, 0.0-1.0
+//   float u_beat_t            — beat phase, 0.0-1.0 (position within beat)
+//   float u_beat_count        — beat number
 //   vec4  u_palette_primary   — palette color 1
 //   vec4  u_palette_secondary — palette color 2
 //   vec4  u_palette_tertiary  — palette color 3
 //   vec2  u_resolution        — display size in pixels
-//   float u_time              — wall-clock milliseconds (wraps daily)
+//   float u_time_ms           — wall-clock milliseconds
 //
 // Parameters:
 //   vec2 uv          — normalized coords (0,0) top-left to (1,1) bottom-right
@@ -100,30 +102,34 @@ function VisualizerList({
 
   return (
     <div className={styles.visualizerList}>
-      <Button onClick={createNew}>+ Add Visualizer</Button>
+      <Button icon={<BiPlus size={18} />} onClick={createNew}>
+        Add Visualizer
+      </Button>
       {userEntries.length > 0 && (
         <>
           <h3>My Visualizers</h3>
           <ul>
-            {userEntries.map(([id, v]) => (
-              <li
-                key={id}
-                className={clsx({
-                  [styles.selected]: BigInt(id) === selectedId,
-                })}
-                onClick={() => onSelect(BigInt(id))}
-              >
-                <EditableText
-                  value={v.name}
-                  onChange={(name) => {
-                    if (name) {
-                      v.name = name;
-                      save(`Set visualizer name to "${name}".`);
-                    }
-                  }}
-                />
-              </li>
-            ))}
+            {userEntries
+              .sort(([_a, a], [_b, b]) => a.name.localeCompare(b.name))
+              .map(([id, v]) => (
+                <li
+                  key={id}
+                  className={clsx({
+                    [styles.selected]: BigInt(id) === selectedId,
+                  })}
+                  onClick={() => onSelect(BigInt(id))}
+                >
+                  <EditableText
+                    value={v.name}
+                    onChange={(name) => {
+                      if (name) {
+                        v.name = name;
+                        save(`Set visualizer name to "${name}".`);
+                      }
+                    }}
+                  />
+                </li>
+              ))}
           </ul>
         </>
       )}
@@ -131,17 +137,19 @@ function VisualizerList({
         <>
           <h3>Built-in</h3>
           <ul>
-            {builtinEntries.map(([id, v]) => (
-              <li
-                key={id}
-                className={clsx({
-                  [styles.selected]: BigInt(id) === selectedId,
-                })}
-                onClick={() => onSelect(BigInt(id))}
-              >
-                {v.name}
-              </li>
-            ))}
+            {builtinEntries
+              .sort(([_a, a], [_b, b]) => a.name.localeCompare(b.name))
+              .map(([id, v]) => (
+                <li
+                  key={id}
+                  className={clsx({
+                    [styles.selected]: BigInt(id) === selectedId,
+                  })}
+                  onClick={() => onSelect(BigInt(id))}
+                >
+                  {v.name}
+                </li>
+              ))}
           </ul>
         </>
       )}
@@ -164,6 +172,7 @@ function PreviewColumn({
     create(ColorSchema, { red: 1, green: 1, blue: 1 }),
   );
   const [dimmer, setDimmer] = useState(1.0);
+  const [persistent, setPersistent] = useState(false);
   const [previewPalette] = useState(() =>
     create(ColorPaletteSchema, {
       primary: { color: { red: 1, green: 0, blue: 1 } },
@@ -172,50 +181,47 @@ function PreviewColumn({
     }),
   );
 
-  const palettePrimary =
-    previewPalette.primary?.color ?? create(ColorSchema, {});
-  const paletteSecondary =
-    previewPalette.secondary?.color ?? create(ColorSchema, {});
-  const paletteTertiary =
-    previewPalette.tertiary?.color ?? create(ColorSchema, {});
-
   return (
     <div className={styles.previewColumn}>
       <div className={styles.previewControls}>
-        <label className={styles.controlGroup}>
+        <label>
           Color
           <ColorSwatch
             color={previewColor}
             updateDescription="Update preview color"
           />
         </label>
-        <label className={styles.controlGroup}>
+        <label>
           Dimmer
-          <NumberInput
-            title="Dimmer"
-            value={dimmer}
-            onChange={setDimmer}
-          />
+          <NumberInput title="Dimmer" value={dimmer} onChange={setDimmer} />
         </label>
-        <label className={styles.controlGroup}>
+        <label>
           Primary
           <ColorSwatch
-            color={palettePrimary}
+            color={previewPalette.primary!.color!}
             updateDescription="Update preview primary"
           />
         </label>
-        <label className={styles.controlGroup}>
+        <label>
           Secondary
           <ColorSwatch
-            color={paletteSecondary}
+            color={previewPalette.secondary!.color!}
             updateDescription="Update preview secondary"
           />
         </label>
-        <label className={styles.controlGroup}>
+        <label>
           Tertiary
           <ColorSwatch
-            color={paletteTertiary}
+            color={previewPalette.tertiary!.color!}
             updateDescription="Update preview tertiary"
+          />
+        </label>
+        <label>
+          Persistent
+          <Toggle
+            title="Use previous frame as prev_pixel input."
+            value={persistent}
+            onChange={setPersistent}
           />
         </label>
       </div>
@@ -223,9 +229,10 @@ function PreviewColumn({
         glslSource={glslSource}
         color={previewColor}
         dimmer={dimmer}
-        palettePrimary={palettePrimary}
-        paletteSecondary={paletteSecondary}
-        paletteTertiary={paletteTertiary}
+        persistent={persistent}
+        palettePrimary={previewPalette.primary!.color!}
+        paletteSecondary={previewPalette.secondary!.color!}
+        paletteTertiary={previewPalette.tertiary!.color!}
         onCompileError={onCompileError}
         onCompileSuccess={onCompileSuccess}
       />
@@ -260,6 +267,64 @@ function VisualizerEditorPane({
     line: number;
     message: string;
   } | null>(null);
+
+  // Track the last known project source for undo/redo sync detection
+  const projectSource = visualizer?.glslSource ?? '';
+  const lastProjectSourceRef = useRef(projectSource);
+
+  // Sync editor with project when project changes externally (undo/redo)
+  // Only sync if user hasn't made local edits (editSource matches last known project source)
+  useEffect(() => {
+    if (projectSource !== lastProjectSourceRef.current) {
+      if (editSource === lastProjectSourceRef.current) {
+        setEditSource(projectSource);
+      }
+      lastProjectSourceRef.current = projectSource;
+    }
+  }, [projectSource, editSource]);
+
+  // Refs to capture current values for save-on-unmount (avoids stale closures)
+  const editSourceRef = useRef(editSource);
+  const selectedIdRef = useRef(selectedId);
+  const isBuiltinRef = useRef(isBuiltin);
+  const visualizerRef = useRef(visualizer);
+  const saveRef = useRef(save);
+
+  // Keep refs in sync with latest values
+  editSourceRef.current = editSource;
+  selectedIdRef.current = selectedId;
+  isBuiltinRef.current = isBuiltin;
+  visualizerRef.current = visualizer;
+  saveRef.current = save;
+
+  // Attempt save on unmount if there are unsaved changes
+  useEffect(() => {
+    return () => {
+      const currentSource = editSourceRef.current;
+      const currentId = selectedIdRef.current;
+      const currentVisualizer = visualizerRef.current;
+      const currentSave = saveRef.current;
+
+      if (
+        !isBuiltinRef.current &&
+        currentId != null &&
+        currentVisualizer &&
+        currentSource !== currentVisualizer.glslSource
+      ) {
+        // Fire-and-forget compile & save
+        compileVisualizer(currentId, currentSource)
+          .then((result) => {
+            if (result.success) {
+              currentVisualizer.glslSource = currentSource;
+              currentSave(`Update visualizer "${currentVisualizer.name}".`);
+            }
+          })
+          .catch(() => {
+            // Silent failure on unmount - user already navigated away
+          });
+      }
+    };
+  }, []);
 
   if (selectedId == null || visualizer == null) {
     return <div className={styles.emptyPane}>Select a visualizer to edit.</div>;
@@ -320,16 +385,20 @@ function VisualizerEditorPane({
         onCompileError={(line, message) => setBrowserError({ line, message })}
         onCompileSuccess={() => setBrowserError(null)}
       />
-      <div className={styles.monacoColumn}>
+      <div className={styles.editorColumn}>
         <div className={styles.editorHeader}>
           {!isBuiltin && (
-            <Button variant="warning" icon={<BiTrash />} onClick={handleDelete}>
+            <Button
+              variant="warning"
+              icon={<BiTrash size={18} />}
+              onClick={handleDelete}
+            >
               Delete
             </Button>
           )}
-          <div className={styles.editorHeaderSpacer} />
-          <Button icon={<BiCopy />} onClick={handleCopy}>
-            {isBuiltin ? 'Copy to Edit' : 'Duplicate'}
+          <div className={styles.spacer} />
+          <Button icon={<BiCopy size={18} />} onClick={handleCopy}>
+            {isBuiltin ? 'Copy to Edit' : 'Copy'}
           </Button>
           {!isBuiltin && (
             <Button
@@ -347,6 +416,14 @@ function VisualizerEditorPane({
             copy.
           </div>
         )}
+        {compileResult?.success && !browserError && (
+          <div className={styles.compileSuccess}>Compiled and saved.</div>
+        )}
+        {displayedError && (
+          <div className={styles.errorDisplay}>
+            Line {displayedError.line}: {displayedError.message}
+          </div>
+        )}
         <div className={styles.editorWrapper}>
           <MonacoEditor
             value={editSource}
@@ -355,14 +432,6 @@ function VisualizerEditorPane({
             error={displayedError ?? undefined}
           />
         </div>
-        {displayedError && (
-          <div className={styles.errorDisplay}>
-            Line {displayedError.line}: {displayedError.message}
-          </div>
-        )}
-        {compileResult?.success && !browserError && (
-          <div className={styles.compileSuccess}>Compiled and saved.</div>
-        )}
       </div>
     </div>
   );

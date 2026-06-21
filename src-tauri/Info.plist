@@ -4,5 +4,7 @@
 <dict>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>DMX Controller App uses microphone access for real-time audio-responsive lighting effects.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>DMX Controller App sends lighting data to DMX, sACN/E1.31, WLED, and DDP devices on your local network.</string>
 </dict>
 </plist>

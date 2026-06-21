@@ -1338,11 +1338,13 @@ dependencies = [
 name = "dmx_controller_app"
 version = "0.1.0"
 dependencies = [
+ "alsa-sys",
  "bytemuck",
  "chrono",
  "cpal",
  "ddp-rs",
  "dmx-engine",
+ "libc",
  "log",
  "midir",
  "naga",

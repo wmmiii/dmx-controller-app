@@ -1,6 +1,8 @@
 pub mod audio;
 pub mod beat;
+pub mod color;
 pub mod midi;
+pub mod palette;
 pub mod project;
 pub mod proto;
 pub mod render;

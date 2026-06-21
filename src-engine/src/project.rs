@@ -4,42 +4,15 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use crate::proto::{
-    BeatMetadata, Color, ColorPalette, ControllerBindingsMap, ControllerMapping,
-    FixtureDefinitions, Patch, Project, Scene, color_palette::ColorDescription,
+use crate::{
+    palette::DEFAULT_COLOR_PALETTE,
+    proto::{
+        BeatMetadata, ControllerBindingsMap, ControllerMapping, FixtureDefinitions, Patch,
+        Project, Scene,
+    },
 };
 
 const MAX_UNDO: usize = 100;
-
-/// Default color palette used as a fallback when a palette cannot be found.
-pub static DEFAULT_COLOR_PALETTE: LazyLock<ColorPalette> = LazyLock::new(|| ColorPalette {
-    id: 0,
-    name: "Default".to_string(),
-    primary: Some(ColorDescription {
-        color: Some(Color {
-            red: 1.0,
-            green: 0.0,
-            blue: 1.0,
-            white: None,
-        }),
-    }),
-    secondary: Some(ColorDescription {
-        color: Some(Color {
-            red: 0.0,
-            green: 1.0,
-            blue: 1.0,
-            white: None,
-        }),
-    }),
-    tertiary: Some(ColorDescription {
-        color: Some(Color {
-            red: 1.0,
-            green: 1.0,
-            blue: 0.0,
-            white: None,
-        }),
-    }),
-});
 
 /// Represents a single operation in the undo stack
 struct Operation {

@@ -18,9 +18,9 @@ export async function compileVisualizer(
   return fromBinary(VisualizerCompilationResultSchema, new Uint8Array(bytes));
 }
 
-export async function getBuiltinVisualizers(): Promise<
-  Record<string, Visualizer>
-> {
+export async function getBuiltinVisualizers(): Promise<{
+  [id: string]: Visualizer;
+}> {
   const result = await invoke<Record<string, number[]>>(
     'get_builtin_visualizers',
   );

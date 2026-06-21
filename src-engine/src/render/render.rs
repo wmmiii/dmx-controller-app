@@ -2,14 +2,14 @@ use std::fmt;
 use std::sync::{LazyLock, Mutex};
 
 use crate::audio::AudioAnalysis;
-use crate::beat::effective_beat_metadata;
-use crate::project::DEFAULT_COLOR_PALETTE;
+use crate::beat::{beat_t, effective_beat_metadata};
+use crate::palette::interpolated_scene_palette;
 use crate::visualizer::uniforms::ShaderUniforms;
 use crate::{
     project,
     proto::{
-        Color, ColorPalette, DisplayBuffer, DisplayRenderTarget, FixtureState, OutputTarget,
-        Project, RenderMode, WledRenderTarget,
+        Color, ColorPalette, DisplayRenderTarget, FixtureState, OutputTarget, Project, RenderMode,
+        WledRenderTarget,
         color_palette::ColorDescription,
         fixture_state::LightColor,
         output::Output,
@@ -19,7 +19,7 @@ use crate::{
     },
     render::{
         dmx_render_target::DmxRenderTarget, render_target::RenderTarget, scene::render_scene,
-        shaders::render_display_shaders, util::get_fixtures,
+        util::get_fixtures,
     },
 };
 
@@ -246,24 +246,6 @@ pub fn render_display_target(
     nested_result.map_err(RenderError::LockError)?
 }
 
-/// Render a virtual display to a `DisplayBuffer` (f32 RGB) using the CPU
-/// fallback path. The GPU path lives in the Tauri layer (`shader.rs`) which
-/// consumes `render_display_target` directly.
-pub fn render_display(
-    display_id: u64,
-    system_t: u64,
-    frame: u32,
-) -> Result<DisplayBuffer, RenderError> {
-    let data = render_display_target(display_id, system_t, frame)?;
-    Ok(render_display_shaders(
-        display_id,
-        data.width,
-        data.height,
-        system_t,
-        &data.uniforms,
-    ))
-}
-
 /// Build the flattened shader uniforms from the final interpolated display
 /// state. Computed once per display and shared by every shader in the tree.
 #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
@@ -275,54 +257,41 @@ fn build_shader_uniforms(
     height: u32,
     system_t: u64,
 ) -> ShaderUniforms {
-    let dimmer = target.dimmer;
-    let color = target.color.map_or([0.0, 0.0, 0.0, dimmer], |c| {
-        [c.red as f32, c.green as f32, c.blue as f32, dimmer]
-    });
+    // Compute beat position.
+    let beat_raw = effective_beat_metadata(project, system_t)
+        .and_then(|bm| beat_t(&bm, system_t).ok())
+        .unwrap_or(0.0);
+    let beat_fract = beat_raw.fract() as f32; // 0.0-1.0 position within beat
+    #[allow(clippy::cast_sign_loss)]
+    let beat_count = beat_raw.trunc() as u32; // Integer beat number
 
-    let beat_t = effective_beat_metadata(project, system_t)
-        .filter(|bm| bm.length_ms > 0.0)
-        .map_or(0.0, |bm| {
-            let elapsed = system_t.saturating_sub(bm.offset_ms) as f64;
-            (elapsed / bm.length_ms).rem_euclid(1.0) as f32
-        });
+    let palette = interpolated_scene_palette(project, project.active_scene, system_t);
 
-    // Palette from the active scene's active palette (no transition lerp here).
-    let palette = project
-        .scenes
-        .get(&project.active_scene)
-        .and_then(|scene| {
-            scene
-                .color_palettes
-                .iter()
-                .find(|p| p.id == scene.active_color_palette)
-        })
-        .cloned()
-        .unwrap_or_else(|| DEFAULT_COLOR_PALETTE.clone());
+    let mut uniforms = ShaderUniforms::default();
+    uniforms.color = color_to_rgb(target.color.as_ref());
+    uniforms.set_resolution(width as f32, height as f32);
+    uniforms.time_ms = system_t as u32;
+    uniforms.beat_t = beat_fract;
+    uniforms.beat_count = beat_count;
+    uniforms.palette_primary = palette_rgb(palette.primary.as_ref());
+    uniforms.palette_secondary = palette_rgb(palette.secondary.as_ref());
+    uniforms.palette_tertiary = palette_rgb(palette.tertiary.as_ref());
+    uniforms.set_audio_bands(audio.bands);
+    uniforms
+}
 
-    ShaderUniforms {
-        color,
-        audio_bands: audio.bands,
-        beat_t,
-        palette_primary: palette_rgba(palette.primary.as_ref()),
-        palette_secondary: palette_rgba(palette.secondary.as_ref()),
-        palette_tertiary: palette_rgba(palette.tertiary.as_ref()),
-        resolution: [width as f32, height as f32],
-        // `system_t` is the unix timestamp in ms. An f32 only has ~24 bits of
-        // mantissa, so the raw value (~1.7e12) would quantize to ~256ms steps —
-        // useless for animation. Wrapping modulo a day keeps full ms precision
-        // while staying phase-aligned to wall-clock time (so beat/clock-driven
-        // shaders stay in sync); the once-per-day discontinuity is harmless.
-        time: (system_t % 86_400_000) as f32,
-        ..Default::default()
-    }
+/// Convert a Color to an RGB array, spreading the white channel across RGB.
+#[allow(clippy::cast_possible_truncation)]
+fn color_to_rgb(color: Option<&Color>) -> [f32; 3] {
+    color.map_or([0.0, 0.0, 0.0], |c| {
+        let w = c.white.unwrap_or(0.0) as f32;
+        [c.red as f32 + w, c.green as f32 + w, c.blue as f32 + w]
+    })
 }
 
 #[allow(clippy::cast_possible_truncation)]
-fn palette_rgba(desc: Option<&ColorDescription>) -> [f32; 4] {
-    desc.and_then(|d| d.color.as_ref()).map_or([0.0, 0.0, 0.0, 1.0], |c| {
-        [c.red as f32, c.green as f32, c.blue as f32, 1.0]
-    })
+fn palette_rgb(desc: Option<&ColorDescription>) -> [f32; 3] {
+    color_to_rgb(desc.and_then(|d| d.color.as_ref()))
 }
 
 fn render<T: RenderTarget<T>>(

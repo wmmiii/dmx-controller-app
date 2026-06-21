@@ -2,7 +2,6 @@ use dmx_engine::project;
 use dmx_engine::proto::output::Output as ProtoOutput;
 use dmx_engine::proto::{DdpOutput, DisplayBuffer, PhysicalDisplayMapping};
 use dmx_engine::render::render::{DisplayRenderData, RenderError, render_display_target};
-use dmx_engine::render::shaders::render_display_shaders;
 use prost::Message;
 use serde::Serialize;
 use std::collections::HashMap;
@@ -252,8 +251,6 @@ impl DisplayLoopManager {
                 break;
             }
 
-            // GPU shader state is optional: if it failed to initialize we fall
-            // back to the CPU renderer for every display.
             let shader_state = app.try_state::<Arc<StdMutex<ShaderState>>>();
 
             // Render all displays
@@ -268,12 +265,7 @@ impl DisplayLoopManager {
                     }
                 };
 
-                let buffer = render_display_buffer(
-                    *display_id,
-                    &data,
-                    system_t,
-                    shader_state.as_deref(),
-                );
+                let buffer = render_display_buffer(*display_id, &data, shader_state.as_deref());
 
                 let event = DisplayRenderEvent {
                     display_id: display_id.to_string(),
@@ -336,39 +328,58 @@ impl DisplayLoopManager {
     }
 }
 
-/// Render a single display to a `DisplayBuffer`. Uses the GPU shader pipeline
-/// when the display has a visualizer tree and GPU state is available; otherwise
-/// falls back to the CPU renderer.
+/// Render a single display to a `DisplayBuffer`.
 fn render_display_buffer(
     display_id: u64,
     data: &DisplayRenderData,
-    system_t: u64,
     shader_state: Option<&Arc<StdMutex<ShaderState>>>,
 ) -> DisplayBuffer {
     if let (Some(tree), Some(shader_state)) = (&data.uniforms.visualizer_tree, shader_state) {
         // Readback blocks on GPU work; keep it off the async executor threads.
         let rgba = tokio::task::block_in_place(|| {
-            let mut state = shader_state.lock().expect("shader state lock poisoned");
-            state.render_and_readback(tree, &data.shader_uniforms, data.width, data.height)
+            let mut state = shader_state.lock().unwrap_or_else(|e| {
+                log::error!("Shader state lock poisoned, recovering");
+                e.into_inner()
+            });
+            state.render_and_readback(
+                display_id,
+                tree,
+                &data.shader_uniforms,
+                data.width,
+                data.height,
+            )
         });
-        rgba8_to_display_buffer(display_id, data.width, data.height, &rgba)
+        rgba8_to_display_buffer(
+            display_id,
+            data.width,
+            data.height,
+            &rgba,
+            data.uniforms.dimmer,
+        )
     } else {
-        render_display_shaders(display_id, data.width, data.height, system_t, &data.uniforms)
+        DisplayBuffer::new(display_id, data.width, data.height)
     }
 }
 
 /// Convert tightly-packed RGBA8 bytes (4 bytes/pixel, row-major) into a
-/// `DisplayBuffer` (f32 RGB, alpha dropped).
-fn rgba8_to_display_buffer(id: u64, width: u32, height: u32, rgba: &[u8]) -> DisplayBuffer {
+/// `DisplayBuffer` (f32 RGB, alpha dropped). Applies dimmer attenuation to
+/// all pixels.
+fn rgba8_to_display_buffer(
+    id: u64,
+    width: u32,
+    height: u32,
+    rgba: &[u8],
+    dimmer: f32,
+) -> DisplayBuffer {
     let mut buffer = DisplayBuffer::new(id, width, height);
     for (i, px) in rgba.chunks_exact(4).enumerate() {
         let base = i * 3;
         if base + 2 >= buffer.pixels.len() {
             break;
         }
-        buffer.pixels[base] = f32::from(px[0]) / 255.0;
-        buffer.pixels[base + 1] = f32::from(px[1]) / 255.0;
-        buffer.pixels[base + 2] = f32::from(px[2]) / 255.0;
+        buffer.pixels[base] = f32::from(px[0]) / 255.0 * dimmer;
+        buffer.pixels[base + 1] = f32::from(px[1]) / 255.0 * dimmer;
+        buffer.pixels[base + 2] = f32::from(px[2]) / 255.0 * dimmer;
     }
     buffer
 }

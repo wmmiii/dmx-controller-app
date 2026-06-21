@@ -20,6 +20,7 @@
   --col-text: #ffffff;
   --col-text-dim: #8f8f8f;
   --col-text-inverted: #000;
+  --col-text-warning: color-mix(in srgb, var(--col-warning), #fff 20%);
 
   /* Borders */
   --col-border: #333;

@@ -298,6 +298,7 @@ interface EffectDetailsBaseProps<T> {
   effect: T;
   availableChannels: ChannelTypes[];
   showPhase: boolean;
+  isDisplay?: boolean;
 }
 
 export function EffectDetails({
@@ -305,6 +306,7 @@ export function EffectDetails({
   effect,
   availableChannels,
   showPhase,
+  isDisplay,
 }: EffectDetailsBaseProps<Effect>): JSX.Element {
   const { save } = useContext(ProjectContext);
 
@@ -319,6 +321,7 @@ export function EffectDetails({
           effect={effect.effect.value}
           availableChannels={availableChannels}
           showPhase={false}
+          isDisplay={isDisplay}
         />
       );
       break;
@@ -328,6 +331,7 @@ export function EffectDetails({
           effect={effect.effect.value}
           availableChannels={availableChannels}
           showPhase={showPhase}
+          isDisplay={isDisplay}
         />
       );
       break;
@@ -337,6 +341,7 @@ export function EffectDetails({
           effect={effect.effect.value}
           availableChannels={availableChannels}
           showPhase={false}
+          isDisplay={isDisplay}
         />
       );
       break;
@@ -495,6 +500,7 @@ function effectIcons(
 function StaticEffectDetails({
   effect,
   availableChannels,
+  isDisplay,
 }: EffectDetailsBaseProps<Effect_StaticEffect>): JSX.Element {
   if (effect.state == null) {
     throw new Error('Static effect does not have a state!');
@@ -510,6 +516,7 @@ function StaticEffectDetails({
           },
         ]}
         availableChannels={availableChannels}
+        isDisplay={isDisplay}
       />
     </>
   );
@@ -519,6 +526,7 @@ function RampEffectDetails({
   effect,
   availableChannels,
   showPhase,
+  isDisplay,
 }: EffectDetailsBaseProps<Effect_RampEffect>): JSX.Element {
   if (effect.stateStart == null || effect.stateEnd == null) {
     throw new Error('Ramp effect does not have a state!');
@@ -538,6 +546,7 @@ function RampEffectDetails({
           { name: 'End', state: effect.stateEnd },
         ]}
         availableChannels={availableChannels}
+        isDisplay={isDisplay}
       />
     </>
   );
@@ -546,6 +555,7 @@ function RampEffectDetails({
 function StrobeEffectDetails({
   effect,
   availableChannels,
+  isDisplay,
 }: EffectDetailsBaseProps<Effect_StrobeEffect>): JSX.Element {
   const { save } = useContext(ProjectContext);
 
@@ -590,6 +600,7 @@ function StrobeEffectDetails({
           { name: 'State B', state: effect.stateB },
         ]}
         availableChannels={availableChannels}
+        isDisplay={isDisplay}
       />
     </>
   );

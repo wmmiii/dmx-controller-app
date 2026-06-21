@@ -10,8 +10,13 @@
   flex-direction: column;
   flex-shrink: 0;
   width: 200px;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   border-right: 1px solid var(--col-border);
+
+  h3 {
+    padding: 0 var(--space-1);
+  }
 
   ul {
     margin: 0;
@@ -24,7 +29,6 @@
     right: -1px;
     z-index: 1;
     padding: var(--space-1) var(--space-2);
-    overflow-y: auto;
     font-size: var(--dim-text-size-xl);
     border: 1px solid transparent;
     border-top-left-radius: var(--dim-border-radius);
@@ -54,7 +58,6 @@
   color: var(--col-text-dim);
 }
 
-/* Two-column layout: preview left, Monaco right */
 .visualizer-editor {
   display: flex;
   flex: 1;
@@ -67,24 +70,24 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  overflow: hidden;
   border-right: 1px solid var(--col-border);
 
   .preview-controls {
     display: flex;
     flex-shrink: 0;
-    flex-wrap: wrap;
     gap: var(--space-1);
     align-items: center;
+    justify-content: space-between;
     padding: var(--space-1);
+    overflow-x: auto;
     border-bottom: 1px solid var(--col-border);
   }
 
-  .control-group {
+  label {
     display: flex;
-    gap: var(--space-0-5);
+    flex-direction: row;
+    gap: var(--space-1);
     align-items: center;
-    color: var(--col-text-dim);
     font-size: var(--dim-text-size-sm);
     cursor: default;
   }
@@ -98,7 +101,7 @@
 }
 
 /* Right 50%: Monaco editor */
-.monaco-column {
+.editor-column {
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -114,16 +117,11 @@
     border-bottom: 1px solid var(--col-border);
   }
 
-  .editor-header-spacer {
-    flex: 1;
-  }
-
   .readonly-banner {
     flex-shrink: 0;
     padding: var(--space-1) var(--space-2);
     color: var(--col-text-dim);
     font-size: var(--dim-text-size-sm);
-    background: var(--col-bg-lower);
     border-bottom: 1px solid var(--col-border);
   }
 
@@ -137,7 +135,7 @@
     max-height: 120px;
     padding: var(--space-1) var(--space-2);
     overflow-y: auto;
-    color: var(--red-11);
+    color: var(--col-text-warning);
     font-size: var(--dim-text-size-sm);
     font-family: monospace;
     white-space: pre-wrap;
@@ -151,4 +149,8 @@
     color: var(--green-11);
     font-size: var(--dim-text-size-sm);
   }
+}
+
+.spacer {
+  flex: 1;
 }

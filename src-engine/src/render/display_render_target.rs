@@ -1,6 +1,5 @@
 #![allow(clippy::cast_possible_truncation)]
 
-use crate::proto::Color;
 use crate::proto::ColorPalette;
 use crate::proto::DisplayBuffer;
 use crate::proto::DisplayRenderTarget;
@@ -108,9 +107,8 @@ impl RenderTarget<DisplayRenderTarget> for DisplayRenderTarget {
             self.dimmer = dimmer as f32;
         }
 
-        // A non-empty visualizer chain on this state replaces the target's tree.
-        // An empty list leaves any previously-applied tree untouched so that a
-        // plain color effect in the same tile doesn't clear the visualizer.
+        // Only update the visualizer stack if it is defined, otherwise leave it
+        // untouched.
         if !state.visualizer_ids.is_empty() {
             self.visualizer_tree =
                 crate::visualizer::tree::build_effect_visualizer_tree(&state.visualizer_ids);
@@ -119,17 +117,7 @@ impl RenderTarget<DisplayRenderTarget> for DisplayRenderTarget {
 
     fn interpolate(&mut self, a: &DisplayRenderTarget, b: &DisplayRenderTarget, t: f64) {
         self.color = match (&a.color, &b.color) {
-            (Some(a_color), Some(b_color)) => Some(Color {
-                red: (1.0 - t) * a_color.red + t * b_color.red,
-                green: (1.0 - t) * a_color.green + t * b_color.green,
-                blue: (1.0 - t) * a_color.blue + t * b_color.blue,
-                white: match (a_color.white, b_color.white) {
-                    (Some(a_w), Some(b_w)) => Some((1.0 - t) * a_w + t * b_w),
-                    (Some(a_w), None) => Some(a_w),
-                    (None, Some(b_w)) => Some(b_w),
-                    _ => None,
-                },
-            }),
+            (Some(a_color), Some(b_color)) => Some(a_color.lerp(b_color, t)),
             (Some(a_color), None) => Some(*a_color),
             (None, Some(b_color)) => Some(*b_color),
             (None, None) => None,
@@ -137,9 +125,7 @@ impl RenderTarget<DisplayRenderTarget> for DisplayRenderTarget {
 
         self.dimmer = ((1.0 - t) * f64::from(a.dimmer) + t * f64::from(b.dimmer)) as f32;
 
-        // Blend the two visualizer trees. Identical structures collapse to a
-        // single render; differing structures become a Lerp baked with `t`.
-        // Applied per-tile in the scene loop, this builds the tile composite.
+        // Create an interpolate node for blending between visualizer stacks.
         self.visualizer_tree = crate::visualizer::tree::build_interpolated_tree(
             a.visualizer_tree.clone(),
             b.visualizer_tree.clone(),
