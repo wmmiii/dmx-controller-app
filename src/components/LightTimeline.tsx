@@ -61,6 +61,7 @@ export default function LightTimeline(props: TracksProps): JSX.Element {
               outputTarget?.output.case === 'group'
             }
             availableChannels={availableChannels}
+            isDisplay={outputTarget?.output.case === 'display'}
           />
         ) : (
           <div className={styles.effectDetailsPlaceholder}>

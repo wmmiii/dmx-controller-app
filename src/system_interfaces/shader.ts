@@ -19,7 +19,7 @@ export async function compileVisualizer(
 }
 
 export async function getBuiltinVisualizers(): Promise<
-  Record<string, Visualizer>
+  {[id: string]: Visualizer}
 > {
   const result = await invoke<Record<string, number[]>>(
     'get_builtin_visualizers',

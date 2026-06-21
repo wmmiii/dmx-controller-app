@@ -620,6 +620,7 @@ function EffectGroupEditor({ channels, name }: EffectGroupEditorProps) {
               effect={c.effect}
               showPhase={c.outputTarget?.output.case === 'group'}
               availableChannels={getAvailableChannels(c.outputTarget, project)}
+              isDisplay={c.outputTarget?.output.case === 'display'}
             />
           </div>
         );

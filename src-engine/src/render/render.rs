@@ -300,29 +300,29 @@ fn build_shader_uniforms(
         .cloned()
         .unwrap_or_else(|| DEFAULT_COLOR_PALETTE.clone());
 
-    ShaderUniforms {
-        color,
-        audio_bands: audio.bands,
-        beat_t,
-        palette_primary: palette_rgba(palette.primary.as_ref()),
-        palette_secondary: palette_rgba(palette.secondary.as_ref()),
-        palette_tertiary: palette_rgba(palette.tertiary.as_ref()),
-        resolution: [width as f32, height as f32],
-        // `system_t` is the unix timestamp in ms. An f32 only has ~24 bits of
-        // mantissa, so the raw value (~1.7e12) would quantize to ~256ms steps —
-        // useless for animation. Wrapping modulo a day keeps full ms precision
-        // while staying phase-aligned to wall-clock time (so beat/clock-driven
-        // shaders stay in sync); the once-per-day discontinuity is harmless.
-        time: (system_t % 86_400_000) as f32,
-        ..Default::default()
-    }
+    let mut uniforms = ShaderUniforms::default();
+    uniforms.color = color;
+    uniforms.beat_t = beat_t;
+    uniforms.palette_primary = palette_rgba(palette.primary.as_ref());
+    uniforms.palette_secondary = palette_rgba(palette.secondary.as_ref());
+    uniforms.palette_tertiary = palette_rgba(palette.tertiary.as_ref());
+    uniforms.resolution = [width as f32, height as f32];
+    // `system_t` is the unix timestamp in ms. An f32 only has ~24 bits of
+    // mantissa, so the raw value (~1.7e12) would quantize to ~256ms steps —
+    // useless for animation. Wrapping modulo a day keeps full ms precision
+    // while staying phase-aligned to wall-clock time (so beat/clock-driven
+    // shaders stay in sync); the once-per-day discontinuity is harmless.
+    uniforms.time = (system_t % 86_400_000) as f32;
+    uniforms.set_audio_bands(audio.bands);
+    uniforms
 }
 
 #[allow(clippy::cast_possible_truncation)]
 fn palette_rgba(desc: Option<&ColorDescription>) -> [f32; 4] {
-    desc.and_then(|d| d.color.as_ref()).map_or([0.0, 0.0, 0.0, 1.0], |c| {
-        [c.red as f32, c.green as f32, c.blue as f32, 1.0]
-    })
+    desc.and_then(|d| d.color.as_ref())
+        .map_or([0.0, 0.0, 0.0, 1.0], |c| {
+            [c.red as f32, c.green as f32, c.blue as f32, 1.0]
+        })
 }
 
 fn render<T: RenderTarget<T>>(

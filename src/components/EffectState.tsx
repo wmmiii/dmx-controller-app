@@ -29,6 +29,7 @@ import { ColorSwatch } from './ColorSwatch';
 import styles from './EffectState.module.css';
 import { NumberInput, NumberInputMode } from './Input';
 import { Select } from './Select';
+import { VisualizerSelect } from './VisualizerSelect';
 
 type ColorSelectorType = 'none' | 'color' | PaletteColor;
 
@@ -38,11 +39,13 @@ interface EffectStateProps {
     state: FixtureStateProto;
   }>;
   availableChannels: ChannelTypes[];
+  isDisplay?: boolean;
 }
 
 export function EffectState({
   states,
   availableChannels,
+  isDisplay,
 }: EffectStateProps): JSX.Element {
   const { save } = useContext(ProjectContext);
 
@@ -142,6 +145,24 @@ export function EffectState({
           }))}
         />
       ))}
+      {isDisplay && (
+        <>
+          <span style={{ gridColumnStart: 1, gridColumnEnd: 2 }}>
+            Visualizers
+          </span>
+          {states.map((s, i) => (
+            <div
+              key={i}
+              style={{
+                gridColumnStart: i + 2,
+                gridColumnEnd: i + 3,
+              }}
+            >
+              <VisualizerSelect state={s.state} />
+            </div>
+          ))}
+        </>
+      )}
       {/* TODO: Remove this when the output does not contain a DMX fixture. */}
       <CustomChannels states={states.map((s) => s.state)} />
     </div>

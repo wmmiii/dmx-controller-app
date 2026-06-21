@@ -2,7 +2,6 @@ use dmx_engine::project;
 use dmx_engine::proto::output::Output as ProtoOutput;
 use dmx_engine::proto::{DdpOutput, DisplayBuffer, PhysicalDisplayMapping};
 use dmx_engine::render::render::{DisplayRenderData, RenderError, render_display_target};
-use dmx_engine::render::shaders::render_display_shaders;
 use prost::Message;
 use serde::Serialize;
 use std::collections::HashMap;
@@ -268,12 +267,7 @@ impl DisplayLoopManager {
                     }
                 };
 
-                let buffer = render_display_buffer(
-                    *display_id,
-                    &data,
-                    system_t,
-                    shader_state.as_deref(),
-                );
+                let buffer = render_display_buffer(*display_id, &data, shader_state.as_deref());
 
                 let event = DisplayRenderEvent {
                     display_id: display_id.to_string(),
@@ -342,7 +336,6 @@ impl DisplayLoopManager {
 fn render_display_buffer(
     display_id: u64,
     data: &DisplayRenderData,
-    system_t: u64,
     shader_state: Option<&Arc<StdMutex<ShaderState>>>,
 ) -> DisplayBuffer {
     if let (Some(tree), Some(shader_state)) = (&data.uniforms.visualizer_tree, shader_state) {
@@ -353,7 +346,7 @@ fn render_display_buffer(
         });
         rgba8_to_display_buffer(display_id, data.width, data.height, &rgba)
     } else {
-        render_display_shaders(display_id, data.width, data.height, system_t, &data.uniforms)
+        DisplayBuffer::new(display_id, data.width, data.height)
     }
 }
 
