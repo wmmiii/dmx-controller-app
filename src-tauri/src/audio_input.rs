@@ -270,8 +270,8 @@ pub fn list_audio_inputs() -> Result<Vec<AudioInputDevice>, String> {
     let devices = host.input_devices().map_err(|e| e.to_string())?;
     let mut result = Vec::new();
     for device in devices {
-        if let Ok(name) = device.name() {
-            result.push(AudioInputDevice { name });
+        if let Ok(desc) = device.description() {
+            result.push(AudioInputDevice { name: desc.to_string() });
         }
     }
     Ok(result)
@@ -412,14 +412,14 @@ fn run_stream_thread(
     let device = host
         .input_devices()
         .map_err(|e| e.to_string())?
-        .find(|d| d.name().map(|n| n == device_name).unwrap_or(false))
+        .find(|d| d.description().map(|desc| desc.to_string() == device_name).unwrap_or(false))
         .ok_or_else(|| format!("Audio device '{device_name}' not found"))?;
 
     let config = device
         .default_input_config()
         .map_err(|e| format!("Failed to get default input config: {e}"))?;
 
-    let sample_rate = config.sample_rate().0;
+    let sample_rate = config.sample_rate();
     let channels = config.channels() as usize;
     let sample_format = config.sample_format();
 

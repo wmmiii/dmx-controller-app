@@ -44,7 +44,7 @@ alsa-sys = "0.3"
 libc = "0.2"
 
 [target.'cfg(not(target_os = "ios"))'.dependencies]
-cpal = "0.15"
+cpal = "0.17"
 midir = "0.10.2"
 naga = { version = "26.0", features = ["glsl-in", "spv-out"] }
 open_dmx = "1.1.1"
