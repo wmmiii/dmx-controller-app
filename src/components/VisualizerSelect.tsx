@@ -2,8 +2,10 @@ import { type FixtureState } from '@dmx-controller/proto/effect_pb';
 import { type Visualizer } from '@dmx-controller/proto/visualizer_pb';
 import { useContext, useEffect, useState } from 'react';
 import { BiChevronDown, BiChevronUp, BiX } from 'react-icons/bi';
+
 import { ProjectContext } from '../contexts/ProjectContext';
 import { getBuiltinVisualizers } from '../system_interfaces/shader';
+
 import { IconButton } from './Button';
 import { Select } from './Select';
 import styles from './VisualizerSelect.module.css';

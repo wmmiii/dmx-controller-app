@@ -1,16 +1,17 @@
-import { JSX, useContext } from 'react';
-
 import { create } from '@bufbuild/protobuf';
 import {
   NumberInputMode,
   SettingsSchema,
 } from '@dmx-controller/proto/settings_pb';
+import { JSX, useContext } from 'react';
+
 import { Button } from '../components/Button';
 import { TextInput } from '../components/Input';
 import { Select } from '../components/Select';
 import { Toggle } from '../components/Toggle';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { escapeForFilesystem } from '../util/fileUtils';
+
 import styles from './ProjectPage.module.css';
 
 const NUMBER_INPUT_OPTIONS = [

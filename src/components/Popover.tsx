@@ -1,6 +1,7 @@
 import { Popover as BasePopover } from '@base-ui/react';
 import clsx from 'clsx';
 import { RefObject } from 'react';
+
 import styles from './Popover.module.css';
 
 interface PopoverProps {

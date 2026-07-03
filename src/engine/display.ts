@@ -1,5 +1,6 @@
 import { DdpOutput } from '@dmx-controller/proto/ddp_pb';
 import { Project } from '@dmx-controller/proto/project_pb';
+
 import { getActivePatch } from '../util/projectUtils';
 
 /**

@@ -1,14 +1,18 @@
 import { create, toJsonString } from '@bufbuild/protobuf';
 import {
-  ColorSchema,
-  PaletteColor,
   type Color,
   type ColorPalette,
+  ColorSchema,
+  PaletteColor,
 } from '@dmx-controller/proto/color_pb';
+import {
+  InputBindingSchema,
+  InputType,
+} from '@dmx-controller/proto/controller_pb';
 import { type FixtureState } from '@dmx-controller/proto/effect_pb';
 import {
-  Scene_TileSchema,
   type Scene_Tile,
+  Scene_TileSchema,
 } from '@dmx-controller/proto/scene_pb';
 import { useCallback, useContext, useEffect, useMemo, useRef } from 'react';
 import { SiMidi } from 'react-icons/si';
@@ -16,17 +20,13 @@ import { SiMidi } from 'react-icons/si';
 import { ControllerContext } from '../contexts/ControllerContext';
 import { PaletteContext } from '../contexts/PaletteContext';
 import { ProjectContext } from '../contexts/ProjectContext';
+import { hasAction } from '../external_controller/externalController';
 import { toggleTile } from '../system_interfaces/project';
+import { rgbwToHex } from '../util/colorUtil';
 import { tileTileDetails } from '../util/projectUtils';
 import { tileActiveAmount } from '../util/tile';
-
-import {
-  InputBindingSchema,
-  InputType,
-} from '@dmx-controller/proto/controller_pb';
-import { hasAction } from '../external_controller/externalController';
-import { rgbwToHex } from '../util/colorUtil';
 import { listenToTick } from '../util/time';
+
 import styles from './Tile.module.css';
 import { VersatileElement } from './VersatileElement';
 

@@ -1,5 +1,7 @@
 import React, { CSSProperties, useContext, useEffect, useRef } from 'react';
+
 import { VersatileContainerContext } from '../contexts/VersatileContianer';
+
 import styles from './VersatileElement.module.css';
 
 const EMULATED_POINTER_EVENT = 'emulatedPointerEvent';

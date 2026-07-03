@@ -4,14 +4,14 @@ import {
   InputType,
 } from '@dmx-controller/proto/controller_pb';
 import { JSX, useContext, useEffect, useMemo, useRef } from 'react';
+import { BiPulse } from 'react-icons/bi';
 
 import { BeatContext } from '../contexts/BeatContext';
-import { ShortcutContext } from '../contexts/ShortcutContext';
-
-import { BiPulse } from 'react-icons/bi';
 import { ProjectContext } from '../contexts/ProjectContext';
+import { ShortcutContext } from '../contexts/ShortcutContext';
 import { listenToTick } from '../util/time';
 import { getBeatTSync } from '../wasm/engine';
+
 import { ControllerConnection } from './ControllerConnection';
 import { NumberInput } from './Input';
 import styles from './LiveBeat.module.css';

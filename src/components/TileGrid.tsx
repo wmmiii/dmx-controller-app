@@ -2,8 +2,8 @@ import { Scene_TileMap } from '@dmx-controller/proto/scene_pb';
 import { JSX, useContext } from 'react';
 
 import { ProjectContext } from '../contexts/ProjectContext';
-
 import { VersatileContainer } from '../contexts/VersatileContianer';
+
 import { Tile } from './Tile';
 import styles from './Tile.module.css';
 import { VersatileElement } from './VersatileElement';

@@ -1,13 +1,13 @@
 import { create } from '@bufbuild/protobuf';
 import {
   Effect_PresetEffect,
-  Effect_SequenceEffect,
-  FixtureStateSchema,
   type Effect_RampEffect,
   type Effect_RandomEffect,
+  Effect_SequenceEffect,
   type Effect_StaticEffect,
   type Effect_StrobeEffect,
   type FixtureState,
+  FixtureStateSchema,
 } from '@dmx-controller/proto/effect_pb';
 
 export function getStates(

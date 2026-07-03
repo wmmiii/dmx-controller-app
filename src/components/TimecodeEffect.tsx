@@ -1,8 +1,8 @@
 import { clone, create } from '@bufbuild/protobuf';
 import {
-  PaletteColor,
   type Color,
   type ColorPalette,
+  PaletteColor,
 } from '@dmx-controller/proto/color_pb';
 import {
   Effect,
@@ -18,22 +18,22 @@ import {
   Effect_PresetEffect_CircleEffectSchema,
   Effect_PresetEffect_RainbowEffect,
   Effect_PresetEffect_RainbowEffectSchema,
+  type Effect_RampEffect,
   Effect_RampEffectSchema,
+  type Effect_RandomEffect,
   Effect_RandomEffectSchema,
   Effect_SequenceEffect,
   Effect_SequenceEffectSchema,
+  type Effect_StaticEffect,
   Effect_StaticEffectSchema,
+  type Effect_StrobeEffect,
   Effect_StrobeEffectSchema,
+  type FixtureState,
+  type FixtureState as FixtureStateProto,
   FixtureStateSchema,
   SequenceSchema,
   TimecodedEffect as TimecodeEffectProto,
   TimecodedEffectSchema,
-  type Effect_RampEffect,
-  type Effect_RandomEffect,
-  type Effect_StaticEffect,
-  type Effect_StrobeEffect,
-  type FixtureState,
-  type FixtureState as FixtureStateProto,
 } from '@dmx-controller/proto/effect_pb';
 import { CSSProperties, JSX, useContext, useEffect, useState } from 'react';
 import {
@@ -55,15 +55,15 @@ import { PaletteContext } from '../contexts/PaletteContext';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { ShortcutContext } from '../contexts/ShortcutContext';
 import { ChannelTypes } from '../engine/channel';
+import IconPanTilt from '../icons/IconPanTilt';
+import IconRgb from '../icons/IconRgb';
 import { getStates } from '../util/effectUtils';
+import { randomUint64 } from '../util/numberUtils';
 import {
   DEFAULT_EFFECT_COLOR,
   DEFAULT_EFFECT_COLOR_ALT,
 } from '../util/styleUtils';
 
-import IconPanTilt from '../icons/IconPanTilt';
-import IconRgb from '../icons/IconRgb';
-import { randomUint64 } from '../util/numberUtils';
 import { Button, IconButton } from './Button';
 import { EffectState } from './EffectState';
 import { NumberInput } from './Input';

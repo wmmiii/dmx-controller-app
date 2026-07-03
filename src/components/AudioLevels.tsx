@@ -1,6 +1,8 @@
 import clsx from 'clsx';
 import { useCallback, useEffect, useRef } from 'react';
+
 import { addAudioAnalysisListener } from '../system_interfaces/audio_input';
+
 import styles from './AudioLevels.module.css';
 
 const NUM_BANDS = 16;

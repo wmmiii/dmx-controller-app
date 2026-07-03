@@ -5,10 +5,12 @@ import {
   WledOutput,
 } from '@dmx-controller/proto/wled_pb';
 import { useCallback, useContext } from 'react';
+
 import { Button } from '../../components/Button';
 import { TextInput } from '../../components/Input';
 import { ProjectContext } from '../../contexts/ProjectContext';
 import { getOutput } from '../../util/projectUtils';
+
 import { OutputFrame } from './OutputFrame';
 
 interface WledEditorProps {

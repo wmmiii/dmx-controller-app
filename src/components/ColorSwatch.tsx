@@ -1,10 +1,11 @@
 import { Color } from '@dmx-controller/proto/color_pb';
-import { useContext, useState } from 'react';
-import { ProjectContext } from '../contexts/ProjectContext';
-import styles from './ColorSwatch.module.css';
-
 import { Wheel } from '@uiw/react-color';
+import { useContext, useState } from 'react';
+
+import { ProjectContext } from '../contexts/ProjectContext';
 import { colorToHex } from '../util/colorUtil';
+
+import styles from './ColorSwatch.module.css';
 import { Popover } from './Popover';
 
 interface ColorSwatchProps {

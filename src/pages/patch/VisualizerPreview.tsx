@@ -1,6 +1,8 @@
 import { type Color } from '@dmx-controller/proto/color_pb';
 import { useCallback, useEffect, useRef } from 'react';
+
 import { addAudioAnalysisListener } from '../../system_interfaces/audio_input';
+
 import styles from './VisualizerEditor.module.css';
 import {
   VERTEX_SHADER_SRC,
@@ -345,7 +347,9 @@ export function VisualizerPreview({
     return () => {
       cancelAnimationFrame(animFrameRef.current);
       const currentGl = glRef.current;
-      if (!currentGl) return;
+      if (!currentGl) {
+        return;
+      }
       if (programRef.current) {
         currentGl.deleteProgram(programRef.current);
       }

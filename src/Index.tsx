@@ -1,8 +1,6 @@
-import { JSX, useContext, useState } from 'react';
-import { Route, Routes, useNavigate } from 'react-router';
-
 import { exit } from '@tauri-apps/plugin-process';
 import clsx from 'clsx';
+import { JSX, useContext, useState } from 'react';
 import {
   BiDownload,
   BiError,
@@ -12,6 +10,8 @@ import {
   BiMenu,
   BiUpload,
 } from 'react-icons/bi';
+import { Route, Routes, useNavigate } from 'react-router';
+
 import styles from './Index.module.css';
 import { Button, ControllerButton, IconButton } from './components/Button';
 import { DisplayVisualizer } from './components/DisplayVisualizer';

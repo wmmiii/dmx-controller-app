@@ -1,18 +1,16 @@
+import { WledOutput, WledRenderTarget } from '@dmx-controller/proto/wled_pb';
 import { useContext, useEffect, useRef, useState } from 'react';
+import { BiError } from 'react-icons/bi';
 
 import { ProjectContext } from '../contexts/ProjectContext';
-
-import { getOutput } from '../util/projectUtils';
-
-import styles from './Visualizer.module.css';
-
-import { WledOutput, WledRenderTarget } from '@dmx-controller/proto/wled_pb';
-import { BiError } from 'react-icons/bi';
 import {
   RenderError,
   subscribeToRenderErrors,
   subscribeToWledRender,
 } from '../engine/renderRouter';
+import { getOutput } from '../util/projectUtils';
+
+import styles from './Visualizer.module.css';
 
 interface WledVisualizerProps {
   wledOutputId: bigint;

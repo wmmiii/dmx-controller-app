@@ -1,5 +1,21 @@
 import { create } from '@bufbuild/protobuf';
 import { type Color } from '@dmx-controller/proto/color_pb';
+import {
+  DmxFixtureDefinition,
+  DmxFixtureDefinitionSchema,
+  DmxFixtureDefinition_Channel,
+  DmxFixtureDefinition_ChannelSchema,
+  DmxFixtureDefinition_Channel_AmountMapping,
+  DmxFixtureDefinition_Channel_AmountMappingSchema,
+  DmxFixtureDefinition_Channel_AngleMapping,
+  DmxFixtureDefinition_Channel_AngleMappingSchema,
+  DmxFixtureDefinition_Channel_ColorWheelMapping,
+  DmxFixtureDefinition_Channel_ColorWheelMappingSchema,
+  DmxFixtureDefinition_Channel_ColorWheelMapping_ColorWheelColor,
+  DmxFixtureDefinition_Channel_ColorWheelMapping_ColorWheelColorSchema,
+  DmxFixtureDefinition_Mode,
+  DmxFixtureDefinition_ModeSchema,
+} from '@dmx-controller/proto/dmx_pb';
 import { BlobReader, TextWriter, ZipReader } from '@zip.js/zip.js';
 
 import {
@@ -8,22 +24,6 @@ import {
   COLOR_CHANNELS,
 } from '../engine/channel';
 
-import {
-  DmxFixtureDefinition,
-  DmxFixtureDefinition_Channel,
-  DmxFixtureDefinition_Channel_AmountMapping,
-  DmxFixtureDefinition_Channel_AmountMappingSchema,
-  DmxFixtureDefinition_Channel_AngleMapping,
-  DmxFixtureDefinition_Channel_AngleMappingSchema,
-  DmxFixtureDefinition_Channel_ColorWheelMapping,
-  DmxFixtureDefinition_Channel_ColorWheelMapping_ColorWheelColor,
-  DmxFixtureDefinition_Channel_ColorWheelMapping_ColorWheelColorSchema,
-  DmxFixtureDefinition_Channel_ColorWheelMappingSchema,
-  DmxFixtureDefinition_ChannelSchema,
-  DmxFixtureDefinition_Mode,
-  DmxFixtureDefinition_ModeSchema,
-  DmxFixtureDefinitionSchema,
-} from '@dmx-controller/proto/dmx_pb';
 import { cieToColor } from './colorUtil';
 import { getUuidByString } from './uuidUtils';
 

@@ -11,9 +11,6 @@ import {
 
 import { Button } from '../components/Button';
 import { Modal } from '../components/Modal';
-
-import { ProjectContext } from './ProjectContext';
-
 import {
   MidiPortCandidate,
   addConnectionStatusListener,
@@ -25,7 +22,9 @@ import {
   removeMidiListener,
 } from '../system_interfaces/midi';
 import { randomUint64 } from '../util/numberUtils';
+
 import styles from './ControllerContext.module.css';
+import { ProjectContext } from './ProjectContext';
 
 export type ControllerChannel = string;
 export type ControlCommandType = 'msb' | 'lsb' | null;

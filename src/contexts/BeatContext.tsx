@@ -14,6 +14,7 @@ import {
   addBeatSample,
   subscribeToBeatSamplingState,
 } from '../system_interfaces/midi';
+
 import { ProjectContext } from './ProjectContext';
 
 export const BeatContext = createContext({

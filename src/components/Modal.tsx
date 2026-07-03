@@ -1,10 +1,10 @@
 import { Dialog } from '@base-ui/react';
+import clsx from 'clsx';
 import { JSX, useContext, useEffect, useRef, useState } from 'react';
+import { BiX } from 'react-icons/bi';
 
 import { ShortcutContext } from '../contexts/ShortcutContext';
 
-import clsx from 'clsx';
-import { BiX } from 'react-icons/bi';
 import { IconButton } from './Button';
 import styles from './Modal.module.css';
 import { Spacer } from './Spacer';

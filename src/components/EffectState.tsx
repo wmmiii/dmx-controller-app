@@ -7,11 +7,14 @@ import {
   PaletteColor,
 } from '@dmx-controller/proto/color_pb';
 import {
-  FixtureState_ChannelSchema,
   type FixtureState as FixtureStateProto,
+  FixtureState_ChannelSchema,
 } from '@dmx-controller/proto/effect_pb';
 import { Fragment, JSX, useContext } from 'react';
+import { BiPlus, BiX } from 'react-icons/bi';
 
+import { PaletteContext } from '../contexts/PaletteContext';
+import { ProjectContext } from '../contexts/ProjectContext';
 import {
   AMOUNT_CHANNELS,
   ANGLE_CHANNELS,
@@ -19,11 +22,8 @@ import {
   ChannelTypes,
   WLED_CHANNELS,
 } from '../engine/channel';
-
-import { BiPlus, BiX } from 'react-icons/bi';
-import { PaletteContext } from '../contexts/PaletteContext';
-import { ProjectContext } from '../contexts/ProjectContext';
 import { colorToHex } from '../util/colorUtil';
+
 import { Button, IconButton } from './Button';
 import { ColorSwatch } from './ColorSwatch';
 import styles from './EffectState.module.css';

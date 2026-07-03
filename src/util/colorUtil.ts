@@ -1,9 +1,9 @@
 import { create } from '@bufbuild/protobuf';
 import {
-  ColorPaletteSchema,
-  ColorSchema,
   type Color,
   type ColorPalette,
+  ColorPaletteSchema,
+  ColorSchema,
 } from '@dmx-controller/proto/color_pb';
 import ColorConverter from 'cie-rgb-color-converter';
 

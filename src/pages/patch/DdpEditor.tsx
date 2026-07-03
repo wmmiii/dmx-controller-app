@@ -2,17 +2,19 @@ import { create } from '@bufbuild/protobuf';
 import { DdpOutput } from '@dmx-controller/proto/ddp_pb';
 import {
   PhysicalSegment,
+  PhysicalSegmentSchema,
   PhysicalSegment_LineSchema,
   PhysicalSegment_RectangleSchema,
-  PhysicalSegmentSchema,
 } from '@dmx-controller/proto/pixel_mapping_pb';
 import React, { useContext } from 'react';
+
 import { Button } from '../../components/Button';
 import { NumberInput, TextInput } from '../../components/Input';
 import { Select } from '../../components/Select';
 import { ProjectContext } from '../../contexts/ProjectContext';
 import { deleteDdpSegment } from '../../engine/display';
 import { getOutput } from '../../util/projectUtils';
+
 import { OutputFrame } from './OutputFrame';
 
 interface DdpEditorProps {

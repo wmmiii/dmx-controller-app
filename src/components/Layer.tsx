@@ -1,16 +1,16 @@
 import { create } from '@bufbuild/protobuf';
-import { JSX, useContext, useEffect, useRef, useState } from 'react';
-
-import { ProjectContext } from '../contexts/ProjectContext';
-
 import {
   Layer as LayerProto,
   TimecodedEffect,
   TimecodedEffectSchema,
 } from '@dmx-controller/proto/effect_pb';
 import clsx from 'clsx';
+import { JSX, useContext, useEffect, useRef, useState } from 'react';
 import { BiTrash } from 'react-icons/bi';
+
+import { ProjectContext } from '../contexts/ProjectContext';
 import { ShortcutContext } from '../contexts/ShortcutContext';
+
 import { IconButton } from './Button';
 import styles from './Layer.module.css';
 import { TimecodeEffect as EffectComponent } from './TimecodeEffect';

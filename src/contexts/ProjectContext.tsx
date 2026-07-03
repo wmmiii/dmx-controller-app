@@ -1,11 +1,12 @@
 import { create, fromBinary, toBinary } from '@bufbuild/protobuf';
 import {
+  type Project,
   ProjectSchema,
   Project_Assets,
   Project_AssetsSchema,
-  type Project,
 } from '@dmx-controller/proto/project_pb';
 import { NumberInputMode } from '@dmx-controller/proto/settings_pb';
+import { invoke } from '@tauri-apps/api/core';
 import {
   JSX,
   PropsWithChildren,
@@ -16,10 +17,6 @@ import {
   useRef,
   useState,
 } from 'react';
-
-import { invoke } from '@tauri-apps/api/core';
-import upgradeProject from '../util/projectUpgrader';
-import styles from './ProjectContext.module.css';
 
 import {
   frontendReadyForUpdate,
@@ -33,6 +30,9 @@ import {
   undoProject as undoProjectCommand,
   updateProject as updateProjectCommand,
 } from '../system_interfaces/project';
+import upgradeProject from '../util/projectUpgrader';
+
+import styles from './ProjectContext.module.css';
 import { ShortcutContext } from './ShortcutContext';
 
 let globalOpened = false;

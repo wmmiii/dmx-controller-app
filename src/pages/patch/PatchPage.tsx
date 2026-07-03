@@ -1,12 +1,12 @@
-import { JSX, useContext, useState } from 'react';
-
 import { create } from '@bufbuild/protobuf';
 import {
   Output,
   OutputSchema,
   PatchSchema,
 } from '@dmx-controller/proto/output_pb';
+import { JSX, useContext, useState } from 'react';
 import { BiPlus, BiTrash } from 'react-icons/bi';
+
 import { Button } from '../../components/Button';
 import { EditableText } from '../../components/Input';
 import { Modal } from '../../components/Modal';
@@ -19,6 +19,7 @@ import {
   deleteFromOutputTargets,
   getActivePatch,
 } from '../../util/projectUtils';
+
 import { DdpEditor } from './DdpEditor';
 import { DisplayEditor } from './DisplayEditor';
 import { GroupEditor } from './GroupEditor';

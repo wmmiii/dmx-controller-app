@@ -4,7 +4,6 @@ import {
   fromJsonString,
   toJsonString,
 } from '@bufbuild/protobuf';
-
 import {
   OutputTarget,
   OutputTargetSchema,
@@ -13,6 +12,7 @@ import {
 import clsx from 'clsx';
 import { useCallback, useContext, useMemo, useState } from 'react';
 import { BiTrash } from 'react-icons/bi';
+
 import { Button } from '../../components/Button';
 import { EditableText } from '../../components/Input';
 import { getOutputTargetName } from '../../components/OutputSelector';
@@ -26,6 +26,7 @@ import {
 } from '../../engine/group';
 import { useRenderMode } from '../../hooks/renderMode';
 import { randomUint64 } from '../../util/numberUtils';
+
 import styles from './GroupEditor.module.css';
 
 export function GroupEditor() {

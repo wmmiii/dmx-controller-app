@@ -67,12 +67,19 @@ pub static BUILTIN_VISUALIZERS: LazyLock<HashMap<u64, BuiltinVisualizer>> = Lazy
     m.insert(
         8,
         BuiltinVisualizer {
+            name: "Vis. Audio 3D",
+            glsl_source: include_str!("shaders/vis_audio_3d.glsl"),
+        },
+    );
+    m.insert(
+        9,
+        BuiltinVisualizer {
             name: "Vis. Audio Blob",
             glsl_source: include_str!("shaders/vis_audio_blob.glsl"),
         },
     );
     m.insert(
-        9,
+        10,
         BuiltinVisualizer {
             name: "Vis. Audio Wave",
             glsl_source: include_str!("shaders/vis_audio_wave.glsl"),

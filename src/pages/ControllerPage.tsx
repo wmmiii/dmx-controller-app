@@ -1,7 +1,7 @@
-import { JSX, useContext, useEffect, useState } from 'react';
-
 import { Project } from '@dmx-controller/proto/project_pb';
+import { JSX, useContext, useEffect, useState } from 'react';
 import { BiTrash } from 'react-icons/bi';
+
 import { ControllerButton, IconButton } from '../components/Button';
 import {
   ControlCommandType,
@@ -15,6 +15,7 @@ import {
   deleteAction,
   getActionDescription,
 } from '../external_controller/externalController';
+
 import styles from './ControllerPage.module.css';
 
 export function ControllerPage(): JSX.Element {

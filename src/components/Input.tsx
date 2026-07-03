@@ -1,3 +1,5 @@
+import { NumberInputMode as NumberInputModeProto } from '@dmx-controller/proto/settings_pb';
+import clsx from 'clsx';
 import {
   JSX,
   useCallback,
@@ -8,10 +10,9 @@ import {
   useState,
 } from 'react';
 
-import { NumberInputMode as NumberInputModeProto } from '@dmx-controller/proto/settings_pb';
-import clsx from 'clsx';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { DRAG_DISTANCE_PX_SQ, LONG_PRESS_MS } from '../util/browserUtils';
+
 import styles from './Input.module.css';
 
 interface TextInputProps {

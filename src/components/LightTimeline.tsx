@@ -1,4 +1,6 @@
 import { BeatMetadata } from '@dmx-controller/proto/beat_pb';
+import { TimecodedEffect } from '@dmx-controller/proto/effect_pb';
+import { Show_Output } from '@dmx-controller/proto/show_pb';
 import {
   JSX,
   useCallback,
@@ -8,15 +10,13 @@ import {
   useRef,
   useState,
 } from 'react';
+import { BiPlus, BiZoomIn, BiZoomOut } from 'react-icons/bi';
 
 import { EffectRenderingContext } from '../contexts/EffectRenderingContext';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { ShortcutContext } from '../contexts/ShortcutContext';
-
-import { TimecodedEffect } from '@dmx-controller/proto/effect_pb';
-import { Show_Output } from '@dmx-controller/proto/show_pb';
-import { BiPlus, BiZoomIn, BiZoomOut } from 'react-icons/bi';
 import { getAvailableChannels } from '../engine/fixtures/fixture';
+
 import { AudioController, AudioTrackVisualizer } from './AudioTrackVisualizer';
 import { Button } from './Button';
 import { NumberInput } from './Input';

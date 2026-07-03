@@ -2,6 +2,7 @@ import { Select as BaseSelect } from '@base-ui/react/select';
 import clsx from 'clsx';
 import { ReactNode } from 'react';
 import { BiChevronDown } from 'react-icons/bi';
+
 import styles from './Select.module.css';
 
 interface SelectOption<T extends string | number> {

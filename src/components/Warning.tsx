@@ -1,4 +1,5 @@
 import { BiSolidError } from 'react-icons/bi';
+
 import style from './Warning.module.css';
 
 interface WarningProps {

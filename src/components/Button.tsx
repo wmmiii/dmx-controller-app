@@ -1,6 +1,6 @@
 import { JSX } from 'react';
-
 import { SiMidi } from 'react-icons/si';
+
 import styles from './Button.module.css';
 
 interface BaseButtonProps {

@@ -4,8 +4,10 @@ import {
   OutputTargetSchema,
   TargetGroupSchema,
 } from '@dmx-controller/proto/output_pb';
+
 import { randomUint64 } from '../util/numberUtils';
 import { createNewProject } from '../util/projectUtils';
+
 import { addToGroup, getApplicableMembers } from './group';
 
 describe('group', () => {

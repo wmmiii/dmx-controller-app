@@ -1,17 +1,17 @@
 import { create } from '@bufbuild/protobuf';
 import { Color, type ColorPalette } from '@dmx-controller/proto/color_pb';
-import { useCallback, useContext, useMemo, useState } from 'react';
-
-import { ProjectContext } from '../contexts/ProjectContext';
-
 import {
   InputBindingSchema,
   InputType,
 } from '@dmx-controller/proto/controller_pb';
 import { RgbColor, Wheel } from '@uiw/react-color';
 import clsx from 'clsx';
+import { useCallback, useContext, useMemo, useState } from 'react';
 import { BiPencil, BiTrash } from 'react-icons/bi';
+
+import { ProjectContext } from '../contexts/ProjectContext';
 import { colorToHex, stringifyColor } from '../util/colorUtil';
+
 import { Button, IconButton } from './Button';
 import { ControllerConnection } from './ControllerConnection';
 import { EditableText, TextInput } from './Input';

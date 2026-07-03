@@ -11,6 +11,7 @@ import {
 import clsx from 'clsx';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { BiCopy, BiPlus, BiTrash } from 'react-icons/bi';
+
 import { Button } from '../../components/Button';
 import { ColorSwatch } from '../../components/ColorSwatch';
 import { EditableText, NumberInput } from '../../components/Input';
@@ -22,6 +23,7 @@ import {
   getBuiltinVisualizers,
 } from '../../system_interfaces/shader';
 import { randomUint64 } from '../../util/numberUtils';
+
 import styles from './VisualizerEditor.module.css';
 import { VisualizerPreview } from './VisualizerPreview';
 

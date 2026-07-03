@@ -1,3 +1,10 @@
+import { create } from '@bufbuild/protobuf';
+import {
+  Layer as LayerProto,
+  LayerSchema,
+  TimecodedEffect,
+} from '@dmx-controller/proto/effect_pb';
+import clsx from 'clsx';
 import React, {
   JSX,
   useCallback,
@@ -7,19 +14,12 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { BiPlus } from 'react-icons/bi';
 
 import { ProjectContext } from '../contexts/ProjectContext';
-
-import { create } from '@bufbuild/protobuf';
-import {
-  Layer as LayerProto,
-  LayerSchema,
-  TimecodedEffect,
-} from '@dmx-controller/proto/effect_pb';
-import clsx from 'clsx';
-import { BiPlus } from 'react-icons/bi';
 import { ShortcutContext } from '../contexts/ShortcutContext';
 import { ALL_CHANNELS } from '../engine/channel';
+
 import { IconButton } from './Button';
 import { NumberInput, TextInput } from './Input';
 import { Layer } from './Layer';

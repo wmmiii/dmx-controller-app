@@ -4,9 +4,9 @@ import {
   ControllerBindingsMap,
   ControllerBindingsMapSchema,
   ControllerBindingsMap_ControllerBindingsSchema,
+  type InputBinding,
   InputBindingSchema,
   TileStrengthAction,
-  type InputBinding,
 } from '@dmx-controller/proto/controller_pb';
 import { type Project } from '@dmx-controller/proto/project_pb';
 

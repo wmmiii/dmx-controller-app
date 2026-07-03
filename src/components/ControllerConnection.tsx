@@ -1,11 +1,13 @@
 import { clone } from '@bufbuild/protobuf';
 import {
+  type InputBinding,
   InputBindingSchema,
   InputType,
-  type InputBinding,
   type TileStrengthAction,
 } from '@dmx-controller/proto/controller_pb';
+import { Project } from '@dmx-controller/proto/project_pb';
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { BiPlus, BiTrash } from 'react-icons/bi';
 
 import {
   ControlCommandType,
@@ -23,12 +25,9 @@ import {
   hasAction,
 } from '../external_controller/externalController';
 
-import { Project } from '@dmx-controller/proto/project_pb';
-import { BiPlus, BiTrash } from 'react-icons/bi';
 import { Button, ControllerButton, IconButton } from './Button';
-import { Modal } from './Modal';
-
 import styles from './ControllerConnection.module.css';
+import { Modal } from './Modal';
 import { Toggle } from './Toggle';
 
 interface ControllerConnectionProps {

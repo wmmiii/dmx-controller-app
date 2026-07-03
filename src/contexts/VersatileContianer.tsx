@@ -1,5 +1,7 @@
 import { createContext, useEffect, useRef, useState } from 'react';
+
 import { DRAG_DISTANCE_PX_SQ, LONG_PRESS_MS } from '../util/browserUtils';
+
 import styles from './VersatileContainer.module.css';
 
 type VersatileState = 'idle' | 'click' | 'press' | 'drag';

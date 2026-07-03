@@ -1,35 +1,35 @@
 import { create } from '@bufbuild/protobuf';
-import { JSX, useContext, useEffect, useMemo, useState } from 'react';
-import { ProjectContext } from '../../contexts/ProjectContext';
-
 import {
+  DmxFixtureDefinitionSchema,
   DmxFixtureDefinition_Channel,
+  DmxFixtureDefinition_ChannelSchema,
   DmxFixtureDefinition_Channel_AmountMappingSchema,
   DmxFixtureDefinition_Channel_AngleMappingSchema,
   DmxFixtureDefinition_Channel_ColorWheelMapping,
-  DmxFixtureDefinition_Channel_ColorWheelMapping_ColorWheelColorSchema,
   DmxFixtureDefinition_Channel_ColorWheelMappingSchema,
-  DmxFixtureDefinition_ChannelSchema,
+  DmxFixtureDefinition_Channel_ColorWheelMapping_ColorWheelColorSchema,
   DmxFixtureDefinition_ModeSchema,
-  DmxFixtureDefinitionSchema,
 } from '@dmx-controller/proto/dmx_pb';
 import {
   SacnDmxOutput,
   SerialDmxOutput,
 } from '@dmx-controller/proto/output_pb';
 import clsx from 'clsx';
+import { JSX, useContext, useEffect, useMemo, useState } from 'react';
 import { BiGridVertical, BiPlus, BiTrash } from 'react-icons/bi';
+
 import { Button, IconButton } from '../../components/Button';
 import { ColorSwatch } from '../../components/ColorSwatch';
 import { NumberInput, TextInput } from '../../components/Input';
 import { Modal } from '../../components/Modal';
 import { Select } from '../../components/Select';
 import { VersatileElement } from '../../components/VersatileElement';
+import { ProjectContext } from '../../contexts/ProjectContext';
 import {
   AMOUNT_CHANNELS,
   ANGLE_CHANNELS,
-  ChannelTypes,
   COLOR_CHANNELS,
+  ChannelTypes,
   isAmountChannel,
   isAngleChannel,
 } from '../../engine/channel';
@@ -37,6 +37,7 @@ import { useRenderMode } from '../../hooks/renderMode';
 import { extractGdtf } from '../../util/gdtf';
 import { randomUint64 } from '../../util/numberUtils';
 import { getOutput } from '../../util/projectUtils';
+
 import { DraggableDmxFixture } from './DmxEditor';
 import styles from './DmxFixtureList.module.css';
 

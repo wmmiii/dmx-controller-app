@@ -28,5 +28,8 @@
   "[proto]": {
     "editor.defaultFormatter": "xaver.clang-format"
   },
-  "claudeCode.allowedCommands": ["pnpm *"]
+  "claudeCode.allowedCommands": ["pnpm *"],
+  "[c]": {
+    "editor.defaultFormatter": "xaver.clang-format"
+  }
 }

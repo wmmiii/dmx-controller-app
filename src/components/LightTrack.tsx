@@ -1,13 +1,7 @@
 import { create } from '@bufbuild/protobuf';
-import { JSX, useContext, useRef } from 'react';
-import {
-  OutputSelector,
-  getOutputTargetName,
-} from '../components/OutputSelector';
-import { ProjectContext } from '../contexts/ProjectContext';
-
 import { LayerSchema, TimecodedEffect } from '@dmx-controller/proto/effect_pb';
 import { Show_Output } from '@dmx-controller/proto/show_pb';
+import { JSX, useContext, useRef } from 'react';
 import {
   BiBrushAlt,
   BiChevronDown,
@@ -15,6 +9,13 @@ import {
   BiPlus,
   BiTrash,
 } from 'react-icons/bi';
+
+import {
+  OutputSelector,
+  getOutputTargetName,
+} from '../components/OutputSelector';
+import { ProjectContext } from '../contexts/ProjectContext';
+
 import { Button, IconButton } from './Button';
 import { Layer } from './Layer';
 import styles from './LightTrack.module.css';

@@ -11,6 +11,7 @@ import { PhysicalSegment } from '@dmx-controller/proto/pixel_mapping_pb';
 import clsx from 'clsx';
 import { useCallback, useContext, useMemo, useState } from 'react';
 import { BiError, BiTrash } from 'react-icons/bi';
+
 import { Button, IconButton } from '../../components/Button';
 import { EditableText, NumberInput } from '../../components/Input';
 import { Select } from '../../components/Select';
@@ -18,6 +19,7 @@ import { Toggle } from '../../components/Toggle';
 import { ProjectContext } from '../../contexts/ProjectContext';
 import { randomUint64 } from '../../util/numberUtils';
 import { getActivePatch } from '../../util/projectUtils';
+
 import styles from './DisplayEditor.module.css';
 
 export function DisplayEditor() {

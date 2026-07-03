@@ -10,6 +10,15 @@ import {
   useRef,
   useState,
 } from 'react';
+import {
+  BiPause,
+  BiPlay,
+  BiPulse,
+  BiSkipNext,
+  BiSkipPrevious,
+  BiZoomIn,
+  BiZoomOut,
+} from 'react-icons/bi';
 import WaveSurfer from 'wavesurfer.js';
 import MinimapPlugin from 'wavesurfer.js/dist/plugins/minimap.js';
 import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions.js';
@@ -24,15 +33,6 @@ import {
   WAVEFORM_SAMPLE_RATE,
 } from '../util/styleUtils';
 
-import {
-  BiPause,
-  BiPlay,
-  BiPulse,
-  BiSkipNext,
-  BiSkipPrevious,
-  BiZoomIn,
-  BiZoomOut,
-} from 'react-icons/bi';
 import styles from './BeatEditor.module.css';
 import { Button } from './Button';
 import { NumberInput } from './Input';

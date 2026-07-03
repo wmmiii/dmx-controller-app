@@ -1,5 +1,6 @@
 import { NumberInput } from '../../components/Input';
 import { Toggle } from '../../components/Toggle';
+
 import styles from './OutputFrame.module.css';
 
 interface OutputFrameProps {

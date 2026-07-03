@@ -7,6 +7,7 @@ import {
 import { type Project } from '@dmx-controller/proto/project_pb';
 import {
   SceneSchema,
+  type Scene_TileMap,
   Scene_TileMapSchema,
   Scene_TileSchema,
   Scene_Tile_AudioDetailsSchema,
@@ -14,12 +15,15 @@ import {
   Scene_Tile_EffectChannelSchema,
   Scene_Tile_LoopDetailsSchema,
   Scene_Tile_OneShotDetailsSchema,
-  type Scene_TileMap,
 } from '@dmx-controller/proto/scene_pb';
 import { JSX, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { BiPencil, BiPlus, BiTrash, BiX } from 'react-icons/bi';
 
+import { AudioLevels } from '../components/AudioLevels';
 import { Button, IconButton } from '../components/Button';
+import { ClipboardControls } from '../components/ClipboardControls';
 import { ControllerConnection } from '../components/ControllerConnection';
+import { DurationInput } from '../components/Duration';
 import { EditableText, NumberInput, TextInput } from '../components/Input';
 import { LiveBeat } from '../components/LiveBeat';
 import { Modal } from '../components/Modal';
@@ -28,27 +32,24 @@ import {
   getOutputTargetName,
 } from '../components/OutputSelector';
 import { PaletteSwatch } from '../components/Palette';
+import { RangeSlider } from '../components/RangeSlider';
+import { Select } from '../components/Select';
+import { Spacer } from '../components/Spacer';
+import { Tabs, TabsType } from '../components/Tabs';
 import { TileGrid } from '../components/TileGrid';
 import { EffectDetails } from '../components/TimecodeEffect';
 import { Toggle } from '../components/Toggle';
+import { AudioInputContext } from '../contexts/AudioInputContext';
 import { ControllerContext } from '../contexts/ControllerContext';
 import { PaletteContext } from '../contexts/PaletteContext';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { getAvailableChannels } from '../engine/fixtures/fixture';
 import { deleteBindings } from '../external_controller/externalController';
-
-import { BiPencil, BiPlus, BiTrash, BiX } from 'react-icons/bi';
-import { AudioLevels } from '../components/AudioLevels';
-import { DurationInput } from '../components/Duration';
-import { RangeSlider } from '../components/RangeSlider';
-import { Select } from '../components/Select';
-import { Spacer } from '../components/Spacer';
-import { Tabs, TabsType } from '../components/Tabs';
-import { AudioInputContext } from '../contexts/AudioInputContext';
 import { useRenderMode } from '../hooks/renderMode';
 import { DEFAULT_COLOR_PALETTE } from '../util/colorUtil';
 import { randomUint64 } from '../util/numberUtils';
 import { getActiveScene } from '../util/sceneUtils';
+
 import styles from './LivePage.module.css';
 
 const NEW_SCENE_KEY = 'new';
@@ -374,6 +375,19 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
       <div className={styles.metaPane}>
         <div className={styles.header}>
           <h2>Tile Details</h2>
+        </div>
+        <div className={styles.row}>
+          <ClipboardControls
+            typeName="tile"
+            schema={Scene_TileSchema}
+            value={tile}
+            onPaste={(newTile) => {
+              tileMap.tile = clone(Scene_TileSchema, newTile);
+              tileMap.tile.name = `Copy of ${tileMap.tile.name}`;
+              save('Paste tile.');
+            }}
+          />
+          <Spacer />
           <IconButton
             title="Delete tile"
             variant="warning"
@@ -597,6 +611,18 @@ function EffectGroupEditor({ channels, name }: EffectGroupEditorProps) {
           <div key={i} className={styles.effect}>
             <div className={styles.header}>
               <h3>Effect {i + 1}</h3>
+            </div>
+            <div className={styles.header}>
+              <ClipboardControls
+                typeName="effect channel"
+                schema={Scene_Tile_EffectChannelSchema}
+                value={c}
+                onPaste={(c) => {
+                  channels[i] = clone(Scene_Tile_EffectChannelSchema, c);
+                  save('Paste effect channel.');
+                }}
+              />
+              <Spacer />
               <IconButton
                 title="Delete Channel"
                 variant="warning"

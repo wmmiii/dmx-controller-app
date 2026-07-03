@@ -218,11 +218,12 @@ package.json                # Add ilda:dev and ilda:build scripts
 
   ```typescript
   import { useState } from 'react';
+
   import styles from './App.module.css';
-  import { UploadPanel } from './components/UploadPanel';
+  import { CanvasPreview } from './components/CanvasPreview';
   import { ControlPanel } from './components/ControlPanel';
   import { SvgPreview } from './components/SvgPreview';
-  import { CanvasPreview } from './components/CanvasPreview';
+  import { UploadPanel } from './components/UploadPanel';
 
   // State:
   // - step: 'upload' | 'configure'

@@ -2,6 +2,7 @@ import { Combobox as BaseCombobox } from '@base-ui/react/combobox';
 import clsx from 'clsx';
 import { useMemo, useRef } from 'react';
 import { BiX } from 'react-icons/bi';
+
 import styles from './Combobox.module.css';
 
 export interface ComboboxOption<T> {

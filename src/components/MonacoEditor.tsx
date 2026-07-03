@@ -1,5 +1,5 @@
 import type * as Monaco from 'monaco-editor';
-import { lazy, Suspense, useEffect, useRef } from 'react';
+import { Suspense, lazy, useEffect, useRef } from 'react';
 
 const MonacoEditorInner = lazy(() =>
   import('@monaco-editor/react').then((m) => ({ default: m.Editor })),

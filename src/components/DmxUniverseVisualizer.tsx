@@ -1,10 +1,5 @@
 import { create } from '@bufbuild/protobuf';
 import { ColorSchema } from '@dmx-controller/proto/color_pb';
-import { useContext, useEffect, useMemo, useRef, useState } from 'react';
-
-import { ProjectContext } from '../contexts/ProjectContext';
-import { ChannelTypes } from '../engine/channel';
-
 import {
   DmxFixtureDefinition_Channel_AmountMapping,
   DmxFixtureDefinition_Channel_ColorWheelMapping,
@@ -14,14 +9,18 @@ import {
   SacnDmxOutput,
   SerialDmxOutput,
 } from '@dmx-controller/proto/output_pb';
-import { getOutput } from '../util/projectUtils';
-
+import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { BiError } from 'react-icons/bi';
+
+import { ProjectContext } from '../contexts/ProjectContext';
+import { ChannelTypes } from '../engine/channel';
 import {
   RenderError,
   subscribeToDmxRender,
   subscribeToRenderErrors,
 } from '../engine/renderRouter';
+import { getOutput } from '../util/projectUtils';
+
 import styles from './Visualizer.module.css';
 
 interface FixtureDetails {

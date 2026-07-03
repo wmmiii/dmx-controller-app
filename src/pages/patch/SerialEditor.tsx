@@ -1,8 +1,10 @@
 import { useContext, useEffect, useMemo, useState } from 'react';
+
 import { Combobox, ComboboxGroup } from '../../components/Combobox';
 import { ProjectContext } from '../../contexts/ProjectContext';
 import { listPorts } from '../../system_interfaces/serial';
 import { getOutput } from '../../util/projectUtils';
+
 import { DmxEditor } from './DmxEditor';
 import { OutputFrame } from './OutputFrame';
 import styles from './SerialEditor.module.css';

@@ -1,5 +1,6 @@
 import { Slider } from '@base-ui/react/slider';
 import { useEffect, useState } from 'react';
+
 import styles from './RangeSlider.module.css';
 
 interface RangeSliderProps {

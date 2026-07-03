@@ -7,7 +7,9 @@ import {
 import { Project, ProjectSchema } from '@dmx-controller/proto/project_pb';
 import { Scene_Tile } from '@dmx-controller/proto/scene_pb';
 import { Show_Output } from '@dmx-controller/proto/show_pb';
+
 import { isWledChannel } from '../engine/channel';
+
 import { randomUint64 } from './numberUtils';
 
 export function getActivePatch(project: Project) {

@@ -1,20 +1,20 @@
-import { Project } from '@dmx-controller/proto/project_pb';
-
-import { deleteFromOutputTargets, getOutput } from '../../util/projectUtils';
-
 import {
   OutputTarget,
   QualifiedFixtureId,
 } from '@dmx-controller/proto/output_pb';
+import { Project } from '@dmx-controller/proto/project_pb';
+
+import { deleteFromOutputTargets, getOutput } from '../../util/projectUtils';
 import {
   ALL_CHANNELS,
   AmountChannel,
-  ChannelTypes,
   COLOR_CHANNELS,
+  ChannelTypes,
   ColorChannel,
   WLED_CHANNELS,
 } from '../channel';
 import { getAllFixtures } from '../group';
+
 import { getDmxFixtureChannels } from './dmxDevices';
 
 export function getAvailableChannels(

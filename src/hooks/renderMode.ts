@@ -1,6 +1,7 @@
-import { create, MessageInitShape } from '@bufbuild/protobuf';
+import { MessageInitShape, create } from '@bufbuild/protobuf';
 import { RenderModeSchema } from '@dmx-controller/proto/render_pb';
 import { useEffect } from 'react';
+
 import { setRenderMode } from '../system_interfaces/engine';
 
 let modeLock = Promise.resolve();

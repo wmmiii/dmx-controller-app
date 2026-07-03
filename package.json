@@ -54,6 +54,7 @@
     "jest-environment-jsdom": "30.3.0",
     "knip": "^6.0.1",
     "prettier": "3.8.1",
+    "prettier-plugin-glsl": "^0.3.0",
     "prettier-plugin-organize-imports": "4.3.0",
     "prettier-plugin-rational-order": "^1.0.3",
     "protoc": "^34.0.0",

@@ -1,3 +1,4 @@
+import { exit } from '@tauri-apps/plugin-process';
 import {
   JSX,
   PropsWithChildren,
@@ -10,7 +11,6 @@ import {
 
 import { Modal } from '../components/Modal';
 
-import { exit } from '@tauri-apps/plugin-process';
 import styles from './ShortcutContext.module.css';
 
 type ShortcutBundle = Array<{

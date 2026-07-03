@@ -4,15 +4,16 @@ import {
   fromJsonString,
   toJsonString,
 } from '@bufbuild/protobuf';
-import { Project } from '@dmx-controller/proto/project_pb';
-
 import {
   OutputTarget,
   OutputTargetSchema,
   QualifiedFixtureId,
   QualifiedFixtureIdSchema,
 } from '@dmx-controller/proto/output_pb';
+import { Project } from '@dmx-controller/proto/project_pb';
+
 import { getActivePatch } from '../util/projectUtils';
+
 import { GROUP_ALL_ID } from './fixtures/writableDevice';
 
 export function addToGroup(

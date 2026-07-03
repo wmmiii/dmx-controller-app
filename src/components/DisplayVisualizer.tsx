@@ -1,17 +1,16 @@
+import { DisplayBuffer } from '@dmx-controller/proto/display_pb';
 import { useContext, useEffect, useRef, useState } from 'react';
+import { BiError } from 'react-icons/bi';
 
 import { ProjectContext } from '../contexts/ProjectContext';
-
-import styles from './Visualizer.module.css';
-
-import { DisplayBuffer } from '@dmx-controller/proto/display_pb';
-import { BiError } from 'react-icons/bi';
 import {
   AllDisplayBuffers,
   RenderError,
   subscribeToDisplayRender,
   subscribeToRenderErrors,
 } from '../engine/renderRouter';
+
+import styles from './Visualizer.module.css';
 
 export function DisplayVisualizer() {
   const { project } = useContext(ProjectContext);

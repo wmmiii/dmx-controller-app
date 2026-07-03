@@ -1,6 +1,6 @@
+import clsx from 'clsx';
 import { JSX } from 'react';
 
-import clsx from 'clsx';
 import styles from './Tabs.module.css';
 
 export interface TabsType {

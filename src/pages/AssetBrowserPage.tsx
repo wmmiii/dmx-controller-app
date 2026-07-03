@@ -1,7 +1,7 @@
 import { create } from '@bufbuild/protobuf';
 import {
-  AudioFileSchema,
   type AudioFile,
+  AudioFileSchema,
 } from '@dmx-controller/proto/audio_pb';
 import { Project_AssetsSchema } from '@dmx-controller/proto/project_pb';
 import { JSX, useContext, useState } from 'react';

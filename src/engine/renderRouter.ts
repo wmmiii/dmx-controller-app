@@ -1,5 +1,6 @@
 import { DisplayBuffer } from '@dmx-controller/proto/display_pb';
 import { WledRenderTarget } from '@dmx-controller/proto/wled_pb';
+
 export type DmxRenderOutput = Uint8Array;
 
 export interface RenderError {

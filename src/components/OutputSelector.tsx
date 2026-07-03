@@ -1,15 +1,15 @@
 import { create, equals } from '@bufbuild/protobuf';
-import { type Project } from '@dmx-controller/proto/project_pb';
-import { JSX, useContext, useMemo } from 'react';
-
-import { ProjectContext } from '../contexts/ProjectContext';
-import { getActivePatch } from '../util/projectUtils';
-
 import {
   OutputTarget,
   OutputTargetSchema,
 } from '@dmx-controller/proto/output_pb';
+import { type Project } from '@dmx-controller/proto/project_pb';
+import { JSX, useContext, useMemo } from 'react';
+
+import { ProjectContext } from '../contexts/ProjectContext';
 import { GROUP_ALL_ID } from '../engine/fixtures/writableDevice';
+import { getActivePatch } from '../util/projectUtils';
+
 import { Combobox, ComboboxGroup, ComboboxOption } from './Combobox';
 import styles from './OutputSelector.module.css';
 

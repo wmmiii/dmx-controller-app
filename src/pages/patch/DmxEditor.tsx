@@ -1,4 +1,5 @@
 import { VersatileContainer } from '../../contexts/VersatileContianer';
+
 import styles from './DmxEditor.module.css';
 import { DmxFixtureList } from './DmxFixtureList';
 import { DmxUniverse } from './DmxUniverse';

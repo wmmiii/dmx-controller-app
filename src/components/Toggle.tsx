@@ -1,6 +1,7 @@
 import { Switch } from '@base-ui/react/switch';
 import clsx from 'clsx';
 import { JSX } from 'react';
+
 import styles from './Toggle.module.css';
 
 interface ToggleProps {

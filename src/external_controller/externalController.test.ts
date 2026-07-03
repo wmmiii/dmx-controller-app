@@ -6,10 +6,13 @@ import {
   InputType,
 } from '@dmx-controller/proto/controller_pb';
 import { SceneSchema } from '@dmx-controller/proto/scene_pb';
+
 import { randomUint64 } from '../util/numberUtils';
 import { createNewProject } from '../util/projectUtils';
 import { getActiveScene } from '../util/sceneUtils';
+
 import {
+  type BindingContext,
   assignAction,
   contextName,
   deleteAction,
@@ -18,7 +21,6 @@ import {
   getActionDescription,
   getAllBindingsForAction,
   hasAction,
-  type BindingContext,
 } from './externalController';
 
 const BINDING_ID = 1n;

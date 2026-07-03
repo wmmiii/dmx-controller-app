@@ -1,7 +1,9 @@
 import { useContext } from 'react';
+
 import { TextInput } from '../../components/Input';
 import { ProjectContext } from '../../contexts/ProjectContext';
 import { getOutput } from '../../util/projectUtils';
+
 import { DmxEditor } from './DmxEditor';
 import { OutputFrame } from './OutputFrame';
 

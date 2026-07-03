@@ -1,6 +1,4 @@
 import { create } from '@bufbuild/protobuf';
-import { JSX, useContext, useEffect, useMemo, useRef, useState } from 'react';
-
 import { TimecodedEffect } from '@dmx-controller/proto/effect_pb';
 import { Project } from '@dmx-controller/proto/project_pb';
 import {
@@ -8,6 +6,8 @@ import {
   Show_AudioTrackSchema,
   Show_OutputSchema,
 } from '@dmx-controller/proto/show_pb';
+import { JSX, useContext, useEffect, useMemo, useRef, useState } from 'react';
+
 import { Button } from '../components/Button';
 import { TextInput } from '../components/Input';
 import LightTimeline from '../components/LightTimeline';
@@ -19,6 +19,7 @@ import { ShortcutContext } from '../contexts/ShortcutContext';
 import { DEFAULT_COLOR_PALETTE } from '../util/colorUtil';
 import { UNSET_INDEX, idMapToArray } from '../util/mapUtils';
 import { randomUint64 } from '../util/numberUtils';
+
 import styles from './ShowPage.module.css';
 
 function createShow(project: Project) {

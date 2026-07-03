@@ -1,29 +1,29 @@
 import { create } from '@bufbuild/protobuf';
-import { JSX, useContext, useMemo, useState } from 'react';
-
+import {
+  DmxFixtureDefinition,
+  PhysicalDmxFixture,
+  PhysicalDmxFixtureSchema,
+} from '@dmx-controller/proto/dmx_pb';
 import {
   QualifiedFixtureIdSchema,
   SacnDmxOutput,
   SerialDmxOutput,
 } from '@dmx-controller/proto/output_pb';
+import clsx from 'clsx';
+import { JSX, useContext, useMemo, useState } from 'react';
+import { BiTrash } from 'react-icons/bi';
+
 import { Button } from '../../components/Button';
 import { NumberInput, TextInput } from '../../components/Input';
 import { Modal } from '../../components/Modal';
 import { Select } from '../../components/Select';
+import { VersatileElement } from '../../components/VersatileElement';
 import { Warning } from '../../components/Warning';
 import { ProjectContext } from '../../contexts/ProjectContext';
 import { ANGLE_CHANNELS } from '../../engine/channel';
 import { deleteFixture } from '../../engine/fixtures/fixture';
 import { getOutput } from '../../util/projectUtils';
 
-import {
-  DmxFixtureDefinition,
-  PhysicalDmxFixture,
-  PhysicalDmxFixtureSchema,
-} from '@dmx-controller/proto/dmx_pb';
-import clsx from 'clsx';
-import { BiTrash } from 'react-icons/bi';
-import { VersatileElement } from '../../components/VersatileElement';
 import { DraggableDmxFixture } from './DmxEditor';
 import styles from './DmxUniverse.module.css';
 
