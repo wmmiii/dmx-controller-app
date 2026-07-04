@@ -94,7 +94,7 @@ pub fn load_from_disk(app: &AppHandle) -> Result<(), String> {
 }
 
 /// Schedules a debounced flush of pending writes
-fn schedule_flush(persist_state: &Arc<TokioMutex<PersistState>>) {
+fn schedule_flush(persist_state: &Arc<TokioMutex<PersistState>>) -> JoinHandle<()> {
     let persist_state_clone = persist_state.clone();
     tokio::spawn(async move {
         // Wait for debounce period
@@ -113,25 +113,34 @@ fn schedule_flush(persist_state: &Arc<TokioMutex<PersistState>>) {
 
         // Clear the handle since we're done
         state.debounce_handle = None;
-    });
+    })
 }
 
-/// Queues project binary for debounced persistence
-async fn queue_project_persist(
-    project_binary: &[u8],
+/// Emits project update, undo state, and queues debounced persistence.
+/// This is the standard way to finalize a project modification.
+pub async fn emit_and_persist(
+    app: &AppHandle,
+    description: Option<String>,
     persist_state: &Arc<TokioMutex<PersistState>>,
-) {
+) -> Result<(), String> {
+    emit_project_update(app, description);
+    emit_undo_state(app);
+
+    // Queue debounced persist to disk
+    let project_binary = project::get()?;
     let mut state = persist_state.lock().await;
-    state.pending_project = Some(project_binary.to_vec());
+    state.pending_project = Some(project_binary);
 
     // Cancel existing debounce if any
     if let Some(handle) = state.debounce_handle.take() {
         handle.abort();
     }
 
-    // Schedule new flush
-    drop(state); // Release lock before spawning
-    schedule_flush(persist_state);
+    // Schedule new flush and store the handle
+    let handle = schedule_flush(persist_state);
+    state.debounce_handle = Some(handle);
+
+    Ok(())
 }
 
 /// Payload for the project-updated event
@@ -269,14 +278,10 @@ pub async fn save_project(
     // 1. Update engine state + undo stack
     project::save(&project_binary, &description, undoable)?;
 
-    // 2. Emit project update (flow-controlled) and undo state (immediate)
-    emit_project_update(&app, Some(description));
-    emit_undo_state(&app);
+    // 2. Emit updates and persist to disk
+    emit_and_persist(&app, Some(description), persist_state.inner()).await?;
 
-    // 3. Queue debounced persist to disk
-    queue_project_persist(&project_binary, persist_state.inner()).await;
-
-    // 4. Rebuild output loops
+    // 3. Rebuild output loops
     rebuild_outputs(
         serial_state.inner(),
         output_loop_manager.inner(),
@@ -340,14 +345,10 @@ pub async fn undo_project(
     // 1. Perform undo in engine
     let result = project::undo()?;
 
-    // 2. Emit project update (flow-controlled) and undo state (immediate)
-    emit_project_update(&app, Some(result.description));
-    emit_undo_state(&app);
+    // 2. Emit updates and persist to disk
+    emit_and_persist(&app, Some(result.description), persist_state.inner()).await?;
 
-    // 3. Queue debounced persist to disk
-    queue_project_persist(&result.project_binary, persist_state.inner()).await;
-
-    // 4. Rebuild output loops
+    // 3. Rebuild output loops
     rebuild_outputs(
         serial_state.inner(),
         output_loop_manager.inner(),
@@ -377,14 +378,10 @@ pub async fn redo_project(
     // 1. Perform redo in engine
     let result = project::redo()?;
 
-    // 2. Emit project update (flow-controlled) and undo state (immediate)
-    emit_project_update(&app, Some(result.description));
-    emit_undo_state(&app);
+    // 2. Emit updates and persist to disk
+    emit_and_persist(&app, Some(result.description), persist_state.inner()).await?;
 
-    // 3. Queue debounced persist to disk
-    queue_project_persist(&result.project_binary, persist_state.inner()).await;
-
-    // 4. Rebuild output loops
+    // 3. Rebuild output loops
     rebuild_outputs(
         serial_state.inner(),
         output_loop_manager.inner(),
@@ -415,14 +412,15 @@ pub async fn load_project(
     // 1. Load into engine (resets undo stack)
     project::load(&project_binary)?;
 
-    // 2. Emit project update (flow-controlled) and undo state (immediate)
-    emit_project_update(&app, Some("Load project.".to_string()));
-    emit_undo_state(&app);
+    // 2. Emit updates and persist to disk
+    emit_and_persist(
+        &app,
+        Some("Load project.".to_string()),
+        persist_state.inner(),
+    )
+    .await?;
 
-    // 3. Queue debounced persist to disk
-    queue_project_persist(&project_binary, persist_state.inner()).await;
-
-    // 4. Rebuild output loops
+    // 3. Rebuild output loops
     rebuild_outputs(
         serial_state.inner(),
         output_loop_manager.inner(),
@@ -533,9 +531,12 @@ pub async fn import_project(
     project::load(&project_binary)?;
 
     // Emit updates and persist
-    emit_project_update(&app, Some("Open project.".to_string()));
-    emit_undo_state(&app);
-    queue_project_persist(&project_binary, persist_state.inner()).await;
+    emit_and_persist(
+        &app,
+        Some("Open project.".to_string()),
+        persist_state.inner(),
+    )
+    .await?;
 
     // Rebuild output loops
     rebuild_outputs(
@@ -565,14 +566,15 @@ pub async fn new_project(
     ddp_state: State<'_, Arc<TokioMutex<DdpState>>>,
 ) -> Result<(), String> {
     // 1. Reset engine to default project
-    let project_binary = project::new_project()?;
+    project::new_project()?;
 
-    // 2. Emit project update and undo state
-    emit_project_update(&app, Some("New project.".to_string()));
-    emit_undo_state(&app);
-
-    // 3. Persist the new project
-    queue_project_persist(&project_binary, persist_state.inner()).await;
+    // 2. Emit updates and persist to disk
+    emit_and_persist(
+        &app,
+        Some("New project.".to_string()),
+        persist_state.inner(),
+    )
+    .await?;
 
     // 4. Rebuild output loops
     rebuild_outputs(
@@ -643,12 +645,8 @@ pub async fn toggle_tile(
     })?;
 
     if modified {
-        // Emit project update (flow-controlled)
-        emit_project_update(&app, Some(description));
-
-        // Queue debounced persist to disk
-        let project_binary = project::get()?;
-        queue_project_persist(&project_binary, persist_state.inner()).await;
+        // Emit updates and persist to disk
+        emit_and_persist(&app, Some(description), persist_state.inner()).await?;
     }
 
     Ok(enabled)

@@ -3,6 +3,7 @@ mod audio_analysis;
 #[cfg(desktop)]
 mod audio_input;
 mod beat;
+mod cas;
 mod ddp;
 mod display_loop;
 #[cfg(desktop)]
@@ -239,6 +240,7 @@ pub fn run() {
             project::export_project,
             project::import_project,
             project::new_project,
+            cas::import_audio_file,
             render::render_dmx,
             render::set_render_mode,
             shader::compile_visualizer,

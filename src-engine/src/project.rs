@@ -7,8 +7,8 @@ use std::{
 use crate::{
     palette::DEFAULT_COLOR_PALETTE,
     proto::{
-        BeatMetadata, ControllerBindingsMap, ControllerMapping, FixtureDefinitions, Patch,
-        Project, Scene,
+        BeatMetadata, ControllerBindingsMap, ControllerMapping, FixtureDefinitions, Patch, Project,
+        Scene,
     },
 };
 
@@ -421,7 +421,8 @@ pub fn new_project() -> Result<Vec<u8>, String> {
 }
 
 /// Generates a random u64 ID.
-fn rand_id() -> u64 {
+#[must_use]
+pub fn rand_id() -> u64 {
     use std::time::{SystemTime, UNIX_EPOCH};
     let duration = SystemTime::now()
         .duration_since(UNIX_EPOCH)
