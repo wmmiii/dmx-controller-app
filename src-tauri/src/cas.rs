@@ -30,7 +30,14 @@ pub async fn import_audio_file(
 
     let path_ref = file_path.as_path().ok_or("Invalid file path")?;
 
-    // Extract filename for display name
+    // Extract filename for display name (without extension)
+    let display_name = path_ref
+        .file_stem()
+        .and_then(|n| n.to_str())
+        .unwrap_or("Untitled")
+        .to_string();
+
+    // Keep original filename with extension
     let file_name = path_ref
         .file_name()
         .and_then(|n| n.to_str())
@@ -70,7 +77,8 @@ pub async fn import_audio_file(
 
     // Create the AudioFile and add it to the project
     let audio_file = AudioFile {
-        name: file_name.clone(),
+        name: display_name,
+        original_file_name: file_name.clone(),
         digest: file_digest,
         mime,
         beat_keyframes: Vec::new(),

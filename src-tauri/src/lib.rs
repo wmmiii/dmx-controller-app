@@ -1,6 +1,8 @@
 #[cfg(desktop)]
 mod audio_analysis;
 #[cfg(desktop)]
+mod audio_files;
+#[cfg(desktop)]
 mod audio_input;
 mod beat;
 mod cas;
@@ -137,6 +139,12 @@ pub fn run() {
                 app.manage(audio_input_state_arc);
             }
 
+            #[cfg(desktop)]
+            {
+                let audio_files_state = audio_files::AudioFilesState::new();
+                app.manage(Arc::new(Mutex::new(audio_files_state)));
+            }
+
             let serial_state = serial::SerialState::new();
             let serial_state_arc = Arc::new(Mutex::new(serial_state));
 
@@ -224,6 +232,14 @@ pub fn run() {
             beat::set_bpm,
             #[cfg(desktop)]
             audio_input::list_audio_inputs,
+            #[cfg(desktop)]
+            audio_files::play_audio,
+            #[cfg(desktop)]
+            audio_files::pause_audio,
+            #[cfg(desktop)]
+            audio_files::seek_audio,
+            #[cfg(desktop)]
+            audio_files::jog_audio,
             #[cfg(desktop)]
             midi::connect_midi,
             #[cfg(desktop)]

@@ -11,6 +11,7 @@ message AudioFile {
   }
 
   string name = 1;
+  string original_file_name = 8;
   string digest = 6;
   string mime = 3;
   repeated BeatKeyframe beat_keyframes = 7;
