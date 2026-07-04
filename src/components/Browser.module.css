@@ -16,6 +16,7 @@
     content: '';
     position: absolute;
     border-right: 1px solid var(--col-border);
+    pointer-events: none;
     inset: 0;
   }
 

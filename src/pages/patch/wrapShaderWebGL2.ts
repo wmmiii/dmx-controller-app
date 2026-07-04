@@ -2,15 +2,15 @@ const PREAMBLE = `#version 300 es
 precision highp float;
 precision highp int;
 
-uniform vec4 u_color;
+uniform vec3 u_color;
 uniform float u_beat_t;
 uniform uint u_time_ms;
 uniform uint u_beat_count;
 uniform vec2 u_resolution;
 uniform float u_audio_bands[16];
-uniform vec4 u_palette_primary;
-uniform vec4 u_palette_secondary;
-uniform vec4 u_palette_tertiary;
+uniform vec3 u_palette_primary;
+uniform vec3 u_palette_secondary;
+uniform vec3 u_palette_tertiary;
 uniform sampler2D u_previous_texture;
 uniform bool u_use_previous_texture;
 

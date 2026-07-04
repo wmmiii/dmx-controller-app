@@ -49,10 +49,10 @@ export default function Index(): JSX.Element {
     //   title: 'Show',
     //   onSelect: () => navigate('/show'),
     // },
-    // {
-    //   title: 'Assets',
-    //   onSelect: () => navigate('/assets'),
-    // },
+    {
+      title: 'Assets',
+      onSelect: () => navigate('/assets'),
+    },
     {
       title: 'Patch',
       onSelect: () => navigate('/patch'),

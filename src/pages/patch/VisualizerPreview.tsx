@@ -15,7 +15,6 @@ const MOCK_BPM = 120;
 export interface VisualizerPreviewProps {
   glslSource: string;
   color: Color;
-  dimmer: number;
   palettePrimary: Color;
   paletteSecondary: Color;
   paletteTertiary: Color;
@@ -72,7 +71,6 @@ function cacheUniformLocations(
 export function VisualizerPreview({
   glslSource,
   color,
-  dimmer,
   palettePrimary,
   paletteSecondary,
   paletteTertiary,
@@ -105,7 +103,6 @@ export function VisualizerPreview({
   // Keep all props current in a ref so the render loop never has stale values.
   const propsRef = useRef({
     color,
-    dimmer,
     palettePrimary,
     paletteSecondary,
     paletteTertiary,
@@ -113,7 +110,6 @@ export function VisualizerPreview({
   });
   propsRef.current = {
     color,
-    dimmer,
     palettePrimary,
     paletteSecondary,
     paletteTertiary,
@@ -251,7 +247,6 @@ export function VisualizerPreview({
 
         const {
           color,
-          dimmer,
           palettePrimary,
           paletteSecondary,
           paletteTertiary,
@@ -281,37 +276,28 @@ export function VisualizerPreview({
           currentGl.uniform1i(locs.usePreviousTexture, persistent ? 1 : 0);
         }
 
-        currentGl.uniform4f(
-          locs.color,
-          color.red,
-          color.green,
-          color.blue,
-          dimmer,
-        );
+        currentGl.uniform3f(locs.color, color.red, color.green, color.blue);
         currentGl.uniform1ui(locs.timeMs, Math.trunc(performance.now()));
         currentGl.uniform1fv(locs.audioBands, audioBandsRef.current);
         currentGl.uniform1f(locs.beatT, beatT);
         currentGl.uniform1ui(locs.beatCount, beatCount);
-        currentGl.uniform4f(
+        currentGl.uniform3f(
           locs.palettePrimary,
           palettePrimary.red,
           palettePrimary.green,
           palettePrimary.blue,
-          1.0,
         );
-        currentGl.uniform4f(
+        currentGl.uniform3f(
           locs.paletteSecondary,
           paletteSecondary.red,
           paletteSecondary.green,
           paletteSecondary.blue,
-          1.0,
         );
-        currentGl.uniform4f(
+        currentGl.uniform3f(
           locs.paletteTertiary,
           paletteTertiary.red,
           paletteTertiary.green,
           paletteTertiary.blue,
-          1.0,
         );
         currentGl.uniform2f(locs.resolution, canvas.width, canvas.height);
 

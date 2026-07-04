@@ -38,6 +38,7 @@ export function Browser({
             }
             return (
               <div
+                key={i}
                 className={clsx(styles.item, {
                   [styles.selected]: item.selected,
                   [styles.dim]: item.dim,

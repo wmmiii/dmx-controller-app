@@ -13,7 +13,6 @@ import { BiCopy, BiPlus, BiTrash } from 'react-icons/bi';
 
 import { Button } from '../../components/Button';
 import { ColorSwatch } from '../../components/ColorSwatch';
-import { NumberInput } from '../../components/Input';
 import { MonacoEditor } from '../../components/MonacoEditor';
 import { Toggle } from '../../components/Toggle';
 import { ProjectContext } from '../../contexts/ProjectContext';
@@ -29,13 +28,13 @@ import styles from './VisualizerEditor.module.css';
 import { VisualizerPreview } from './VisualizerPreview';
 
 const DEFAULT_GLSL = `// Available uniforms:
-//   vec4  u_color             — display color RGB + dimmer
+//   vec3  u_color             — display color RGB
 //   float u_audio_bands[16]   — frequency bands, 0.0-1.0 (low to high)
 //   float u_beat_t            — beat phase, 0.0-1.0 (position within beat)
 //   float u_beat_count        — beat number
-//   vec4  u_palette_primary   — palette color 1
-//   vec4  u_palette_secondary — palette color 2
-//   vec4  u_palette_tertiary  — palette color 3
+//   vec3  u_palette_primary   — palette color 1
+//   vec3  u_palette_secondary — palette color 2
+//   vec3  u_palette_tertiary  — palette color 3
 //   vec2  u_resolution        — display size in pixels
 //   float u_time_ms           — wall-clock milliseconds
 //
@@ -133,7 +132,6 @@ function PreviewColumn({
   const [previewColor] = useState(() =>
     create(ColorSchema, { red: 1, green: 1, blue: 1 }),
   );
-  const [dimmer, setDimmer] = useState(1.0);
   const [persistent, setPersistent] = useState(false);
   const [previewPalette] = useState(() =>
     create(ColorPaletteSchema, {
@@ -152,10 +150,6 @@ function PreviewColumn({
             color={previewColor}
             updateDescription="Update preview color"
           />
-        </label>
-        <label>
-          Dimmer
-          <NumberInput title="Dimmer" value={dimmer} onChange={setDimmer} />
         </label>
         <label>
           Primary
@@ -190,7 +184,6 @@ function PreviewColumn({
       <VisualizerPreview
         glslSource={glslSource}
         color={previewColor}
-        dimmer={dimmer}
         persistent={persistent}
         palettePrimary={previewPalette.primary!.color!}
         paletteSecondary={previewPalette.secondary!.color!}
