@@ -5,54 +5,6 @@
   inset: 0;
 }
 
-.display-list {
-  flex-shrink: 0;
-  border-right: 1px solid var(--col-border);
-
-  ul {
-    margin: 0;
-    padding: 0;
-    font-size: var(--dim-text-size-xl);
-    list-style: none;
-  }
-
-  li {
-    position: relative;
-    right: -1px;
-    z-index: 1;
-    padding: var(--space-1) var(--space-2);
-    border: 1px solid transparent;
-    border-top-left-radius: var(--dim-border-radius);
-    border-bottom-left-radius: var(--dim-border-radius);
-    cursor: pointer;
-
-    &.selected {
-      border-color: var(--col-border);
-      border-right-color: var(--col-bg) !important;
-    }
-
-    &:hover {
-      border-color: var(--col-interactive-hover);
-    }
-
-    &.disabled {
-      color: var(--col-text-dim);
-    }
-  }
-
-  button {
-    margin: var(--space-1) var(--space-2);
-  }
-}
-
-.empty-pane {
-  display: flex;
-  flex: 1;
-  align-items: center;
-  justify-content: center;
-  color: var(--col-text-dim);
-}
-
 .display-editor {
   display: flex;
   flex: 1;

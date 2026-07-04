@@ -7,14 +7,13 @@ import {
 import {
   OutputTarget,
   OutputTargetSchema,
+  TargetGroup,
   TargetGroupSchema,
 } from '@dmx-controller/proto/output_pb';
-import clsx from 'clsx';
 import { useCallback, useContext, useMemo, useState } from 'react';
-import { BiTrash } from 'react-icons/bi';
+import { BiPlus, BiTrash } from 'react-icons/bi';
 
 import { Button } from '../../components/Button';
-import { EditableText } from '../../components/Input';
 import { getOutputTargetName } from '../../components/OutputSelector';
 import { VersatileElement } from '../../components/VersatileElement';
 import { ProjectContext } from '../../contexts/ProjectContext';
@@ -27,9 +26,11 @@ import {
 import { useRenderMode } from '../../hooks/renderMode';
 import { randomUint64 } from '../../util/numberUtils';
 
+import { Browser } from '../../components/Browser';
 import styles from './GroupEditor.module.css';
 
 export function GroupEditor() {
+  const { project, save } = useContext(ProjectContext);
   const [selectedGroupId, setSelectedGroupId] = useState<bigint | null>(null);
 
   useRenderMode(
@@ -49,79 +50,13 @@ export function GroupEditor() {
     [selectedGroupId],
   );
 
-  return (
-    <div className={styles.groupContents}>
-      <GroupList
-        selectedGroupId={selectedGroupId}
-        setSelectedGroupId={setSelectedGroupId}
-      />
-      <GroupEditorPane
-        selectedGroupId={selectedGroupId}
-        setSelectedGroupId={setSelectedGroupId}
-      />
-    </div>
-  );
-}
+  const selectedGroup = useMemo(() => {
+    if (selectedGroupId == null) {
+      return null;
+    }
 
-interface GroupListProps {
-  selectedGroupId: bigint | null;
-  setSelectedGroupId: (groupId: bigint) => void;
-}
-
-function GroupList({ selectedGroupId, setSelectedGroupId }: GroupListProps) {
-  const { project, save } = useContext(ProjectContext);
-
-  return (
-    <div className={styles.groupList}>
-      <ul>
-        {Object.entries(project.groups)
-          .sort(([_a, a], [_b, b]) => a.name.localeCompare(b.name))
-          .map(([id, group]) => (
-            <li
-              className={clsx({
-                [styles.selected]: BigInt(id) == selectedGroupId,
-              })}
-              key={id}
-              onClick={() => setSelectedGroupId(BigInt(id))}
-            >
-              <EditableText
-                value={group.name}
-                onChange={(name) => {
-                  if (name) {
-                    group.name = name;
-                    save(`Set group name to "${name}".`);
-                  }
-                }}
-              />
-            </li>
-          ))}
-      </ul>
-      <Button
-        onClick={() => {
-          const newId = randomUint64();
-          project.groups[newId.toString()] = create(TargetGroupSchema, {
-            name: 'New Group',
-          });
-          setSelectedGroupId(newId);
-          save('Create new group.');
-        }}
-      >
-        + Add New Group
-      </Button>
-    </div>
-  );
-}
-
-interface GroupEditorPaneProps {
-  selectedGroupId: bigint | null;
-  setSelectedGroupId: (groupId: bigint | null) => void;
-}
-
-function GroupEditorPane({
-  selectedGroupId,
-  setSelectedGroupId,
-}: GroupEditorPaneProps) {
-  const { project, save, update } = useContext(ProjectContext);
+    return project.groups[selectedGroupId.toString()];
+  }, [project, selectedGroupId]);
 
   useRenderMode(
     {
@@ -140,41 +75,81 @@ function GroupEditorPane({
     [selectedGroupId],
   );
 
-  const group = useMemo(() => {
-    if (selectedGroupId == null) {
-      return null;
-    }
+  return (
+    <Browser
+      className={styles.groupContents}
+      items={Object.entries(project.groups).map(([id, group]) => ({
+        name: group.name,
+        setName: (name) => {
+          if (name) {
+            group.name = name;
+            save(`Set group name to "${name}".`);
+          }
+        },
+        selected: BigInt(id) === selectedGroupId,
+        onSelect: () => setSelectedGroupId(BigInt(id)),
+      }))}
+      listHeader={
+        <Button
+          icon={<BiPlus size={18} />}
+          onClick={() => {
+            const newId = randomUint64();
+            project.groups[newId.toString()] = create(TargetGroupSchema, {
+              name: 'New Group',
+            });
+            setSelectedGroupId(newId);
+            save('Create new group.');
+          }}
+        >
+          Add New Group
+        </Button>
+      }
+      emptyPlaceholder="Select a group to edit."
+    >
+      {selectedGroupId !== null && selectedGroup !== null ? (
+        <GroupEditorPane
+          groupId={selectedGroupId}
+          group={selectedGroup}
+          clearGroup={() => setSelectedGroupId(null)}
+        />
+      ) : null}
+    </Browser>
+  );
+}
 
-    return project.groups[selectedGroupId.toString()];
-  }, [project, selectedGroupId]);
+interface GroupEditorPaneProps {
+  groupId: bigint;
+  group: TargetGroup;
+  clearGroup: () => void;
+}
+
+function GroupEditorPane({ groupId, group, clearGroup }: GroupEditorPaneProps) {
+  const { project, save, update } = useContext(ProjectContext);
 
   const applicableMembers = useMemo(() => {
-    if (!selectedGroupId) {
+    if (!groupId) {
       return [];
     }
-    return getApplicableMembers(project, selectedGroupId);
-  }, [selectedGroupId, project]);
+    return getApplicableMembers(project, groupId);
+  }, [groupId, project]);
 
   const addToGroupImpl = useCallback(
     (t: OutputTarget) => {
-      if (!group || !selectedGroupId) {
+      if (!group || !groupId) {
         return false;
       }
 
       const found = group.targets.find((g) => equals(OutputTargetSchema, g, t));
       if (!found) {
-        addToGroup(project, selectedGroupId, t);
+        addToGroup(project, groupId, t);
         return true;
       } else {
         return false;
       }
     },
-    [group, selectedGroupId, project],
+    [group, groupId, project],
   );
 
-  if (!group) {
-    return <div className={styles.emptyPane}>Select a group to edit.</div>;
-  }
   return (
     <div className={styles.groupEditor}>
       <div className={styles.header}>
@@ -182,9 +157,9 @@ function GroupEditorPane({
           icon={<BiTrash />}
           variant="warning"
           onClick={() => {
-            deleteTargetGroup(project, selectedGroupId!);
+            deleteTargetGroup(project, groupId!);
             save(`Deleted group "${group.name}".`);
-            setSelectedGroupId(null);
+            clearGroup();
           }}
         >
           Delete {group.name}

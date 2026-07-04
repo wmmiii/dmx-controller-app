@@ -8,13 +8,12 @@ import {
   VisualizerCompilationResult,
   VisualizerSchema,
 } from '@dmx-controller/proto/visualizer_pb';
-import clsx from 'clsx';
-import { useContext, useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { BiCopy, BiPlus, BiTrash } from 'react-icons/bi';
 
 import { Button } from '../../components/Button';
 import { ColorSwatch } from '../../components/ColorSwatch';
-import { EditableText, NumberInput } from '../../components/Input';
+import { NumberInput } from '../../components/Input';
 import { MonacoEditor } from '../../components/MonacoEditor';
 import { Toggle } from '../../components/Toggle';
 import { ProjectContext } from '../../contexts/ProjectContext';
@@ -24,6 +23,8 @@ import {
 } from '../../system_interfaces/shader';
 import { randomUint64 } from '../../util/numberUtils';
 
+import { Browser } from '../../components/Browser';
+import { Spacer } from '../../components/Spacer';
 import styles from './VisualizerEditor.module.css';
 import { VisualizerPreview } from './VisualizerPreview';
 
@@ -49,6 +50,7 @@ vec4 visualizer(vec2 uv, vec2 frag_coord, vec4 prev_pixel) {
 `;
 
 export function VisualizerEditor() {
+  const { project, save } = useContext(ProjectContext);
   const [selectedId, setSelectedId] = useState<bigint | null>(null);
   const [builtins, setBuiltins] = useState<{ [id: string]: Visualizer }>({});
 
@@ -58,104 +60,62 @@ export function VisualizerEditor() {
       .catch((e) => console.error('Failed to load builtin visualizers:', e));
   }, []);
 
-  return (
-    <div className={styles.visualizerContents}>
-      <VisualizerList
-        builtins={builtins}
-        selectedId={selectedId}
-        onSelect={setSelectedId}
-      />
-      <VisualizerEditorPane
-        key={selectedId?.toString() ?? 'none'}
-        builtins={builtins}
-        selectedId={selectedId}
-        setSelected={setSelectedId}
-        onDeleted={() => setSelectedId(null)}
-      />
-    </div>
-  );
-}
-
-interface VisualizerListProps {
-  builtins: { [id: string]: Visualizer };
-  selectedId: bigint | null;
-  onSelect: (id: bigint) => void;
-}
-
-function VisualizerList({
-  builtins,
-  selectedId,
-  onSelect,
-}: VisualizerListProps) {
-  const { project, save } = useContext(ProjectContext);
-
-  const userEntries = Object.entries(project.visualizers);
-  const builtinEntries = Object.entries(builtins);
-
-  const createNew = () => {
-    const id = randomUint64();
-    project.visualizers[id.toString()] = create(VisualizerSchema, {
-      name: 'New Visualizer',
-      glslSource: DEFAULT_GLSL,
-    });
-    save('Create new visualizer.');
-    onSelect(id);
-  };
+  const items = useMemo(() => {
+    const items: Parameters<typeof Browser>[0]['items'] = [];
+    const addItems = (visualizers: [string, Visualizer][]) => {
+      visualizers
+        .map(([id, visualizer]): (typeof items)[0] => ({
+          name: visualizer.name,
+          setName: (name) => {
+            visualizer.name = name;
+            save(`Set visualizer name to "${name}".`);
+          },
+          selected: BigInt(id) === selectedId,
+          onSelect: () => setSelectedId(BigInt(id)),
+        }))
+        .forEach((i) => items.push(i));
+    };
+    const visualizers = Object.entries(project.visualizers);
+    if (visualizers.length > 0) {
+      items.push('My Visualizers');
+      addItems(visualizers);
+    }
+    items.push('Builtin');
+    addItems(Object.entries(builtins));
+    return items;
+  }, [project, builtins, selectedId]);
 
   return (
-    <div className={styles.visualizerList}>
-      <Button icon={<BiPlus size={18} />} onClick={createNew}>
-        Add Visualizer
-      </Button>
-      {userEntries.length > 0 && (
-        <>
-          <h3>My Visualizers</h3>
-          <ul>
-            {userEntries
-              .sort(([_a, a], [_b, b]) => a.name.localeCompare(b.name))
-              .map(([id, v]) => (
-                <li
-                  key={id}
-                  className={clsx({
-                    [styles.selected]: BigInt(id) === selectedId,
-                  })}
-                  onClick={() => onSelect(BigInt(id))}
-                >
-                  <EditableText
-                    value={v.name}
-                    onChange={(name) => {
-                      if (name) {
-                        v.name = name;
-                        save(`Set visualizer name to "${name}".`);
-                      }
-                    }}
-                  />
-                </li>
-              ))}
-          </ul>
-        </>
-      )}
-      {builtinEntries.length > 0 && (
-        <>
-          <h3>Built-in</h3>
-          <ul>
-            {builtinEntries
-              .sort(([_a, a], [_b, b]) => a.name.localeCompare(b.name))
-              .map(([id, v]) => (
-                <li
-                  key={id}
-                  className={clsx({
-                    [styles.selected]: BigInt(id) === selectedId,
-                  })}
-                  onClick={() => onSelect(BigInt(id))}
-                >
-                  {v.name}
-                </li>
-              ))}
-          </ul>
-        </>
-      )}
-    </div>
+    <Browser
+      className={styles.visualizerContents}
+      items={items}
+      listHeader={
+        <Button
+          icon={<BiPlus size={18} />}
+          onClick={() => {
+            const id = randomUint64();
+            project.visualizers[id.toString()] = create(VisualizerSchema, {
+              name: 'New Visualizer',
+              glslSource: DEFAULT_GLSL,
+            });
+            save('Create new visualizer.');
+            setSelectedId(id);
+          }}
+        >
+          Add Visualizer
+        </Button>
+      }
+      emptyPlaceholder="Select visualizer to edit."
+    >
+      {selectedId !== null ? (
+        <VisualizerEditorPane
+          builtins={builtins}
+          selectedId={selectedId}
+          setSelected={setSelectedId}
+          onDeleted={() => setSelectedId(null)}
+        />
+      ) : null}
+    </Browser>
   );
 }
 
@@ -243,7 +203,7 @@ function PreviewColumn({
 }
 
 interface VisualizerEditorPaneProps {
-  selectedId: bigint | null;
+  selectedId: bigint;
   setSelected: (id: bigint) => void;
   builtins: { [id: string]: Visualizer };
   onDeleted: () => void;
@@ -328,10 +288,6 @@ function VisualizerEditorPane({
     };
   }, []);
 
-  if (selectedId == null || visualizer == null) {
-    return <div className={styles.emptyPane}>Select a visualizer to edit.</div>;
-  }
-
   const displayedError =
     browserError ??
     (compileResult && !compileResult.success
@@ -398,7 +354,7 @@ function VisualizerEditorPane({
               Delete
             </Button>
           )}
-          <div className={styles.spacer} />
+          <Spacer />
           <Button icon={<BiCopy size={18} />} onClick={handleCopy}>
             {isBuiltin ? 'Copy to Edit' : 'Copy'}
           </Button>

@@ -8,116 +8,89 @@ import {
   VirtualMappingSchema,
 } from '@dmx-controller/proto/display_pb';
 import { PhysicalSegment } from '@dmx-controller/proto/pixel_mapping_pb';
-import clsx from 'clsx';
 import { useCallback, useContext, useMemo, useState } from 'react';
-import { BiError, BiTrash } from 'react-icons/bi';
+import { BiError, BiPlus, BiTrash } from 'react-icons/bi';
 
 import { Button, IconButton } from '../../components/Button';
-import { EditableText, NumberInput } from '../../components/Input';
+import { NumberInput } from '../../components/Input';
 import { Select } from '../../components/Select';
 import { Toggle } from '../../components/Toggle';
 import { ProjectContext } from '../../contexts/ProjectContext';
 import { randomUint64 } from '../../util/numberUtils';
 import { getActivePatch } from '../../util/projectUtils';
 
+import { Browser } from '../../components/Browser';
 import styles from './DisplayEditor.module.css';
 
 export function DisplayEditor() {
+  const { project, save } = useContext(ProjectContext);
   const [selectedDisplayId, setSelectedDisplayId] = useState<bigint | null>(
     null,
   );
 
-  return (
-    <div className={styles.displayContents}>
-      <DisplayList
-        selectedDisplayId={selectedDisplayId}
-        setSelectedDisplayId={setSelectedDisplayId}
-      />
-      <DisplayEditorPane
-        selectedDisplayId={selectedDisplayId}
-        setSelectedDisplayId={setSelectedDisplayId}
-      />
-    </div>
-  );
-}
-
-interface DisplayListProps {
-  selectedDisplayId: bigint | null;
-  setSelectedDisplayId: (displayId: bigint) => void;
-}
-
-function DisplayList({
-  selectedDisplayId,
-  setSelectedDisplayId,
-}: DisplayListProps) {
-  const { project, save } = useContext(ProjectContext);
+  const selectedDisplay = useMemo(() => {
+    if (selectedDisplayId === null) {
+      return null;
+    }
+    return project.displays[selectedDisplayId.toString()];
+  }, [selectedDisplayId, project]);
 
   return (
-    <div className={styles.displayList}>
-      <ul>
-        {Object.entries(project.displays)
-          .sort(([_a, a], [_b, b]) => a.name.localeCompare(b.name))
-          .map(([id, display]) => (
-            <li
-              className={clsx({
-                [styles.selected]: BigInt(id) === selectedDisplayId,
-                [styles.disabled]: !display.enabled,
-              })}
-              key={id}
-              onClick={() => setSelectedDisplayId(BigInt(id))}
-            >
-              <EditableText
-                value={display.name}
-                onChange={(name) => {
-                  if (name) {
-                    display.name = name;
-                    save(`Set display name to "${name}".`);
-                  }
-                }}
-              />
-            </li>
-          ))}
-      </ul>
-      <Button
-        onClick={() => {
-          const newId = randomUint64();
-          project.displays[newId.toString()] = create(VirtualDisplaySchema, {
-            name: 'New Display',
-            width: 64,
-            height: 64,
-            enabled: true,
-          });
-          setSelectedDisplayId(newId);
-          save('Create new virtual display.');
-        }}
-      >
-        + Add New Display
-      </Button>
-    </div>
+    <Browser
+      className={styles.displayContents}
+      items={Object.entries(project.displays).map(([id, display]) => ({
+        name: display.name,
+        setName: (name) => {
+          display.name = name;
+          save(`Set display name to "${name}".`);
+        },
+        selected: BigInt(id) === selectedDisplayId,
+        onSelect: () => setSelectedDisplayId(BigInt(id)),
+        dim: !display.enabled,
+      }))}
+      listHeader={
+        <Button
+          icon={<BiPlus size={18} />}
+          onClick={() => {
+            const newId = randomUint64();
+            project.displays[newId.toString()] = create(VirtualDisplaySchema, {
+              name: 'New Display',
+              width: 64,
+              height: 64,
+              enabled: true,
+            });
+            setSelectedDisplayId(newId);
+            save('Create new virtual display.');
+          }}
+        >
+          Add New Display
+        </Button>
+      }
+      emptyPlaceholder="Select display to edit."
+    >
+      {selectedDisplayId !== null && selectedDisplay !== null ? (
+        <DisplayEditorPane
+          display={selectedDisplay}
+          displayId={selectedDisplayId}
+          setSelectedDisplayId={setSelectedDisplayId}
+        />
+      ) : null}
+    </Browser>
   );
 }
 
 interface DisplayEditorPaneProps {
-  selectedDisplayId: bigint | null;
+  displayId: bigint;
+  display: VirtualDisplay;
   setSelectedDisplayId: (displayId: bigint | null) => void;
 }
 
 function DisplayEditorPane({
-  selectedDisplayId,
+  displayId,
+  display,
   setSelectedDisplayId,
 }: DisplayEditorPaneProps) {
   const { project, save } = useContext(ProjectContext);
-
-  const display = useMemo(() => {
-    if (selectedDisplayId == null) {
-      return null;
-    }
-    return project.displays[selectedDisplayId.toString()];
-  }, [project, selectedDisplayId]);
-
-  if (!display) {
-    return <div className={styles.emptyPane}>Select a display to edit.</div>;
-  }
 
   return (
     <div className={styles.displayEditor}>
@@ -126,7 +99,7 @@ function DisplayEditorPane({
           icon={<BiTrash />}
           variant="warning"
           onClick={() => {
-            delete project.displays[selectedDisplayId!.toString()];
+            delete project.displays[displayId!.toString()];
             save(`Deleted display "${display.name}".`);
             setSelectedDisplayId(null);
           }}
