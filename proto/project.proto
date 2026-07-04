@@ -15,13 +15,6 @@ import "proto/show.proto";
 import "proto/visualizer.proto";
 
 message Project {
-  message Assets {
-    map<uint64, AudioFile> audio_files = 2;
-
-    reserved 1; // repeated AudioFile deprecated_audio_files = 1 [ deprecated =
-                // true ];
-  }
-
   string name = 1;
   uint32 version = 2;
   Settings settings = 3;
@@ -37,7 +30,8 @@ message Project {
   // Visualizers
   map<uint64, Visualizer> visualizers = 63;
 
-  Assets assets = 21;
+  // Assets
+  map<uint64, AudioFile> audio_files = 65;
 
   map<uint64, Show> shows = 31;
   uint64 selected_show = 32;
@@ -83,6 +77,14 @@ message Project {
                // [ deprecated = true ];
   reserved 20; // map<uint64, DmxFixtureDefinition>
                // deprecated_uint64_fixture_definitions = 20;
+
+  reserved 21; // Assets assets = 21;
   reserved 17; // map<uint64, Universe> universes = 17 [deprecated = true];
   reserved 22; // map<string, DmxFixtureDefinition> fixture_definitions = 22;
+}
+
+// A fat project that bakes in all assets for serialization.
+message FatProject {
+  Project project = 1;
+  map<string, bytes> cas = 2;
 }

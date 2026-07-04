@@ -27,7 +27,7 @@ import AssetBrowserPage from './pages/AssetBrowserPage';
 import { ControllerPage } from './pages/ControllerPage';
 import { LivePage } from './pages/LivePage';
 import ProjectPage from './pages/ProjectPage';
-import ShowPage from './pages/ShowPage';
+import { ShowPage } from './pages/ShowPage';
 import PatchPage from './pages/patch/PatchPage';
 import { dismissDialog, isDialogDismissed } from './util/dialogUtil';
 import { getActivePatch } from './util/projectUtils';

@@ -1,4 +1,4 @@
-import { clone, fromBinary, toBinary } from '@bufbuild/protobuf';
+import { fromBinary, toBinary } from '@bufbuild/protobuf';
 import { Project, ProjectSchema } from '@dmx-controller/proto/project_pb';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
@@ -64,9 +64,7 @@ export async function saveProject(
   description: string,
   undoable: boolean = true,
 ): Promise<void> {
-  const minProject = clone(ProjectSchema, project);
-  minProject.assets = undefined; // Assets stored separately
-  const projectBinary = toBinary(ProjectSchema, minProject, {
+  const projectBinary = toBinary(ProjectSchema, project, {
     writeUnknownFields: false,
   });
 
@@ -110,28 +108,12 @@ export async function requestUpdate(): Promise<void> {
 }
 
 /**
- * Saves assets binary to the backend for persistence.
- */
-export async function saveAssets(assetsBinary: Uint8Array): Promise<void> {
-  await invoke('save_assets', {
-    assetsBinary: Array.from(assetsBinary),
-  });
-}
-
-/**
  * Signals to the backend that the frontend is ready for the next project update.
  * This implements flow control for rapid updates (e.g., MIDI) - the backend will
  * only send the next update after receiving this signal.
  */
 export async function frontendReadyForUpdate(): Promise<void> {
   await invoke('frontend_ready_for_update');
-}
-
-/**
- * Resets the project to a fresh default, clearing assets and undo history.
- */
-export async function newProject(): Promise<void> {
-  await invoke('new_project');
 }
 
 /**

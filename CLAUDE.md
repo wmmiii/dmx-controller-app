@@ -32,7 +32,6 @@ This project uses **Vite** as its primary build system for the frontend. Key com
 
 - Located in `src/`
 - Multi-page application with routing: Live performance (`LivePage`), Show editing (`ShowPage`), Patch configuration (`PatchPage`), Asset management (`AssetBrowserPage`), Controller configuration (`ControllerPage`), Project management (`ProjectPage`)
-- Note: Show and Assets pages are currently disabled in the main menu UI (commented out in [src/Index.tsx:107-114](src/Index.tsx#L107-L114))
 - Uses React Context for state management across: Project, Serial/DMX, Beat detection, Controller input, Shortcuts, Dialog, Palette, Effect rendering
 
 **Rendering Engine (Rust)**
@@ -72,7 +71,6 @@ This project uses **Vite** as its primary build system for the frontend. Key com
 
 - `ProjectContext` handles project persistence, undo/redo stack (max 100 operations)
 - Auto-saves to file system with binary protobuf serialization
-- Assets (audio files, GDTF fixtures) stored separately in `Project_Assets`
 
 ### Key Files to Understand
 

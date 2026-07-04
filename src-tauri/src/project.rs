@@ -2,8 +2,8 @@ use dmx_engine::project::{self, UndoState};
 use dmx_engine::tile::toggle_tile as engine_toggle_tile;
 use serde::Serialize;
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex as StdMutex};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex as StdMutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Manager, State};
 use tokio::sync::Mutex as TokioMutex;
@@ -33,13 +33,11 @@ static PROJECT_DIRTY: AtomicBool = AtomicBool::new(false);
 static FRONTEND_READY: AtomicBool = AtomicBool::new(true); // Start ready for initial update
 
 const PROJECT_KEY: &str = "tmp-project-1";
-const ASSETS_KEY: &str = "tmp-assets-1";
 const DEBOUNCE_MS: u64 = 1000;
 
-/// Manages debounced disk persistence for project and assets
+/// Manages debounced disk persistence for project
 pub struct PersistState {
     pending_project: Option<Vec<u8>>,
-    pending_assets: Option<Vec<u8>>,
     debounce_handle: Option<JoinHandle<()>>,
     app_data_dir: PathBuf,
 }
@@ -48,7 +46,6 @@ impl PersistState {
     pub fn new(app_data_dir: PathBuf) -> Self {
         Self {
             pending_project: None,
-            pending_assets: None,
             debounce_handle: None,
             app_data_dir,
         }
@@ -64,12 +61,6 @@ impl PersistState {
         // Write pending project
         if let Some(data) = self.pending_project.take() {
             let path = self.app_data_dir.join(PROJECT_KEY);
-            let _ = std::fs::write(&path, &data);
-        }
-
-        // Write pending assets
-        if let Some(data) = self.pending_assets.take() {
-            let path = self.app_data_dir.join(ASSETS_KEY);
             let _ = std::fs::write(&path, &data);
         }
     }
@@ -120,14 +111,6 @@ fn schedule_flush(persist_state: &Arc<TokioMutex<PersistState>>) {
             }
         }
 
-        // Write pending assets
-        if let Some(data) = state.pending_assets.take() {
-            let path = state.app_data_dir.join(ASSETS_KEY);
-            if let Err(e) = std::fs::write(&path, &data) {
-                log::error!("Failed to write assets: {e}");
-            }
-        }
-
         // Clear the handle since we're done
         state.debounce_handle = None;
     });
@@ -140,21 +123,6 @@ async fn queue_project_persist(
 ) {
     let mut state = persist_state.lock().await;
     state.pending_project = Some(project_binary.to_vec());
-
-    // Cancel existing debounce if any
-    if let Some(handle) = state.debounce_handle.take() {
-        handle.abort();
-    }
-
-    // Schedule new flush
-    drop(state); // Release lock before spawning
-    schedule_flush(persist_state);
-}
-
-/// Queues assets binary for debounced persistence
-async fn queue_assets_persist(assets_binary: &[u8], persist_state: &Arc<TokioMutex<PersistState>>) {
-    let mut state = persist_state.lock().await;
-    state.pending_assets = Some(assets_binary.to_vec());
 
     // Cancel existing debounce if any
     if let Some(handle) = state.debounce_handle.take() {
@@ -477,7 +445,6 @@ pub fn get_undo_state() -> Result<UndoStatePayload, String> {
 }
 
 /// Emits project-updated event with the current project state.
-/// TODO: Add lazy asset fetching - frontend will request assets on-demand as needed.
 #[tauri::command]
 #[allow(clippy::needless_pass_by_value, clippy::unnecessary_wraps)]
 pub fn request_update(app: AppHandle) -> Result<(), String> {
@@ -488,42 +455,18 @@ pub fn request_update(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
-/// Saves assets binary to disk with debounced persistence.
+/// Exports the project by showing a native save dialog and writing the project
+/// binary to the chosen path.
 #[tauri::command]
-pub async fn save_assets(
-    assets_binary: Vec<u8>,
-    persist_state: State<'_, Arc<TokioMutex<PersistState>>>,
-) -> Result<(), String> {
-    queue_assets_persist(&assets_binary, persist_state.inner()).await;
-    Ok(())
-}
-
-/// Exports the project by merging assets, showing a native save dialog,
-/// and writing the full project binary to the chosen path.
-#[tauri::command]
-pub async fn export_project(
-    app: AppHandle,
-    persist_state: State<'_, Arc<TokioMutex<PersistState>>>,
-) -> Result<bool, String> {
+pub async fn export_project(app: AppHandle) -> Result<bool, String> {
     use dmx_engine::proto;
     use prost::Message;
     use tauri_plugin_dialog::DialogExt;
 
     // Get the project from the engine and decode it
     let project_binary = project::get()?;
-    let mut project = proto::Project::decode(project_binary.as_slice())
+    let project = proto::Project::decode(project_binary.as_slice())
         .map_err(|e| format!("Failed to decode project: {e}"))?;
-
-    // Read assets from disk and merge into project
-    let assets_path = {
-        let state = persist_state.lock().await;
-        state.app_data_dir.join(ASSETS_KEY)
-    };
-    if let Ok(assets_binary) = std::fs::read(&assets_path)
-        && let Ok(assets) = proto::project::Assets::decode(assets_binary.as_slice())
-    {
-        project.assets = Some(assets);
-    }
 
     // Build default filename from project name with date stamp
     let today = chrono::Local::now().format("%Y-%m-%d");
@@ -550,10 +493,8 @@ pub async fn export_project(
     }
 }
 
-/// Imports a project by showing a native open dialog, reading the file,
-/// splitting assets from the project, persisting both, and loading
-/// the project into the engine. Returns the assets binary for the
-/// frontend to cache, or None if the user cancelled.
+/// Imports a project by showing a native open dialog, reading the file, and
+/// loading the project into the engine.
 #[tauri::command]
 pub async fn import_project(
     app: AppHandle,
@@ -564,7 +505,7 @@ pub async fn import_project(
     sacn_state: State<'_, Arc<TokioMutex<SacnState>>>,
     wled_state: State<'_, Arc<TokioMutex<WledState>>>,
     ddp_state: State<'_, Arc<TokioMutex<DdpState>>>,
-) -> Result<Option<Vec<u8>>, String> {
+) -> Result<(), String> {
     use dmx_engine::proto;
     use prost::Message;
     use tauri_plugin_dialog::DialogExt;
@@ -577,26 +518,18 @@ pub async fn import_project(
         .blocking_pick_file();
 
     let Some(path) = path else {
-        return Ok(None);
+        // User cancelled the dialog.
+        return Ok(());
     };
 
     let file_bytes = std::fs::read(path.as_path().ok_or("Invalid file path")?)
         .map_err(|e| format!("Failed to read project file: {e}"))?;
 
-    let mut full_project = proto::Project::decode(file_bytes.as_slice())
+    let project = proto::Project::decode(file_bytes.as_slice())
         .map_err(|e| format!("Failed to decode project: {e}"))?;
 
-    // Extract and persist assets separately
-    let assets_binary = if let Some(assets) = full_project.assets.take() {
-        let binary = assets.encode_to_vec();
-        queue_assets_persist(&binary, persist_state.inner()).await;
-        Some(binary)
-    } else {
-        None
-    };
-
     // Load the asset-stripped project into the engine
-    let project_binary = full_project.encode_to_vec();
+    let project_binary = project.encode_to_vec();
     project::load(&project_binary)?;
 
     // Emit updates and persist
@@ -616,10 +549,10 @@ pub async fn import_project(
     )
     .await?;
 
-    Ok(assets_binary)
+    Ok(())
 }
 
-/// Resets the project to a fresh default, clearing assets and undo history.
+/// Resets the project to a fresh default, clearing undo history.
 #[tauri::command]
 pub async fn new_project(
     app: AppHandle,
@@ -638,10 +571,8 @@ pub async fn new_project(
     emit_project_update(&app, Some("New project.".to_string()));
     emit_undo_state(&app);
 
-    // 3. Persist the new project and clear assets
+    // 3. Persist the new project
     queue_project_persist(&project_binary, persist_state.inner()).await;
-    // Write empty assets to clear any existing asset data
-    queue_assets_persist(&[], persist_state.inner()).await;
 
     // 4. Rebuild output loops
     rebuild_outputs(

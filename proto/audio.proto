@@ -5,14 +5,17 @@ package dmx_controller;
 import "proto/beat.proto";
 
 message AudioFile {
-  message AudioMetadata {
-    string artist = 2;
-    string file_name = 3;
+  message BeatKeyframe {
+    uint64 t = 1;
+    uint32 bpm = 2;
   }
 
   string name = 1;
-  bytes contents = 2;
+  string digest = 6;
   string mime = 3;
-  AudioMetadata metadata = 4;
-  BeatMetadata beat_metadata = 5;
+  repeated BeatKeyframe beat_keyframes = 7;
+
+  reserved 2; // bytes contents = 2;
+  reserved 4; // AudioMetadata metadata = 4;
+  reserved 5; // BeatMetadata beat_metadata = 5;
 }

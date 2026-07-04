@@ -235,7 +235,6 @@ pub fn run() {
             project::load_project,
             project::get_undo_state,
             project::request_update,
-            project::save_assets,
             project::toggle_tile,
             project::export_project,
             project::import_project,

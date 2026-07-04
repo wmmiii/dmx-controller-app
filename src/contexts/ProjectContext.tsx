@@ -1,10 +1,5 @@
-import { create, fromBinary, toBinary } from '@bufbuild/protobuf';
-import {
-  type Project,
-  ProjectSchema,
-  Project_Assets,
-  Project_AssetsSchema,
-} from '@dmx-controller/proto/project_pb';
+import { create } from '@bufbuild/protobuf';
+import { type Project, ProjectSchema } from '@dmx-controller/proto/project_pb';
 import { NumberInputMode } from '@dmx-controller/proto/settings_pb';
 import { invoke } from '@tauri-apps/api/core';
 import {
@@ -20,10 +15,8 @@ import {
 
 import {
   frontendReadyForUpdate,
-  newProject as newProjectCommand,
   redoProject as redoProjectCommand,
   requestUpdate,
-  saveAssets as saveAssetsCommand,
   saveProject as saveProjectCommand,
   subscribeToProjectUpdates,
   subscribeToUndoState,
@@ -43,7 +36,6 @@ export const ProjectContext = createContext({
   numberInputMode: NumberInputMode.PERCENT,
   save: (_changeDescription: string, _undoable?: boolean) => {},
   update: () => {},
-  saveAssets: () => {},
   downloadProject: () => {},
   openProject: () => {},
   newProject: () => {},
@@ -54,7 +46,6 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
   const { setShortcuts } = useContext(ShortcutContext);
   const [project, setProject] = useState<Project | null>(null);
   const projectRef = useRef(project);
-  const assetsRef = useRef<Project_Assets | undefined>(undefined);
 
   const [lastLoad] = useState(new Date());
   const [lastOperation, setLastOperation] = useState<string | null>(null);
@@ -90,9 +81,6 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
     const unsubscribe = subscribeToProjectUpdates((newProject, description) => {
       // Use RAF to sync state update with display refresh
       requestAnimationFrame(() => {
-        // Merge assets back (they're stored separately in frontend)
-        newProject.assets = assetsRef.current;
-
         // Apply any project upgrades and set state
         upgradeProject(newProject);
         setProject(newProject);
@@ -178,43 +166,6 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
     [],
   );
 
-  // Save assets via backend
-  const saveAssetsImpl = useCallback(async (project: Project) => {
-    console.time('save assets');
-    const assets = create(Project_AssetsSchema, project.assets);
-    assetsRef.current = project.assets;
-    await saveAssetsCommand(
-      toBinary(Project_AssetsSchema, assets, { writeUnknownFields: false }),
-    );
-    console.timeEnd('save assets');
-  }, []);
-
-  const saveAssets = useCallback(async () => {
-    if (project == null) {
-      throw new Error('Tried to save assets without project loaded!');
-    }
-    await saveAssetsImpl(project);
-    // Trigger a save to ensure project is persisted
-    await save('Updating assets.');
-  }, [project, save, saveAssetsImpl]);
-
-  // Reset to a new default project
-  const newProject = useCallback(async () => {
-    await newProjectCommand();
-    assetsRef.current = undefined;
-  }, []);
-
-  // Open project via native file dialog
-  const openProject = useCallback(async () => {
-    const assetsBinary: number[] | null = await invoke('import_project');
-    if (assetsBinary != null) {
-      assetsRef.current = fromBinary(
-        Project_AssetsSchema,
-        new Uint8Array(assetsBinary),
-      ) as Project_Assets;
-    }
-  }, []);
-
   // Keyboard shortcuts for undo/redo based on backend state
   useEffect(() => {
     const shortcuts: Parameters<typeof setShortcuts>[0] = [];
@@ -256,10 +207,9 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
           project.settings?.numberInputMode ?? NumberInputMode.PERCENT,
         save: save,
         update: update,
-        saveAssets: saveAssets,
-        downloadProject: async () => await invoke('export_project'),
-        openProject: openProject,
-        newProject: newProject,
+        downloadProject: () => invoke('export_project'),
+        openProject: () => invoke('import_project'),
+        newProject: () => invoke('new_project'),
         lastOperation: lastOperation,
       }}
     >
