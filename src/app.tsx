@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router';
 
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Index from './Index';
 import { preloadWasm } from './wasm/engine';
 
@@ -31,25 +32,29 @@ if (/iPad|iPhone|iPod|Mac/.test(navigator.userAgent)) {
   document.body.classList.add('windows');
 }
 
+const queryClient = new QueryClient();
+
 const root = createRoot(document.getElementById('root')!);
 root.render(
   <StrictMode>
     <Clickwrap>
-      <BrowserRouter basename="/">
-        <ShortcutProvider>
-          <ProjectProvider>
-            <ClipboardProvider>
-              <BeatProvider>
-                <AudioInputProvider>
-                  <ControllerProvider>
-                    <Index />
-                  </ControllerProvider>
-                </AudioInputProvider>
-              </BeatProvider>
-            </ClipboardProvider>
-          </ProjectProvider>
-        </ShortcutProvider>
-      </BrowserRouter>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter basename="/">
+          <ShortcutProvider>
+            <ProjectProvider>
+              <ClipboardProvider>
+                <BeatProvider>
+                  <AudioInputProvider>
+                    <ControllerProvider>
+                      <Index />
+                    </ControllerProvider>
+                  </AudioInputProvider>
+                </BeatProvider>
+              </ClipboardProvider>
+            </ProjectProvider>
+          </ShortcutProvider>
+        </BrowserRouter>
+      </QueryClientProvider>
     </Clickwrap>
   </StrictMode>,
 );

@@ -3,7 +3,8 @@
 //! This module contains pure functions with no threading or I/O dependencies
 //! so they can be used both by the Tauri desktop layer and the render engine.
 
-use crate::proto::{BeatMetadata, Project};
+use crate::proto::track::beat_keyframe::Info;
+use crate::proto::{BeatMetadata, Project, Track};
 
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -47,6 +48,44 @@ const MAX_BPM: f64 = 200.0;
 const MAX_INTERVAL_MS: f64 = 60_000.0 / MIN_BPM; // 750ms
 /// Minimum beat interval in ms (corresponding to `MAX_BPM`).
 const MIN_INTERVAL_MS: f64 = 60_000.0 / MAX_BPM; // 300ms
+
+fn get_beat(track: &Track) -> Result<(f64, f64), String> {
+    let keyframes = &track.beat_keyframes;
+    let bpm = keyframes
+        .iter()
+        .find_map(|k| match k.info {
+            Some(Info::Bpm(bpm)) => Some(bpm),
+            _ => None,
+        })
+        .ok_or_else(|| "Track has no BPM keyframe!".to_string())?;
+    if bpm == 0 {
+        return Err("Track BPM keyframe is zero!".to_string());
+    }
+
+    let (beat_offset, beat_number) = keyframes
+        .iter()
+        .find_map(|k| match k.info {
+            Some(Info::Beat(beat)) => Some((k.t, beat)),
+            _ => None,
+        })
+        .unwrap_or((0, 0));
+
+    let beat_length = 60_000.0 / f64::from(bpm);
+    #[allow(clippy::cast_precision_loss)]
+    let beat_offset_ms = beat_offset as f64 - f64::from(beat_number) * beat_length;
+    Ok((beat_length, beat_offset_ms))
+}
+
+pub fn track_beat_at_time(track: &Track, t_ms: f64) -> Result<f64, String> {
+    let (beat_length_ms, beat_offset_ms) = get_beat(track)?;
+    let beat = (t_ms - beat_offset_ms) / beat_length_ms;
+    Ok(beat.max(0.0))
+}
+
+pub fn track_time_at_beat(track: &Track, beat: f64) -> Result<f64, String> {
+    let (beat_length_ms, beat_offset_ms) = get_beat(track)?;
+    Ok(beat_offset_ms + beat.max(0.0) * beat_length_ms)
+}
 
 /// Manages a rolling window of beat timestamps for tempo detection.
 ///
@@ -503,6 +542,87 @@ pub fn set_bpm(project: &mut Project, bpm: u16) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::proto::track::BeatKeyframe;
+
+    fn bpm_keyframe(t: u64, bpm: u32) -> BeatKeyframe {
+        BeatKeyframe {
+            t,
+            info: Some(Info::Bpm(bpm)),
+        }
+    }
+
+    fn beat_keyframe(t: u64, beat: u32) -> BeatKeyframe {
+        BeatKeyframe {
+            t,
+            info: Some(Info::Beat(beat)),
+        }
+    }
+
+    fn track(keyframes: Vec<BeatKeyframe>) -> Track {
+        Track {
+            beat_keyframes: keyframes,
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn track_beat_at_time_with_bpm_only() {
+        // 120 BPM = 500ms per beat, anchored at beat 0, t=0.
+        let track = track(vec![bpm_keyframe(0, 120)]);
+        assert_eq!(track_beat_at_time(&track, 0.0), Ok(0.0));
+        assert_eq!(track_beat_at_time(&track, 500.0), Ok(1.0));
+        assert_eq!(track_beat_at_time(&track, 1780.0), Ok(3.56));
+    }
+
+    #[test]
+    fn track_beat_at_time_with_first_beat() {
+        // 120 BPM, first beat (beat 0) lands at 2000ms.
+        let track = track(vec![bpm_keyframe(0, 120), beat_keyframe(2000, 0)]);
+        assert_eq!(track_beat_at_time(&track, 2000.0), Ok(0.0));
+        assert_eq!(track_beat_at_time(&track, 3000.0), Ok(2.0));
+        assert_eq!(track_beat_at_time(&track, 2250.0), Ok(0.5));
+    }
+
+    #[test]
+    fn track_beat_at_time_with_nonzero_beat_anchor() {
+        // 120 BPM, beat 4 lands at 2000ms, so beat 0 lands at t=0.
+        let track = track(vec![bpm_keyframe(0, 120), beat_keyframe(2000, 4)]);
+        assert_eq!(track_beat_at_time(&track, 2000.0), Ok(4.0));
+        assert_eq!(track_beat_at_time(&track, 0.0), Ok(0.0));
+        assert_eq!(track_beat_at_time(&track, 500.0), Ok(1.0));
+        assert_eq!(track_time_at_beat(&track, 4.0), Ok(2000.0));
+        assert_eq!(track_time_at_beat(&track, 1.0), Ok(500.0));
+    }
+
+    #[test]
+    fn track_beat_at_time_clamps_before_beat_zero() {
+        let track = track(vec![bpm_keyframe(0, 120), beat_keyframe(2000, 0)]);
+        assert_eq!(track_beat_at_time(&track, 0.0), Ok(0.0));
+        assert_eq!(track_beat_at_time(&track, 1999.0), Ok(0.0));
+    }
+
+    #[test]
+    fn track_time_at_beat_roundtrip() {
+        let track = track(vec![bpm_keyframe(0, 120), beat_keyframe(2000, 0)]);
+        assert_eq!(track_time_at_beat(&track, 0.0), Ok(2000.0));
+        assert_eq!(track_time_at_beat(&track, 2.0), Ok(3000.0));
+
+        let beat = track_beat_at_time(&track, 12345.0).unwrap();
+        assert_eq!(track_time_at_beat(&track, beat), Ok(12345.0));
+    }
+
+    #[test]
+    fn track_time_at_beat_clamps_negative_beats() {
+        let track = track(vec![bpm_keyframe(0, 120), beat_keyframe(2000, 0)]);
+        assert_eq!(track_time_at_beat(&track, -3.0), Ok(2000.0));
+    }
+
+    #[test]
+    fn track_beat_conversions_require_bpm() {
+        assert!(track_beat_at_time(&track(vec![]), 0.0).is_err());
+        assert!(track_time_at_beat(&track(vec![beat_keyframe(0, 0)]), 0.0).is_err());
+        assert!(track_beat_at_time(&track(vec![bpm_keyframe(0, 0)]), 0.0).is_err());
+    }
 
     #[test]
     fn add_sample_should_not_return_beat_with_too_few() {

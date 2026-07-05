@@ -31,7 +31,7 @@ message Project {
   map<uint64, Visualizer> visualizers = 63;
 
   // Assets
-  map<uint64, AudioFile> audio_files = 65;
+  map<uint64, Track> tracks = 65;
 
   map<uint64, Show> shows = 31;
   uint64 selected_show = 32;

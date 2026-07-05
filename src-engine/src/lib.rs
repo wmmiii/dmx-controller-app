@@ -8,3 +8,4 @@ pub mod proto;
 pub mod render;
 pub mod tile;
 pub mod visualizer;
+pub mod waveform;

@@ -146,6 +146,13 @@ This project uses **Vite** as its primary build system for the frontend. Key com
 
 ## Code Style
 
+**Prefer Self-Documenting Code Over Comments:**
+
+- Write clear, descriptive names for functions, variables, and types that convey intent
+- Only add comments when the code cannot reasonably explain itself (e.g., non-obvious algorithms, workarounds, or external constraints)
+- Do not add comments that restate what the code already expresses—the code is the source of truth
+- Avoid adding docstrings, JSDoc, or Rust doc comments unless they provide information not evident from the signature and implementation
+
 **Minimize Visibility and Mutability:**
 
 When writing or modifying code, prefer the most restrictive access level and avoid unnecessary mutability:

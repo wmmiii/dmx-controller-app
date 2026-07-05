@@ -164,6 +164,7 @@ export type NumberInputMode =
   | 'dmx_channel'
   | 'float'
   | 'integer'
+  | 'milliseconds'
   | 'normalized'
   | 'percent'
   | 'seconds';
@@ -269,6 +270,14 @@ function getNumberDisplayConfig(
         step: 1,
         integer: true,
         indicator: '#',
+      };
+    case 'milliseconds':
+      return {
+        min: 0,
+        max: 3_600_000,
+        step: 1,
+        integer: true,
+        indicator: 'ms',
       };
     case 'normalized':
       return {

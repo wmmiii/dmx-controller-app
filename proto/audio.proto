@@ -4,10 +4,14 @@ package dmx_controller;
 
 import "proto/beat.proto";
 
-message AudioFile {
+message Track {
   message BeatKeyframe {
     uint64 t = 1;
-    uint32 bpm = 2;
+
+    oneof info {
+      uint32 bpm = 2;
+      uint32 beat = 3;
+    }
   }
 
   string name = 1;
@@ -19,4 +23,25 @@ message AudioFile {
   reserved 2; // bytes contents = 2;
   reserved 4; // AudioMetadata metadata = 4;
   reserved 5; // BeatMetadata beat_metadata = 5;
+}
+
+message WaveformPoint {
+  float low = 1;
+  float mid = 2;
+  float high = 3;
+}
+
+// A single level of detail for the waveform.
+message WaveformLevel {
+  uint32 samples_per_point = 1;
+  repeated WaveformPoint points = 2;
+}
+
+// Complete waveform data with multiple levels of detail.
+message WaveformData {
+  // Sample rate of the source audio in Hz.
+  uint32 sample_rate = 1;
+  uint64 total_samples = 2;
+  uint64 duration_ms = 3;
+  map<uint32, WaveformLevel> levels = 4;
 }

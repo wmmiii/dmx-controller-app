@@ -1,0 +1,14 @@
+[workspace]
+members = ["src-engine", "src-tauri"]
+resolver = "3"
+
+# Exclude wasm-engine since it targets wasm32-unknown-unknown
+exclude = ["src/wasm-engine"]
+
+[profile.dev]
+# Use line tables only for smaller debug builds while keeping stack traces
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+# Strip debug info from dependencies entirely
+debug = 0

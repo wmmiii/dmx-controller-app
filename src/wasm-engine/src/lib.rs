@@ -5,6 +5,7 @@
 //! logic is shared with the native Rust engine via the `dmx-engine` crate.
 
 use dmx_engine::beat::{beat_t_from_parts, effective_beat_t_from_parts};
+use prost::Message;
 use wasm_bindgen::prelude::*;
 
 /// Calculates the current beat position given beat metadata and current time.
@@ -63,4 +64,38 @@ pub fn effective_beat_t(
         t,
     )
     .map_err(|e| JsValue::from_str(&e))
+}
+
+/// Analyzes mono audio samples and produces multi-LOD waveform data for
+/// rendering. Returns a protobuf-encoded `WaveformData` message.
+#[wasm_bindgen]
+#[must_use]
+pub fn analyze_waveform(samples: &[f32], sample_rate: u32) -> Vec<u8> {
+    dmx_engine::waveform::analyze_waveform(samples, sample_rate).encode_to_vec()
+}
+
+/// Converts between absolute track time and fractional beat position using a
+/// track's beat keyframes. Decodes the protobuf-encoded `Track` once at
+/// construction so per-call conversions don't re-parse it.
+#[wasm_bindgen]
+pub struct TrackBeatConverter {
+    track: dmx_engine::proto::Track,
+}
+
+#[wasm_bindgen]
+impl TrackBeatConverter {
+    #[wasm_bindgen(constructor)]
+    pub fn new(track_bytes: &[u8]) -> Result<TrackBeatConverter, JsValue> {
+        let track = dmx_engine::proto::Track::decode(track_bytes)
+            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        Ok(TrackBeatConverter { track })
+    }
+
+    pub fn beat_at_time(&self, t_ms: f64) -> Result<f64, JsValue> {
+        dmx_engine::beat::track_beat_at_time(&self.track, t_ms).map_err(|e| JsValue::from_str(&e))
+    }
+
+    pub fn time_at_beat(&self, beat: f64) -> Result<f64, JsValue> {
+        dmx_engine::beat::track_time_at_beat(&self.track, beat).map_err(|e| JsValue::from_str(&e))
+    }
 }

@@ -1,3 +1,5 @@
+import { toBinary } from '@bufbuild/protobuf';
+import { Track, TrackSchema } from '@dmx-controller/proto/audio_pb';
 import type { Project } from '@dmx-controller/proto/project_pb';
 
 // WASM module types - these match the generated wasm-bindgen bindings
@@ -12,6 +14,10 @@ interface WasmEngineModule {
     transition_duration_ms: bigint,
     t: bigint,
   ): number;
+  TrackBeatConverter: new (track_bytes: Uint8Array) => {
+    beat_at_time(t_ms: number): number;
+    time_at_beat(beat: number): number;
+  };
 }
 
 let wasmModule: WasmEngineModule | null = null;
@@ -72,6 +78,41 @@ export function getBeatTSync(project: Project): number | null {
   }
 
   return wasmModule.beat_t(liveBeat.lengthMs, liveBeat.offsetMs, t);
+}
+
+export interface TrackBeatConverters {
+  msToBeat: (ms: number) => number;
+  beatToMs: (beat: number) => number;
+}
+
+/**
+ * Returns conversion functions between absolute track time and fractional
+ * beat position, derived from the track's beat keyframes.
+ * Returns null if WASM isn't loaded yet or the track has no BPM keyframe.
+ */
+export function getTrackBeatConverters(
+  track: Track,
+): TrackBeatConverters | null {
+  if (!wasmModule) {
+    // Trigger async load for next time
+    initWasm();
+    return null;
+  }
+
+  const hasBpm = track.beatKeyframes.some(
+    (k) => k.info.case === 'bpm' && k.info.value > 0,
+  );
+  if (!hasBpm) {
+    return null;
+  }
+
+  const converter = new wasmModule.TrackBeatConverter(
+    toBinary(TrackSchema, track),
+  );
+  return {
+    msToBeat: (ms) => converter.beat_at_time(ms),
+    beatToMs: (beat) => converter.time_at_beat(beat),
+  };
 }
 
 /**

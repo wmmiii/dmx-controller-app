@@ -1,7 +1,42 @@
 .browser {
   position: absolute;
   display: flex;
+  inset: 0;
+}
+
+.header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.playbackMetric {
+  margin: var(--space-1);
+  color: var(--col-text-dim);
+}
+
+.waveform {
+  display: flex;
   align-items: center;
   justify-content: center;
-  inset: 0;
+  width: 100%;
+  height: 100px;
+  color: var(--col-text-dim);
+
+  --col-beat: #4a4a4a;
+  --col-playhead: #ff0000;
+  --col-low: #0055e2;
+  --col-mid: #f2aa3c;
+  --col-high: #ffffff;
+}
+
+.beatControls {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  margin: var(--space-2);
+}
+
+.metadata {
+  margin: var(--space-2);
 }

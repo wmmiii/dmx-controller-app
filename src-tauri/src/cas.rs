@@ -2,18 +2,21 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use dmx_engine::project::{self, rand_id};
-use dmx_engine::proto::AudioFile;
+use dmx_engine::proto::Track;
 use tauri::{AppHandle, Manager, State};
 use tokio::sync::Mutex;
 
 use crate::project::{PersistState, emit_and_persist};
 
 /// Imports a new audio file into the project.
+///
+/// Returns the track ID as a string since u64 values above 2^53 lose
+/// precision when parsed as a JSON number on the frontend.
 #[tauri::command]
 pub async fn import_audio_file(
     app: AppHandle,
     persist_state: State<'_, Arc<Mutex<PersistState>>>,
-) -> Result<Option<u64>, String> {
+) -> Result<Option<String>, String> {
     use tauri_plugin_dialog::DialogExt;
 
     let path = app
@@ -61,22 +64,22 @@ pub async fn import_audio_file(
             .map_err(|e| format!("Failed to copy audio file: {e}"))?;
     }
 
-    // Check if an AudioFile with the same digest already exists
+    // Check if an Track with the same digest already exists
     if let Some(id) = project::with_project(|proj| {
         Ok(proj
-            .audio_files
+            .tracks
             .iter()
-            .find(|(_, audio)| audio.digest == file_digest)
+            .find(|(_, track)| track.digest == file_digest)
             .map(|(id, _)| *id))
     })? {
-        return Ok(Some(id));
+        return Ok(Some(id.to_string()));
     }
 
-    // Generate a random ID for the audio file
-    let audio_id = rand_id();
+    // Generate a random ID for the track
+    let track_id = rand_id();
 
-    // Create the AudioFile and add it to the project
-    let audio_file = AudioFile {
+    // Create the Track and add it to the project
+    let track = Track {
         name: display_name,
         original_file_name: file_name.clone(),
         digest: file_digest,
@@ -85,7 +88,7 @@ pub async fn import_audio_file(
     };
 
     project::with_project_mut(|proj| {
-        proj.audio_files.insert(audio_id, audio_file);
+        proj.tracks.insert(track_id, track);
         Ok(())
     })?;
 
@@ -97,7 +100,19 @@ pub async fn import_audio_file(
     )
     .await?;
 
-    Ok(Some(audio_id))
+    Ok(Some(track_id.to_string()))
+}
+
+/// Returns the raw bytes of a CAS blob by digest.
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+pub fn read_cas_blob(app: AppHandle, digest: &str) -> Result<tauri::ipc::Response, String> {
+    if digest.is_empty() || !digest.chars().all(|c| c.is_ascii_hexdigit()) {
+        return Err(format!("Invalid CAS digest: {digest}"));
+    }
+    let path = get_blob_path(&app, digest)?;
+    let bytes = std::fs::read(&path).map_err(|e| format!("Failed to read blob {digest}: {e}"))?;
+    Ok(tauri::ipc::Response::new(bytes))
 }
 
 fn get_cas_path(app: &AppHandle) -> Result<PathBuf, String> {
@@ -112,4 +127,10 @@ fn get_cas_path(app: &AppHandle) -> Result<PathBuf, String> {
     std::fs::create_dir_all(&cas_dir).map_err(|e| format!("Failed to create app data dir: {e}"))?;
 
     Ok(cas_dir)
+}
+
+fn get_blob_path(app: &AppHandle, digest: &str) -> Result<PathBuf, String> {
+    let cas_dir = get_cas_path(app)?;
+
+    Ok(cas_dir.join(digest))
 }

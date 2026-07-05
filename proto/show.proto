@@ -7,9 +7,7 @@ import "proto/effect.proto";
 import "proto/output.proto";
 
 message Show {
-  message AudioTrack {
-    uint64 audio_file_id = 1;
-  }
+  message AudioTrack { uint64 track_id = 1; }
 
   message Output {
     bool collapsed = 1;
