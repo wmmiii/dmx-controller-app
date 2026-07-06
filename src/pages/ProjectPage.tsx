@@ -5,7 +5,6 @@ import {
 } from '@dmx-controller/proto/settings_pb';
 import { JSX, useContext } from 'react';
 
-import { Button } from '../components/Button';
 import { TextInput } from '../components/Input';
 import { Select } from '../components/Select';
 import { Toggle } from '../components/Toggle';
@@ -90,22 +89,6 @@ export default function ProjectPage(): JSX.Element {
                 save(`Set number input mode to ${option?.name ?? mode}.`);
               }}
             />
-          </td>
-        </tr>
-        <tr>
-          <th>Reset dialogs</th>
-          <td>
-            <Button
-              onClick={() => {
-                if (project.settings) {
-                  project.settings.dismissedDialogs = [];
-                  save('Reset dismissed dialogs.');
-                }
-              }}
-              disabled={!Boolean(project.settings?.dismissedDialogs.length)}
-            >
-              Reset dismissed dialogs
-            </Button>
           </td>
         </tr>
       </tbody>

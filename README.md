@@ -140,3 +140,12 @@ Runs linters (ESLint, Clippy, Knip) and Prettier formatting.
 ## Documentation
 
 For AI-assisted development, see [CLAUDE.md](CLAUDE.md) which provides guidance for Claude Code when working with this repository.
+
+## License & Legal
+
+The source code is licensed under the [Apache License, Version 2.0](LICENSE).
+
+Use of the application is also subject to the following, which include important safety, warranty, and liability information:
+
+- [Terms of Service](https://dmx-controller.app/terms.html)
+- [Privacy Policy](https://dmx-controller.app/privacy.html)

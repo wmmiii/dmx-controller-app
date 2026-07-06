@@ -3,14 +3,17 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router';
 
 import Index from './Index';
+import { preloadWasm } from './wasm/engine';
+
+import { Clickwrap } from './components/Clickwrap';
 import { AudioInputProvider } from './contexts/AudioInputContext';
 import { BeatProvider } from './contexts/BeatContext';
 import { ClipboardProvider } from './contexts/ClipboardContext';
 import { ControllerProvider } from './contexts/ControllerContext';
 import { ProjectProvider } from './contexts/ProjectContext';
 import { ShortcutProvider } from './contexts/ShortcutContext';
+import { installExternalLinkHandler } from './util/browserUtils';
 import './vars.css';
-import { preloadWasm } from './wasm/engine';
 
 // BigInt has no built-in JSON representation; patch toJSON so that any
 // JSON.stringify call (React internals, useMemo deps, etc.) converts bigints
@@ -20,6 +23,7 @@ import { preloadWasm } from './wasm/engine';
 };
 
 preloadWasm();
+installExternalLinkHandler();
 
 if (/iPad|iPhone|iPod|Mac/.test(navigator.userAgent)) {
   document.body.classList.add('apple');
@@ -30,20 +34,22 @@ if (/iPad|iPhone|iPod|Mac/.test(navigator.userAgent)) {
 const root = createRoot(document.getElementById('root')!);
 root.render(
   <StrictMode>
-    <BrowserRouter basename="/">
-      <ShortcutProvider>
-        <ProjectProvider>
-          <ClipboardProvider>
-            <BeatProvider>
-              <AudioInputProvider>
-                <ControllerProvider>
-                  <Index />
-                </ControllerProvider>
-              </AudioInputProvider>
-            </BeatProvider>
-          </ClipboardProvider>
-        </ProjectProvider>
-      </ShortcutProvider>
-    </BrowserRouter>
+    <Clickwrap>
+      <BrowserRouter basename="/">
+        <ShortcutProvider>
+          <ProjectProvider>
+            <ClipboardProvider>
+              <BeatProvider>
+                <AudioInputProvider>
+                  <ControllerProvider>
+                    <Index />
+                  </ControllerProvider>
+                </AudioInputProvider>
+              </BeatProvider>
+            </ClipboardProvider>
+          </ProjectProvider>
+        </ShortcutProvider>
+      </BrowserRouter>
+    </Clickwrap>
   </StrictMode>,
 );

@@ -3,10 +3,8 @@ import clsx from 'clsx';
 import { JSX, useContext, useState } from 'react';
 import {
   BiDownload,
-  BiError,
   BiFile,
-  BiHappyBeaming,
-  BiLogoGithub,
+  BiInfoCircle,
   BiMenu,
   BiUpload,
 } from 'react-icons/bi';
@@ -23,13 +21,13 @@ import { Spacer } from './components/Spacer';
 import { WledVisualizer } from './components/WledVisualizer';
 import { ControllerContext } from './contexts/ControllerContext';
 import { ProjectContext } from './contexts/ProjectContext';
+import { AboutPage } from './pages/AboutPage';
 import AssetBrowserPage from './pages/AssetBrowserPage';
 import { ControllerPage } from './pages/ControllerPage';
 import { LivePage } from './pages/LivePage';
 import ProjectPage from './pages/ProjectPage';
 import { ShowPage } from './pages/ShowPage';
 import PatchPage from './pages/patch/PatchPage';
-import { dismissDialog, isDialogDismissed } from './util/dialogUtil';
 import { getActivePatch } from './util/projectUtils';
 
 export default function Index(): JSX.Element {
@@ -85,10 +83,9 @@ export default function Index(): JSX.Element {
     },
     { type: 'separator' },
     {
-      title: 'GitHub Page',
-      icon: <BiLogoGithub />,
-      onSelect: () =>
-        window.open('https://github.com/wmmiii/dmx-controller-app/', '_blank'),
+      title: 'About',
+      icon: <BiInfoCircle />,
+      onSelect: () => navigate('/about'),
     },
     {
       type: 'separator' as const, // Type-madness.
@@ -107,7 +104,6 @@ export default function Index(): JSX.Element {
 
   return (
     <div className={styles.wrapper}>
-      <WarningDialog />
       {showNewProjectDialog && (
         <Modal
           title="New Project"
@@ -221,6 +217,7 @@ export default function Index(): JSX.Element {
         <ErrorBoundary>
           <Routes>
             <Route path="/" element={<LivePage />} />
+            <Route path="/about" element={<AboutPage />} />
             <Route path="/assets" element={<AssetBrowserPage />} />
             <Route path="/controller" element={<ControllerPage />} />
             <Route path="/live" element={<LivePage />} />
@@ -231,76 +228,5 @@ export default function Index(): JSX.Element {
         </ErrorBoundary>
       </main>
     </div>
-  );
-}
-
-const WARNING_DIALOG_KEY = 'welcome-warning';
-
-function WarningDialog() {
-  const { project, save } = useContext(ProjectContext);
-  const [open, setOpen] = useState(
-    !isDialogDismissed(project, WARNING_DIALOG_KEY),
-  );
-
-  if (!open) {
-    return null;
-  }
-
-  return (
-    <Modal
-      bodyClass={styles.welcomeDialog}
-      title={
-        <>
-          <BiHappyBeaming /> Welcome!
-        </>
-      }
-      onClose={() => setOpen(false)}
-      footer={
-        <>
-          <Button
-            variant="warning"
-            onClick={() => {
-              dismissDialog(project, WARNING_DIALOG_KEY);
-              save('Dismiss welcome dialog.');
-              setOpen(false);
-            }}
-          >
-            Don't show this dialog again
-          </Button>
-          <Button variant="primary" onClick={() => setOpen(false)}>
-            Let's go!
-          </Button>
-        </>
-      }
-    >
-      <p>
-        Welcome to DMX Controller App! Create and perform live lighting shows
-        with DMX and WLED devices. Whether you're lighting a stage, a party, or
-        just experimenting, this app makes it easy to get started.
-      </p>
-      <p>
-        New here? Check out the&nbsp;
-        <a href="https://dmx-controller.app" target="_blank">
-          getting started guide
-        </a>
-        . Have feedback or found a bug? Open an issue on the&nbsp;
-        <a
-          href="https://github.com/wmmiii/dmx-controller-app/issues"
-          target="_blank"
-        >
-          GitHub page
-        </a>
-        —contributions are always welcome!
-      </p>
-      <h3>
-        <BiError />
-        Warning
-      </h3>
-      <p>
-        This app is in active development. Updates may introduce&nbsp;
-        <strong>breaking changes</strong> that make your existing projects
-        incompatible. Use at your own risk!
-      </p>
-    </Modal>
   );
 }

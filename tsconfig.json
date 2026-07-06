@@ -7,6 +7,7 @@
     "lib": ["DOM", "ESNext"],
     "skipLibCheck": true,
     "moduleResolution": "bundler",
+    "resolveJsonModule": true,
     "sourceMap": true,
     "inlineSources": true,
     "strict": true,

@@ -77,6 +77,7 @@ pub fn run() {
 
     let app = builder
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_process::init())
         .setup(|app| {
             // Register logging plugin first so all log::* calls are captured
