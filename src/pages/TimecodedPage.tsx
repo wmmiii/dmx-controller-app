@@ -10,12 +10,14 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useReducer,
   useRef,
   useState,
 } from 'react';
 import {
   BiChevronDown,
   BiChevronUp,
+  BiGridVertical,
   BiPause,
   BiPlay,
   BiPlus,
@@ -131,8 +133,38 @@ interface TimecodedBodyProps {
 }
 
 function TimecodedBody({ show }: TimecodedBodyProps) {
-  const { project, save } = useContext(ProjectContext);
+  const { project, save, update } = useContext(ProjectContext);
   const { setShortcuts } = useContext(ShortcutContext);
+  const dragIndex = useRef<number | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [, forceRender] = useReducer((n: number) => n + 1, 0);
+
+  const reorderToPointer = (clientY: number) => {
+    const from = dragIndex.current;
+    const container = scrollRef.current;
+    if (from == null || container == null) {
+      return;
+    }
+
+    const rows = container.querySelectorAll<HTMLElement>('[data-track-meta]');
+    let target = rows.length - 1;
+    for (let i = 0; i < rows.length; i++) {
+      if (clientY < rows[i].getBoundingClientRect().bottom) {
+        target = i;
+        break;
+      }
+    }
+
+    if (target === from) {
+      return;
+    }
+
+    const [moved] = show.outputs.splice(from, 1);
+    show.outputs.splice(target, 0, moved);
+    dragIndex.current = target;
+    forceRender();
+    update();
+  };
   const [viewStart, setViewStart] = useState<number>(0);
   const [viewEnd, setViewEnd] = useState<number | null>(null);
   const [wasmReady, setWasmReady] = useState(false);
@@ -286,17 +318,29 @@ function TimecodedBody({ show }: TimecodedBodyProps) {
               setViewEnd(endMs);
             }}
             onSeek={(timeMs) => seek(trackId!, timeMs)}
+            playing={playing}
             getPlayheadMs={() => getCurrentTimeMs(trackId!)}
           />
         ) : (
           <div>Loading...</div>
         )}
       </div>
-      <div className={styles.trackScrollable}>
+      <div ref={scrollRef} className={styles.trackScrollable}>
         {show.outputs.map((output, idx) => (
           <Fragment key={idx}>
             <TrackMeta
               output={output}
+              onReorderStart={() => {
+                dragIndex.current = idx;
+              }}
+              onReorderMove={reorderToPointer}
+              onReorderEnd={() => {
+                if (dragIndex.current == null) {
+                  return;
+                }
+                dragIndex.current = null;
+                save(`Reorder tracks in show ${show.name}.`);
+              }}
               onDelete={() => {
                 show.outputs.splice(idx, 1);
                 save(`Remove track from show ${show.name}.`);
@@ -346,15 +390,60 @@ function TimecodedBody({ show }: TimecodedBodyProps) {
 
 interface TrackMetaProps {
   output: TimecodedShow_Output;
+  onReorderStart: () => void;
+  onReorderMove: (clientY: number) => void;
+  onReorderEnd: () => void;
   onDelete: () => void;
 }
 
-function TrackMeta({ output, onDelete }: TrackMetaProps) {
+function TrackMeta({
+  output,
+  onReorderStart,
+  onReorderMove,
+  onReorderEnd,
+  onDelete,
+}: TrackMetaProps) {
   const { project, save } = useContext(ProjectContext);
 
   return (
-    <div className={styles.trackMeta}>
+    <div className={styles.trackMeta} data-track-meta>
       <div className={styles.metaRow}>
+        <span
+          className={styles.dragHandle}
+          title="Drag to reorder tracks"
+          onPointerDown={(ev) => {
+            ev.preventDefault();
+            ev.currentTarget.setPointerCapture(ev.pointerId);
+            onReorderStart();
+          }}
+          onPointerMove={(ev) => {
+            if (ev.currentTarget.hasPointerCapture(ev.pointerId)) {
+              onReorderMove(ev.clientY);
+            }
+          }}
+          onPointerUp={(ev) => {
+            ev.currentTarget.releasePointerCapture(ev.pointerId);
+            onReorderEnd();
+          }}
+          onPointerCancel={onReorderEnd}
+        >
+          <BiGridVertical />
+        </span>
+        <EditableText
+          className={styles.trackName}
+          value={
+            output.name || getOutputTargetName(project, output.outputTarget)
+          }
+          onChange={(name) => {
+            if (name) {
+              output.name = name;
+              save(`Rename track to ${name}.`);
+            } else {
+              output.name = '';
+              save('Remove name from track');
+            }
+          }}
+        />
         <IconButton
           title={(output.collapsed ? 'Expand' : 'Collapse') + ' track'}
           onClick={() => {
@@ -364,17 +453,17 @@ function TrackMeta({ output, onDelete }: TrackMetaProps) {
         >
           {output.collapsed ? <BiChevronDown /> : <BiChevronUp />}
         </IconButton>
-        <OutputSelector
-          value={output.outputTarget}
-          setValue={(target) => {
-            output.outputTarget = target;
-            const name = getOutputTargetName(project, target);
-            save(`Set track output to ${name}`);
-          }}
-        />
       </div>
       {!output.collapsed && (
         <div className={styles.metaRow}>
+          <OutputSelector
+            value={output.outputTarget}
+            setValue={(target) => {
+              output.outputTarget = target;
+              const name = getOutputTargetName(project, target);
+              save(`Set track output to ${name}`);
+            }}
+          />
           <Spacer />
           <IconButton variant="warning" title="Delete track" onClick={onDelete}>
             <BiTrashAlt />

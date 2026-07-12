@@ -54,11 +54,16 @@ export function TextInput({ value, onChange }: TextInputProps): JSX.Element {
 }
 
 interface EditableTextProps {
+  className?: string;
   value: string;
   onChange: (value: string) => void;
 }
 
-export function EditableText({ value, onChange }: EditableTextProps) {
+export function EditableText({
+  className,
+  value,
+  onChange,
+}: EditableTextProps) {
   const [edit, setEdit] = useState(false);
   const [draft, setDraft] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -99,7 +104,7 @@ export function EditableText({ value, onChange }: EditableTextProps) {
     return (
       <input
         ref={inputRef}
-        className={styles.editableInput}
+        className={clsx(className, styles.editableInput)}
         value={draft}
         size={Math.max(draft.length, 1)}
         onChange={(e) => setDraft(e.target.value)}
@@ -119,7 +124,7 @@ export function EditableText({ value, onChange }: EditableTextProps) {
   } else {
     return (
       <span
-        className={styles.editableText}
+        className={clsx(className, styles.editableText)}
         onDoubleClick={startEdit}
         onTouchStart={(e) => {
           const touch = e.touches[0];

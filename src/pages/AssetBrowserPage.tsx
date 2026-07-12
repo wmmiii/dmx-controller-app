@@ -230,6 +230,7 @@ function TrackDetails({ trackId, track }: TrackDetailsProps) {
             setViewEnd(endMs);
           }}
           onSeek={(timeMs) => seek(trackId, timeMs)}
+          playing={playing}
           getPlayheadMs={() => getCurrentTimeMs(trackId)}
         />
       ) : (

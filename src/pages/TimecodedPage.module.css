@@ -81,6 +81,25 @@
   gap: var(--space-1);
 }
 
+.drag-handle {
+  display: flex;
+  align-items: center;
+  color: var(--col-text-dim);
+  cursor: grab;
+  touch-action: none;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.track-name {
+  display: flex;
+  flex: 1;
+  flex-direction: row;
+  align-items: center;
+}
+
 .track-lane {
   grid-column: 2;
   padding: var(--space-1);

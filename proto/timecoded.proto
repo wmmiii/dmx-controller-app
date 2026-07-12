@@ -10,6 +10,7 @@ message TimecodedShow {
   message AudioTrack { uint64 track_id = 1; }
 
   message Output {
+    string name = 4;
     bool collapsed = 1;
 
     dmx_controller.OutputTarget output_target = 2;

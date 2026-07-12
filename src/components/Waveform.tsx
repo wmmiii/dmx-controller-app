@@ -1,6 +1,12 @@
 import { WaveformData, WaveformLevel } from '@dmx-controller/proto/audio_pb';
 import clsx from 'clsx';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import { DRAG_DISTANCE_PX_SQ } from '../util/browserUtils';
 import { listenToTick } from '../util/time';
 import styles from './Waveform.module.css';
@@ -25,6 +31,7 @@ interface WaveformProps {
   beatToMs?: (beat: number) => number;
   onViewChange: (startMs: number, endMs: number) => void;
   onSeek?: (timeMs: number) => void;
+  playing: boolean;
   getPlayheadMs?: () => number | null;
 }
 
@@ -37,6 +44,7 @@ export function Waveform({
   beatToMs,
   onViewChange,
   onSeek,
+  playing,
   getPlayheadMs,
 }: WaveformProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -48,6 +56,9 @@ export function Waveform({
     endMs: number;
   } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
+  const lastPlayheadMsRef = useRef<number | null>(null);
+  const wasPlayingRef = useRef(false);
 
   const trackDurationMs = Number(waveformData.durationMs);
 
@@ -235,45 +246,70 @@ export function Waveform({
   }, [handleWheel, onViewChange]);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
     const container = containerRef.current;
-    if (!canvas || !container) {
+    if (!container) {
       return;
     }
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      return;
-    }
-
-    const dpr = window.devicePixelRatio || 1;
 
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const { width, height } = entry.contentRect;
-        canvas.width = width * dpr;
-        canvas.height = height * dpr;
-        canvas.style.width = `${width}px`;
-        canvas.style.height = `${height}px`;
-        ctx.scale(dpr, dpr);
-        drawWaveform(
-          ctx,
-          getComputedStyle(canvas),
-          width,
-          height,
-          waveformData,
-          startMs,
-          endMs,
-          msToBeat,
-          beatToMs,
-        );
+        setCanvasSize({ width, height });
       }
     });
 
     resizeObserver.observe(container);
 
     return () => resizeObserver.disconnect();
-  }, [waveformData, startMs, endMs, msToBeat, beatToMs]);
+  }, []);
+
+  useLayoutEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    const { width, height } = canvasSize;
+    if (!canvas || !ctx || width === 0 || height === 0) {
+      return;
+    }
+
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+    ctx.scale(dpr, dpr);
+    drawWaveform(
+      ctx,
+      getComputedStyle(canvas),
+      width,
+      height,
+      waveformData,
+      startMs,
+      endMs,
+      msToBeat,
+      beatToMs,
+    );
+  }, [canvasSize, waveformData, startMs, endMs, msToBeat, beatToMs]);
+
+  // When playback starts with the playhead off screen, center the view on it
+  useEffect(() => {
+    const wasPlaying = wasPlayingRef.current;
+    wasPlayingRef.current = playing;
+    if (!playing || wasPlaying || !getPlayheadMs) {
+      return;
+    }
+
+    const playheadMs = getPlayheadMs();
+    if (playheadMs == null || (playheadMs >= startMs && playheadMs <= endMs)) {
+      return;
+    }
+
+    const halfWidth = (endMs - startMs) / 2;
+    const [viewStart, viewEnd] = clampView(
+      Math.round(playheadMs - halfWidth),
+      Math.round(playheadMs + halfWidth),
+    );
+    onViewChange(viewStart, viewEnd);
+  }, [playing, getPlayheadMs, startMs, endMs, clampView, onViewChange]);
 
   useEffect(() => {
     if (!getPlayheadMs) {
@@ -287,20 +323,39 @@ export function Waveform({
       }
 
       const playheadMs = getPlayheadMs();
-      const visible =
-        playheadMs != null &&
-        playheadMs >= startMs &&
-        playheadMs <= endMs &&
-        endMs > startMs;
-      if (visible) {
-        const ratio = (playheadMs - startMs) / (endMs - startMs);
+      const lastPlayheadMs = lastPlayheadMsRef.current;
+      lastPlayheadMsRef.current = playheadMs;
+
+      if (playheadMs == null || endMs <= startMs) {
+        playhead.style.display = 'none';
+        return;
+      }
+
+      let viewStart = startMs;
+      let viewEnd = endMs;
+      const crossedRightEdge =
+        playing &&
+        !dragStateRef.current &&
+        playheadMs > endMs &&
+        lastPlayheadMs != null &&
+        lastPlayheadMs <= endMs;
+      if (crossedRightEdge) {
+        [viewStart, viewEnd] = clampView(
+          playheadMs,
+          playheadMs + (endMs - startMs),
+        );
+        onViewChange(viewStart, viewEnd);
+      }
+
+      if (playheadMs >= viewStart && playheadMs <= viewEnd) {
+        const ratio = (playheadMs - viewStart) / (viewEnd - viewStart);
         playhead.style.left = `${ratio * 100}%`;
         playhead.style.display = '';
       } else {
         playhead.style.display = 'none';
       }
     });
-  }, [getPlayheadMs, startMs, endMs]);
+  }, [playing, getPlayheadMs, startMs, endMs, clampView, onViewChange]);
 
   return (
     <div ref={containerRef} className={clsx(className, styles.container)}>
