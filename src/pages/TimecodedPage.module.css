@@ -1,0 +1,96 @@
+.wrapper {
+  position: absolute;
+  inset: 0;
+}
+
+.body {
+  --header-height: 96px;
+  --track-height: 64px;
+  --col-beat: #4a4a4a;
+  --col-playhead: #ff0000;
+  --col-low: #0055e2;
+  --col-mid: #f2aa3c;
+  --col-high: #ffffff;
+
+  position: absolute;
+  display: grid;
+  grid-template-rows: var(--header-height) 1fr;
+  grid-template-columns: max-content 1fr;
+  inset: 0;
+}
+
+.show-meta {
+  display: flex;
+  flex-direction: column;
+  grid-row: 1;
+  grid-column: 1;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border-right: 1px solid var(--col-border);
+  border-bottom: 1px solid var(--col-border);
+}
+
+.waveform {
+  position: relative;
+  grid-row: 1;
+  grid-column: 2;
+  border-bottom: 1px solid var(--col-border);
+
+  .loading {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--col-text-dim);
+    inset: 0;
+  }
+}
+
+.audio-controls {
+  margin-top: var(--space-1);
+}
+
+.waveform-display {
+  width: 100%;
+  height: 100%;
+}
+
+.track-scrollable {
+  display: grid;
+  grid-auto-rows: var(--track-height);
+  grid-row: 2;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-content: start;
+  overflow-y: auto;
+}
+
+.track-meta {
+  grid-column: 1;
+  padding: var(--space-1);
+  background-color: var(--col-bg-higher);
+  border-right: 1px solid var(--col-border);
+  border-bottom: 1px solid var(--col-border-lower);
+}
+
+.track-lane {
+  grid-column: 2;
+  padding: var(--space-1);
+  color: var(--col-text-dim);
+  border-bottom: 1px solid var(--col-border-lower);
+}
+
+.lane-playhead-overlay {
+  position: relative;
+  grid-row: 2;
+  grid-column: 2;
+  pointer-events: none;
+}
+
+.lane-playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--col-playhead);
+}

@@ -3,7 +3,6 @@ import {
   Track,
   Track_BeatKeyframeSchema,
 } from '@dmx-controller/proto/audio_pb';
-import { useQuery } from '@tanstack/react-query';
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
   BiFastForward,
@@ -16,7 +15,6 @@ import {
 import {
   getCurrentTimeMs,
   getPlaybackStatus,
-  getWaveform,
   jog,
   load,
   pause,
@@ -30,6 +28,7 @@ import { Spacer } from '../components/Spacer';
 import { Waveform } from '../components/Waveform';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { usePlaybackStatus } from '../hooks/playbackStatus';
+import { useWaveform } from '../hooks/waveform';
 import { importAudioFile } from '../system_interfaces/cas';
 import { listenToTick } from '../util/time';
 import { getTrackBeatConverters, preloadWasm } from '../wasm/engine';
@@ -173,12 +172,7 @@ function TrackDetails({ trackId, track }: TrackDetailsProps) {
     });
   }, [trackId, beatConverters]);
 
-  const waveformQuery = useQuery({
-    queryKey: ['waveform', track.digest],
-    queryFn: () => getWaveform(track.digest),
-    staleTime: Infinity,
-    gcTime: Infinity,
-  });
+  const waveformQuery = useWaveform(track);
 
   useEffect(() => {
     setViewEnd(Number(waveformQuery.data?.durationMs) || null);

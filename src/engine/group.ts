@@ -357,7 +357,7 @@ export function deleteTargetGroup(project: Project, groupId: bigint) {
     }
   }
 
-  // Remove group from shows.
+  // Remove group from timecoded shows.
   for (const show of Object.values(project.shows)) {
     for (const output of show.outputs) {
       deleteFromOutputTarget(output);

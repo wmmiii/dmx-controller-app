@@ -26,7 +26,7 @@ import AssetBrowserPage from './pages/AssetBrowserPage';
 import { ControllerPage } from './pages/ControllerPage';
 import { LivePage } from './pages/LivePage';
 import ProjectPage from './pages/ProjectPage';
-import { ShowPage } from './pages/ShowPage';
+import { TimecodedPage } from './pages/TimecodedPage';
 import PatchPage from './pages/patch/PatchPage';
 import { getActivePatch } from './util/projectUtils';
 
@@ -46,8 +46,8 @@ export default function Index(): JSX.Element {
       onSelect: () => navigate('/live'),
     },
     // {
-    //   title: 'Show',
-    //   onSelect: () => navigate('/show'),
+    //   title: 'Timecoded Show',
+    //   onSelect: () => navigate('/timecoded'),
     // },
     // {
     //   title: 'Assets',
@@ -223,7 +223,7 @@ export default function Index(): JSX.Element {
             <Route path="/live" element={<LivePage />} />
             <Route path="/patch" element={<PatchPage />} />
             <Route path="/project" element={<ProjectPage />} />
-            <Route path="/show" element={<ShowPage />} />
+            <Route path="/timecoded" element={<TimecodedPage />} />
           </Routes>
         </ErrorBoundary>
       </main>

@@ -15,12 +15,12 @@ message RenderMode {
 
   message Scene { uint64 scene_id = 1; }
 
-  message Show {
+  message TimecodedShow {
     uint64 show_id = 1;
 
     oneof state {
       uint64 start_t = 2;
-      uint32 paused = 3;
+      uint32 paused_ms = 3;
     }
   }
 
@@ -29,6 +29,6 @@ message RenderMode {
     FixtureDebug fixture_debug = 2;
     GroupDebug group_debug = 3;
     Scene scene = 4;
-    Show show = 5;
+    TimecodedShow timecoded_show = 5;
   }
 }

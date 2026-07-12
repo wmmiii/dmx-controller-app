@@ -327,7 +327,7 @@ fn render<T: RenderTarget<T>>(
             audio_analysis,
         )
         .map_err(RenderError::SceneError),
-        Some(Mode::Show(_)) => todo!("Show not implemented yet!"),
+        Some(Mode::TimecodedShow(_)) => todo!("Show not implemented yet!"),
     }
 }
 

@@ -39,6 +39,7 @@ export function Waveform({
   onSeek,
   getPlayheadMs,
 }: WaveformProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const playheadRef = useRef<HTMLDivElement>(null);
   const dragStateRef = useRef<{
@@ -235,7 +236,8 @@ export function Waveform({
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) {
+    const container = containerRef.current;
+    if (!canvas || !container) {
       return;
     }
 
@@ -268,7 +270,7 @@ export function Waveform({
       }
     });
 
-    resizeObserver.observe(canvas);
+    resizeObserver.observe(container);
 
     return () => resizeObserver.disconnect();
   }, [waveformData, startMs, endMs, msToBeat, beatToMs]);
@@ -301,7 +303,7 @@ export function Waveform({
   }, [getPlayheadMs, startMs, endMs]);
 
   return (
-    <div className={clsx(className, styles.container)}>
+    <div ref={containerRef} className={clsx(className, styles.container)}>
       <canvas
         ref={canvasRef}
         className={clsx(styles.canvas, {

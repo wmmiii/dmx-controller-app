@@ -10,7 +10,7 @@ React 19 + TypeScript frontend (`src/`, built with Vite), wrapped as a native de
 
 **Output types are not structurally uniform.** Serial and sACN/E1.31 share a classic 512-channel DMX byte array. WLED gets its own segment/effect state (WLED's onboard engine renders the pixels — no per-pixel data is sent). DDP isn't part of the fixture/effect system at all — it only receives raw per-pixel data from virtual displays via the Visualizer's display pipeline. Don't assume a shared "universe" across output types; see `src-engine/src/render/`.
 
-**Feature maturity isn't obvious from the routes.** `ShowPage` is an unimplemented stub (`show.proto` exists, nothing consumes it yet). The Audio Tracks subsystem (`AssetBrowserPage`, import/playback/waveform/beat-tagging) is fully functional but its nav entry is commented out in `src/Index.tsx` — check that file's `menuItems`, not just the route table, before assuming a page is reachable.
+**Feature maturity isn't obvious from the routes.** `TimecodedShowPage` is an unimplemented stub (`timecoded.proto` exists, nothing consumes it yet). The Audio Tracks subsystem (`AssetBrowserPage`, import/playback/waveform/beat-tagging) is fully functional but its nav entry is commented out in `src/Index.tsx` — check that file's `menuItems`, not just the route table, before assuming a page is reachable.
 
 ## Where things live
 

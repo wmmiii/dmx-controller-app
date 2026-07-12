@@ -27,10 +27,6 @@ export function Tabs({
   after,
   className,
 }: TabsProps) {
-  if (tabs[selectedTab] == null) {
-    setSelectedTab(Object.keys(tabs)[0]);
-  }
-
   return (
     <div className={clsx(className, styles.wrapper)}>
       <div className={styles.header}>

@@ -11,7 +11,7 @@ import "proto/fixture_definitions.proto";
 import "proto/output.proto";
 import "proto/scene.proto";
 import "proto/settings.proto";
-import "proto/show.proto";
+import "proto/timecoded.proto";
 import "proto/visualizer.proto";
 
 message Project {
@@ -33,7 +33,7 @@ message Project {
   // Assets
   map<uint64, Track> tracks = 65;
 
-  map<uint64, Show> shows = 31;
+  map<uint64, TimecodedShow> shows = 31;
   uint64 selected_show = 32;
 
   // Fixture sequence 0 is reserved for the "unset" sequence.

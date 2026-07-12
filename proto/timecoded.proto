@@ -6,7 +6,7 @@ import "proto/color.proto";
 import "proto/effect.proto";
 import "proto/output.proto";
 
-message Show {
+message TimecodedShow {
   message AudioTrack { uint64 track_id = 1; }
 
   message Output {
@@ -14,7 +14,7 @@ message Show {
 
     dmx_controller.OutputTarget output_target = 2;
 
-    repeated Layer layers = 3;
+    Layer layer = 3;
   }
 
   string name = 1;

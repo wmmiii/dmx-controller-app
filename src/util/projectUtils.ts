@@ -6,7 +6,6 @@ import {
 } from '@dmx-controller/proto/output_pb';
 import { Project, ProjectSchema } from '@dmx-controller/proto/project_pb';
 import { Scene_Tile } from '@dmx-controller/proto/scene_pb';
-import { Show_Output } from '@dmx-controller/proto/show_pb';
 
 import { isWledChannel } from '../engine/channel';
 
@@ -49,13 +48,10 @@ export function deleteFromOutputTargets(
     );
   }
 
-  const deleteFromShowOutput = (o: Show_Output) =>
-    deleteFromOutputTarget(o.outputTarget);
-
-  // Delete from shows.
+  // Delete from timecoded shows.
   Object.values(project.shows)
     .flatMap((s) => s.outputs)
-    .forEach(deleteFromShowOutput);
+    .forEach((o) => deleteFromOutputTarget(o.outputTarget));
 
   // Delete from scenes.
   Object.values(project.scenes)
