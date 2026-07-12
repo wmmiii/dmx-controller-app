@@ -5,7 +5,6 @@
 
 .body {
   --header-height: 96px;
-  --track-height: 64px;
   --col-beat: #4a4a4a;
   --col-playhead: #ff0000;
   --col-low: #0055e2;
@@ -57,7 +56,7 @@
 
 .track-scrollable {
   display: grid;
-  grid-auto-rows: var(--track-height);
+  grid-auto-rows: max-content;
   grid-row: 2;
   grid-column: 1 / -1;
   grid-template-columns: subgrid;
@@ -66,11 +65,20 @@
 }
 
 .track-meta {
+  display: flex;
+  flex-direction: column;
   grid-column: 1;
+  gap: var(--space-1);
   padding: var(--space-1);
   background-color: var(--col-bg-higher);
   border-right: 1px solid var(--col-border);
   border-bottom: 1px solid var(--col-border-lower);
+}
+
+.meta-row {
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-1);
 }
 
 .track-lane {
@@ -78,6 +86,16 @@
   padding: var(--space-1);
   color: var(--col-text-dim);
   border-bottom: 1px solid var(--col-border-lower);
+}
+
+.new-layer {
+  display: flex;
+  flex-direction: row;
+  grid-column-start: 1;
+  grid-column-end: 3;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2);
 }
 
 .lane-playhead-overlay {

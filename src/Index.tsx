@@ -45,14 +45,14 @@ export default function Index(): JSX.Element {
       title: 'Live',
       onSelect: () => navigate('/live'),
     },
-    // {
-    //   title: 'Timecoded Show',
-    //   onSelect: () => navigate('/timecoded'),
-    // },
-    // {
-    //   title: 'Assets',
-    //   onSelect: () => navigate('/assets'),
-    // },
+    {
+      title: 'Timecoded Show',
+      onSelect: () => navigate('/timecoded'),
+    },
+    {
+      title: 'Assets',
+      onSelect: () => navigate('/assets'),
+    },
     {
       title: 'Patch',
       onSelect: () => navigate('/patch'),

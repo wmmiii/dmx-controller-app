@@ -1,6 +1,8 @@
 import {
   TimecodedShow,
   TimecodedShow_AudioTrackSchema,
+  TimecodedShow_Output,
+  TimecodedShow_OutputSchema,
   TimecodedShowSchema,
 } from '@dmx-controller/proto/timecoded_pb';
 import {
@@ -11,7 +13,15 @@ import {
   useRef,
   useState,
 } from 'react';
-import { BiPause, BiPlay, BiPlus, BiTrash } from 'react-icons/bi';
+import {
+  BiChevronDown,
+  BiChevronUp,
+  BiPause,
+  BiPlay,
+  BiPlus,
+  BiTrash,
+  BiTrashAlt,
+} from 'react-icons/bi';
 import {
   getCurrentTimeMs,
   getPlaybackStatus,
@@ -20,7 +30,7 @@ import {
   play,
   seek,
 } from '../audio/audioTrackRegistry';
-import { IconButton } from '../components/Button';
+import { Button, IconButton } from '../components/Button';
 import { EditableText } from '../components/Input';
 import { Tabs, TabsType } from '../components/Tabs';
 import { ProjectContext } from '../contexts/ProjectContext';
@@ -28,7 +38,12 @@ import { usePlaybackStatus } from '../hooks/playbackStatus';
 import { useWaveform } from '../hooks/waveform';
 
 import { create } from '@bufbuild/protobuf';
+import {
+  getOutputTargetName,
+  OutputSelector,
+} from '../components/OutputSelector';
 import { Select } from '../components/Select';
+import { Spacer } from '../components/Spacer';
 import { Waveform } from '../components/Waveform';
 import { ShortcutContext } from '../contexts/ShortcutContext';
 import { DEFAULT_COLOR_PALETTE } from '../util/colorUtil';
@@ -278,12 +293,43 @@ function TimecodedBody({ show }: TimecodedBodyProps) {
         )}
       </div>
       <div className={styles.trackScrollable}>
-        {placeholderOutputs.map((i) => (
-          <Fragment key={i}>
-            <div className={styles.trackMeta}>Output {i + 1}</div>
+        {show.outputs.map((output, idx) => (
+          <Fragment key={idx}>
+            <TrackMeta
+              output={output}
+              onDelete={() => {
+                show.outputs.splice(idx, 1);
+                save(`Remove track from show ${show.name}.`);
+              }}
+            />
             <div className={styles.trackLane}>Timeline lane</div>
           </Fragment>
         ))}
+        <div className={styles.newLayer}>
+          <Button
+            icon={<BiPlus />}
+            variant="primary"
+            onClick={() => {
+              show.outputs.push(
+                create(TimecodedShow_OutputSchema, {
+                  collapsed: false,
+                  outputTarget: {
+                    output: {
+                      case: undefined,
+                      value: undefined,
+                    },
+                  },
+                  layer: {
+                    effects: [],
+                  },
+                }),
+              );
+              save('Add new layer to timecoded show.');
+            }}
+          >
+            Add track
+          </Button>
+        </div>
       </div>
       {trackId != null && (
         <div className={styles.lanePlayheadOverlay}>
@@ -292,6 +338,47 @@ function TimecodedBody({ show }: TimecodedBodyProps) {
             className={styles.lanePlayhead}
             style={{ display: 'none' }}
           />
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface TrackMetaProps {
+  output: TimecodedShow_Output;
+  onDelete: () => void;
+}
+
+function TrackMeta({ output, onDelete }: TrackMetaProps) {
+  const { project, save } = useContext(ProjectContext);
+
+  return (
+    <div className={styles.trackMeta}>
+      <div className={styles.metaRow}>
+        <IconButton
+          title={(output.collapsed ? 'Expand' : 'Collapse') + ' track'}
+          onClick={() => {
+            output.collapsed = !output.collapsed;
+            save((output.collapsed ? 'Expand' : 'Collapse') + ' track.');
+          }}
+        >
+          {output.collapsed ? <BiChevronDown /> : <BiChevronUp />}
+        </IconButton>
+        <OutputSelector
+          value={output.outputTarget}
+          setValue={(target) => {
+            output.outputTarget = target;
+            const name = getOutputTargetName(project, target);
+            save(`Set track output to ${name}`);
+          }}
+        />
+      </div>
+      {!output.collapsed && (
+        <div className={styles.metaRow}>
+          <Spacer />
+          <IconButton variant="warning" title="Delete track" onClick={onDelete}>
+            <BiTrashAlt />
+          </IconButton>
         </div>
       )}
     </div>
