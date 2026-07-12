@@ -7,7 +7,7 @@
     <title>DMX Controller App — Free Desktop Lighting Control Software</title>
     <meta
       name="description"
-      content="Free desktop app for DMX lighting control. Supports Serial DMX, sACN/E1.31, and WLED. Import GDTF fixtures, sync effects to music with tap tempo, and control everything via MIDI input devices."
+      content="Free desktop app for DMX lighting control. Supports Serial DMX, sACN/E1.31, WLED, and DDP. Import GDTF fixtures, drive GLSL shader visualizers on virtual pixel displays, sync effects to music with tap tempo, and control everything via MIDI input devices."
     />
     <meta name="author" content="Will Martin" />
     <meta name="theme-color" content="#1a1a2e" />
@@ -22,7 +22,7 @@
     />
     <meta
       property="og:description"
-      content="Free desktop app for DMX lighting control. Supports Serial DMX, sACN/E1.31, and WLED. Import GDTF fixtures, sync effects to music with tap tempo, and control everything via MIDI input devices."
+      content="Free desktop app for DMX lighting control. Supports Serial DMX, sACN/E1.31, WLED, and DDP. Import GDTF fixtures, drive GLSL shader visualizers on virtual pixel displays, sync effects to music with tap tempo, and control everything via MIDI input devices."
     />
     <meta property="og:url" content="https://dmx-controller.app/" />
     <meta property="og:image" content="https://dmx-controller.app/icon.svg" />
@@ -35,7 +35,7 @@
     />
     <meta
       name="twitter:description"
-      content="Free desktop app for DMX lighting control. Supports Serial DMX, sACN/E1.31, and WLED. Import GDTF fixtures, sync effects to music with tap tempo, and control everything via MIDI input devices."
+      content="Free desktop app for DMX lighting control. Supports Serial DMX, sACN/E1.31, WLED, and DDP. Import GDTF fixtures, drive GLSL shader visualizers on virtual pixel displays, sync effects to music with tap tempo, and control everything via MIDI input devices."
     />
     <meta name="twitter:image" content="https://dmx-controller.app/icon.svg" />
 
@@ -70,7 +70,7 @@
         "@context": "https://schema.org",
         "@type": "SoftwareApplication",
         "name": "DMX Controller App",
-        "description": "A free desktop application for controlling DMX lighting fixtures. Supports Serial DMX, sACN/E1.31, and WLED output protocols. Import fixtures using GDTF, sync effects to music with tap tempo, and control everything live with MIDI input devices.",
+        "description": "A free desktop application for controlling DMX lighting fixtures. Supports Serial DMX, sACN/E1.31, WLED, and DDP output protocols. Import fixtures using GDTF, drive GLSL shader visualizers on virtual pixel displays, sync effects to music with tap tempo, and control everything live with MIDI input devices.",
         "url": "https://dmx-controller.app/",
         "downloadUrl": "https://github.com/wmmiii/dmx-controller-app/releases",
         "codeRepository": "https://github.com/wmmiii/dmx-controller-app",
@@ -82,6 +82,8 @@
           "Serial DMX output via USB-DMX adapter",
           "sACN/E1.31 network output with unlimited universes",
           "WLED output with auto-discovery of segments",
+          "DDP output for pixel-mapped fixtures and displays",
+          "GLSL shader visualizer for virtual pixel displays",
           "GDTF fixture profile import",
           "Beat-synchronized effects with tap tempo",
           "MIDI input device support",
@@ -116,11 +118,13 @@
           <p>
             A desktop application for controlling DMX lighting fixtures with
             support for <strong>Serial DMX</strong>,
-            <strong>sACN/E1.31</strong>, and <strong>WLED</strong> output
-            protocols. Each output supports a full 512-channel DMX universe,
-            with unlimited sACN universes over your network. Import fixtures
-            using the industry-standard <strong>GDTF format</strong>, sync
-            effects to music with <strong>tap tempo</strong>, and control
+            <strong>sACN/E1.31</strong>, <strong>WLED</strong>, and
+            <strong>DDP</strong> output protocols. Each output supports a full
+            512-channel DMX universe, with unlimited sACN universes over your
+            network. Import fixtures using the industry-standard
+            <strong>GDTF format</strong>, drive GLSL
+            <strong>shader visualizers</strong> across virtual pixel displays,
+            sync effects to music with <strong>tap tempo</strong>, and control
             everything live with <strong>MIDI input devices</strong>. Perform
             live with an intuitive tile-based grid interface.
           </p>

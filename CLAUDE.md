@@ -1,208 +1,69 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for Claude Code when working in this repository. Keep this file lean: broad architecture and behavior that can't be inferred from the code, not a file catalog. If you're tempted to add a paragraph explaining how something works, prefer a one-line pointer to where it lives — implementation detail belongs in the code (doc comments), not here. Docs can lag the code; when a task hinges on a specific detail, verify against source rather than trusting this file's prose.
 
-## Build System & Commands
+## Stack
 
-This project uses **Vite** as its primary build system for the frontend. Key commands:
+React 19 + TypeScript frontend (`src/`, built with Vite), wrapped as a native desktop app via Tauri (`src-tauri/`). A shared Rust rendering engine (`src-engine/`) handles DMX/effect/scene rendering and is used directly by the Tauri build; a separate minimal crate (`src/wasm-engine/`, excluded from the Cargo workspace, built via `wasm-pack`) compiles a subset of that same logic to WASM so the frontend can do beat-timing and waveform math without an IPC round-trip — see its own CLAUDE.md. All data structures are Protocol Buffers under `proto/`; regenerate TS bindings with `pnpm run proto:generate` after any `.proto` edit. Proto files are the authoritative source for the data model/capabilities — prefer them over prose here when they disagree.
 
-- `pnpm run dev` - Generate protos and start the development server (serves on https://localhost:8080)
-- `pnpm run build` - Generate protos and build the frontend for production
-- `pnpm run preview` - Preview the production build
-- `pnpm run test` - Run all tests (Jest + Rust cargo tests)
-- `pnpm run type-check` - Run TypeScript type checking
-- `pnpm run proto:generate` - Regenerate TypeScript bindings from .proto files (via buf)
-- `pnpm run format` - Auto-format all code with Prettier
-- `pnpm run lint` - Run all linters (ESLint, Knip dead code detection, Clippy)
-- `pnpm run cleanup` - Run linters then format (use this when finalizing changes)
-- `pnpm run tauri` - Build/run the Tauri desktop app
-- `pnpm run tauri:dev` - Run Tauri in development mode with backtrace enabled
-- `pnpm run tauri:ios` - Run iOS simulator (iPad Pro 13-inch M5)
+**The app only runs inside the Tauri webview.** `src/system_interfaces/` is a thin Tauri IPC binding layer (`invoke`/`listen`) with no browser fallback — nothing past the initial paint (project load/save, MIDI, DMX/WLED/DDP output, the Visualizer) works outside Tauri. `pnpm run tauri:dev` is the only supported way to run or test the app.
 
-**Development Workflow:**
+**Output types are not structurally uniform.** Serial and sACN/E1.31 share a classic 512-channel DMX byte array. WLED gets its own segment/effect state (WLED's onboard engine renders the pixels — no per-pixel data is sent). DDP isn't part of the fixture/effect system at all — it only receives raw per-pixel data from virtual displays via the Visualizer's display pipeline. Don't assume a shared "universe" across output types; see `src-engine/src/render/`.
 
-- Vite provides fast HMR (Hot Module Replacement) for auto-rebuilds during development
-- Frontend TypeScript builds via Vite with CSS modules
+**Feature maturity isn't obvious from the routes.** `ShowPage` is an unimplemented stub (`show.proto` exists, nothing consumes it yet). The Audio Tracks subsystem (`AssetBrowserPage`, import/playback/waveform/beat-tagging) is fully functional but its nav entry is commented out in `src/Index.tsx` — check that file's `menuItems`, not just the route table, before assuming a page is reachable.
 
-## Architecture Overview
+## Where things live
 
-### Core Components
+- `src-engine/src/render/` — Rust rendering engine (shared by desktop + WASM)
+- `src-tauri/src/` — native platform integration: MIDI, Serial, sACN, WLED, DDP, audio capture, wgpu-based Visualizer shaders
+- `src/engine/` — TypeScript glue that routes render calls into the native engine
+- `src/system_interfaces/` — Tauri IPC bindings (see above)
+- `src/pages/` — one file/folder per top-level route (routing + nav lives in `src/Index.tsx`)
+- `src/contexts/` — one React Context per cross-cutting concern (project, controller, beat, audio input, shortcuts, palette, clipboard, effect-timeline rendering)
+- `src/audio/` — audio track playback and waveform analysis
 
-**Frontend (React/TypeScript)**
+## Build & Commands
 
-- Located in `src/`
-- Multi-page application with routing: Live performance (`LivePage`), Show editing (`ShowPage`), Patch configuration (`PatchPage`), Asset management (`AssetBrowserPage`), Controller configuration (`ControllerPage`), Project management (`ProjectPage`)
-- Uses React Context for state management across: Project, Serial/DMX, Beat detection, Controller input, Shortcuts, Dialog, Palette, Effect rendering
+- `pnpm run tauri:dev` - Run the app (the only supported way to develop/test it)
+- `pnpm run build` - Generate protos, build the WASM engine, build the frontend for production
+- `pnpm run test` - Jest + Rust `cargo test` (src-engine and src-tauri)
+- `pnpm run type-check` / `pnpm run lint` / `pnpm run cleanup` - see Agent Workflow below before running these
+- `pnpm run proto:generate` - Regenerate TS bindings from `.proto` files; needed after any proto edit before the new types are usable
+- `pnpm run tauri:ios` - iOS simulator
 
-**Rendering Engine (Rust)**
+`pnpm run dev` exists only because Tauri's `beforeDevCommand` shells out to it to boot the Vite dev server before wrapping it in the native webview — don't run it standalone, it won't produce a working app.
 
-- Core rendering library in `src-engine/` (Rust) — handles DMX universe rendering, effects, scenes, output targets
-- Tauri desktop builds use the native Rust engine directly via `src-tauri/`
-- `src/wasm-engine/` — minimal WASM module for beat timing calculations; allows frontend to compute beat positions without IPC overhead
-
-**Desktop App (Tauri)**
-
-- `src-tauri/` wraps the frontend as a native desktop app
-- Provides native MIDI, Serial DMX, sACN/E1.31, and WLED output via platform APIs
-- Development server in `dev/server/` serves static files and provides HTTPS for the frontend dev server
-
-**Protocol Definitions**
-
-- All data structures defined as Protocol Buffers in `proto/`
-- Generated TypeScript bindings used throughout frontend (regenerated with `pnpm run proto:generate`)
-- Key types: Project, Universe, Effect, Scene, Show, DmxFixtureDefinition
-
-### Data Flow & Engine
-
-**DMX Universe Rendering Pipeline:**
-
-- Rust engine (`src-engine/src/render/`) handles all rendering; `src/engine/renderRouter.ts` is the TypeScript entry point into the native Tauri engine
-- Effects are applied to fixtures via the `RenderContext`; color palettes interpolate over time to provide dynamic color values
-- Final 512-channel DMX universe array is output via Serial, sACN/E1.31, or WLED
-
-**Project Structure:**
-
-- **Scenes**: Live performance mode with tiles arranged in a grid, each tile contains effects or sequences
-- **Shows**: Timeline-based editing mode with audio tracks and light tracks synchronized to beats
-- **Fixtures**: DMX device definitions with channels (dimmer, color, pan/tilt, etc.)
-- **Effects**: Static states, ramps, strobes, random effects that can be applied to fixtures/groups
-
-**State Management:**
-
-- `ProjectContext` handles project persistence, undo/redo stack (max 100 operations)
-- Auto-saves to file system with binary protobuf serialization
-
-### Key Files to Understand
-
-**Engine Core (Rust):**
-
-- `src-engine/src/render/render.rs` - Main render loop
-- `src-engine/src/render/scene.rs` - Scene rendering
-- `src-engine/src/render/dmx_render_target.rs` - DMX output target
-- `src-engine/src/render/wled_render_target.rs` - WLED output target
-- Effect renderers: `ramp_effect.rs`, `random_effect.rs`, `sequence_effect.rs`, `strobe_effect.rs`, `preset_effect.rs`
-
-**Engine (TypeScript — browser glue):**
-
-- `src/engine/renderRouter.ts` - Routes render calls to the native Tauri engine
-- `src/engine/channel.ts` - DMX channel abstractions
-- `src/engine/group.ts` - Fixture grouping logic
-- `src/engine/fixtures/fixture.ts` - Fixture abstractions and channel mapping
-- `src/engine/fixtures/dmxDevices.ts` - Built-in DMX device definitions
-
-**System Interfaces:**
-
-- `src/system_interfaces/` - Abstractions over browser vs. native (Tauri) APIs for engine, MIDI, project, serial, and WLED
-
-**UI Pages (all in `src/pages/`):**
-
-- `LivePage.tsx` - Live performance interface with tile grid
-- `ShowPage.tsx` - Timeline-based show editor
-- `patch/PatchPage.tsx` - Fixture patching and universe configuration
-- `ControllerPage.tsx` - MIDI/controller configuration
-- `ProjectPage.tsx` - Project management
-- `AssetBrowserPage.tsx` - Audio and GDTF fixture asset management
-
-**External Hardware:**
-
-- `src/external_controller/externalController.ts` - Controller binding lookup and management (action processing is handled in Rust via `src-tauri/src/midi.rs`)
-- `src-tauri/src/serial.rs` - Native Serial DMX output (desktop)
-- `src-tauri/src/sacn.rs` - sACN/E1.31 output
-- `src-tauri/src/wled.rs` - WLED output
-
-## Development Notes
-
-**TypeScript Configuration:**
-
-- Uses strict TypeScript with `tsconfig.json` in root
-- React 19.2.4 with React Router 7 for navigation
-- React Compiler enabled via `babel-plugin-react-compiler` for automatic optimization
-- Radix UI Themes for component library and dialogs
-- CSS modules for styling with shared variables in `src/vars.css`
-- Path aliases: `@dmx-controller/proto/*` for generated protobuf types
-
-**Protobuf Integration:**
-
-- Generated types are imported with `@dmx-controller/proto/` namespace
-- Use `.clone()` method for creating copies of protobuf objects
-- Binary serialization via `.toBinary()` / `.fromBinary()` for persistence
-
-**Hardware Integration:**
-
-- Desktop mode (Tauri): native Serial, MIDI, sACN, and WLED output
-- Manual BPM and first beat configuration for precise beat synchronization
-- Tap tempo for manual BPM sync
-- Keepawake plugin prevents system sleep during performances
-
-**Effect System:**
-
-- Effects have start/end times and can be static, ramp, strobe, random, sequence, or preset
-- **Preset effects** include:
-  - Rainbow Effect: HSV-based rainbow color cycle across fixtures
-  - Circle Effect: Circular pan/tilt movements with configurable min/max ranges
-- Effects can target individual fixtures or groups
-- Timing can be beat-synchronized or time-based
-- Color palettes provide dynamic color sources that interpolate during transitions
+CI/CD lives in `.github/workflows/`: `ci.yaml` is the PR gate, `deploy.yaml` deploys `web/` to GitHub Pages, `release.yml` builds Tauri binaries — gated on an actual version bump in `src-tauri/tauri.conf.json`, not just any merge to `main`.
 
 ## Code Style
 
-**Prefer Self-Documenting Code Over Comments:**
+**Prefer self-documenting code over comments:**
 
 - Write clear, descriptive names for functions, variables, and types that convey intent
-- Only add comments when the code cannot reasonably explain itself (e.g., non-obvious algorithms, workarounds, or external constraints)
-- Do not add comments that restate what the code already expresses—the code is the source of truth
-- Avoid adding docstrings, JSDoc, or Rust doc comments unless they provide information not evident from the signature and implementation
+- Only add comments when the code cannot reasonably explain itself (non-obvious algorithms, workarounds, external constraints)
+- Don't add comments that restate what the code already expresses
+- Avoid docstrings/JSDoc/Rust doc comments unless they add information not evident from the signature and implementation
 
-**Minimize Visibility and Mutability:**
+**Minimize visibility and mutability** (for code you're actively touching — don't refactor unrelated code just to tighten this):
 
-When writing or modifying code, prefer the most restrictive access level and avoid unnecessary mutability:
+- TypeScript: prefer `private` over `#private`, `readonly` where fields aren't reassigned, only export what's part of a module's public API
+- Rust: private by default, only add `pub`/`pub(crate)`/`pub(super)` when needed; prefer `let` over `let mut`
 
-_TypeScript:_
+**React:** the React Compiler (`babel-plugin-react-compiler`) handles memoization automatically — don't manually add `useMemo`/`useCallback`/`React.memo`, it's redundant and against project convention. Component library is Base UI (`@base-ui/react`, wrapped under `src/components/`); styling is CSS modules with shared variables in `src/vars.css` — don't reach for a different UI kit or global CSS.
 
-- Use `private` for fields and methods not needed outside the class (prefer `private` over `#private`)
-- Use `readonly` for fields that should not be reassigned after initialization
-- Only export functions, classes, and types that are part of the module's public API
+**Protobuf:** use `.clone()` to copy proto objects; `.toBinary()`/`.fromBinary()` for persistence — these are protobuf-es conventions, not arbitrary choices.
 
-_Rust:_
+## Agent Workflow
 
-- Keep items private by default; only add `pub`, `pub(crate)`, or `pub(super)` when needed
-- Prefer immutable bindings (`let`) over mutable (`let mut`) unless mutation is required
+- **Bulk reads over many small ones.** Read whole files/sections rather than hunting line by line; write complete file contents in one `Write` rather than many small `Edit`s.
+- **CLI tools over manual edits** for mechanical changes (`sed` for renames, `pnpm run proto:generate` after proto changes) rather than hand-editing every occurrence.
+- **Docs over source** when learning a third-party library's API (Base UI, Tauri plugins, wgpu, buf/protobuf-es) — reading source to reverse-engineer usage burns context the library's own docs already spell out. Reserve source-reading for this repo's own code.
+- **Batch independent tool calls** into one message rather than making sequential calls that could run in parallel.
+- **Avoid searching generated/vendored trees** (`target/`, `node_modules/`, `proto/generated/`, `dist/`) — large, slow, and rarely relevant; most already match `.gitignore` but plain `grep -r`/`find` don't respect that automatically.
+- **Don't run formatting/linting/build commands proactively.** Never run `pnpm run cleanup`, `format`, `lint`, `build`, or `cargo clippy` to "finalize" a change or fix style output — the user runs these themselves. Use the narrowest check that answers the actual question (`cargo check -p <crate>` over a full build, one Jest file over the whole suite) and reach for the full `pnpm run test`/`build` only when nothing narrower can answer it. Fix real errors you hit along the way; don't go hunting for lint warnings.
+- **Ask before guessing when genuinely ambiguous** — UI/UX decisions, proto/schema shape, effect/fixture behavior, anything where a wrong guess means rework. Proceed without asking on mechanical or clearly-implied decisions.
+- **Persistent memory (`~/.claude/projects/.../memory/`) is local to this machine and this working-directory path** — it doesn't travel with `git clone` and won't exist on a fresh checkout elsewhere. Anything that should hold regardless of machine belongs in this file, not memory alone.
 
-This guidance applies only to code you are actively modifying—do not refactor unrelated code to adjust visibility. Run `pnpm run test` after changes to verify visibility restrictions didn't break anything.
+## Website Sync
 
-## Efficient Agent Workflows
-
-**Prefer bulk reads over many small reads:**
-
-- Read entire files or large sections in one operation rather than making many small reads
-- When exploring unfamiliar code, read whole files rather than hunting line by line
-- Write complete file contents in one Write operation rather than many small Edits
-
-**Use CLI tools instead of manual code manipulation:**
-
-- Prefer `sed`, `pnpm`, and other shell tools for repetitive or mechanical changes rather than AI-guessing edits
-- Examples: `sed -i 's/oldName/newName/g' file.ts` for renames, `pnpm run format` to fix formatting, `pnpm run proto:generate` after proto changes
-- Ask the user to allowlist specific tools as needed rather than doing everything manually
-
-**Batch independent tool calls:**
-
-- When making multiple independent changes (e.g., editing several files, running parallel commands), batch them into a single message with multiple tool calls
-- Do not make sequential tool calls that could be parallelized — this wastes time and tokens
-- Example: editing three Cargo.toml files should be three Edit calls in one message, not three separate messages
-
-**Formatting & linting are handled by the user:**
-
-- Do NOT run `pnpm run cleanup`, `pnpm run format`, `pnpm run lint`, or `cargo clippy` to fix style/lint output — the user runs these themselves (it's cheaper for them).
-- Do not spend effort resolving formatting issues or non-blocking clippy/ESLint warnings (e.g. `must_use`, `pub_underscore_fields`, pedantic cast lints).
-- Still ensure code actually compiles and tests pass: `cargo check` and `pnpm run test` / `pnpm run type-check` are fair game when verifying correctness. Fix real errors (compile failures, type errors, test failures), not lint warnings.
-
-## Website & Documentation
-
-The `web/` directory contains a static landing page deployed to GitHub Pages. When making changes that affect user-facing features, supported protocols, or workflows:
-
-- **Review `web/index.html`** to ensure the landing page copy remains accurate
-- Update the "Getting Started" steps if the workflow changes
-- Update protocol/feature descriptions if capabilities are added or removed
-- The landing page describes: Serial DMX, sACN/E1.31, WLED outputs; GDTF fixture support; tap tempo; MIDI control
-
-The landing page uses shared CSS variables from `src/vars.css` (symlinked to `public/vars.css`).
+`web/` is a static landing page auto-deployed to GitHub Pages on push to `main`. When a change affects user-facing features, supported protocols, or the onboarding flow, update `web/index.html` to match — it currently describes Serial/sACN/WLED/DDP output, the Visualizer, GDTF import, tap tempo, and MIDI control. It shares CSS variables with `src/vars.css` (symlinked to `public/vars.css`).

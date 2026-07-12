@@ -34,20 +34,6 @@ export default defineConfig({
   server: {
     port: 8080,
     host: '0.0.0.0',
-    ...(process.env.TAURI_ENV_DEBUG !== 'true' && {
-      https: {
-        key: path.resolve(__dirname, 'dev/server/server.key'),
-        cert: path.resolve(__dirname, 'dev/server/server.crt'),
-      },
-    }),
-    hmr: {
-      // Use the correct hostname for HMR WebSocket connections
-      // Falls back to the default behavior when running in Tauri
-      ...(process.env.TAURI_ENV_DEBUG !== 'true' && {
-        host: 'dev.dmx-controller.app',
-        protocol: 'wss',
-      }),
-    },
     watch: {
       ignored: [
         '**/core/**',

@@ -17,6 +17,13 @@ A professional DMX lighting controller built with React, TypeScript, Rust, and T
 - **Serial DMX:** USB-DMX adapters via native serial port
 - **sACN/E1.31:** Network DMX with support for unlimited universes
 - **WLED:** Direct control of addressable LED strips and fixtures
+- **DDP:** Direct control of pixel-mapped fixtures and displays over UDP
+
+**Visualizer:**
+
+- GLSL shader-based video effects, GPU-rendered via wgpu
+- Compose shaders into trees (blend, sequence) for layered looks
+- Map shader output onto virtual displays assembled from one or more physical pixel segments (DDP outputs), for video-wall style effects distinct from per-fixture DMX control
 
 **Effect System:**
 
@@ -29,7 +36,7 @@ A professional DMX lighting controller built with React, TypeScript, Rust, and T
   - Rainbow: HSV-based rainbow color cycle
   - Circle: Circular pan/tilt movements
 
-**Fixture Management:**
+**DMX Fixture Management:**
 
 - GDTF fixture profile import
 - Custom fixture profile creation
@@ -68,12 +75,30 @@ Network DMX support with no additional hardware required. Configure your sACN re
 
 Control WLED-compatible addressable LED devices over your network. Configure the WLED device IP address in the Patch page.
 
+### DDP
+
+Control DDP-compatible pixel devices over your network. Configure the device IP address and pixel segments in the Patch page.
+
+## Visualizer
+
+Compose GLSL shaders into blend/sequence trees and drive them onto virtual displays assembled from one or more physical pixel segments (DDP outputs), for video-wall style effects. Configure virtual displays and shaders from the Display and Visualizer tabs on the Patch page.
+
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/) (v20+)
-- [pnpm](https://pnpm.io/) package manager
-- [Rust](https://rustup.rs/) (for building)
-- [Buf CLI](https://buf.build/docs/installation) (for protobuf generation)
+- [pnpm](https://pnpm.io/) (v10) package manager
+- [Rust](https://rustup.rs/) (stable toolchain), with the WASM target installed:
+  ```bash
+  rustup target add wasm32-unknown-unknown
+  ```
+
+Buf, protoc, and wasm-pack are installed automatically as dev dependencies (`pnpm install`) — no separate install needed for any of them.
+
+**Desktop app (Tauri) system dependencies:**
+
+- **Linux:** `libwebkit2gtk-4.1-dev`, `build-essential`, `libxdo-dev`, `libssl-dev`, `libayatana-appindicator3-dev`, `librsvg2-dev`, `libudev-dev`, `libasound2-dev`
+- **macOS:** Xcode Command Line Tools
+- **Windows:** Microsoft C++ Build Tools and WebView2 (see [Tauri's prerequisites guide](https://v2.tauri.app/start/prerequisites/) for full platform setup)
 
 ## Building
 
@@ -89,7 +114,7 @@ pnpm install
 pnpm run tauri:dev
 ```
 
-For iOS development:
+For iOS development (requires Xcode):
 
 ```bash
 pnpm run tauri:ios
@@ -102,24 +127,6 @@ pnpm run build
 ```
 
 The build output will be in the `dist/` directory.
-
-## Development
-
-For frontend development with hot reload:
-
-```bash
-pnpm run dev
-```
-
-This starts the Vite development server on https://localhost:8080. The Tauri app can connect to this dev server for faster iteration.
-
-See [CLAUDE.md](CLAUDE.md) for comprehensive development documentation including:
-
-- Architecture overview
-- Build system details
-- Key files and components
-- Code style guidelines
-- Development workflow recommendations
 
 ## Testing
 
