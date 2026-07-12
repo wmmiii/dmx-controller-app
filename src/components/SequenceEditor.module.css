@@ -22,6 +22,7 @@
   display: flex;
   flex: 1;
   flex-direction: row;
+  border-top: 1px solid var(--col-border);
 }
 
 .sequence {
@@ -38,12 +39,30 @@
   min-width: 351px;
   padding: var(--space-2);
   overflow-y: auto;
-  border: 1px solid var(--col-border);
+  border-left: 1px solid var(--col-border);
 }
 
-.layer-container {
+.layers-grid {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+}
+
+.delete-cell {
+  display: flex;
+  grid-column: 1;
+  align-items: center;
+  padding: 0 var(--space-1);
+}
+
+.lane {
+  grid-column: 2;
+  min-width: 0;
+}
+
+.lanes-overlay {
   position: relative;
-  margin-top: var(--space-1);
+  grid-column: 2;
+  pointer-events: none;
 }
 
 .verticalRules {

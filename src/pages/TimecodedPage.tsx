@@ -40,17 +40,28 @@ import { usePlaybackStatus } from '../hooks/playbackStatus';
 import { useWaveform } from '../hooks/waveform';
 
 import { create } from '@bufbuild/protobuf';
+import { LayerSchema } from '@dmx-controller/proto/effect_pb';
 import {
   getOutputTargetName,
   OutputSelector,
 } from '../components/OutputSelector';
 import { Select } from '../components/Select';
 import { Spacer } from '../components/Spacer';
+import { LaneDragMask, TrackLane } from '../components/TrackLane';
 import { Waveform } from '../components/Waveform';
+import { EffectRenderingContext } from '../contexts/EffectRenderingContext';
 import { ShortcutContext } from '../contexts/ShortcutContext';
+import { useLaneInteraction } from '../hooks/laneInteraction';
+import { useTimelineScroll } from '../hooks/timelineScroll';
 import { DEFAULT_COLOR_PALETTE } from '../util/colorUtil';
 import { randomUint64 } from '../util/numberUtils';
 import { listenToTick } from '../util/time';
+import {
+  DEFAULT_BEAT_SUBDIVISIONS,
+  msWidthToPxWidth,
+  snapPointsMs,
+  visibleSubdivisions,
+} from '../util/timecodeUtils';
 import { getTrackBeatConverters, preloadWasm } from '../wasm/engine';
 import styles from './TimecodedPage.module.css';
 
@@ -138,38 +149,29 @@ function TimecodedBody({ show }: TimecodedBodyProps) {
   const dragIndex = useRef<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [, forceRender] = useReducer((n: number) => n + 1, 0);
-
-  const reorderToPointer = (clientY: number) => {
-    const from = dragIndex.current;
-    const container = scrollRef.current;
-    if (from == null || container == null) {
-      return;
-    }
-
-    const rows = container.querySelectorAll<HTMLElement>('[data-track-meta]');
-    let target = rows.length - 1;
-    for (let i = 0; i < rows.length; i++) {
-      if (clientY < rows[i].getBoundingClientRect().bottom) {
-        target = i;
-        break;
-      }
-    }
-
-    if (target === from) {
-      return;
-    }
-
-    const [moved] = show.outputs.splice(from, 1);
-    show.outputs.splice(target, 0, moved);
-    dragIndex.current = target;
-    forceRender();
-    update();
-  };
   const [viewStart, setViewStart] = useState<number>(0);
   const [viewEnd, setViewEnd] = useState<number | null>(null);
   const [wasmReady, setWasmReady] = useState(false);
+  const [laneWidthPx, setLaneWidthPx] = useState(0);
+  const [selectedAddress, setSelectedAddress] = useState<{
+    laneIndex: number;
+    effectIndex: number;
+  } | null>(null);
   const lanePlayheadRef = useRef<HTMLDivElement>(null);
-  const placeholderOutputs = Array.from({ length: 24 }, (_, i) => i);
+  const laneOverlayRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const overlay = laneOverlayRef.current;
+    if (overlay == null) {
+      return undefined;
+    }
+    const observer = new ResizeObserver(() =>
+      setLaneWidthPx(overlay.getBoundingClientRect().width),
+    );
+    observer.observe(overlay);
+    setLaneWidthPx(overlay.getBoundingClientRect().width);
+    return () => observer.disconnect();
+  }, []);
 
   const trackId = show.audioTrack?.trackId;
   const track = useMemo(() => {
@@ -212,6 +214,113 @@ function TimecodedBody({ show }: TimecodedBodyProps) {
     wasmReady && track ? getTrackBeatConverters(track) : null;
 
   const waveformQuery = useWaveform(track);
+
+  const viewport = {
+    viewStartMs: viewStart,
+    viewEndMs: viewEnd ?? 0,
+    widthPx: laneWidthPx,
+  };
+  const subdivisions = visibleSubdivisions(
+    viewport,
+    beatConverters,
+    DEFAULT_BEAT_SUBDIVISIONS,
+  );
+  const snapPoints = snapPointsMs(
+    beatConverters,
+    subdivisions,
+    viewStart,
+    viewEnd ?? 0,
+  );
+  const boundsEndMs =
+    Number(waveformQuery.data?.durationMs) || Number.MAX_SAFE_INTEGER;
+
+  const selectedEffect =
+    selectedAddress == null
+      ? null
+      : (show.outputs[selectedAddress.laneIndex]?.layer?.effects[
+          selectedAddress.effectIndex
+        ] ?? null);
+
+  const reorderToPointer = (clientY: number) => {
+    const from = dragIndex.current;
+    const container = scrollRef.current;
+    if (from == null || container == null) {
+      return;
+    }
+
+    const rows = container.querySelectorAll<HTMLElement>('[data-track-meta]');
+    let target = rows.length - 1;
+    for (let i = 0; i < rows.length; i++) {
+      if (clientY < rows[i].getBoundingClientRect().bottom) {
+        target = i;
+        break;
+      }
+    }
+
+    if (target === from) {
+      return;
+    }
+
+    const [moved] = show.outputs.splice(from, 1);
+    show.outputs.splice(target, 0, moved);
+    dragIndex.current = target;
+    setSelectedAddress((address) => {
+      if (address == null) {
+        return address;
+      }
+      let laneIndex = address.laneIndex;
+      if (laneIndex === from) {
+        laneIndex = target;
+      } else {
+        if (laneIndex > from) {
+          laneIndex--;
+        }
+        if (laneIndex >= target) {
+          laneIndex++;
+        }
+      }
+      return { ...address, laneIndex };
+    });
+    forceRender();
+    update();
+  };
+
+  const getLaneEffects = (laneIndex: number) => {
+    const output = show.outputs[laneIndex];
+    if (output.layer == null) {
+      output.layer = create(LayerSchema, { effects: [] });
+    }
+    return output.layer.effects;
+  };
+
+  const drag = useLaneInteraction(
+    getLaneEffects,
+    viewport,
+    () =>
+      Array.from(
+        scrollRef.current?.querySelectorAll<HTMLElement>('[data-track-lane]') ??
+          [],
+      ).map((lane) => lane.getBoundingClientRect()),
+    laneOverlayRef,
+    beatConverters,
+    snapPoints,
+    boundsEndMs,
+    (laneIndex, effectIndex) => setSelectedAddress({ laneIndex, effectIndex }),
+  );
+
+  useTimelineScroll(
+    scrollRef,
+    laneOverlayRef,
+    viewStart,
+    viewEnd ?? 0,
+    Number(waveformQuery.data?.durationMs) || 0,
+    (startMs, endMs) => {
+      setViewStart(startMs);
+      setViewEnd(endMs);
+    },
+    true,
+    viewEnd != null,
+  );
 
   useEffect(() => {
     setViewStart(0);
@@ -260,6 +369,33 @@ function TimecodedBody({ show }: TimecodedBodyProps) {
       },
     ]);
   }, [trackId, setShortcuts, playing, pause, play]);
+
+  useEffect(() => {
+    if (selectedAddress == null) {
+      return undefined;
+    }
+
+    return setShortcuts([
+      {
+        shortcut: { key: 'Delete' },
+        action: () => {
+          const effects =
+            show.outputs[selectedAddress.laneIndex]?.layer?.effects;
+          if (effects != null && selectedAddress.effectIndex < effects.length) {
+            effects.splice(selectedAddress.effectIndex, 1);
+            save('Delete effect.');
+          }
+          setSelectedAddress(null);
+        },
+        description: 'Delete the currently selected effect.',
+      },
+      {
+        shortcut: { key: 'Escape' },
+        action: () => setSelectedAddress(null),
+        description: 'Deselect effect.',
+      },
+    ]);
+  }, [selectedAddress, show, save, setShortcuts]);
 
   return (
     <div className={styles.body}>
@@ -313,6 +449,7 @@ function TimecodedBody({ show }: TimecodedBodyProps) {
             endMs={viewEnd}
             msToBeat={beatConverters?.msToBeat}
             beatToMs={beatConverters?.beatToMs}
+            subdivisions={subdivisions}
             onViewChange={(startMs, endMs) => {
               setViewStart(startMs);
               setViewEnd(endMs);
@@ -326,33 +463,55 @@ function TimecodedBody({ show }: TimecodedBodyProps) {
         )}
       </div>
       <div ref={scrollRef} className={styles.trackScrollable}>
-        {show.outputs.map((output, idx) => (
-          <Fragment key={idx}>
-            <TrackMeta
-              output={output}
-              onReorderStart={() => {
-                dragIndex.current = idx;
-              }}
-              onReorderMove={reorderToPointer}
-              onReorderEnd={() => {
-                if (dragIndex.current == null) {
-                  return;
+        <EffectRenderingContext.Provider
+          value={{
+            beatWidthPx: beatConverters
+              ? msWidthToPxWidth(
+                  viewport,
+                  beatConverters.beatToMs(1) - beatConverters.beatToMs(0),
+                )
+              : 100,
+            msWidthToPxWidth: (ms) => msWidthToPxWidth(viewport, ms),
+          }}
+        >
+          {show.outputs.map((output, idx) => (
+            <Fragment key={idx}>
+              <TrackMeta
+                output={output}
+                onReorderStart={() => {
+                  dragIndex.current = idx;
+                }}
+                onReorderMove={reorderToPointer}
+                onReorderEnd={() => {
+                  if (dragIndex.current == null) {
+                    return;
+                  }
+                  dragIndex.current = null;
+                  save(`Reorder tracks in show ${show.name}.`);
+                }}
+                onDelete={() => {
+                  show.outputs.splice(idx, 1);
+                  setSelectedAddress(null);
+                  save(`Remove track from show ${show.name}.`);
+                }}
+              />
+              <TrackLane
+                className={styles.trackLane}
+                laneIndex={idx}
+                layer={output.layer ?? create(LayerSchema, {})}
+                viewport={viewport}
+                drag={drag}
+                selectedEffect={selectedEffect}
+                onSelectEffect={(effectIndex) =>
+                  setSelectedAddress({ laneIndex: idx, effectIndex })
                 }
-                dragIndex.current = null;
-                save(`Reorder tracks in show ${show.name}.`);
-              }}
-              onDelete={() => {
-                show.outputs.splice(idx, 1);
-                save(`Remove track from show ${show.name}.`);
-              }}
-            />
-            <div className={styles.trackLane}>Timeline lane</div>
-          </Fragment>
-        ))}
+              />
+            </Fragment>
+          ))}
+        </EffectRenderingContext.Provider>
         <div className={styles.newLayer}>
           <Button
             icon={<BiPlus />}
-            variant="primary"
             onClick={() => {
               show.outputs.push(
                 create(TimecodedShow_OutputSchema, {
@@ -375,15 +534,16 @@ function TimecodedBody({ show }: TimecodedBodyProps) {
           </Button>
         </div>
       </div>
-      {trackId != null && (
-        <div className={styles.lanePlayheadOverlay}>
+      <div ref={laneOverlayRef} className={styles.laneOverlay}>
+        {trackId != null && (
           <div
             ref={lanePlayheadRef}
             className={styles.lanePlayhead}
             style={{ display: 'none' }}
           />
-        </div>
-      )}
+        )}
+      </div>
+      <LaneDragMask interaction={drag} />
     </div>
   );
 }

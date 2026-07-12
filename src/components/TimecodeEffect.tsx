@@ -64,6 +64,7 @@ import {
   DEFAULT_EFFECT_COLOR_ALT,
 } from '../util/styleUtils';
 
+import clsx from 'clsx';
 import { Button, IconButton } from './Button';
 import { EffectState } from './EffectState';
 import { NumberInput } from './Input';
@@ -75,16 +76,17 @@ import styles from './TimecodeEffect.module.css';
 import { Toggle } from './Toggle';
 
 interface TimecodeEffectProps {
-  className: string;
+  className?: string;
   style: CSSProperties;
   timecodeEffect: TimecodeEffectProto;
   selectedEffect: TimecodeEffectProto | null;
-  setSelectedEffect: () => void;
-  copyEffect: TimecodeEffectProto | null;
-  minMs: number;
-  maxMs: number;
-  pxToMs: (px: number) => number;
-  snapToBeat: (t: number) => number;
+  setSelectedEffect?: () => void;
+  copyEffect?: TimecodeEffectProto | null;
+  onBodyPointerDown?: (ev: React.PointerEvent<HTMLDivElement>) => void;
+  onStartHandlePointerDown?: (ev: React.PointerEvent<HTMLDivElement>) => void;
+  onEndHandlePointerDown?: (ev: React.PointerEvent<HTMLDivElement>) => void;
+  ghost?: boolean;
+  invalid?: boolean;
 }
 
 export function TimecodeEffect({
@@ -94,22 +96,16 @@ export function TimecodeEffect({
   selectedEffect,
   setSelectedEffect,
   copyEffect,
-  minMs,
-  maxMs,
-  pxToMs,
-  snapToBeat,
+  onBodyPointerDown,
+  onStartHandlePointerDown,
+  onEndHandlePointerDown,
+  ghost,
+  invalid,
 }: TimecodeEffectProps): JSX.Element {
   const { palette } = useContext(PaletteContext);
-  const { save, update } = useContext(ProjectContext);
+  const { save } = useContext(ProjectContext);
   const { beatWidthPx, msWidthToPxWidth } = useContext(EffectRenderingContext);
   const { setShortcuts } = useContext(ShortcutContext);
-  const [dragStart, setDragStart] = useState(false);
-  const [dragEnd, setDragEnd] = useState(false);
-  const [drag, setDrag] = useState<{
-    offsetMs: number;
-    widthMs: number;
-  } | null>(null);
-  const [changed, setChanged] = useState(false);
 
   useEffect(() => {
     if (copyEffect && timecodeEffect === selectedEffect) {
@@ -155,7 +151,7 @@ export function TimecodeEffect({
       if (rampEffect.stateStart != null && rampEffect.stateEnd) {
         const start = effectColor(rampEffect.stateStart, palette);
         const end = effectColor(rampEffect.stateEnd, palette, true);
-        let width: number;
+        let width: number | null;
         if (rampEffect.timingMode?.timing.case === 'beat') {
           width =
             beatWidthPx / (rampEffect.timingMode.timing.value.multiplier || 1);
@@ -164,11 +160,17 @@ export function TimecodeEffect({
             rampEffect.timingMode.timing.value.durationMs,
           );
         } else {
-          width = msWidthToPxWidth(
-            timecodeEffect.endMs - timecodeEffect.startMs,
-          );
+          // A one-shot ramp spans the chip exactly, so size it relative to
+          // the div; the proto's span goes stale while a resize is previewed.
+          width = null;
         }
-        if (rampEffect.timingMode?.mirrored) {
+        if (width == null) {
+          if (rampEffect.timingMode?.mirrored) {
+            style.background = `linear-gradient(90deg, ${end}, ${start})`;
+          } else {
+            style.background = `linear-gradient(90deg, ${start}, ${end})`;
+          }
+        } else if (rampEffect.timingMode?.mirrored) {
           style.background = `repeating-linear-gradient(90deg, ${end} 0, ${start} ${width}px, ${end} ${width * 2}px)`;
         } else {
           style.background = `repeating-linear-gradient(90deg, ${start} 0, ${end} ${width}px)`;
@@ -192,75 +194,21 @@ export function TimecodeEffect({
       }
   }
 
-  const containerClasses = [styles.effect, className];
-  if (timecodeEffect === selectedEffect) {
-    containerClasses.push(styles.selected);
-  }
-
-  const maskCursor = dragStart || dragEnd ? 'ew-resize' : 'grabbing';
-
   return (
     <div
-      className={containerClasses.join(' ')}
+      className={clsx(styles.effect, className, {
+        [styles.selected]: timecodeEffect === selectedEffect,
+        [styles.ghost]: ghost,
+        [styles.invalid]: invalid,
+      })}
       style={style}
-      onMouseDown={(e) => {
-        setChanged(false);
-        setSelectedEffect();
-        setDrag({
-          offsetMs: pxToMs(e.clientX) - timecodeEffect.startMs,
-          widthMs: timecodeEffect.endMs - timecodeEffect.startMs,
-        });
+      onPointerDown={(e) => {
+        setSelectedEffect?.();
+        onBodyPointerDown?.(e);
         e.preventDefault();
         e.stopPropagation();
       }}
     >
-      {(dragStart || dragEnd || drag != null) && (
-        <div
-          className={styles.dragMask}
-          style={{ cursor: maskCursor }}
-          onMouseMove={(e) => {
-            const ms = pxToMs(e.clientX);
-            if (dragStart) {
-              timecodeEffect.startMs = Math.min(
-                Math.max(snapToBeat(ms), minMs),
-                timecodeEffect.endMs - 1,
-              );
-            } else if (dragEnd) {
-              timecodeEffect.endMs = Math.max(
-                Math.min(snapToBeat(ms), maxMs),
-                timecodeEffect.startMs + 1,
-              );
-            } else if (drag != null) {
-              const startMs = snapToBeat(ms - drag.offsetMs);
-              const endMs = startMs + drag.widthMs;
-              if (startMs < minMs) {
-                timecodeEffect.startMs = minMs;
-                timecodeEffect.endMs = minMs + drag.widthMs;
-              } else if (endMs > maxMs) {
-                timecodeEffect.endMs = maxMs;
-                timecodeEffect.startMs = maxMs - drag.widthMs;
-              } else {
-                timecodeEffect.startMs = startMs;
-                timecodeEffect.endMs = endMs;
-              }
-            }
-            setChanged(true);
-            update();
-            e.preventDefault();
-            e.stopPropagation();
-          }}
-          onMouseUp={(e) => {
-            setDragStart(false);
-            setDragEnd(false);
-            setDrag(null);
-            if (changed) {
-              save('Change effect timing.');
-            }
-            e.preventDefault();
-            e.stopPropagation();
-          }}
-        ></div>
-      )}
       <div className={styles.inner}>
         <div
           className={styles.icons}
@@ -275,16 +223,16 @@ export function TimecodeEffect({
       </div>
       <div
         className={styles.dragStart}
-        onMouseDown={(e) => {
-          setDragStart(true);
+        onPointerDown={(e) => {
+          onStartHandlePointerDown?.(e);
           e.preventDefault();
           e.stopPropagation();
         }}
       ></div>
       <div
         className={styles.dragEnd}
-        onMouseDown={(e) => {
-          setDragEnd(true);
+        onPointerDown={(e) => {
+          onEndHandlePointerDown?.(e);
           e.preventDefault();
           e.stopPropagation();
         }}

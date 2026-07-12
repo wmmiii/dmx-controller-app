@@ -1,0 +1,36 @@
+.lane {
+  position: relative;
+  height: var(--dim-track-lane-height);
+  overflow: hidden;
+  background-color: var(--col-bg);
+  border-bottom: 1px solid var(--col-border-lower);
+  touch-action: none;
+}
+
+.drop-target {
+  background-color: var(--col-bg-higher);
+}
+
+.effect,
+.new-effect,
+.origin-marker {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+.new-effect {
+  background-color: #ffffff;
+  pointer-events: none;
+}
+
+.origin-marker {
+  border: 1px dashed var(--col-text-dim);
+  pointer-events: none;
+}
+
+.drag-mask {
+  position: fixed;
+  z-index: var(--z-index-interactive-mask);
+  inset: 0;
+}

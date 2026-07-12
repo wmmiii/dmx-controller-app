@@ -7,24 +7,29 @@ import {
 import clsx from 'clsx';
 import React, {
   JSX,
-  useCallback,
   useContext,
   useEffect,
   useMemo,
   useRef,
   useState,
 } from 'react';
-import { BiPlus } from 'react-icons/bi';
+import { BiPlus, BiTrash } from 'react-icons/bi';
 
 import { ProjectContext } from '../contexts/ProjectContext';
 import { ShortcutContext } from '../contexts/ShortcutContext';
 import { ALL_CHANNELS } from '../engine/channel';
+import { LaneInteraction, useLaneInteraction } from '../hooks/laneInteraction';
+import {
+  BeatMappings,
+  TimelineViewport,
+  snapPointsMs,
+} from '../util/timecodeUtils';
 
-import { IconButton } from './Button';
+import { Button, IconButton } from './Button';
 import { NumberInput, TextInput } from './Input';
-import { Layer } from './Layer';
 import styles from './SequenceEditor.module.css';
 import { EffectDetails } from './TimecodeEffect';
+import { LaneDragMask, TrackLane } from './TrackLane';
 
 // Good resolution, nice divisors (2^5 * 3^2 * 5^2.)
 const SEQUENCE_BEAT_RESOLUTION = 7200;
@@ -40,8 +45,8 @@ export function SequenceEditor({
 }: SequenceEditorProps): JSX.Element {
   const { project, save } = useContext(ProjectContext);
   const { setShortcuts } = useContext(ShortcutContext);
-  const panelElement = useRef<HTMLDivElement>(null);
-  const [panelWidth, setPanelWidth] = useState(100);
+  const lanesElement = useRef<HTMLDivElement>(null);
+  const [lanesWidth, setLanesWidth] = useState(100);
   const [selectedEffectAddress, setSelectedEffectAddress] = useState<{
     layer: number;
     index: number;
@@ -79,54 +84,71 @@ export function SequenceEditor({
           action: () => setCopyEffect(selectedEffect),
           description: 'Copy currently selected effect to clipboard.',
         },
+        {
+          shortcut: { key: 'Delete' },
+          action: () => {
+            const address = selectedEffectAddress;
+            if (address == null) {
+              return;
+            }
+            sequence.layers[address.layer]?.effects.splice(address.index, 1);
+            setSelectedEffectAddress(null);
+            save('Delete effect.');
+          },
+          description: 'Delete the currently selected effect.',
+        },
       ]),
-    [setSelectedEffectAddress, setCopyEffect, selectedEffect],
+    [
+      setSelectedEffectAddress,
+      setCopyEffect,
+      selectedEffect,
+      selectedEffectAddress,
+      sequence,
+      save,
+    ],
   );
 
   useEffect(() => {
-    if (panelElement.current) {
+    if (lanesElement.current) {
       const observer = new ResizeObserver(() => {
-        if (panelElement.current) {
-          setPanelWidth(panelElement.current.getBoundingClientRect().width);
+        if (lanesElement.current) {
+          setLanesWidth(lanesElement.current.getBoundingClientRect().width);
         }
       });
 
-      observer.observe(panelElement.current);
+      observer.observe(lanesElement.current);
       return () => observer.disconnect();
     }
     return () => {};
-  }, [panelElement, setPanelWidth]);
+  }, [lanesElement, setLanesWidth]);
 
-  const msToPx = useCallback(
-    (ms: number) =>
-      (ms * panelWidth) / SEQUENCE_BEAT_RESOLUTION / sequence.nativeBeats,
-    [panelWidth],
-  );
+  const viewEndMs = SEQUENCE_BEAT_RESOLUTION * sequence.nativeBeats;
+  const viewport: TimelineViewport = {
+    viewStartMs: 0,
+    viewEndMs,
+    widthPx: lanesWidth,
+  };
+  const beatMapping: BeatMappings = {
+    msToBeat: (t) => t / SEQUENCE_BEAT_RESOLUTION,
+    beatToMs: (beat) => beat * SEQUENCE_BEAT_RESOLUTION,
+  };
+  const snapPoints = snapPointsMs(beatMapping, beatSubdivisions, 0, viewEndMs);
 
-  const pxToMs = useCallback(
-    (px: number) =>
-      Math.floor(
-        (px * SEQUENCE_BEAT_RESOLUTION * sequence.nativeBeats) / panelWidth,
-      ),
-    [panelWidth],
-  );
-
-  const snapToBeat = useCallback(
-    (t: number) => {
-      const beatSnapRangeMs = Math.floor(panelWidth / 32);
-
-      const lengthMs =
-        SEQUENCE_BEAT_RESOLUTION / sequence.nativeBeats / beatSubdivisions;
-      const beatNumber = Math.round(t / lengthMs);
-      const beatT = Math.floor(beatNumber * lengthMs);
-
-      if (Math.abs(beatT - t) < beatSnapRangeMs) {
-        return beatT;
-      } else {
-        return t;
-      }
-    },
-    [panelWidth],
+  const drag = useLaneInteraction(
+    (laneIndex) => sequence.layers[laneIndex].effects,
+    viewport,
+    () =>
+      Array.from(
+        lanesElement.current?.querySelectorAll<HTMLElement>(
+          '[data-track-lane]',
+        ) ?? [],
+      ).map((lane) => lane.getBoundingClientRect()),
+    lanesElement,
+    beatMapping,
+    snapPoints,
+    viewEndMs,
+    (laneIndex, effectIndex) =>
+      setSelectedEffectAddress({ layer: laneIndex, index: effectIndex }),
   );
 
   return (
@@ -163,19 +185,19 @@ export function SequenceEditor({
         </label>
       </div>
       <div className={styles.main}>
-        <div className={styles.sequence} ref={panelElement}>
-          <hr />
+        <div className={styles.sequence}>
           <Layers
             layers={sequence.layers}
             nativeBeats={sequence.nativeBeats}
             beatSubdivisions={beatSubdivisions}
+            viewport={viewport}
+            drag={drag}
             selectedEffect={selectedEffect}
             setSelectedEffectAddress={setSelectedEffectAddress}
             copyEffect={copyEffect}
-            msToPx={msToPx}
-            pxToMs={pxToMs}
-            snapToBeat={snapToBeat}
+            lanesRef={lanesElement}
           />
+          <LaneDragMask interaction={drag} />
         </div>
         {selectedEffect ? (
           <EffectDetails
@@ -198,79 +220,88 @@ interface LayersProps {
   layers: LayerProto[];
   nativeBeats: number;
   beatSubdivisions: number;
+  viewport: TimelineViewport;
+  drag: LaneInteraction;
   selectedEffect: TimecodedEffect | null;
   setSelectedEffectAddress: (
     address: { layer: number; index: number } | null,
   ) => void;
   copyEffect: TimecodedEffect | null;
-  msToPx: (ms: number) => number;
-  pxToMs: (px: number) => number;
-  snapToBeat: (t: number) => number;
+  lanesRef: React.RefObject<HTMLDivElement | null>;
 }
 
 function Layers({
   layers,
   nativeBeats,
   beatSubdivisions,
+  viewport,
+  drag,
   selectedEffect,
   setSelectedEffectAddress,
   copyEffect,
-  msToPx,
-  pxToMs,
-  snapToBeat,
+  lanesRef,
 }: LayersProps) {
   const { save } = useContext(ProjectContext);
   return (
     <>
-      <div className={styles.layerContainer}>
+      <div className={styles.layersGrid}>
         {layers.map((l, i) => (
-          <Layer
-            key={i}
-            layer={l}
-            selectedEffect={selectedEffect}
-            setSelectedEffectAddress={(address) => {
-              if (address == null) {
-                setSelectedEffectAddress(null);
-              } else {
-                setSelectedEffectAddress({
-                  layer: i,
-                  index: address,
-                });
+          <React.Fragment key={i}>
+            <div className={styles.deleteCell} style={{ gridRow: i + 1 }}>
+              <IconButton
+                title="Delete layer"
+                variant="warning"
+                onClick={() => {
+                  setSelectedEffectAddress(null);
+                  layers.splice(i, 1);
+                  save('Delete layer from sequence');
+                }}
+              >
+                <BiTrash />
+              </IconButton>
+            </div>
+            <TrackLane
+              className={styles.lane}
+              style={{ gridRow: i + 1 }}
+              laneIndex={i}
+              layer={l}
+              viewport={viewport}
+              drag={drag}
+              selectedEffect={selectedEffect}
+              onSelectEffect={(index) =>
+                setSelectedEffectAddress({ layer: i, index })
               }
-            }}
-            copyEffect={copyEffect}
-            onDelete={() => {
-              setSelectedEffectAddress(null);
-              layers.splice(i, 1);
-              save('Delete layer from sequence');
-            }}
-            maxMs={SEQUENCE_BEAT_RESOLUTION * nativeBeats}
-            msToPx={msToPx}
-            pxToMs={pxToMs}
-            snapToBeat={snapToBeat}
-          />
+              copyEffect={copyEffect}
+            />
+          </React.Fragment>
         ))}
-        <div className={styles.verticalRules}>
-          {new Array(nativeBeats).fill(0).map((_, i) => (
-            <React.Fragment key={i}>
-              {new Array(beatSubdivisions - 1).fill(0).map((_, i) => (
-                <div key={i} className={styles.ruleFaint}></div>
-              ))}
-              <div key={i} className={styles.rule}></div>
-            </React.Fragment>
-          ))}
+        <div
+          ref={lanesRef}
+          className={styles.lanesOverlay}
+          style={{ gridRow: `1 / span ${Math.max(layers.length, 1)}` }}
+        >
+          <div className={styles.verticalRules}>
+            {new Array(nativeBeats).fill(0).map((_, i) => (
+              <React.Fragment key={i}>
+                {new Array(beatSubdivisions - 1).fill(0).map((_, i) => (
+                  <div key={i} className={styles.ruleFaint}></div>
+                ))}
+                <div key={i} className={styles.rule}></div>
+              </React.Fragment>
+            ))}
+          </div>
         </div>
       </div>
       <div className={styles.newLayerRow}>
-        <IconButton
-          title="Add new layer"
+        <Button
+          icon={<BiPlus size={18} />}
           onClick={() => {
             layers.push(create(LayerSchema, { effects: [] }));
             save('Add layer to sequence');
           }}
         >
-          <BiPlus />
-        </IconButton>
+          Add layer
+        </Button>
       </div>
     </>
   );
