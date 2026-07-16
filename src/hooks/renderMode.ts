@@ -10,28 +10,29 @@ export function useRenderMode(
   renderMode: MessageInitShape<typeof RenderModeSchema>,
   deps: unknown[],
 ) {
+  // Apply the current render mode whenever it changes. No teardown here: a
+  // dependency change should transition straight to the new mode, not flash
+  // through blackout on the way.
   useEffect(() => {
-    // IMPORTANT: Must wait on current modeLock BEFORE replacing it
-    // Otherwise the render mode will never be set (waits on pending promise forever)
-    const next = modeLock.then(() =>
+    modeLock = modeLock.then(() =>
       setRenderMode(create(RenderModeSchema, renderMode)),
     );
-    let release: () => void;
-    modeLock = new Promise((r) => (release = r));
-
-    return () => {
-      next
-        .then(() =>
-          setRenderMode(
-            create(RenderModeSchema, {
-              mode: {
-                case: 'blackout',
-                value: {},
-              },
-            }),
-          ),
-        )
-        .then(release);
-    };
   }, deps);
+
+  // Blackout only when the owner unmounts, so nothing keeps rendering after the
+  // page/component that set the mode is gone.
+  useEffect(() => {
+    return () => {
+      modeLock = modeLock.then(() =>
+        setRenderMode(
+          create(RenderModeSchema, {
+            mode: {
+              case: 'blackout',
+              value: {},
+            },
+          }),
+        ),
+      );
+    };
+  }, []);
 }

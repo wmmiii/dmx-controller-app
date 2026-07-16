@@ -146,6 +146,7 @@ export function Waveform({
     endMs,
     trackDurationMs,
     onViewChange,
+    false,
     onViewChange != null,
   );
 

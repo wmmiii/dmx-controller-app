@@ -4,6 +4,8 @@ use std::sync::{LazyLock, Mutex};
 use crate::audio::AudioAnalysis;
 use crate::beat::{beat_t, effective_beat_metadata};
 use crate::palette::interpolated_scene_palette;
+use crate::proto::render_mode::TimecodedShow;
+use crate::render::timecoded_show::render_timecoded_show;
 use crate::visualizer::uniforms::ShaderUniforms;
 use crate::{
     project,
@@ -37,6 +39,8 @@ pub enum RenderError {
     LockError(String),
     /// Scene rendering error.
     SceneError(String),
+    /// Timecoded show rendering error.
+    TimecodedShowError(String),
 }
 
 impl fmt::Display for RenderError {
@@ -52,6 +56,7 @@ impl fmt::Display for RenderError {
             Self::MissingFixtureDefinitions => write!(f, "Fixture definitions not defined"),
             Self::LockError(msg) => write!(f, "Failed to lock: {msg}"),
             Self::SceneError(msg) => write!(f, "Scene error: {msg}"),
+            Self::TimecodedShowError(msg) => write!(f, "Timecoded show error: {msg}"),
         }
     }
 }
@@ -307,7 +312,14 @@ fn render<T: RenderTarget<T>>(
         .map_err(|e| RenderError::LockError(e.to_string()))?;
 
     match &render_mode.mode {
-        None | Some(Mode::Blackout(_)) => Ok(()),
+        None
+        | Some(
+            Mode::Blackout(_)
+            | Mode::TimecodedShow(TimecodedShow {
+                show_id: _,
+                state: None,
+            }),
+        ) => Ok(()),
         Some(Mode::FixtureDebug(fixture_debug)) => {
             if output_id == fixture_debug.output_id {
                 render_target.apply_fixture_debug(fixture_debug);
@@ -327,7 +339,11 @@ fn render<T: RenderTarget<T>>(
             audio_analysis,
         )
         .map_err(RenderError::SceneError),
-        Some(Mode::TimecodedShow(_)) => todo!("Show not implemented yet!"),
+        Some(Mode::TimecodedShow(TimecodedShow {
+            show_id,
+            state: Some(s),
+        })) => render_timecoded_show(*show_id, render_target, s, system_t, frame, project)
+            .map_err(RenderError::TimecodedShowError),
     }
 }
 

@@ -1,6 +1,5 @@
 .lane {
   position: relative;
-  height: var(--dim-track-lane-height);
   overflow: hidden;
   background-color: var(--col-bg);
   border-bottom: 1px solid var(--col-border-lower);

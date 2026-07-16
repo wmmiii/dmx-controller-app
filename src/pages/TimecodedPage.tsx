@@ -31,6 +31,7 @@ import {
   pause,
   play,
   seek,
+  subscribeToPlayback,
 } from '../audio/audioTrackRegistry';
 import { Button, IconButton } from '../components/Button';
 import { EditableText } from '../components/Input';
@@ -41,17 +42,22 @@ import { useWaveform } from '../hooks/waveform';
 
 import { create } from '@bufbuild/protobuf';
 import { LayerSchema } from '@dmx-controller/proto/effect_pb';
+import { RenderMode_TimecodedShow } from '@dmx-controller/proto/render_pb';
+import clsx from 'clsx';
 import {
   getOutputTargetName,
   OutputSelector,
 } from '../components/OutputSelector';
 import { Select } from '../components/Select';
 import { Spacer } from '../components/Spacer';
+import { EffectDetails } from '../components/TimecodeEffect';
 import { LaneDragMask, TrackLane } from '../components/TrackLane';
 import { Waveform } from '../components/Waveform';
 import { EffectRenderingContext } from '../contexts/EffectRenderingContext';
 import { ShortcutContext } from '../contexts/ShortcutContext';
+import { getAvailableChannels } from '../engine/fixtures/fixture';
 import { useLaneInteraction } from '../hooks/laneInteraction';
+import { useRenderMode } from '../hooks/renderMode';
 import { useTimelineScroll } from '../hooks/timelineScroll';
 import { DEFAULT_COLOR_PALETTE } from '../util/colorUtil';
 import { randomUint64 } from '../util/numberUtils';
@@ -181,6 +187,53 @@ function TimecodedBody({ show }: TimecodedBodyProps) {
 
     return project.tracks[String(trackId)];
   }, [project]);
+
+  const [timecodedState, setTimecodedState] = useState<
+    RenderMode_TimecodedShow['state']
+  >({ case: undefined });
+  useEffect(() => {
+    if (trackId == null) {
+      return;
+    }
+
+    return subscribeToPlayback(trackId, (state) => {
+      const t = getCurrentTimeMs(trackId);
+      if (t == null) {
+        setTimecodedState({ case: undefined });
+        return;
+      }
+
+      switch (state.status) {
+        case 'paused':
+          setTimecodedState({
+            case: 'pausedMs',
+            value: Math.round(t),
+          });
+          break;
+        case 'playing':
+          setTimecodedState({
+            case: 'startT',
+            value: BigInt(Math.round(Date.now() - t)),
+          });
+          break;
+        default:
+          setTimecodedState({ case: undefined });
+      }
+    });
+  }, [trackId]);
+
+  useRenderMode(
+    {
+      mode: {
+        case: 'timecodedShow',
+        value: {
+          showId: project.selectedShow,
+          state: timecodedState,
+        },
+      },
+    },
+    [project.selectedShow, timecodedState],
+  );
 
   const playbackStatus = usePlaybackStatus(trackId ?? 0n);
   const playing = playbackStatus === 'playing';
@@ -462,6 +515,21 @@ function TimecodedBody({ show }: TimecodedBodyProps) {
           <div>Loading...</div>
         )}
       </div>
+      {selectedEffect?.effect ? (
+        <EffectDetails
+          className={styles.effectEditor}
+          effect={selectedEffect.effect}
+          availableChannels={getAvailableChannels(
+            show.outputs[selectedAddress!.laneIndex].outputTarget,
+            project,
+          )}
+          showPhase={true}
+        />
+      ) : (
+        <div className={clsx(styles.effectEditor, styles.empty)}>
+          Select effect to edit
+        </div>
+      )}
       <div ref={scrollRef} className={styles.trackScrollable}>
         <EffectRenderingContext.Provider
           value={{
@@ -471,7 +539,8 @@ function TimecodedBody({ show }: TimecodedBodyProps) {
                   beatConverters.beatToMs(1) - beatConverters.beatToMs(0),
                 )
               : 100,
-            msWidthToPxWidth: (ms) => msWidthToPxWidth(viewport, ms),
+            msToPx: (ms) => msWidthToPxWidth(viewport, ms),
+            beatConverters,
           }}
         >
           {show.outputs.map((output, idx) => (
@@ -632,4 +701,12 @@ function TrackMeta({
       )}
     </div>
   );
+}
+
+interface EffectEditorProps {
+  effect: Effe;
+}
+
+function EffectEditor({ selectedAddress }: EffectEditorProps) {
+  return <div className={styles.effectEditor}></div>;
 }

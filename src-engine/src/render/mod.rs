@@ -12,5 +12,6 @@ pub mod scene;
 pub mod segment_mapping;
 mod sequence_effect;
 mod strobe_effect;
+mod timecoded_show;
 mod util;
 pub mod wled_render_target;

@@ -104,7 +104,9 @@ export function TimecodeEffect({
 }: TimecodeEffectProps): JSX.Element {
   const { palette } = useContext(PaletteContext);
   const { save } = useContext(ProjectContext);
-  const { beatWidthPx, msWidthToPxWidth } = useContext(EffectRenderingContext);
+  const { beatWidthPx, msToPx, beatConverters } = useContext(
+    EffectRenderingContext,
+  );
   const { setShortcuts } = useContext(ShortcutContext);
 
   useEffect(() => {
@@ -152,13 +154,20 @@ export function TimecodeEffect({
         const start = effectColor(rampEffect.stateStart, palette);
         const end = effectColor(rampEffect.stateEnd, palette, true);
         let width: number | null;
+        let offset = 0;
         if (rampEffect.timingMode?.timing.case === 'beat') {
           width =
             beatWidthPx / (rampEffect.timingMode.timing.value.multiplier || 1);
+          offset = beatConverters
+            ? msToPx(
+                timecodeEffect.startMs -
+                  beatConverters.beatToMs(
+                    Math.floor(beatConverters.msToBeat(timecodeEffect.startMs)),
+                  ),
+              )
+            : 0;
         } else if (rampEffect.timingMode?.timing.case === 'absolute') {
-          width = msWidthToPxWidth(
-            rampEffect.timingMode.timing.value.durationMs,
-          );
+          width = msToPx(rampEffect.timingMode.timing.value.durationMs);
         } else {
           // A one-shot ramp spans the chip exactly, so size it relative to
           // the div; the proto's span goes stale while a resize is previewed.
@@ -172,8 +181,10 @@ export function TimecodeEffect({
           }
         } else if (rampEffect.timingMode?.mirrored) {
           style.background = `repeating-linear-gradient(90deg, ${end} 0, ${start} ${width}px, ${end} ${width * 2}px)`;
+          style.backgroundPositionX = `-${offset}px`;
         } else {
-          style.background = `repeating-linear-gradient(90deg, ${start} 0, ${end} ${width}px)`;
+          style.background = `repeating-linear-gradient(90deg, ${start} 0, ${end} ${width - 1}px, ${start} ${width}px)`;
+          style.backgroundPositionX = `-${offset}px`;
         }
 
         effectIcons(rampEffect.stateStart).forEach((i) => icons.add(i));
