@@ -3,20 +3,19 @@
 
   box-sizing: border-box;
   background-color: var(--col-border);
+  border-radius: 6px;
   cursor: grab;
   touch-action: none;
 
   .inner {
     content: '';
     position: absolute;
-    top: 2px;
-    right: 2px;
-    bottom: 2px;
-    left: 2px;
     z-index: 1;
-    padding: calc(var(--space-1) - 2px);
+    box-sizing: border-box;
     overflow: hidden;
     background-color: color-mix(in srgb, var(--col-bg), transparent 20%);
+    border-radius: 4px;
+    inset: 2px;
 
     .icons {
       position: relative;
@@ -26,6 +25,7 @@
       gap: var(--space-0-5);
       width: fit-content;
       height: 100%;
+      margin: calc(var(--space-1) - 2px);
     }
   }
 
@@ -36,12 +36,17 @@
     }
   }
 
-  &.selected .inner {
-    top: 8px;
-    right: 8px;
-    bottom: 8px;
-    left: 8px;
-    padding: calc(var(--space-1) - 8px);
+  &.selected {
+    box-shadow: 0 0 12px #fff;
+
+    .inner {
+      border-radius: 2px;
+      inset: 6px;
+
+      .icons {
+        margin: calc(var(--space-1) - 6px);
+      }
+    }
   }
 
   &.ghost {
