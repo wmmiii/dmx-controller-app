@@ -106,8 +106,6 @@ export function DmxUniverse({
     <>
       <div className={clsx(styles.dmxUniverse, className)}>
         {channels.map((ciArray, i) => {
-          const classes = [styles.channel];
-
           let channelDescriptions: JSX.Element;
 
           if (ciArray.length > 1) {
@@ -140,14 +138,12 @@ export function DmxUniverse({
           }
 
           const fixtureStartCi = ciArray.find((ci) => ci.startChannel);
-          if (fixtureStartCi) {
-            classes.push(styles.startChannel);
-          }
-
           return (
             <VersatileElement
               key={i}
-              className={classes.join(' ')}
+              className={clsx(styles.channel, {
+                [styles.startChannel]: fixtureStartCi,
+              })}
               id={fixtureStartCi?.startChannel?.id}
               element={fixtureStartCi?.startChannel}
               onClick={

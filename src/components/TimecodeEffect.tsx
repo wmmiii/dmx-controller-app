@@ -66,6 +66,7 @@ import {
 
 import clsx from 'clsx';
 import { Button, IconButton } from './Button';
+import { ClipboardControls } from './ClipboardControls';
 import { EffectState } from './EffectState';
 import { NumberInput } from './Input';
 import { Modal } from './Modal';
@@ -269,8 +270,6 @@ export function EffectDetails({
 }: EffectDetailsBaseProps<Effect>): JSX.Element {
   const { save } = useContext(ProjectContext);
 
-  const classes = [styles.effectDetails, className];
-
   let details: JSX.Element;
 
   switch (effect.effect.case) {
@@ -338,8 +337,19 @@ export function EffectDetails({
   }
 
   return (
-    <div className={classes.join(' ')}>
-      <div className={styles.effectType}>
+    <div className={clsx(styles.effectDetails, className)}>
+      <div className={styles.effectRow}>
+        <ClipboardControls
+          typeName="effect"
+          schema={EffectSchema}
+          value={effect}
+          onPaste={(newEffect) => {
+            effect.effect = clone(EffectSchema, newEffect).effect;
+            save('Paste effect.');
+          }}
+        />
+      </div>
+      <div className={styles.effectRow}>
         <span>Effect type</span>
         <Spacer />
         <EffectSelector

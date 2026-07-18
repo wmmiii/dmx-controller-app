@@ -3,6 +3,7 @@ import { useContext } from 'react';
 
 import { ProjectContext } from '../contexts/ProjectContext';
 
+import clsx from 'clsx';
 import styles from './Duration.module.css';
 import { NumberInput } from './Input';
 import { Toggle } from './Toggle';
@@ -15,13 +16,8 @@ interface DurationInputProps {
 export function DurationInput({ duration, className }: DurationInputProps) {
   const { save } = useContext(ProjectContext);
 
-  const classes = [styles.container];
-  if (className) {
-    classes.push(className);
-  }
-
   return (
-    <div className={classes.join(' ')}>
+    <div className={clsx(styles.container, className)}>
       <Toggle
         title="Specify duration in beats or seconds."
         labels={{

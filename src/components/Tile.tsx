@@ -103,11 +103,9 @@ export function Tile({ tileId, tile, onSelect, x, y, priority }: TileProps) {
     return gradient + ')';
   }, [details, palette]);
 
-  const classes = [styles.tile];
-
   return (
     <VersatileElement
-      className={classes.join(' ')}
+      className={styles.tile}
       id={tileId}
       style={{
         gridColumnStart: x + 1,

@@ -1,5 +1,6 @@
 import { BiSolidError } from 'react-icons/bi';
 
+import clsx from 'clsx';
 import style from './Warning.module.css';
 
 interface WarningProps {
@@ -8,13 +9,8 @@ interface WarningProps {
 }
 
 export function Warning({ title, className }: WarningProps) {
-  const classes = [style.warning];
-  if (className) {
-    classes.push(className);
-  }
-
   return (
-    <div className={classes.join(' ')} title={title}>
+    <div className={clsx(style.warning, className)} title={title}>
       <BiSolidError />
     </div>
   );

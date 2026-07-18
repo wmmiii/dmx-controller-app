@@ -4,6 +4,7 @@ import { JSX, useContext } from 'react';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { VersatileContainer } from '../contexts/VersatileContianer';
 
+import clsx from 'clsx';
 import { Tile } from './Tile';
 import styles from './Tile.module.css';
 import { VersatileElement } from './VersatileElement';
@@ -43,13 +44,8 @@ export function TileGrid({
     }
   }
 
-  const classes = [styles.tileGrid];
-  if (className) {
-    classes.push(className);
-  }
-
   return (
-    <VersatileContainer className={classes.join(' ')}>
+    <VersatileContainer className={clsx(styles.tileGrid, className)}>
       {map.map((r, y) =>
         r.map((mapping, x) => {
           if (mapping != null) {

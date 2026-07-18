@@ -40,8 +40,8 @@ import { ProjectContext } from '../contexts/ProjectContext';
 import { usePlaybackStatus } from '../hooks/playbackStatus';
 import { useWaveform } from '../hooks/waveform';
 
-import { create } from '@bufbuild/protobuf';
-import { LayerSchema } from '@dmx-controller/proto/effect_pb';
+import { clone, create } from '@bufbuild/protobuf';
+import { EffectSchema, LayerSchema } from '@dmx-controller/proto/effect_pb';
 import { RenderMode_TimecodedShow } from '@dmx-controller/proto/render_pb';
 import clsx from 'clsx';
 import {
@@ -53,6 +53,7 @@ import { Spacer } from '../components/Spacer';
 import { EffectDetails } from '../components/TimecodeEffect';
 import { LaneDragMask, TrackLane } from '../components/TrackLane';
 import { Waveform } from '../components/Waveform';
+import { useClipboard } from '../contexts/ClipboardContext';
 import { EffectRenderingContext } from '../contexts/EffectRenderingContext';
 import { ShortcutContext } from '../contexts/ShortcutContext';
 import { getAvailableChannels } from '../engine/fixtures/fixture';
@@ -152,6 +153,11 @@ interface TimecodedBodyProps {
 function TimecodedBody({ show }: TimecodedBodyProps) {
   const { project, save, update } = useContext(ProjectContext);
   const { setShortcuts } = useContext(ShortcutContext);
+  const {
+    get: getClipboard,
+    set: setClipboard,
+    has: hasClipboard,
+  } = useClipboard();
   const dragIndex = useRef<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [, forceRender] = useReducer((n: number) => n + 1, 0);
@@ -407,12 +413,13 @@ function TimecodedBody({ show }: TimecodedBodyProps) {
     });
   }, [trackId, viewStart, viewEnd]);
 
+  const copiedEffect = getClipboard(EffectSchema);
   useEffect(() => {
     if (!trackId) {
       return;
     }
 
-    return setShortcuts([
+    const shortcuts: Parameters<typeof setShortcuts>[0] = [
       {
         shortcut: {
           key: 'Space',
@@ -420,8 +427,46 @@ function TimecodedBody({ show }: TimecodedBodyProps) {
         action: () => (playing ? pause(trackId) : play(trackId)),
         description: playing ? 'Pause show.' : 'Play show.',
       },
-    ]);
-  }, [trackId, setShortcuts, playing, pause, play]);
+    ];
+
+    console.log('Selected effect set', selectedEffect);
+    if (selectedEffect?.effect) {
+      shortcuts.push({
+        shortcut: {
+          key: 'KeyC',
+          modifiers: ['ctrl'],
+        },
+        action: () => {
+          setClipboard(selectedEffect.effect!);
+        },
+        description: 'Copy effect.',
+      });
+
+      if (copiedEffect) {
+        shortcuts.push({
+          shortcut: {
+            key: 'KeyV',
+            modifiers: ['ctrl'],
+          },
+          action: () => {
+            selectedEffect.effect = clone(EffectSchema, copiedEffect);
+            save('Paste effect.');
+          },
+          description: 'Paste effect.',
+        });
+      }
+    }
+
+    return setShortcuts(shortcuts);
+  }, [
+    trackId,
+    selectedEffect,
+    copiedEffect,
+    setShortcuts,
+    playing,
+    pause,
+    play,
+  ]);
 
   useEffect(() => {
     if (selectedAddress == null) {
@@ -701,12 +746,4 @@ function TrackMeta({
       )}
     </div>
   );
-}
-
-interface EffectEditorProps {
-  effect: Effe;
-}
-
-function EffectEditor({ selectedAddress }: EffectEditorProps) {
-  return <div className={styles.effectEditor}></div>;
 }

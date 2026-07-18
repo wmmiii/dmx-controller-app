@@ -70,10 +70,11 @@
   }
 }
 
-.effect-type {
+.effect-row {
   display: flex;
   flex-direction: row;
   gap: var(--space-1);
+  align-items: center;
 }
 
 .icon {

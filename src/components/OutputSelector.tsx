@@ -10,6 +10,7 @@ import { ProjectContext } from '../contexts/ProjectContext';
 import { GROUP_ALL_ID } from '../engine/fixtures/writableDevice';
 import { getActivePatch } from '../util/projectUtils';
 
+import clsx from 'clsx';
 import { Combobox, ComboboxGroup, ComboboxOption } from './Combobox';
 import styles from './OutputSelector.module.css';
 
@@ -169,14 +170,9 @@ export function OutputSelector({
       ? undefined
       : value;
 
-  const classes = [];
-  if (selectValue === undefined) {
-    classes.push(styles.warning);
-  }
-
   return (
     <Combobox
-      className={classes.join(' ')}
+      className={clsx({ [styles.warning]: selectValue === undefined })}
       placeholder="Select output"
       value={selectValue}
       onChange={setValue}

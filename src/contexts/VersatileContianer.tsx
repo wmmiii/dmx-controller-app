@@ -2,6 +2,7 @@ import { createContext, useEffect, useRef, useState } from 'react';
 
 import { DRAG_DISTANCE_PX_SQ, LONG_PRESS_MS } from '../util/browserUtils';
 
+import clsx from 'clsx';
 import styles from './VersatileContainer.module.css';
 
 type VersatileState = 'idle' | 'click' | 'press' | 'drag';
@@ -60,17 +61,12 @@ export function VersatileContainer({
     setActiveElement(null);
   };
 
-  const classes = [];
-  if (state === 'press' || state === 'drag') {
-    classes.push(styles.suppressTouch);
-  }
-  if (className) {
-    classes.push(className);
-  }
-
   return (
     <div
-      className={classes.join(' ')}
+      className={clsx(
+        { [styles.suppressTouch]: state === 'press' || state === 'drag' },
+        className,
+      )}
       onPointerMove={(e) => {
         const pos = mouseDown.current;
         if (pos && state === 'press') {

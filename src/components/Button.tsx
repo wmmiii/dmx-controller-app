@@ -1,6 +1,7 @@
 import { JSX } from 'react';
 import { SiMidi } from 'react-icons/si';
 
+import clsx from 'clsx';
 import styles from './Button.module.css';
 
 interface BaseButtonProps {
@@ -23,14 +24,14 @@ export function Button({
   icon,
   children,
 }: ButtonProps): JSX.Element {
-  const classes = [styles.baseButton, styles.button, classFromVariant(variant)];
-  if (className) {
-    classes.push(className);
-  }
-
   return (
     <button
-      className={classes.join(' ')}
+      className={clsx(
+        styles.baseButton,
+        styles.button,
+        classFromVariant(variant),
+        className,
+      )}
       onClick={(e) => {
         onClick();
         e.stopPropagation();
@@ -53,25 +54,18 @@ type ControllerButtonProps = Omit<
 };
 
 export function ControllerButton(props: ControllerButtonProps) {
-  const classes = [styles.baseButton, styles.controllerButton];
-  switch (props.midiState) {
-    case 'active':
-      classes.push(styles.active);
-      break;
-    case 'inactive':
-      classes.push(styles.inactive);
-      break;
-    case 'mapping':
-      classes.push(styles.mapping);
-      break;
-  }
-  if (props.className) {
-    classes.push(props.className);
-  }
-
   return (
     <button
-      className={classes.join(' ')}
+      className={clsx(
+        styles.baseButton,
+        styles.controllerButton,
+        {
+          [styles.active]: props.midiState === 'active',
+          [styles.inactive]: props.midiState === 'inactive',
+          [styles.mapping]: props.midiState === 'mapping',
+        },
+        props.className,
+      )}
       onClick={(e) => {
         props.onClick();
         e.stopPropagation();
@@ -100,19 +94,15 @@ export function IconButton({
   title,
   children,
 }: IconButtonProps): JSX.Element {
-  const classes = [
-    styles.baseButton,
-    styles.iconButton,
-    classFromVariant(variant),
-  ];
-  if (className) {
-    classes.unshift(className);
-  }
-
   return (
     <button
       title={title}
-      className={classes.join(' ')}
+      className={clsx(
+        styles.baseButton,
+        styles.iconButton,
+        classFromVariant(variant),
+        className,
+      )}
       onMouseDown={onClick}
       disabled={disabled}
     >

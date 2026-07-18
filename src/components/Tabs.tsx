@@ -32,28 +32,23 @@ export function Tabs({
       <div className={styles.header}>
         {before}
         <div className={styles.tabs}>
-          {Object.entries(tabs).map(([id, tab]) => {
-            const classes = [styles.tab];
-            if (id === selectedTab) {
-              classes.push(styles.selected);
-            }
-
-            return (
-              <div
-                key={id}
-                className={classes.join(' ')}
-                tabIndex={0}
-                onClick={() => setSelectedTab(id)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === 'Space') {
-                    setSelectedTab(id);
-                  }
-                }}
-              >
-                {tab.name}
-              </div>
-            );
-          })}
+          {Object.entries(tabs).map(([id, tab]) => (
+            <div
+              key={id}
+              className={clsx(styles.tab, {
+                [styles.seleced]: id === selectedTab,
+              })}
+              tabIndex={0}
+              onClick={() => setSelectedTab(id)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === 'Space') {
+                  setSelectedTab(id);
+                }
+              }}
+            >
+              {tab.name}
+            </div>
+          ))}
         </div>
         {after}
       </div>

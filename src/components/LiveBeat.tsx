@@ -12,6 +12,7 @@ import { ShortcutContext } from '../contexts/ShortcutContext';
 import { listenToTick } from '../util/time';
 import { getBeatTSync } from '../wasm/engine';
 
+import clsx from 'clsx';
 import { ControllerConnection } from './ControllerConnection';
 import { NumberInput } from './Input';
 import styles from './LiveBeat.module.css';
@@ -86,19 +87,12 @@ export function LiveBeat({ className }: LiveBeatProps): JSX.Element {
     [],
   );
 
-  const classes = [styles.liveBeat];
-  if (className) {
-    classes.push(className);
-  }
-
-  const indicatorClasses = [styles.beatIndicator];
-  if (sampling) {
-    indicatorClasses.push(styles.sampling);
-  }
-
   return (
-    <div className={classes.join(' ')}>
-      <div ref={indicatorRef} className={indicatorClasses.join(' ')}>
+    <div className={clsx(styles.liveBeat, className)}>
+      <div
+        ref={indicatorRef}
+        className={clsx(styles.beatIndicator, { [styles.sampling]: sampling })}
+      >
         <BiPulse size={24} />
       </div>
 
