@@ -78,17 +78,19 @@ export function GroupEditor() {
   return (
     <Browser
       className={styles.groupContents}
-      items={Object.entries(project.groups).map(([id, group]) => ({
-        name: group.name,
-        setName: (name) => {
-          if (name) {
-            group.name = name;
-            save(`Set group name to "${name}".`);
-          }
-        },
-        selected: BigInt(id) === selectedGroupId,
-        onSelect: () => setSelectedGroupId(BigInt(id)),
-      }))}
+      items={Object.entries(project.groups)
+        .sort(([_a, a], [_b, b]) => a.name.localeCompare(b.name))
+        .map(([id, group]) => ({
+          name: group.name,
+          setName: (name) => {
+            if (name) {
+              group.name = name;
+              save(`Set group name to "${name}".`);
+            }
+          },
+          selected: BigInt(id) === selectedGroupId,
+          onSelect: () => setSelectedGroupId(BigInt(id)),
+        }))}
       listHeader={
         <Button
           icon={<BiPlus size={18} />}

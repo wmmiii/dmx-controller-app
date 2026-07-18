@@ -4,9 +4,10 @@
 }
 
 .group-editor {
+  position: absolute;
   display: flex;
-  flex: 1;
   flex-direction: column;
+  inset: 0;
 
   .header {
     display: flex;
