@@ -33,6 +33,12 @@ pub fn render_timecoded_show<T: RenderTarget<T>>(
 
     let beat_t = track_beat_at_time(track, f64::from(t)).unwrap_or(0.0);
 
+    let color_palette = show
+        .palettes
+        .first()
+        .and_then(|keyframe| keyframe.color_palette.clone())
+        .unwrap_or_else(|| DEFAULT_COLOR_PALETTE.clone());
+
     for output in show.outputs.iter().rev() {
         let Some(output_target) = &output.output_target else {
             continue;
@@ -56,10 +62,7 @@ pub fn render_timecoded_show<T: RenderTarget<T>>(
                     beat_t,
                     frame,
                     e,
-                    &show
-                        .color_palette
-                        .clone()
-                        .unwrap_or_else(|| DEFAULT_COLOR_PALETTE.clone()),
+                    &color_palette,
                 );
             }
         }

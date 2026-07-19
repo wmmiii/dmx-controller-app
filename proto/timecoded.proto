@@ -18,8 +18,14 @@ message TimecodedShow {
     Layer layer = 3;
   }
 
+  message PaletteKeyframe {
+    dmx_controller.ColorPalette color_palette = 1;
+    uint64 t = 2;
+  }
+
   string name = 1;
-  dmx_controller.ColorPalette color_palette = 2;
+  repeated PaletteKeyframe palettes = 5;
+  dmx_controller.ColorPalette color_palette = 2 [ deprecated = true ];
   AudioTrack audio_track = 3;
   repeated Output outputs = 4;
 }

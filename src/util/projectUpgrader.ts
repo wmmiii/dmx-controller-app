@@ -4,6 +4,8 @@ import { ColorPaletteSchema } from '@dmx-controller/proto/color_pb';
 import { type Project } from '@dmx-controller/proto/project_pb';
 import { Scene_Tile_LoopDetailsSchema } from '@dmx-controller/proto/scene_pb';
 import { SettingsSchema } from '@dmx-controller/proto/settings_pb';
+import { TimecodedShow_PaletteKeyframeSchema } from '@dmx-controller/proto/timecoded_pb';
+import { DEFAULT_COLOR_PALETTE } from './colorUtil';
 
 export default function upgradeProject(p: Project): void {
   // Migrate color palettes from deprecated map (field 7) to new array (field 2)
@@ -65,5 +67,17 @@ export default function upgradeProject(p: Project): void {
   }
   if (p.settings.dismissedDialogs == null) {
     p.settings.dismissedDialogs = [];
+  }
+
+  for (const show of Object.values(p.shows)) {
+    if (show.palettes.length === 0) {
+      const palette = show.colorPalette ?? DEFAULT_COLOR_PALETTE;
+      show.palettes = [
+        create(TimecodedShow_PaletteKeyframeSchema, {
+          t: 0n,
+          colorPalette: palette,
+        }),
+      ];
+    }
   }
 }

@@ -44,6 +44,7 @@ import { clone, create } from '@bufbuild/protobuf';
 import { EffectSchema, LayerSchema } from '@dmx-controller/proto/effect_pb';
 import { RenderMode_TimecodedShow } from '@dmx-controller/proto/render_pb';
 import clsx from 'clsx';
+import { ColorSwatch } from '../components/ColorSwatch';
 import {
   getOutputTargetName,
   OutputSelector,
@@ -55,6 +56,7 @@ import { LaneDragMask, TrackLane } from '../components/TrackLane';
 import { Waveform } from '../components/Waveform';
 import { useClipboard } from '../contexts/ClipboardContext';
 import { EffectRenderingContext } from '../contexts/EffectRenderingContext';
+import { PaletteContext } from '../contexts/PaletteContext';
 import { ShortcutContext } from '../contexts/ShortcutContext';
 import { getAvailableChannels } from '../engine/fixtures/fixture';
 import { useLaneInteraction } from '../hooks/laneInteraction';
@@ -129,7 +131,7 @@ export function TimecodedPage() {
           const id = randomUint64();
           project.shows[String(id)] = create(TimecodedShowSchema, {
             name: 'New Show',
-            colorPalette: DEFAULT_COLOR_PALETTE,
+            palettes: [{ t: 0n, colorPalette: DEFAULT_COLOR_PALETTE }],
             outputs: [],
           });
           project.selectedShow = id;
@@ -153,11 +155,8 @@ interface TimecodedBodyProps {
 function TimecodedBody({ show }: TimecodedBodyProps) {
   const { project, save, update } = useContext(ProjectContext);
   const { setShortcuts } = useContext(ShortcutContext);
-  const {
-    get: getClipboard,
-    set: setClipboard,
-    has: hasClipboard,
-  } = useClipboard();
+  const { get: getClipboard, set: setClipboard } = useClipboard();
+  const [editPalette, setEditPalette] = useState(false);
   const dragIndex = useRef<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [, forceRender] = useReducer((n: number) => n + 1, 0);
@@ -429,7 +428,6 @@ function TimecodedBody({ show }: TimecodedBodyProps) {
       },
     ];
 
-    console.log('Selected effect set', selectedEffect);
     if (selectedEffect?.effect) {
       shortcuts.push({
         shortcut: {
@@ -495,170 +493,193 @@ function TimecodedBody({ show }: TimecodedBodyProps) {
     ]);
   }, [selectedAddress, show, save, setShortcuts]);
 
+  const colorPalette = show.palettes[0].colorPalette;
+
   return (
-    <div className={styles.body}>
-      <div className={styles.showMeta}>
-        <Select
-          value={String(show.audioTrack?.trackId)}
-          onChange={(trackId) => {
-            if (show.audioTrack == null) {
-              show.audioTrack = create(TimecodedShow_AudioTrackSchema, {
-                trackId: BigInt(trackId),
-              });
-            } else {
-              show.audioTrack.trackId = BigInt(trackId);
-            }
-            const track = project.tracks[trackId]!;
-            save(`Set track of ${show.name} to ${track.name}.`);
-          }}
-          options={Object.entries(project.tracks).map(([trackId, track]) => ({
-            value: trackId,
-            label: track.name,
-          }))}
-          placeholder="Select track"
-        />
-        <IconButton
-          title={playing ? 'pause' : 'play'}
-          disabled={!loaded}
-          onClick={() => {
-            if (trackId == null) {
-              return;
-            }
-            if (playing) {
-              pause(trackId);
-            } else {
-              play(trackId);
-            }
-          }}
-        >
-          {playing ? <BiPause /> : <BiPlay />}
-        </IconButton>
-      </div>
-      <div className={styles.waveform}>
-        {track == null ? (
-          <div className={styles.loading}>
-            Please select a track for this show.
-          </div>
-        ) : waveformQuery.isSuccess && viewEnd !== null ? (
-          <Waveform
-            className={styles.waveformDisplay}
-            waveformData={waveformQuery.data}
-            startMs={viewStart}
-            endMs={viewEnd}
-            msToBeat={beatConverters?.msToBeat}
-            beatToMs={beatConverters?.beatToMs}
-            subdivisions={subdivisions}
-            onViewChange={(startMs, endMs) => {
-              setViewStart(startMs);
-              setViewEnd(endMs);
+    <PaletteContext.Provider
+      value={{
+        palette: show.palettes[0].colorPalette ?? DEFAULT_COLOR_PALETTE,
+      }}
+    >
+      <div className={styles.body}>
+        <div className={styles.showMeta}>
+          <Select
+            value={String(show.audioTrack?.trackId)}
+            onChange={(trackId) => {
+              if (show.audioTrack == null) {
+                show.audioTrack = create(TimecodedShow_AudioTrackSchema, {
+                  trackId: BigInt(trackId),
+                });
+              } else {
+                show.audioTrack.trackId = BigInt(trackId);
+              }
+              const track = project.tracks[trackId]!;
+              save(`Set track of ${show.name} to ${track.name}.`);
             }}
-            onSeek={(timeMs) => seek(trackId!, timeMs)}
-            playing={playing}
-            getPlayheadMs={() => getCurrentTimeMs(trackId!)}
+            options={Object.entries(project.tracks).map(([trackId, track]) => ({
+              value: trackId,
+              label: track.name,
+            }))}
+            placeholder="Select track"
+          />
+          <div className={styles.showMetaRow}>
+            <ColorSwatch
+              color={colorPalette!.primary!.color!}
+              updateDescription={`Update primary color of show ${show.name}.`}
+            />
+            <ColorSwatch
+              color={colorPalette!.secondary!.color!}
+              updateDescription={`Update secondary color of show ${show.name}.`}
+            />
+            <ColorSwatch
+              color={colorPalette!.tertiary!.color!}
+              updateDescription={`Update tertiary color of show ${show.name}.`}
+            />
+            <Spacer />
+            <IconButton
+              title={playing ? 'pause' : 'play'}
+              disabled={!loaded}
+              onClick={() => {
+                if (trackId == null) {
+                  return;
+                }
+                if (playing) {
+                  pause(trackId);
+                } else {
+                  play(trackId);
+                }
+              }}
+            >
+              {playing ? <BiPause /> : <BiPlay />}
+            </IconButton>
+          </div>
+        </div>
+        <div className={styles.waveform}>
+          {track == null ? (
+            <div className={styles.loading}>
+              Please select a track for this show.
+            </div>
+          ) : waveformQuery.isSuccess && viewEnd !== null ? (
+            <Waveform
+              className={styles.waveformDisplay}
+              waveformData={waveformQuery.data}
+              startMs={viewStart}
+              endMs={viewEnd}
+              msToBeat={beatConverters?.msToBeat}
+              beatToMs={beatConverters?.beatToMs}
+              subdivisions={subdivisions}
+              onViewChange={(startMs, endMs) => {
+                setViewStart(startMs);
+                setViewEnd(endMs);
+              }}
+              onSeek={(timeMs) => seek(trackId!, timeMs)}
+              playing={playing}
+              getPlayheadMs={() => getCurrentTimeMs(trackId!)}
+            />
+          ) : (
+            <div>Loading...</div>
+          )}
+        </div>
+        {selectedEffect?.effect ? (
+          <EffectDetails
+            className={styles.effectEditor}
+            effect={selectedEffect.effect}
+            availableChannels={getAvailableChannels(
+              show.outputs[selectedAddress!.laneIndex].outputTarget,
+              project,
+            )}
+            showPhase={true}
           />
         ) : (
-          <div>Loading...</div>
+          <div className={clsx(styles.effectEditor, styles.empty)}>
+            Select effect to edit
+          </div>
         )}
-      </div>
-      {selectedEffect?.effect ? (
-        <EffectDetails
-          className={styles.effectEditor}
-          effect={selectedEffect.effect}
-          availableChannels={getAvailableChannels(
-            show.outputs[selectedAddress!.laneIndex].outputTarget,
-            project,
-          )}
-          showPhase={true}
-        />
-      ) : (
-        <div className={clsx(styles.effectEditor, styles.empty)}>
-          Select effect to edit
-        </div>
-      )}
-      <div ref={scrollRef} className={styles.trackScrollable}>
-        <EffectRenderingContext.Provider
-          value={{
-            beatWidthPx: beatConverters
-              ? msWidthToPxWidth(
-                  viewport,
-                  beatConverters.beatToMs(1) - beatConverters.beatToMs(0),
-                )
-              : 100,
-            msToPx: (ms) => msWidthToPxWidth(viewport, ms),
-            beatConverters,
-          }}
-        >
-          {show.outputs.map((output, idx) => (
-            <Fragment key={idx}>
-              <TrackMeta
-                output={output}
-                onReorderStart={() => {
-                  dragIndex.current = idx;
-                }}
-                onReorderMove={reorderToPointer}
-                onReorderEnd={() => {
-                  if (dragIndex.current == null) {
-                    return;
-                  }
-                  dragIndex.current = null;
-                  save(`Reorder tracks in show ${show.name}.`);
-                }}
-                onDelete={() => {
-                  show.outputs.splice(idx, 1);
-                  setSelectedAddress(null);
-                  save(`Remove track from show ${show.name}.`);
-                }}
-              />
-              <TrackLane
-                className={styles.trackLane}
-                laneIndex={idx}
-                layer={output.layer ?? create(LayerSchema, {})}
-                viewport={viewport}
-                drag={drag}
-                selectedEffect={selectedEffect}
-                onSelectEffect={(effectIndex) =>
-                  setSelectedAddress({ laneIndex: idx, effectIndex })
-                }
-              />
-            </Fragment>
-          ))}
-        </EffectRenderingContext.Provider>
-        <div className={styles.newLayer}>
-          <Button
-            icon={<BiPlus />}
-            onClick={() => {
-              show.outputs.push(
-                create(TimecodedShow_OutputSchema, {
-                  collapsed: false,
-                  outputTarget: {
-                    output: {
-                      case: undefined,
-                      value: undefined,
-                    },
-                  },
-                  layer: {
-                    effects: [],
-                  },
-                }),
-              );
-              save('Add new layer to timecoded show.');
+        <div ref={scrollRef} className={styles.trackScrollable}>
+          <EffectRenderingContext.Provider
+            value={{
+              beatWidthPx: beatConverters
+                ? msWidthToPxWidth(
+                    viewport,
+                    beatConverters.beatToMs(1) - beatConverters.beatToMs(0),
+                  )
+                : 100,
+              msToPx: (ms) => msWidthToPxWidth(viewport, ms),
+              beatConverters,
             }}
           >
-            Add track
-          </Button>
+            {show.outputs.map((output, idx) => (
+              <Fragment key={idx}>
+                <TrackMeta
+                  output={output}
+                  onReorderStart={() => {
+                    dragIndex.current = idx;
+                  }}
+                  onReorderMove={reorderToPointer}
+                  onReorderEnd={() => {
+                    if (dragIndex.current == null) {
+                      return;
+                    }
+                    dragIndex.current = null;
+                    save(`Reorder tracks in show ${show.name}.`);
+                  }}
+                  onDelete={() => {
+                    show.outputs.splice(idx, 1);
+                    setSelectedAddress(null);
+                    save(`Remove track from show ${show.name}.`);
+                  }}
+                />
+                <TrackLane
+                  className={styles.trackLane}
+                  laneIndex={idx}
+                  layer={output.layer ?? create(LayerSchema, {})}
+                  viewport={viewport}
+                  drag={drag}
+                  selectedEffect={selectedEffect}
+                  onSelectEffect={(effectIndex) =>
+                    setSelectedAddress({ laneIndex: idx, effectIndex })
+                  }
+                />
+              </Fragment>
+            ))}
+          </EffectRenderingContext.Provider>
+          <div className={styles.newLayer}>
+            <Button
+              icon={<BiPlus />}
+              onClick={() => {
+                show.outputs.push(
+                  create(TimecodedShow_OutputSchema, {
+                    collapsed: false,
+                    outputTarget: {
+                      output: {
+                        case: undefined,
+                        value: undefined,
+                      },
+                    },
+                    layer: {
+                      effects: [],
+                    },
+                  }),
+                );
+                save('Add new layer to timecoded show.');
+              }}
+            >
+              Add track
+            </Button>
+          </div>
         </div>
+        <div ref={laneOverlayRef} className={styles.laneOverlay}>
+          {trackId != null && (
+            <div
+              ref={lanePlayheadRef}
+              className={styles.lanePlayhead}
+              style={{ display: 'none' }}
+            />
+          )}
+        </div>
+        <LaneDragMask interaction={drag} />
       </div>
-      <div ref={laneOverlayRef} className={styles.laneOverlay}>
-        {trackId != null && (
-          <div
-            ref={lanePlayheadRef}
-            className={styles.lanePlayhead}
-            style={{ display: 'none' }}
-          />
-        )}
-      </div>
-      <LaneDragMask interaction={drag} />
-    </div>
+    </PaletteContext.Provider>
   );
 }
 

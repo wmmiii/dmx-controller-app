@@ -29,6 +29,14 @@
   border-bottom: 1px solid var(--col-border);
 }
 
+.show-meta-row {
+  display: flex;
+  flex: 1;
+  flex-direction: row;
+  gap: var(--space-1);
+  align-items: center;
+}
+
 .waveform {
   position: relative;
   grid-row: 1;
