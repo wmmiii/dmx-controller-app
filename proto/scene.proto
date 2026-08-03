@@ -5,8 +5,7 @@ package dmx_controller;
 import "proto/color.proto";
 import "proto/controller.proto";
 import "proto/duration.proto";
-import "proto/effect.proto";
-import "proto/output.proto";
+import "proto/targeted_effect.proto";
 
 // A scene is a part of a live show that composes tiles together to form
 // the final output of the universe.
@@ -15,12 +14,6 @@ message Scene {
   // A tile is a part of a scene that can be enabled or disabled and
   // applies state to the universe.
   message Tile {
-    message EffectChannel {
-      Effect effect = 1;
-
-      OutputTarget output_target = 2;
-    }
-
     message OneShotDetails { Duration duration = 1; }
 
     message LoopDetails {
@@ -38,7 +31,7 @@ message Scene {
 
     string name = 1;
 
-    repeated EffectChannel channels = 18;
+    repeated TargetedEffect targeted_effects = 18;
 
     oneof timing_details {
       OneShotDetails one_shot = 19;

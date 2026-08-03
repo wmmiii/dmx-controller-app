@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package dmx_controller;
+
+import "proto/effect.proto";
+import "proto/output.proto";
+
+message TargetedEffect {
+  Effect effect = 1;
+  OutputTarget output_target = 2;
+}

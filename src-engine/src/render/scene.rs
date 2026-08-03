@@ -5,10 +5,10 @@ use crate::{
     beat::effective_beat_metadata,
     palette::interpolated_scene_palette,
     proto::{
-        BeatMetadata, Duration, Effect, Project,
+        BeatMetadata, Duration, Effect, Project, TargetedEffect,
         scene::{
             TileMap,
-            tile::{EffectChannel, LoopDetails, OneShotDetails, TimingDetails, Transition},
+            tile::{LoopDetails, OneShotDetails, TimingDetails, Transition},
         },
     },
     render::{render_target::RenderTarget, util::apply_effect},
@@ -161,8 +161,8 @@ pub fn render_scene<T: RenderTarget<T>>(
         let mut after = render_target.clone();
 
         // Process tile based on description type
-        for channel in &tile.channels {
-            if let EffectChannel {
+        for channel in &tile.targeted_effects {
+            if let TargetedEffect {
                 effect:
                     Some(Effect {
                         effect: Some(effect),

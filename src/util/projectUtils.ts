@@ -58,7 +58,7 @@ export function deleteFromOutputTargets(
     .flatMap((s) => s.tileMap)
     .map((r) => r.tile!)
     .forEach((o) => {
-      o.channels.forEach((c) => deleteFromOutputTarget(c.outputTarget));
+      o.targetedEffects.forEach((c) => deleteFromOutputTarget(c.outputTarget));
     });
 }
 
@@ -177,7 +177,7 @@ export function tileTileDetails(tile: Scene_Tile) {
     }
   };
 
-  tile.channels
+  tile.targetedEffects
     .map((t) => t.effect!)
     .filter((e) => e != null)
     .forEach(collect);

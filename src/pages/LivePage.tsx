@@ -11,11 +11,13 @@ import {
   Scene_TileMapSchema,
   Scene_TileSchema,
   Scene_Tile_AudioDetailsSchema,
-  Scene_Tile_EffectChannel,
-  Scene_Tile_EffectChannelSchema,
   Scene_Tile_LoopDetailsSchema,
   Scene_Tile_OneShotDetailsSchema,
 } from '@dmx-controller/proto/scene_pb';
+import {
+  type TargetedEffect,
+  TargetedEffectSchema,
+} from '@dmx-controller/proto/targeted_effect_pb';
 import { JSX, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { BiPencil, BiPlus, BiTrash, BiX } from 'react-icons/bi';
 
@@ -580,7 +582,10 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
           </>
         )}
       </div>
-      <EffectGroupEditor channels={tile.channels} name={tile.name} />
+      <EffectGroupEditor
+        targetedEffects={tile.targetedEffects}
+        name={tile.name}
+      />
       {existingTile && (
         <Modal
           title="Controller mapping error"
@@ -594,18 +599,18 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
 }
 
 interface EffectGroupEditorProps {
-  channels: Scene_Tile_EffectChannel[];
+  targetedEffects: TargetedEffect[];
   name: string;
 }
 
-function EffectGroupEditor({ channels, name }: EffectGroupEditorProps) {
+function EffectGroupEditor({ targetedEffects, name }: EffectGroupEditorProps) {
   const { project, save } = useContext(ProjectContext);
 
   return (
     <div className={styles.detailsPane}>
-      {channels.map((c, i) => {
+      {targetedEffects.map((c, i) => {
         if (c.effect == null) {
-          throw new Error('Channel effect is not defined!');
+          throw new Error('Effect is not defined!');
         }
         return (
           <div key={i} className={styles.effect}>
@@ -615,20 +620,20 @@ function EffectGroupEditor({ channels, name }: EffectGroupEditorProps) {
             <div className={styles.header}>
               <ClipboardControls
                 typeName="effect channel"
-                schema={Scene_Tile_EffectChannelSchema}
+                schema={TargetedEffectSchema}
                 value={c}
                 onPaste={(c) => {
-                  channels[i] = clone(Scene_Tile_EffectChannelSchema, c);
-                  save('Paste effect channel.');
+                  targetedEffects[i] = clone(TargetedEffectSchema, c);
+                  save('Paste effect.');
                 }}
               />
               <Spacer />
               <IconButton
-                title="Delete Channel"
+                title="Delete Effect"
                 variant="warning"
                 onClick={() => {
-                  channels.splice(i, 1);
-                  save(`Delete channel from ${name}`);
+                  targetedEffects.splice(i, 1);
+                  save(`Delete effect from ${name}`);
                 }}
               >
                 <BiTrash />
@@ -659,8 +664,8 @@ function EffectGroupEditor({ channels, name }: EffectGroupEditorProps) {
         <IconButton
           title="Add Effect"
           onClick={() => {
-            channels.push(createEffectChannel());
-            save('Add channel to effect.');
+            targetedEffects.push(createTargetedEffect());
+            save('Add effect.');
           }}
         >
           <BiPlus />
@@ -670,8 +675,8 @@ function EffectGroupEditor({ channels, name }: EffectGroupEditorProps) {
   );
 }
 
-function createEffectChannel() {
-  return create(Scene_Tile_EffectChannelSchema, {
+function createTargetedEffect() {
+  return create(TargetedEffectSchema, {
     effect: {
       effect: {
         case: 'staticEffect',
