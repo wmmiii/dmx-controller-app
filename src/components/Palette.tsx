@@ -1,17 +1,14 @@
-import { create } from '@bufbuild/protobuf';
 import { Color, type ColorPalette } from '@dmx-controller/proto/color_pb';
-import {
-  InputBindingSchema,
-  InputType,
-} from '@dmx-controller/proto/controller_pb';
+import { InputBinding } from '@dmx-controller/proto/controller_pb';
 import { RgbColor, Wheel } from '@uiw/react-color';
 import clsx from 'clsx';
-import { useCallback, useContext, useMemo, useState } from 'react';
+import { useCallback, useContext, useState } from 'react';
 import { BiPencil, BiTrash } from 'react-icons/bi';
 
 import { ProjectContext } from '../contexts/ProjectContext';
 import { colorToHex, stringifyColor } from '../util/colorUtil';
 
+import { BindingContext } from '../external_controller/externalController';
 import { Button, IconButton } from './Button';
 import { ControllerConnection } from './ControllerConnection';
 import { EditableText, TextInput } from './Input';
@@ -21,25 +18,26 @@ import { Popover } from './Popover';
 const WHEEL_HEIGHT = 150;
 
 interface PaletteSwatchProps {
-  paletteId: bigint;
-  sceneId: bigint;
   palette: ColorPalette;
   active: boolean;
   edit: boolean;
   onClick: () => void;
   onDelete: () => void;
   className?: string;
+  binding?: {
+    action: InputBinding;
+    context: BindingContext;
+  };
 }
 
 export function PaletteSwatch({
-  paletteId,
-  sceneId,
   palette,
   active,
   edit,
   onClick,
   onDelete,
   className,
+  binding,
 }: PaletteSwatchProps) {
   const { save } = useContext(ProjectContext);
   const [editPalette, setEditPalette] = useState(false);
@@ -76,13 +74,12 @@ export function PaletteSwatch({
           side="left"
           popover={
             <EditPalettePopup
-              paletteId={paletteId}
-              sceneId={sceneId}
               palette={palette}
               onDelete={() => {
                 setEditPalette(false);
                 onDelete();
               }}
+              binding={binding}
             />
           }
         >
@@ -110,17 +107,15 @@ export function PaletteSwatch({
 }
 
 interface EditPalettePopupProps {
-  paletteId: bigint;
-  sceneId: bigint;
   palette: ColorPalette;
   onDelete: () => void;
+  binding: PaletteSwatchProps['binding'];
 }
 
 function EditPalettePopup({
-  paletteId,
-  sceneId,
   palette,
   onDelete,
+  binding,
 }: EditPalettePopupProps) {
   const { update } = useContext(ProjectContext);
 
@@ -142,18 +137,6 @@ function EditPalettePopup({
     [update],
   );
 
-  const action = useMemo(
-    () =>
-      create(InputBindingSchema, {
-        inputType: InputType.BINARY,
-        action: {
-          case: 'colorPalette',
-          value: { paletteId },
-        },
-      }),
-    [paletteId],
-  );
-
   return (
     <>
       <div className={styles.header}>
@@ -170,11 +153,13 @@ function EditPalettePopup({
             }}
           />
         </div>
-        <ControllerConnection
-          title="Switch to color palette"
-          context={{ type: 'scene', sceneId: sceneId }}
-          action={action}
-        />
+        {binding && (
+          <ControllerConnection
+            title="Switch to color palette"
+            context={binding.context}
+            action={binding.action}
+          />
+        )}
       </div>
       <div className={styles.colorSelectors}>
         <div>

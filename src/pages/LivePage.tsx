@@ -143,9 +143,17 @@ export function LivePage(): JSX.Element {
         {scene?.colorPalettes.map((palette, i) => (
           <PaletteSwatch
             key={i}
-            paletteId={palette.id}
-            sceneId={project.activeScene}
             palette={palette}
+            binding={{
+              action: create(InputBindingSchema, {
+                inputType: InputType.BINARY,
+                action: {
+                  case: 'colorPalette',
+                  value: { paletteId: palette.id },
+                },
+              }),
+              context: { type: 'scene', sceneId: project.activeScene },
+            }}
             active={scene.activeColorPalette === palette.id}
             edit={editPalette}
             onClick={() => {
