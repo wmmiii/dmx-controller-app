@@ -52,6 +52,7 @@ import { DEFAULT_COLOR_PALETTE } from '../util/colorUtil';
 import { randomUint64 } from '../util/numberUtils';
 import { getActiveScene } from '../util/sceneUtils';
 
+import { sortedEntries } from '../util/sortUtils';
 import styles from './LivePage.module.css';
 
 const NEW_SCENE_KEY = 'new';
@@ -222,9 +223,7 @@ export function LivePage(): JSX.Element {
   );
 
   const tabs: TabsType = {};
-  for (const [sceneIdString, scene] of Object.entries(project.scenes).sort(
-    ([_aId, a], [_bId, b]) => a.name.localeCompare(b.name),
-  )) {
+  for (const [sceneIdString, scene] of sortedEntries(project.scenes)) {
     const sceneId = BigInt(sceneIdString);
     tabs[sceneId.toString()] = {
       name: (

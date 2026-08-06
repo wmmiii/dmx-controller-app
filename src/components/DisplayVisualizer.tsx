@@ -10,6 +10,7 @@ import {
   subscribeToRenderErrors,
 } from '../engine/renderRouter';
 
+import { sortedEntries } from '../util/sortUtils';
 import styles from './Visualizer.module.css';
 
 export function DisplayVisualizer() {
@@ -19,9 +20,7 @@ export function DisplayVisualizer() {
 
   const [errors, setErrors] = useState<Map<string, RenderError>>(new Map());
 
-  const displays = Object.entries(project.displays).sort(([_a, a], [_b, b]) =>
-    a.name.localeCompare(b.name),
-  );
+  const displays = sortedEntries(project.displays);
 
   // Subscribe to all display renders
   useEffect(() => {

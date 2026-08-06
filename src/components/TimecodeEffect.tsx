@@ -65,6 +65,7 @@ import {
 } from '../util/styleUtils';
 
 import clsx from 'clsx';
+import { sortedEntries } from '../util/sortUtils';
 import { Button, IconButton } from './Button';
 import { ClipboardControls } from './ClipboardControls';
 import { EffectState } from './EffectState';
@@ -746,9 +747,10 @@ function SequenceEffectDetails({
         }}
         options={[
           { value: '0', label: '<unset>' },
-          ...Object.entries(project.sequences)
-            .sort(([_a, a], [_b, b]) => a.name.localeCompare(b.name))
-            .map(([id, { name }]) => ({ value: id, label: name })),
+          ...sortedEntries(project.sequences).map(([id, { name }]) => ({
+            value: id,
+            label: name,
+          })),
           { value: 'new', label: '+ New sequence' },
         ]}
       />

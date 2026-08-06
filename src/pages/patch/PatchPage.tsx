@@ -20,6 +20,7 @@ import {
   getActivePatch,
 } from '../../util/projectUtils';
 
+import { sortedEntries } from '../../util/sortUtils';
 import { DdpEditor } from './DdpEditor';
 import { DisplayEditor } from './DisplayEditor';
 import { GroupEditor } from './GroupEditor';
@@ -65,9 +66,7 @@ export default function PatchPage(): JSX.Element {
     }),
   };
 
-  for (const [outputIdString, output] of Object.entries(
-    activePatch.outputs,
-  ).sort(([_a, a], [_b, b]) => a.name.localeCompare(b.name))) {
+  for (const [outputIdString, output] of sortedEntries(activePatch.outputs)) {
     const outputId = BigInt(outputIdString);
     switch (output.output.case) {
       case 'sacnDmxOutput':

@@ -38,6 +38,7 @@ import { extractGdtf } from '../../util/gdtf';
 import { randomUint64 } from '../../util/numberUtils';
 import { getOutput } from '../../util/projectUtils';
 
+import { sortedEntries } from '../../util/sortUtils';
 import { DraggableDmxFixture } from './DmxEditor';
 import styles from './DmxFixtureList.module.css';
 
@@ -100,9 +101,8 @@ export function DmxFixtureList({
     >
       <h2>Fixture Profiles</h2>
       <ul>
-        {Object.entries(project.fixtureDefinitions!.dmxFixtureDefinitions)
-          .sort(([_a, a], [_b, b]) => a.name.localeCompare(b.name))
-          .map(([definitionId, definition]) => (
+        {sortedEntries(project.fixtureDefinitions!.dmxFixtureDefinitions).map(
+          ([definitionId, definition]) => (
             <li key={definitionId}>
               {definition.name}
               {Object.entries(definition.modes).map(([modeId, e], i) => {
@@ -148,7 +148,8 @@ export function DmxFixtureList({
                 );
               })}
             </li>
-          ))}
+          ),
+        )}
       </ul>
       <Button
         onClick={() => {

@@ -30,6 +30,7 @@ import { ProjectContext } from '../contexts/ProjectContext';
 import { usePlaybackStatus } from '../hooks/playbackStatus';
 import { useWaveform } from '../hooks/waveform';
 import { importAudioFile } from '../system_interfaces/cas';
+import { sortedEntries } from '../util/sortUtils';
 import { listenToTick } from '../util/time';
 import { getTrackBeatConverters, preloadWasm } from '../wasm/engine';
 import styles from './AssetBrowserPage.module.css';
@@ -48,18 +49,16 @@ export default function AssetBrowserPage() {
   return (
     <Browser
       className={styles.browser}
-      items={Object.entries(project.tracks)
-        .sort(([_a, a], [_b, b]) => a.name.localeCompare(b.name))
-        .map(([id, track]) => ({
-          name: track.name,
-          setName: (name) => {
-            const oldName = track.name;
-            track.name = name;
-            save(`Rename track '${oldName}' to '${name}'.`);
-          },
-          selected: BigInt(id) === selectedId,
-          onSelect: () => setSelectedId(BigInt(id)),
-        }))}
+      items={sortedEntries(project.tracks).map(([id, track]) => ({
+        name: track.name,
+        setName: (name) => {
+          const oldName = track.name;
+          track.name = name;
+          save(`Rename track '${oldName}' to '${name}'.`);
+        },
+        selected: BigInt(id) === selectedId,
+        onSelect: () => setSelectedId(BigInt(id)),
+      }))}
       listHeader={
         <Button
           icon={<BiPlus size={18} />}

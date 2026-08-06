@@ -11,6 +11,7 @@ import { GROUP_ALL_ID } from '../engine/fixtures/writableDevice';
 import { getActivePatch } from '../util/projectUtils';
 
 import clsx from 'clsx';
+import { sortedEntries } from '../util/sortUtils';
 import { Combobox, ComboboxGroup, ComboboxOption } from './Combobox';
 import styles from './OutputSelector.module.css';
 
@@ -49,9 +50,7 @@ export function OutputSelector({
         label: 'All Fixtures',
       },
     ];
-    for (const [groupId, group] of Object.entries(project.groups).sort(
-      ([_a, a], [_b, b]) => a.name.localeCompare(b.name),
-    )) {
+    for (const [groupId, group] of sortedEntries(project.groups)) {
       groups.push({
         value: create(OutputTargetSchema, {
           output: {
@@ -67,9 +66,8 @@ export function OutputSelector({
       items: groups,
     });
 
-    const displays = Object.entries(project.displays)
-      .sort(([_a, a], [_b, b]) => a.name.localeCompare(b.name))
-      .map(([displayId, display]) => ({
+    const displays = sortedEntries(project.displays).map(
+      ([displayId, display]) => ({
         value: create(OutputTargetSchema, {
           output: {
             case: 'display' as const,
@@ -77,7 +75,8 @@ export function OutputSelector({
           },
         }),
         label: display.name,
-      }));
+      }),
+    );
     if (displays.length > 0) {
       targets.push({
         label: 'Displays',
@@ -101,9 +100,9 @@ export function OutputSelector({
           break;
         case 'sacnDmxOutput':
         case 'serialDmxOutput':
-          for (const [dmxFixtureId, dmxFixture] of Object.entries(
+          for (const [dmxFixtureId, dmxFixture] of sortedEntries(
             output.output.value.fixtures,
-          ).sort(([_a, a], [_b, b]) => a.name.localeCompare(b.name))) {
+          )) {
             fixtures.push({
               value: create(OutputTargetSchema, {
                 output: {
@@ -124,9 +123,9 @@ export function OutputSelector({
           }
           break;
         case 'wledOutput':
-          for (const [wledFixtureId, segment] of Object.entries(
+          for (const [wledFixtureId, segment] of sortedEntries(
             output.output.value.segments,
-          ).sort(([_a, a], [_b, b]) => a.name.localeCompare(b.name))) {
+          )) {
             fixtures.push({
               value: create(OutputTargetSchema, {
                 output: {

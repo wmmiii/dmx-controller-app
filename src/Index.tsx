@@ -29,6 +29,7 @@ import ProjectPage from './pages/ProjectPage';
 import { TimecodedPage } from './pages/TimecodedPage';
 import PatchPage from './pages/patch/PatchPage';
 import { getActivePatch } from './util/projectUtils';
+import { sortedEntries } from './util/sortUtils';
 
 export default function Index(): JSX.Element {
   const { connectedDevices, connect: connectMidi } =
@@ -180,9 +181,8 @@ export default function Index(): JSX.Element {
             <BiMenu />
           </IconButton>
         </Popover>
-        {Object.entries(getActivePatch(project).outputs)
+        {sortedEntries(getActivePatch(project).outputs)
           .filter(([_, output]) => output.enabled)
-          .sort(([_a, a], [_b, b]) => a.name.localeCompare(b.name))
           .map(([outputId, output], i) => {
             switch (output.output.case) {
               case 'sacnDmxOutput':

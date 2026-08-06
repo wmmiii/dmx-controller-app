@@ -24,6 +24,7 @@ import { ANGLE_CHANNELS } from '../../engine/channel';
 import { deleteFixture } from '../../engine/fixtures/fixture';
 import { getOutput } from '../../util/projectUtils';
 
+import { sortedEntries } from '../../util/sortUtils';
 import { DraggableDmxFixture } from './DmxEditor';
 import styles from './DmxUniverse.module.css';
 
@@ -296,12 +297,12 @@ function EditFixtureDialog({
           }}
           options={[
             { value: '', label: '<unset>', disabled: true },
-            ...Object.entries(project.fixtureDefinitions!.dmxFixtureDefinitions)
-              .sort(([_a, a], [_b, b]) => a.name.localeCompare(b.name))
-              .map(([id, definition]) => ({
-                value: id,
-                label: definition.name,
-              })),
+            ...sortedEntries(
+              project.fixtureDefinitions!.dmxFixtureDefinitions,
+            ).map(([id, definition]) => ({
+              value: id,
+              label: definition.name,
+            })),
           ]}
         />
         <Select
@@ -319,16 +320,14 @@ function EditFixtureDialog({
           }}
           options={[
             { value: '', label: '<unset>', disabled: true },
-            ...Object.entries(
+            ...sortedEntries(
               project.fixtureDefinitions!.dmxFixtureDefinitions[
                 fixture.fixtureDefinitionId.toString()
               ]?.modes || {},
-            )
-              .sort(([_a, a], [_b, b]) => a.name.localeCompare(b.name))
-              .map(([id, mode]) => ({
-                value: id,
-                label: mode.name,
-              })),
+            ).map(([id, mode]) => ({
+              value: id,
+              label: mode.name,
+            })),
           ]}
         />
         {(fixture.fixtureDefinitionId.toString() == '' ||
