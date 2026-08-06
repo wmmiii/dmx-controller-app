@@ -66,6 +66,59 @@ pub fn effective_beat_t(
     .map_err(|e| JsValue::from_str(&e))
 }
 
+/// Active pattern/palette selection for a playlist, computed from raw scalars
+/// (see [`active_playlist_selection`]).
+///
+/// - `transition_amount`: crossfade progress into `next_index` in `[0, 1)`; `0` while holding.
+/// - `position_ms`: elapsed time into the current dwell+transition cycle, for a progress bar.
+#[wasm_bindgen]
+pub struct ActivePlaylistSelection {
+    pub current_index: u32,
+    pub next_index: u32,
+    pub transition_amount: f64,
+    pub transitioning: bool,
+    pub position_ms: u32,
+}
+
+/// Computes which pattern or palette is currently active for a playlist without
+/// decoding it: the caller passes the ordering mode, collection length, timing,
+/// and current time. Call once per subsystem (patterns, palettes) with that
+/// subsystem's `len` and order.
+///
+/// - `order_kind`: 0 = hold, 1 = sequential, 2 = shuffle
+/// - `hold_index`: index of the held item, used only when `order_kind` is 0
+///
+/// Returns `Err` if `order_kind` is unknown or the playlist timing is unset.
+#[wasm_bindgen]
+#[allow(clippy::too_many_arguments)]
+pub fn active_playlist_selection(
+    order_kind: u8,
+    hold_index: u32,
+    len: u32,
+    offset_ms: i64,
+    dwell_ms: u32,
+    transition_ms: u32,
+    system_t: u64,
+) -> Result<ActivePlaylistSelection, JsValue> {
+    let selection = dmx_engine::render::autopilot::active_playlist_selection(
+        order_kind,
+        hold_index,
+        len,
+        offset_ms,
+        dwell_ms,
+        transition_ms,
+        system_t,
+    )
+    .map_err(|e| JsValue::from_str(&e))?;
+    Ok(ActivePlaylistSelection {
+        current_index: selection.curr_index,
+        next_index: selection.next_index,
+        transition_amount: selection.transition.unwrap_or(0.0),
+        transitioning: selection.transition.is_some(),
+        position_ms: selection.position_ms,
+    })
+}
+
 /// Analyzes mono audio samples and produces multi-LOD waveform data for
 /// rendering. Returns a protobuf-encoded `WaveformData` message.
 #[wasm_bindgen]

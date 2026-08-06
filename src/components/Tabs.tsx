@@ -36,7 +36,7 @@ export function Tabs({
             <div
               key={id}
               className={clsx(styles.tab, {
-                [styles.seleced]: id === selectedTab,
+                [styles.selected]: id === selectedTab,
               })}
               tabIndex={0}
               onClick={() => setSelectedTab(id)}

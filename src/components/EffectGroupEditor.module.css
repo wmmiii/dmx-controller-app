@@ -1,0 +1,50 @@
+.details-pane {
+  left: 1px solid var(--col-border);
+  display: flex;
+  flex: 1;
+  flex-direction: row;
+  overflow-x: auto;
+}
+
+.effect {
+  flex-shrink: 0;
+  padding: 0 var(--space-2) var(--space-1);
+  overflow-x: hidden;
+  overflow-y: auto;
+  border-right: 1px solid var(--col-border);
+}
+
+.header {
+  display: flex;
+  flex-direction: row;
+  flex-shrink: 0;
+  gap: var(--space-2);
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--space-1);
+  h2,
+  h3 {
+    margin: var(--space-1) 0;
+  }
+}
+
+.new-effect {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  height: 100%;
+  padding: var(--space-2);
+}
+
+.state-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin: var(--space-2) 0;
+
+  & > * {
+    flex: 1;
+  }
+}

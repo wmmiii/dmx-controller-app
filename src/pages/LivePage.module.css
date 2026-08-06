@@ -134,14 +134,6 @@
       padding: var(--space-1) 0;
     }
   }
-
-  .details-pane {
-    left: 1px solid var(--col-border);
-    display: flex;
-    flex: 1;
-    flex-direction: row;
-    overflow-x: auto;
-  }
 }
 
 .effect {

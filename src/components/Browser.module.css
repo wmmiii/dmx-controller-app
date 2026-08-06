@@ -4,6 +4,10 @@
   align-items: stretch;
 }
 
+.wrapper.list-only .list-container {
+  width: 100%;
+}
+
 .list-container {
   position: relative;
   display: flex;

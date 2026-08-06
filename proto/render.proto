@@ -15,6 +15,8 @@ message RenderMode {
 
   message Scene { uint64 scene_id = 1; }
 
+  message Autopilot { uint64 playlist_id = 1; }
+
   message TimecodedShow {
     uint64 show_id = 1;
 
@@ -30,5 +32,6 @@ message RenderMode {
     GroupDebug group_debug = 3;
     Scene scene = 4;
     TimecodedShow timecoded_show = 5;
+    Autopilot autopilot = 6;
   }
 }

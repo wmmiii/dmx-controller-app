@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package dmx_controller;
+
+import "proto/color.proto";
+import "proto/targeted_effect.proto";
+
+message Pattern {
+  uint64 id = 1;
+  string name = 2;
+  repeated TargetedEffect targeted_effects = 3;
+}
+
+message Playlist {
+  message Hold { uint64 id = 1; }
+  message Sequential {}
+  message Shuffle {}
+
+  string name = 1;
+  repeated Pattern patterns = 2;
+  repeated ColorPalette palettes = 3;
+
+  oneof pattern_order {
+    Hold pattern_hold = 4;
+    Sequential pattern_sequential = 5;
+    Shuffle pattern_shuffle = 6;
+  }
+
+  oneof palette_order {
+    Hold palette_hold = 7;
+    Sequential palette_sequential = 8;
+    Shuffle palette_shuffle = 9;
+  }
+
+  uint32 dwell_ms = 10;
+  uint32 transition_ms = 11;
+
+  // Transition overrides
+  int64 pattern_offset_ms = 12;
+  uint64 last_active_pattern = 13;
+  uint64 pattern_start_transition = 14;
+  uint64 pattern_transition_duration = 15;
+
+  int64 palette_offset_ms = 16;
+  uint64 last_active_palette = 17;
+  uint64 palette_start_transition = 18;
+  uint64 palette_transition_duration = 19;
+}

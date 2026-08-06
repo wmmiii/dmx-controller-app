@@ -3,6 +3,7 @@ syntax = "proto3";
 package dmx_controller;
 
 import "proto/audio.proto";
+import "proto/autopilot.proto";
 import "proto/beat.proto";
 import "proto/controller.proto";
 import "proto/display.proto";
@@ -35,6 +36,10 @@ message Project {
 
   map<uint64, TimecodedShow> shows = 31;
   uint64 selected_show = 32;
+
+  // Autopilot playlists.
+  map<uint64, Playlist> playlists = 66;
+  uint64 active_playlist = 67;
 
   // Fixture sequence 0 is reserved for the "unset" sequence.
   map<uint64, Sequence> sequences = 33;
