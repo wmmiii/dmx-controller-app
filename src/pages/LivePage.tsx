@@ -14,38 +14,27 @@ import {
   Scene_Tile_LoopDetailsSchema,
   Scene_Tile_OneShotDetailsSchema,
 } from '@dmx-controller/proto/scene_pb';
-import {
-  type TargetedEffect,
-  TargetedEffectSchema,
-} from '@dmx-controller/proto/targeted_effect_pb';
 import { JSX, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { BiPencil, BiPlus, BiTrash, BiX } from 'react-icons/bi';
 
+import { AudioControls } from '../components/AudioControls';
 import { AudioLevels } from '../components/AudioLevels';
 import { Button, IconButton } from '../components/Button';
 import { ClipboardControls } from '../components/ClipboardControls';
 import { ControllerConnection } from '../components/ControllerConnection';
 import { DurationInput } from '../components/Duration';
+import { EffectGroupEditor } from '../components/EffectGroupEditor';
 import { EditableText, NumberInput, TextInput } from '../components/Input';
-import { LiveBeat } from '../components/LiveBeat';
 import { Modal } from '../components/Modal';
-import {
-  OutputSelector,
-  getOutputTargetName,
-} from '../components/OutputSelector';
 import { PaletteSwatch } from '../components/Palette';
 import { RangeSlider } from '../components/RangeSlider';
-import { Select } from '../components/Select';
 import { Spacer } from '../components/Spacer';
 import { Tabs, TabsType } from '../components/Tabs';
 import { TileGrid } from '../components/TileGrid';
-import { EffectDetails } from '../components/TimecodeEffect';
 import { Toggle } from '../components/Toggle';
-import { AudioInputContext } from '../contexts/AudioInputContext';
 import { ControllerContext } from '../contexts/ControllerContext';
 import { PaletteContext } from '../contexts/PaletteContext';
 import { ProjectContext } from '../contexts/ProjectContext';
-import { getAvailableChannels } from '../engine/fixtures/fixture';
 import { deleteBindings } from '../external_controller/externalController';
 import { useRenderMode } from '../hooks/renderMode';
 import { DEFAULT_COLOR_PALETTE } from '../util/colorUtil';
@@ -60,14 +49,6 @@ const NEW_SCENE_KEY = 'new';
 export function LivePage(): JSX.Element {
   const { project, save } = useContext(ProjectContext);
   const projectRef = useRef<Project>(project);
-  const {
-    availableDevices: audioDevices,
-    selectedDevice: selectedAudioDevice,
-    select: selectAudio,
-    deselect: deselectAudio,
-    gainDb,
-    setGainDb,
-  } = useContext(AudioInputContext);
 
   const [selectedId, setSelectedId] = useState<bigint>(0n);
   const [editPalette, setEditPalette] = useState(false);
@@ -299,36 +280,7 @@ export function LivePage(): JSX.Element {
         after={
           <>
             <Spacer />
-            {selectedAudioDevice && (
-              <AudioLevels className={styles.audioLevels} />
-            )}
-            {selectedAudioDevice && (
-              <label className={styles.audioGain}>
-                <NumberInput
-                  mode="db"
-                  title="Gain dB"
-                  value={gainDb}
-                  onChange={setGainDb}
-                />
-              </label>
-            )}
-            <Select
-              className={styles.audioSelect}
-              value={selectedAudioDevice ?? ''}
-              onChange={(value) => {
-                if (value === '') {
-                  deselectAudio();
-                } else {
-                  selectAudio(value);
-                }
-              }}
-              options={[
-                { value: '', label: 'No Audio Input' },
-                ...audioDevices.map((d) => ({ value: d.name, label: d.name })),
-              ]}
-              placeholder="Audio Input"
-            />
-            <LiveBeat className={styles.beat} />
+            <AudioControls />
           </>
         }
       />
@@ -528,7 +480,6 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
         <hr />
         <div className={styles.row}>
           <Toggle
-            className={styles.switch}
             value={tile.timingDetails.case === 'oneShot'}
             onChange={(oneShot) => {
               if (oneShot) {
@@ -603,100 +554,4 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
       )}
     </Modal>
   );
-}
-
-interface EffectGroupEditorProps {
-  targetedEffects: TargetedEffect[];
-  name: string;
-}
-
-function EffectGroupEditor({ targetedEffects, name }: EffectGroupEditorProps) {
-  const { project, save } = useContext(ProjectContext);
-
-  return (
-    <div className={styles.detailsPane}>
-      {targetedEffects.map((c, i) => {
-        if (c.effect == null) {
-          throw new Error('Effect is not defined!');
-        }
-        return (
-          <div key={i} className={styles.effect}>
-            <div className={styles.header}>
-              <h3>Effect {i + 1}</h3>
-            </div>
-            <div className={styles.header}>
-              <ClipboardControls
-                typeName="effect channel"
-                schema={TargetedEffectSchema}
-                value={c}
-                onPaste={(c) => {
-                  targetedEffects[i] = clone(TargetedEffectSchema, c);
-                  save('Paste effect.');
-                }}
-              />
-              <Spacer />
-              <IconButton
-                title="Delete Effect"
-                variant="warning"
-                onClick={() => {
-                  targetedEffects.splice(i, 1);
-                  save(`Delete effect from ${name}`);
-                }}
-              >
-                <BiTrash />
-              </IconButton>
-            </div>
-            <label className={styles.stateHeader}>
-              <span>Output</span>
-              <OutputSelector
-                value={c.outputTarget}
-                setValue={(o) => {
-                  c.outputTarget = o;
-                  save(
-                    `Set effect output to ${getOutputTargetName(project, o)}.`,
-                  );
-                }}
-              />
-            </label>
-            <EffectDetails
-              effect={c.effect}
-              showPhase={c.outputTarget?.output.case === 'group'}
-              availableChannels={getAvailableChannels(c.outputTarget, project)}
-              isDisplay={c.outputTarget?.output.case === 'display'}
-            />
-          </div>
-        );
-      })}
-      <div className={styles.newEffect}>
-        <IconButton
-          title="Add Effect"
-          onClick={() => {
-            targetedEffects.push(createTargetedEffect());
-            save('Add effect.');
-          }}
-        >
-          <BiPlus />
-        </IconButton>
-      </div>
-    </div>
-  );
-}
-
-function createTargetedEffect() {
-  return create(TargetedEffectSchema, {
-    effect: {
-      effect: {
-        case: 'staticEffect',
-        value: {
-          state: {},
-        },
-      },
-    },
-    outputTarget: {
-      output: {
-        case: undefined,
-        value: undefined,
-      },
-    },
-  });
 }

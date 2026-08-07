@@ -1,0 +1,101 @@
+.wrapper {
+  position: absolute;
+  inset: 0;
+}
+
+.body {
+  position: absolute;
+  display: grid;
+  grid-template-rows: max-content 1fr;
+  grid-template-columns: max-content 1fr max-content;
+  inset: 0;
+}
+
+.controls,
+.main-controls {
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-2);
+  padding: var(--space-2);
+
+  label {
+    display: flex;
+    flex-direction: row;
+    gap: var(--space-1);
+    align-items: center;
+  }
+
+  .select {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &.main-controls {
+    padding: var(--space-2) 0;
+  }
+}
+
+.add-button {
+  width: 100%;
+  margin-top: calc(-1 * var(--space-2));
+}
+
+.pattern {
+  display: flex;
+  flex-direction: row;
+  min-width: 0;
+  min-height: 0;
+  overflow-x: auto;
+  border-top: 1px solid var(--col-border);
+  border-right: 1px solid var(--col-border);
+}
+
+.palettes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2);
+}
+
+.palettesList {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.progressItem {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: unset;
+}
+
+.progressRow {
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-1);
+  align-items: center;
+}
+
+.progressName {
+  flex: 1;
+  min-width: 0;
+}
+
+.patternControls {
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-2);
+}
+
+.progressTrack {
+  height: 4px;
+  overflow: hidden;
+  background: var(--col-bg-higher);
+  border-radius: 2px;
+}
+
+.progressBar {
+  width: 0;
+  height: 100%;
+  background: var(--col-accent);
+}

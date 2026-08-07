@@ -1,4 +1,5 @@
 // Declare submodules
+pub mod autopilot;
 pub mod display_render_target;
 pub mod dmx_render_target;
 mod preset_effect;

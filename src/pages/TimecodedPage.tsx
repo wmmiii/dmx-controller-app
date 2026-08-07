@@ -96,16 +96,19 @@ export function TimecodedPage() {
               }}
             />
             {project.selectedShow === BigInt(showId) && (
-              <BiTrash
-                size="1em"
-                onClick={(ev) => {
-                  delete project.shows[showId];
+              <>
+                &nbsp;
+                <BiTrash
+                  size="1em"
+                  onClick={(ev) => {
+                    delete project.shows[showId];
 
-                  project.selectedShow = 0n;
-                  save(`Delete timecoded show ${show.name}.`);
-                  ev.stopPropagation();
-                }}
-              />
+                    project.selectedShow = 0n;
+                    save(`Delete timecoded show ${show.name}.`);
+                    ev.stopPropagation();
+                  }}
+                />
+              </>
             )}
           </>
         ),

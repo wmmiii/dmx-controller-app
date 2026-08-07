@@ -4,7 +4,8 @@ use std::sync::{LazyLock, Mutex};
 use crate::audio::AudioAnalysis;
 use crate::beat::{beat_t, effective_beat_metadata};
 use crate::palette::interpolated_scene_palette;
-use crate::proto::render_mode::TimecodedShow;
+use crate::proto::render_mode::{Autopilot, TimecodedShow};
+use crate::render::autopilot::render_playlist;
 use crate::render::timecoded_show::render_timecoded_show;
 use crate::visualizer::uniforms::ShaderUniforms;
 use crate::{
@@ -39,6 +40,8 @@ pub enum RenderError {
     LockError(String),
     /// Scene rendering error.
     SceneError(String),
+    /// Autopilot playlist rendering error.
+    PlaylistError(String),
     /// Timecoded show rendering error.
     TimecodedShowError(String),
 }
@@ -56,6 +59,7 @@ impl fmt::Display for RenderError {
             Self::MissingFixtureDefinitions => write!(f, "Fixture definitions not defined"),
             Self::LockError(msg) => write!(f, "Failed to lock: {msg}"),
             Self::SceneError(msg) => write!(f, "Scene error: {msg}"),
+            Self::PlaylistError(msg) => write!(f, "Playlist error: {msg}"),
             Self::TimecodedShowError(msg) => write!(f, "Timecoded show error: {msg}"),
         }
     }
@@ -339,6 +343,10 @@ fn render<T: RenderTarget<T>>(
             audio_analysis,
         )
         .map_err(RenderError::SceneError),
+        Some(Mode::Autopilot(Autopilot { playlist_id })) => {
+            render_playlist(*playlist_id, render_target, system_t, frame, project)
+                .map_err(RenderError::PlaylistError)
+        }
         Some(Mode::TimecodedShow(TimecodedShow {
             show_id,
             state: Some(s),

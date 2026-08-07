@@ -23,6 +23,7 @@ import { ControllerContext } from './contexts/ControllerContext';
 import { ProjectContext } from './contexts/ProjectContext';
 import { AboutPage } from './pages/AboutPage';
 import AssetBrowserPage from './pages/AssetBrowserPage';
+import { AutopilotPage } from './pages/AutopilotPage';
 import { ControllerPage } from './pages/ControllerPage';
 import { LivePage } from './pages/LivePage';
 import ProjectPage from './pages/ProjectPage';
@@ -47,26 +48,31 @@ export default function Index(): JSX.Element {
       onSelect: () => navigate('/live'),
     },
     {
+      title: 'Autopilot',
+      onSelect: () => navigate('/autopilot'),
+    },
+    {
       title: 'Timecoded Show',
       onSelect: () => navigate('/timecoded'),
+    },
+    { type: 'separator' },
+    {
+      title: 'Patch',
+      onSelect: () => navigate('/patch'),
     },
     {
       title: 'Assets',
       onSelect: () => navigate('/assets'),
     },
     {
-      title: 'Patch',
-      onSelect: () => navigate('/patch'),
-    },
-    {
       title: 'MIDI',
       onSelect: () => navigate('/controller'),
     },
+    { type: 'separator' },
     {
       title: 'Project Settings',
       onSelect: () => navigate('/project'),
     },
-    { type: 'separator' },
     {
       title: 'New Project',
       icon: <BiFile />,
@@ -219,6 +225,7 @@ export default function Index(): JSX.Element {
             <Route path="/" element={<LivePage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/assets" element={<AssetBrowserPage />} />
+            <Route path="/autopilot" element={<AutopilotPage />} />
             <Route path="/controller" element={<ControllerPage />} />
             <Route path="/live" element={<LivePage />} />
             <Route path="/patch" element={<PatchPage />} />

@@ -3,7 +3,7 @@ import { InputBinding } from '@dmx-controller/proto/controller_pb';
 import { RgbColor, Wheel } from '@uiw/react-color';
 import clsx from 'clsx';
 import { useCallback, useContext, useState } from 'react';
-import { BiPencil, BiTrash } from 'react-icons/bi';
+import { BiCog, BiTrash } from 'react-icons/bi';
 
 import { ProjectContext } from '../contexts/ProjectContext';
 import { colorToHex, stringifyColor } from '../util/colorUtil';
@@ -88,7 +88,7 @@ export function PaletteSwatch({
             title="Modify palette"
             onClick={() => setEditPalette(true)}
           >
-            <BiPencil />
+            <BiCog />
           </IconButton>
         </Popover>
       )}

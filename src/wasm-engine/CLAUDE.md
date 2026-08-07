@@ -10,6 +10,7 @@ The WASM module currently exposes:
 - `effective_beat_t(...)` - Calculate beat position during tempo transitions
 - `analyze_waveform(samples, sample_rate)` - Analyze mono audio samples into multi-LOD waveform data (returns a protobuf-encoded `WaveformData`); called from the waveform web worker (`src/audio/waveformWorker.ts`)
 - `TrackBeatConverter` - Class that decodes a protobuf-encoded `Track` once at construction and exposes `beat_at_time(t_ms)` / `time_at_beat(beat)` conversions between absolute track time and fractional beat position; used via `getTrackBeatConverters` in `src/wasm/engine.ts`
+- `active_playlist_selection(order_kind, hold_index, len, offset_ms, dwell_ms, transition_ms, system_t)` - Computes which pattern/palette in an autopilot playlist is currently active from raw scalars (no playlist serialization); returns current/next index into the caller's collection, crossfade amount, and position within the dwell+transition cycle. Called once per subsystem via `getActivePlaylistSelection` in `src/wasm/engine.ts`; shares its logic with the native render path in `src-engine/src/render/autopilot.rs`
 
 These functions reuse the logic in `src-engine` (`beat.rs`, `waveform.rs`) but are compiled to WASM for direct use in the browser.
 

@@ -15,10 +15,6 @@
     z-index: 1;
   }
 
-  &:hover {
-    background-color: var(--col-bg-tile-hover);
-  }
-
   &.active {
     background-color: var(--col-bg-tile);
     border-color: var(--col-interactive);

@@ -1,0 +1,22 @@
+.audio-levels {
+  width: 8em;
+  height: 100%;
+  margin: 0 var(--space-1);
+}
+
+.audio-select {
+  justify-self: center;
+}
+
+.audio-gain {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: 2px;
+  align-items: center;
+  font-size: 0.75em;
+}
+
+.beat {
+  flex-shrink: 0;
+}
