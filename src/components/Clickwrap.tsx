@@ -35,7 +35,7 @@ export function Clickwrap({ children }: ClickwrapProps): JSX.Element {
         <p>
           {returning
             ? 'We’ve updated our legal documents. Please take a look and accept the latest versions to keep going.'
-            : 'A heads up before you dive in: this app uses an experimental interface designed outside of lighting-industry norms, so expect it to look and behave differently from traditional consoles. First, please review and accept the Terms of Service and Privacy Policy.'}
+            : 'Before we get started, please review and accept the Terms of Service and Privacy Policy.'}
         </p>
       </div>
       {!tosAccepted && (
