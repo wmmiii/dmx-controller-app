@@ -255,6 +255,10 @@ pub fn render_display_target(
     nested_result.map_err(RenderError::LockError)?
 }
 
+/// First `system_t` (Unix ms) observed while building shader uniforms. Used to
+/// make `u_time_ms` session-relative so it stays within float32 precision.
+static TIME_ANCHOR_MS: std::sync::OnceLock<u64> = std::sync::OnceLock::new();
+
 /// Build the flattened shader uniforms from the final interpolated display
 /// state. Computed once per display and shared by every shader in the tree.
 #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
@@ -279,7 +283,9 @@ fn build_shader_uniforms(
     let mut uniforms = ShaderUniforms::default();
     uniforms.color = color_to_rgb(target.color.as_ref());
     uniforms.set_resolution(width as f32, height as f32);
-    uniforms.time_ms = system_t as u32;
+    // Anchor time to the first frame rather than the Unix epoch.
+    // A session-relative value stays small enough to keep sub-ms precision.
+    uniforms.time_ms = system_t.saturating_sub(*TIME_ANCHOR_MS.get_or_init(|| system_t)) as u32;
     uniforms.beat_t = beat_fract;
     uniforms.beat_count = beat_count;
     uniforms.palette_primary = palette_rgb(palette.primary.as_ref());

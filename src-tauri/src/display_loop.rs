@@ -166,10 +166,6 @@ impl DisplayLoopManager {
     ) -> Result<(), String> {
         let frame_duration = Duration::from_millis(1000 / u64::from(DEFAULT_DISPLAY_FPS));
         let mut frame = 0u32;
-        let visualization_interval = (DEFAULT_DISPLAY_FPS / VISUALIZATION_FPS).max(1);
-        // Errors are emitted on transition only; re-sending an unchanged state
-        // every frame wakes the frontend 30 times a second for nothing.
-        let mut output_errors: HashMap<u64, Option<String>> = HashMap::new();
 
         log::info!(
             "Starting unified display loop at {DEFAULT_DISPLAY_FPS} FPS (visualization at {VISUALIZATION_FPS} FPS)"
@@ -274,7 +270,6 @@ impl DisplayLoopManager {
             let shader_state = app.try_state::<Arc<StdMutex<ShaderState>>>();
 
             // Render all displays
-            let emit_visualization = frame % visualization_interval == 0;
             let mut buffers: HashMap<u64, DisplayBuffer> = HashMap::new();
             for display_id in &config.display_ids {
                 let data = match render_display_target(*display_id, system_t, frame) {
@@ -288,14 +283,12 @@ impl DisplayLoopManager {
 
                 let buffer = render_display_buffer(*display_id, &data, shader_state.as_deref());
 
-                if emit_visualization {
-                    let event = DisplayRenderEvent {
-                        display_id: display_id.to_string(),
-                        data: buffer.downsample(MAX_VISUALIZATION_SIZE).encode_to_vec(),
-                    };
-                    if let Err(e) = app.emit("display-render", event) {
-                        log::error!("Failed to emit display render event: {e}");
-                    }
+                let event = DisplayRenderEvent {
+                    display_id: display_id.to_string(),
+                    data: buffer.downsample(MAX_VISUALIZATION_SIZE).encode_to_vec(),
+                };
+                if let Err(e) = app.emit("display-render", event) {
+                    log::error!("Failed to emit display render event: {e}");
                 }
                 buffers.insert(*display_id, buffer);
             }
@@ -303,23 +296,15 @@ impl DisplayLoopManager {
             // Output to all DDP devices
             for ddp_config in &config.ddp_outputs {
                 let mut ddp = ddp_state.lock().await;
-                let result = ddp.output_ddp_internal(
+                if let Err(e) = ddp.output_ddp_internal(
                     &buffers,
                     &ddp_config.ddp_output,
                     ddp_config.output_id,
                     &ddp_config.mappings,
-                );
-                drop(ddp);
-
-                let error = result.err();
-                if output_errors.get(&ddp_config.output_id) != Some(&error) {
-                    match &error {
-                        Some(message) => {
-                            Self::emit_error(ddp_config.output_id, message.clone(), &app);
-                        }
-                        None => Self::clear_error(ddp_config.output_id, &app),
-                    }
-                    output_errors.insert(ddp_config.output_id, error);
+                ) {
+                    Self::emit_error(ddp_config.output_id, e, &app);
+                } else {
+                    Self::clear_error(ddp_config.output_id, &app);
                 }
             }
 

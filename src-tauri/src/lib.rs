@@ -85,6 +85,13 @@ pub fn run() {
                 app.handle().plugin(
                     tauri_plugin_log::Builder::default()
                         .level(log::LevelFilter::Info)
+                        // wgpu/naga log adapter and instance details at Info on
+                        // every device init, which floods the log. Only surface
+                        // their warnings and errors.
+                        .level_for("wgpu", log::LevelFilter::Warn)
+                        .level_for("wgpu_core", log::LevelFilter::Warn)
+                        .level_for("wgpu_hal", log::LevelFilter::Warn)
+                        .level_for("naga", log::LevelFilter::Warn)
                         .build(),
                 )?;
             }
