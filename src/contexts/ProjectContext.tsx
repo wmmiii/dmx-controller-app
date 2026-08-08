@@ -24,6 +24,8 @@ import {
 } from '../system_interfaces/project';
 import upgradeProject from '../util/projectUpgrader';
 
+import { Loading } from '../components/fillers';
+
 import styles from './ProjectContext.module.css';
 import { useShortcuts } from './ShortcutContext';
 
@@ -49,6 +51,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
 
   const [lastLoad] = useState(new Date());
   const [lastOperation, setLastOperation] = useState<string | null>(null);
+  const [isOpening, setIsOpening] = useState(false);
 
   // Update coalescing: drop intermediate updates when updates are queued rapidly
   const updateInFlightRef = useRef(false);
@@ -191,6 +194,18 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
     [undoState, undoProjectCommand, redoProjectCommand],
   );
 
+  const runWithLoading = useCallback(
+    async (command: 'import_project' | 'new_project') => {
+      setIsOpening(true);
+      try {
+        await invoke(command);
+      } finally {
+        setIsOpening(false);
+      }
+    },
+    [],
+  );
+
   if (project == null) {
     return (
       <div className={styles.loading}>
@@ -210,14 +225,15 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
         save: save,
         update: update,
         downloadProject: () => invoke('export_project'),
-        openProject: () => invoke('import_project'),
-        newProject: () => invoke('new_project'),
+        openProject: () => runWithLoading('import_project'),
+        newProject: () => runWithLoading('new_project'),
         lastOperation: lastOperation,
         canUndo: undoState.canUndo,
         canRedo: undoState.canRedo,
       }}
     >
       {children}
+      {isOpening && <Loading />}
     </ProjectContext.Provider>
   );
 }

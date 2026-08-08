@@ -16,9 +16,12 @@
 
 .loading {
   position: absolute;
+  z-index: var(--z-index-interactive-mask);
   display: flex;
   align-items: center;
   justify-content: center;
+  background-color: color-mix(in srgb, var(--col-bg) 50%, transparent);
+  backdrop-filter: blur(16px);
   inset: 0;
 
   .dots {
