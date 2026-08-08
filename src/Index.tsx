@@ -10,7 +10,7 @@ import {
   BiUndo,
   BiUpload,
 } from 'react-icons/bi';
-import { Outlet, useNavigate } from 'react-router';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router';
 
 import styles from './Index.module.css';
 import { Button, ControllerButton, IconButton } from './components/Button';
@@ -39,7 +39,9 @@ export default function Index(): JSX.Element {
     canUndo,
     canRedo,
   } = useContext(ProjectContext);
+  const { pathname } = useLocation();
   const navigate = useNavigate();
+  const patch = getActivePatch(project);
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [showNewProjectDialog, setShowNewProjectDialog] = useState(false);
@@ -189,7 +191,7 @@ export default function Index(): JSX.Element {
             <BiMenu />
           </IconButton>
         </Popover>
-        {sortedEntries(getActivePatch(project).outputs)
+        {sortedEntries(patch.outputs)
           .filter(([_, output]) => output.enabled)
           .map(([outputId, output], i) => {
             switch (output.output.case) {
@@ -212,6 +214,16 @@ export default function Index(): JSX.Element {
             }
           })}
         <DisplayVisualizer />
+        {Object.keys(patch.outputs).length === 0 && (
+          <div className={styles.message}>
+            The patch "{patch.name}" has no registered outputs.
+            {!pathname.startsWith('/patch') && (
+              <>
+                Visit the <Link to="/patch">Patch page</Link> to add some.
+              </>
+            )}
+          </div>
+        )}
         <Spacer />
         <div className={styles.message}>{lastOperation}</div>
         <IconButton title="Undo" onClick={undoProject} disabled={!canUndo}>
