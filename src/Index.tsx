@@ -6,6 +6,8 @@ import {
   BiFile,
   BiInfoCircle,
   BiMenu,
+  BiRedo,
+  BiUndo,
   BiUpload,
 } from 'react-icons/bi';
 import { Route, Routes, useNavigate } from 'react-router';
@@ -29,14 +31,22 @@ import { LivePage } from './pages/LivePage';
 import ProjectPage from './pages/ProjectPage';
 import { TimecodedPage } from './pages/TimecodedPage';
 import PatchPage from './pages/patch/PatchPage';
+import { redoProject, undoProject } from './system_interfaces/project';
 import { getActivePatch } from './util/projectUtils';
 import { sortedEntries } from './util/sortUtils';
 
 export default function Index(): JSX.Element {
   const { connectedDevices, connect: connectMidi } =
     useContext(ControllerContext);
-  const { project, downloadProject, openProject, newProject, lastOperation } =
-    useContext(ProjectContext);
+  const {
+    project,
+    downloadProject,
+    openProject,
+    newProject,
+    lastOperation,
+    canUndo,
+    canRedo,
+  } = useContext(ProjectContext);
   const navigate = useNavigate();
 
   const [menuOpen, setMenuOpen] = useState(false);
@@ -212,6 +222,12 @@ export default function Index(): JSX.Element {
         <DisplayVisualizer />
         <Spacer />
         <div className={styles.message}>{lastOperation}</div>
+        <IconButton title="Undo" onClick={undoProject} disabled={!canUndo}>
+          <BiUndo />
+        </IconButton>
+        <IconButton title="Redo" onClick={redoProject} disabled={!canRedo}>
+          <BiRedo />
+        </IconButton>
         <ControllerButton
           title="Midi Controller"
           iconOnly={true}

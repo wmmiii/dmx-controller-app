@@ -40,6 +40,8 @@ export const ProjectContext = createContext({
   openProject: () => {},
   newProject: () => {},
   lastOperation: null as string | null,
+  canUndo: false,
+  canRedo: false,
 });
 
 export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
@@ -211,6 +213,8 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
         openProject: () => invoke('import_project'),
         newProject: () => invoke('new_project'),
         lastOperation: lastOperation,
+        canUndo: undoState.canUndo,
+        canRedo: undoState.canRedo,
       }}
     >
       {children}

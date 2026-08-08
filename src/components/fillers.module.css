@@ -1,0 +1,48 @@
+.empty {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: center;
+  justify-content: center;
+  color: var(--col-text-dim);
+  font-size: var(--dim-text-size-lg);
+  inset: 0;
+}
+
+.content {
+  max-width: 20em;
+}
+
+.loading {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  inset: 0;
+
+  .dots {
+    position: relative;
+
+    div {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background-color: var(--col-accent);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+  }
+}
+
+@keyframes pulse {
+  40% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}

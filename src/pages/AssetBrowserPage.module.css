@@ -15,13 +15,19 @@
   color: var(--col-text-dim);
 }
 
-.waveform {
+.waveform-wrapper {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
   height: 100px;
+}
+
+.waveform {
+  position: absolute;
   color: var(--col-text-dim);
+  inset: 0;
 
   --col-beat: #4a4a4a;
   --col-playhead: #ff0000;

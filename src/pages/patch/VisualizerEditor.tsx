@@ -104,7 +104,22 @@ export function VisualizerEditor() {
           Add Visualizer
         </Button>
       }
-      emptyPlaceholder="Select visualizer to edit."
+      emptyPlaceholder={
+        <>
+          <p>Select a visualizer to edit.</p>
+          <p>
+            A visualizer is a GLSL fragment shader that renders onto a display.
+            It can react to the audio state or the beat.
+          </p>
+          <p>
+            Think of them as{' '}
+            <a href="https://www.shadertoy.com/" target="_blank" rel="noopener">
+              ShaderToy
+            </a>{' '}
+            for your lighting.
+          </p>
+        </>
+      }
     >
       {selectedId !== null ? (
         <VisualizerEditorPane

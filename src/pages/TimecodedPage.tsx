@@ -45,6 +45,7 @@ import { EffectSchema, LayerSchema } from '@dmx-controller/proto/effect_pb';
 import { RenderMode_TimecodedShow } from '@dmx-controller/proto/render_pb';
 import clsx from 'clsx';
 import { ColorSwatch } from '../components/ColorSwatch';
+import { Loading } from '../components/fillers';
 import {
   getOutputTargetName,
   OutputSelector,
@@ -580,7 +581,7 @@ function TimecodedBody({ show }: TimecodedBodyProps) {
               getPlayheadMs={() => getCurrentTimeMs(trackId!)}
             />
           ) : (
-            <div>Loading...</div>
+            <Loading />
           )}
         </div>
         {selectedEffect?.effect ? (

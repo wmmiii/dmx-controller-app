@@ -66,7 +66,20 @@ export function DisplayEditor() {
           Add New Display
         </Button>
       }
-      emptyPlaceholder="Select display to edit."
+      emptyPlaceholder={
+        <>
+          <p>Select a display to edit.</p>
+          <p>
+            A display is a single image onto which visuals are drawn. Physical
+            devices (such as WLED fixtures using the DDP protocol) each render
+            some or all of that image.
+          </p>
+          <p>
+            This lets you combine several devices into one display, so separate
+            fixtures can act as one continuous picture.
+          </p>
+        </>
+      }
     >
       {selectedDisplayId !== null && selectedDisplay !== null ? (
         <DisplayEditorPane

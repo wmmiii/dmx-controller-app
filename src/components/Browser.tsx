@@ -1,6 +1,8 @@
 import clsx from 'clsx';
+import { JSX } from 'react';
 import styles from './Browser.module.css';
 import { EditableText } from './Input';
+import { Empty } from './fillers';
 
 type BrowserProps = {
   className?: string;
@@ -19,7 +21,7 @@ type BrowserProps = {
   listHeader?: React.ReactNode;
 } & (
   | {
-      emptyPlaceholder: string;
+      emptyPlaceholder: JSX.Element;
       children: React.ReactNode;
     }
   // If we are just rendering the tabs then neither the placeholder nor the children will be set.
@@ -77,11 +79,7 @@ export function Browser({
       </div>
       {emptyPlaceholder ? (
         <div className={styles.content}>
-          {children ? (
-            children
-          ) : (
-            <div className={styles.empty}>{emptyPlaceholder}</div>
-          )}
+          {children ? children : <Empty>{emptyPlaceholder}</Empty>}
         </div>
       ) : null}
     </div>

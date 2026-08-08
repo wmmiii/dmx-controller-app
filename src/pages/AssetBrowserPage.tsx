@@ -23,6 +23,7 @@ import {
 } from '../audio/audioTrackRegistry';
 import { Browser } from '../components/Browser';
 import { Button, IconButton } from '../components/Button';
+import { Loading } from '../components/fillers';
 import { NumberInput } from '../components/Input';
 import { Spacer } from '../components/Spacer';
 import { Waveform } from '../components/Waveform';
@@ -72,7 +73,14 @@ export default function AssetBrowserPage() {
           Add track
         </Button>
       }
-      emptyPlaceholder="Select a track to edit."
+      emptyPlaceholder={
+        <>
+          <p>Select a track to edit.</p>
+          <p>
+            Audio files can be imported as tracks to use within timecoded shows.
+          </p>
+        </>
+      }
     >
       {selectedId !== null && selectedTrack != null ? (
         <TrackDetails trackId={selectedId} track={selectedTrack} />
@@ -216,25 +224,27 @@ function TrackDetails({ trackId, track }: TrackDetailsProps) {
           Beat: <span ref={beatIndicatorRef}>—</span>
         </div>
       </div>
-      {waveformQuery.isSuccess && viewEnd !== null ? (
-        <Waveform
-          className={styles.waveform}
-          waveformData={waveformQuery.data}
-          startMs={viewStart}
-          endMs={viewEnd}
-          msToBeat={beatConverters?.msToBeat}
-          beatToMs={beatConverters?.beatToMs}
-          onViewChange={(startMs, endMs) => {
-            setViewStart(startMs);
-            setViewEnd(endMs);
-          }}
-          onSeek={(timeMs) => seek(trackId, timeMs)}
-          playing={playing}
-          getPlayheadMs={() => getCurrentTimeMs(trackId)}
-        />
-      ) : (
-        <div className={styles.waveform}>Loading...</div>
-      )}
+      <div className={styles.waveformWrapper}>
+        {waveformQuery.isSuccess && viewEnd !== null ? (
+          <Waveform
+            className={styles.waveform}
+            waveformData={waveformQuery.data}
+            startMs={viewStart}
+            endMs={viewEnd}
+            msToBeat={beatConverters?.msToBeat}
+            beatToMs={beatConverters?.beatToMs}
+            onViewChange={(startMs, endMs) => {
+              setViewStart(startMs);
+              setViewEnd(endMs);
+            }}
+            onSeek={(timeMs) => seek(trackId, timeMs)}
+            playing={playing}
+            getPlayheadMs={() => getCurrentTimeMs(trackId)}
+          />
+        ) : (
+          <Loading />
+        )}
+      </div>
       <div className={styles.beatControls}>
         <label>
           BPM{' '}

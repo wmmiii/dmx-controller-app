@@ -1,5 +1,6 @@
 import type * as Monaco from 'monaco-editor';
 import { Suspense, lazy, useEffect, useRef } from 'react';
+import { Loading } from './fillers';
 
 const MonacoEditorInner = lazy(() =>
   import('@monaco-editor/react').then((m) => ({ default: m.Editor })),
@@ -49,7 +50,7 @@ export function MonacoEditor({
   }, [error]);
 
   return (
-    <Suspense fallback={<div>Loading editor...</div>}>
+    <Suspense fallback={<Loading />}>
       <MonacoEditorInner
         height="100%"
         language="c"

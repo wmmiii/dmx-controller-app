@@ -73,15 +73,6 @@
   }
 }
 
-.empty {
-  position: absolute;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--col-text-dim);
-  inset: 0;
-}
-
 .content {
   position: relative;
   flex: 1;

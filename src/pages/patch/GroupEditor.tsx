@@ -105,7 +105,21 @@ export function GroupEditor() {
           Add New Group
         </Button>
       }
-      emptyPlaceholder="Select a group to edit."
+      emptyPlaceholder={
+        <>
+          <p>Select a group to edit.</p>
+          <p>
+            A group lets you control many fixtures as one. Groups usually map to
+            how you think about your lighting. For example: "Hanging Up-Stage",
+            "Ground Moving Heads", or "All Wash".
+          </p>
+          <p>
+            Groups live above any single patch. The same group can point to
+            different fixtures in each patch, so your effects and shows carry
+            over when you move to a new lighting setup.
+          </p>
+        </>
+      }
     >
       {selectedGroupId !== null && selectedGroup !== null ? (
         <GroupEditorPane

@@ -34,6 +34,7 @@ import { AudioControls } from '../components/AudioControls';
 import { Browser } from '../components/Browser';
 import { Button, IconButton } from '../components/Button';
 import { EffectGroupEditor } from '../components/EffectGroupEditor';
+import { Empty } from '../components/fillers';
 import { PaletteSwatch } from '../components/Palette';
 import { Popover } from '../components/Popover';
 import { Select } from '../components/Select';
@@ -441,8 +442,23 @@ function PlaylistBody({ playlist }: PlaylistBodyProps) {
             targetedEffects={pattern.targetedEffects}
             name={pattern.name}
           />
-        ) : // TODO: Add <Empty /> component here.
-        null}
+        ) : (
+          <Empty>
+            <p>Select a pattern to edit.</p>
+            <p>
+              Autopilot shows allow you to create lighting patterns that are
+              applied sequentially or randomly over time.
+            </p>
+            <p>
+              This allows you to create varied ambient lighting effects without
+              having to be at the controls.
+            </p>
+            <p>
+              You can also define and apply color palettes to randomize your
+              lights even more!
+            </p>
+          </Empty>
+        )}
       </div>
       <div className={styles.palettes}>
         <Button
