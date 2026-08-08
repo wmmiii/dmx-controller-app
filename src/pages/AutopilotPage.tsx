@@ -27,6 +27,7 @@ import {
   Playlist_HoldSchema,
   Playlist_SequentialSchema,
   Playlist_ShuffleSchema,
+  Playlist_TransitionSchema,
   PlaylistSchema,
 } from '@dmx-controller/proto/autopilot_pb';
 import { ColorPaletteSchema } from '@dmx-controller/proto/color_pb';
@@ -39,6 +40,7 @@ import { PaletteSwatch } from '../components/Palette';
 import { Popover } from '../components/Popover';
 import { Select } from '../components/Select';
 import { Spacer } from '../components/Spacer';
+import { ShortcutContext } from '../contexts/ShortcutContext';
 import { useRenderMode } from '../hooks/renderMode';
 import { DEFAULT_COLOR_PALETTE } from '../util/colorUtil';
 import { randomUint64 } from '../util/numberUtils';
@@ -48,6 +50,7 @@ import { getActivePlaylistSelection } from '../wasm/engine';
 import styles from './AutopilotPage.module.css';
 
 const NEW_PLAYLIST_KEY = 'new';
+const SKIP_DURATION = 1_500n;
 
 export function AutopilotPage() {
   const { project, save } = useContext(ProjectContext);
@@ -177,11 +180,40 @@ interface PlaylistBodyProps {
 }
 
 function PlaylistBody({ playlist }: PlaylistBodyProps) {
-  const { save: projectSave } = useContext(ProjectContext);
+  const { save } = useContext(ProjectContext);
+  const { setShortcuts } = useContext(ShortcutContext);
   const [selectedId, setSelectedId] = useState<bigint | null>(null);
-  const pattern = useMemo(() => {
-    return playlist.patterns.find((p) => p.id === selectedId) ?? null;
-  }, [playlist, selectedId]);
+  const pattern = useMemo(
+    () => playlist.patterns.find((p) => p.id === selectedId) ?? null,
+    [playlist, selectedId],
+  );
+
+  useEffect(
+    () =>
+      setShortcuts([
+        {
+          shortcut: {
+            key: 'ArrowRight',
+          },
+          action: () => {
+            skip(playlist, 1n);
+            save(`Next pattern.`);
+          },
+          description: 'Skip to next pattern.',
+        },
+        {
+          shortcut: {
+            key: 'ArrowLeft',
+          },
+          action: () => {
+            skip(playlist, -1n);
+            save(`Previous pattern.`);
+          },
+          description: 'Skip to previous pattern.',
+        },
+      ]),
+    [playlist],
+  );
 
   const patternProgressRefs = useRef(new Map<string, HTMLDivElement>());
   const paletteProgressRefs = useRef(new Map<string, HTMLDivElement>());
@@ -193,7 +225,7 @@ function PlaylistBody({ playlist }: PlaylistBodyProps) {
       items: Array<{ id: bigint }>,
       refs: Map<string, HTMLDivElement>,
     ) => {
-      const lifespanMs = playlist.dwellMs + 2 * playlist.transitionMs;
+      const period = playlist.dwellMs + 2 * playlist.transitionMs;
       items.forEach((item, idx) => {
         const bar = refs.get(String(item.id));
         if (!bar) {
@@ -203,15 +235,15 @@ function PlaylistBody({ playlist }: PlaylistBodyProps) {
         if (selection != null) {
           if (isHold) {
             fraction = idx === selection.currentIndex ? 1 : 0;
-          } else if (lifespanMs > 0) {
+          } else if (period > 0) {
             if (idx === selection.currentIndex) {
               fraction =
-                (playlist.transitionMs + selection.positionMs) / lifespanMs;
+                (playlist.transitionMs + selection.positionMs) / period;
             } else if (
               idx === selection.nextIndex &&
               selection.positionMs >= playlist.dwellMs
             ) {
-              fraction = (selection.positionMs - playlist.dwellMs) / lifespanMs;
+              fraction = (selection.positionMs - playlist.dwellMs) / period;
             }
           }
         }
@@ -260,14 +292,6 @@ function PlaylistBody({ playlist }: PlaylistBodyProps) {
     });
   }, [playlist]);
 
-  const save = useCallback(
-    (changeDescription: string) => {
-      // TODO: Transition
-      projectSave(changeDescription);
-    },
-    [projectSave],
-  );
-
   const swap = <T,>(items: T[], a: number, b: number, description: string) => {
     [items[a], items[b]] = [items[b], items[a]];
     save(description);
@@ -281,12 +305,14 @@ function PlaylistBody({ playlist }: PlaylistBodyProps) {
           value={playlist.patternOrder.case ?? ''}
           onChange={(v) => {
             if (v === 'patternSequential') {
+              snapshotTransition(playlist);
               playlist.patternOrder = {
                 case: 'patternSequential',
                 value: create(Playlist_SequentialSchema),
               };
               save(`Set playlist ${playlist.name} pattern to sequential.`);
             } else if (v === 'patternShuffle') {
+              snapshotTransition(playlist);
               playlist.patternOrder = {
                 case: 'patternShuffle',
                 value: create(Playlist_ShuffleSchema),
@@ -312,10 +338,22 @@ function PlaylistBody({ playlist }: PlaylistBodyProps) {
         />
       </div>
       <div className={styles.mainControls}>
-        <IconButton title="previous" onClick={() => alert('Unimplemented!')}>
+        <IconButton
+          title="previous"
+          onClick={() => {
+            skip(playlist, -1n);
+            save(`Previous pattern.`);
+          }}
+        >
           <BiSkipPrevious />
         </IconButton>
-        <IconButton title="next" onClick={() => alert('Unimplemented!')}>
+        <IconButton
+          title="next"
+          onClick={() => {
+            skip(playlist, 1n);
+            save(`Next pattern.`);
+          }}
+        >
           <BiSkipNext />
         </IconButton>
         <Spacer />
@@ -326,6 +364,7 @@ function PlaylistBody({ playlist }: PlaylistBodyProps) {
             mode="seconds"
             value={playlist.dwellMs / 1000}
             onChange={(v) => {
+              snapshotTransition(playlist);
               playlist.dwellMs = Math.floor(v * 1_000);
               save(`Set playlist pattern dwell to ${v} seconds.`);
             }}
@@ -338,6 +377,7 @@ function PlaylistBody({ playlist }: PlaylistBodyProps) {
             mode="seconds"
             value={playlist.transitionMs / 1000}
             onChange={(v) => {
+              snapshotTransition(playlist);
               playlist.transitionMs = Math.floor(v * 1_000);
               save(`Set playlist pattern transition to ${v} seconds.`);
             }}
@@ -350,12 +390,14 @@ function PlaylistBody({ playlist }: PlaylistBodyProps) {
           value={playlist.paletteOrder.case ?? ''}
           onChange={(v) => {
             if (v === 'paletteSequential') {
+              snapshotTransition(playlist);
               playlist.paletteOrder = {
                 case: 'paletteSequential',
                 value: create(Playlist_SequentialSchema),
               };
               save(`Set playlist ${playlist.name} palette to sequential.`);
             } else if (v === 'paletteShuffle') {
+              snapshotTransition(playlist);
               playlist.paletteOrder = {
                 case: 'paletteShuffle',
                 value: create(Playlist_ShuffleSchema),
@@ -385,6 +427,7 @@ function PlaylistBody({ playlist }: PlaylistBodyProps) {
           key: String(pattern.id),
           name: pattern.name,
           setName: (name) => {
+            snapshotTransition(playlist);
             const oldName = pattern.name;
             pattern.name = name;
             save(`Rename pattern '${oldName}' to '${name}'.`);
@@ -420,6 +463,7 @@ function PlaylistBody({ playlist }: PlaylistBodyProps) {
             className={styles.addButton}
             icon={<BiPlus size={18} />}
             onClick={() => {
+              snapshotTransition(playlist);
               const id = randomUint64();
               playlist.patterns.push(
                 create(PatternSchema, {
@@ -465,6 +509,7 @@ function PlaylistBody({ playlist }: PlaylistBodyProps) {
           className={styles.addButton}
           icon={<BiPlus size={18} />}
           onClick={() => {
+            snapshotTransition(playlist);
             const id = randomUint64();
             playlist.palettes.push(
               create(ColorPaletteSchema, {
@@ -488,6 +533,7 @@ function PlaylistBody({ playlist }: PlaylistBodyProps) {
                   active={false}
                   edit={true}
                   onClick={() => {
+                    snapshotTransition(playlist);
                     playlist.paletteOrder = {
                       case: 'paletteHold',
                       value: create(Playlist_HoldSchema, {
@@ -497,6 +543,7 @@ function PlaylistBody({ playlist }: PlaylistBodyProps) {
                     save(`Set ${playlist.name} palette to ${p.name}.`);
                   }}
                   onDelete={() => {
+                    snapshotTransition(playlist);
                     if (playlist.palettes.length === 1) {
                       return;
                     }
@@ -587,6 +634,7 @@ function PatternControls({ playlist, idx }: PatternControlsProps) {
           <IconButton
             title="Hold on this pattern"
             onClick={runAndClose(() => {
+              snapshotTransition(playlist);
               playlist.patternOrder = {
                 case: 'patternHold',
                 value: create(Playlist_HoldSchema, { id: pattern.id }),
@@ -615,6 +663,7 @@ function PatternControls({ playlist, idx }: PatternControlsProps) {
             title="Delete pattern"
             disabled={playlist.patterns.length === 1}
             onClick={runAndClose(() => {
+              snapshotTransition(playlist);
               playlist.patterns.splice(idx, 1);
               save(`Delete pattern from ${playlist.name}.`);
             })}
@@ -629,4 +678,72 @@ function PatternControls({ playlist, idx }: PatternControlsProps) {
       </IconButton>
     </Popover>
   );
+}
+
+function skip(playlist: Playlist, step: bigint) {
+  const t = snapshotTransition(playlist);
+  const period = BigInt(playlist.dwellMs + playlist.transitionMs);
+  const landing = t + SKIP_DURATION;
+
+  const patternIdx = (landing - playlist.patternOffsetMs) / period;
+  playlist.patternOffsetMs = landing - (patternIdx + step) * period;
+
+  const paletteIdx = (landing - playlist.paletteOffsetMs) / period;
+  playlist.paletteOffsetMs = landing - (paletteIdx + step) * period;
+}
+
+function snapshotTransition(playlist: Playlist) {
+  const t = BigInt(new Date().getTime());
+  {
+    const patternOrder = playlist.patternOrder;
+    const patternHoldIndex =
+      patternOrder.case === 'patternHold'
+        ? playlist.patterns.findIndex((p) => p.id === patternOrder.value.id)
+        : 0;
+
+    const selection = getActivePlaylistSelection(
+      patternOrder.case,
+      patternHoldIndex,
+      playlist.patterns.length,
+      playlist.patternOffsetMs,
+      playlist.dwellMs,
+      playlist.transitionMs,
+    );
+    if (selection) {
+      playlist.patternTransition = create(Playlist_TransitionSchema, {
+        aId: playlist.patterns[selection.currentIndex].id,
+        bId: playlist.patterns[selection.nextIndex].id,
+        blend: selection.transitionAmount ?? 0,
+        startMs: t,
+        durationMs: SKIP_DURATION,
+      });
+    }
+  }
+  {
+    const paletteOrder = playlist.paletteOrder;
+    const paletteHoldIndex =
+      paletteOrder.case === 'paletteHold'
+        ? playlist.palettes.findIndex((p) => p.id === paletteOrder.value.id)
+        : 0;
+
+    const selection = getActivePlaylistSelection(
+      paletteOrder.case,
+      paletteHoldIndex,
+      playlist.palettes.length,
+      playlist.paletteOffsetMs,
+      playlist.dwellMs,
+      playlist.transitionMs,
+    );
+    if (selection) {
+      playlist.paletteTransition = create(Playlist_TransitionSchema, {
+        aId: playlist.palettes[selection.currentIndex].id,
+        bId: playlist.palettes[selection.nextIndex].id,
+        blend: selection.transitionAmount ?? 0,
+        startMs: t,
+        durationMs: SKIP_DURATION,
+      });
+    }
+  }
+
+  return t;
 }

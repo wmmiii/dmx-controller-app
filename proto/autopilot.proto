@@ -16,6 +16,15 @@ message Playlist {
   message Sequential {}
   message Shuffle {}
 
+  message Transition {
+    uint64 a_id = 1;
+    uint64 b_id = 2;
+    double blend = 3;
+
+    uint64 start_ms = 4;
+    uint64 duration_ms = 5;
+  }
+
   string name = 1;
   repeated Pattern patterns = 2;
   repeated ColorPalette palettes = 3;
@@ -37,4 +46,7 @@ message Playlist {
 
   int64 pattern_offset_ms = 12;
   int64 palette_offset_ms = 13;
+
+  Transition pattern_transition = 14;
+  Transition palette_transition = 15;
 }

@@ -41,6 +41,7 @@
 }
 
 .pattern {
+  position: relative;
   display: flex;
   flex-direction: row;
   min-width: 0;

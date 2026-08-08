@@ -4,11 +4,12 @@ use crate::{
     palette::interpolate_palettes,
     proto::{
         ColorPalette, Effect, Pattern, Playlist, Project, TargetedEffect,
-        playlist::{self, Hold},
+        playlist::{self, Hold, Transition},
     },
     render::{render_target::RenderTarget, util::apply_effect},
 };
 
+#[allow(clippy::cast_precision_loss)]
 pub fn render_playlist<T: RenderTarget<T>>(
     playlist_id: u64,
     render_target: &mut T,
@@ -44,7 +45,7 @@ pub fn render_playlist<T: RenderTarget<T>>(
         playlist.transition_ms,
     );
     let curr_palette = &playlist.palettes[palette_selection.curr_index];
-    let color_palette = match palette_selection.transition {
+    let mut color_palette = match palette_selection.transition {
         Some(amount) => interpolate_palettes(
             curr_palette,
             &playlist.palettes[palette_selection.next_index],
@@ -52,6 +53,25 @@ pub fn render_playlist<T: RenderTarget<T>>(
         ),
         None => curr_palette.clone(),
     };
+
+    // Handle palette transition.
+    if let Some(Transition {
+        a_id,
+        b_id,
+        blend,
+        start_ms,
+        duration_ms,
+    }) = playlist.palette_transition
+        && let Some(palette_a) = &playlist.palettes.iter().find(|p| p.id == a_id)
+        && let Some(palette_b) = &playlist.palettes.iter().find(|p| p.id == b_id)
+        && duration_ms > 0
+        && system_t >= start_ms
+        && system_t < (start_ms + duration_ms)
+    {
+        let before = interpolate_palettes(palette_a, palette_b, blend);
+        let amount = (system_t - start_ms) as f64 / duration_ms as f64;
+        color_palette = interpolate_palettes(&before, &color_palette, amount);
+    }
 
     // Calculate pattern
     let pattern_order = resolve_pattern_order(playlist)?;
@@ -105,6 +125,48 @@ pub fn render_playlist<T: RenderTarget<T>>(
             frame,
             project,
         );
+    }
+
+    // Handle pattern transition.
+    if let Some(Transition {
+        a_id,
+        b_id,
+        blend,
+        start_ms,
+        duration_ms,
+    }) = playlist.pattern_transition
+        && let Some(pattern_a) = playlist.patterns.iter().find(|p| p.id == a_id)
+        && let Some(pattern_b) = &playlist.patterns.iter().find(|p| p.id == b_id)
+        && duration_ms > 0
+        && system_t >= start_ms
+        && system_t < (start_ms + duration_ms)
+    {
+        let mut before = render_target.clone();
+
+        let mut a_target = before.clone();
+        render_pattern(
+            pattern_a,
+            &color_palette,
+            &mut a_target,
+            system_t,
+            beat_t,
+            frame,
+            project,
+        );
+        let mut b_target = before.clone();
+        render_pattern(
+            pattern_b,
+            &color_palette,
+            &mut b_target,
+            system_t,
+            beat_t,
+            frame,
+            project,
+        );
+        before.interpolate(&a_target, &b_target, blend);
+
+        let amount = (system_t - start_ms) as f64 / duration_ms as f64;
+        render_target.interpolate(&before, &render_target.clone(), amount);
     }
 
     Ok(())
