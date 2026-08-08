@@ -4,6 +4,7 @@ import {
   PropsWithChildren,
   createContext,
   useCallback,
+  useContext,
   useEffect,
   useRef,
   useState,
@@ -22,7 +23,16 @@ type ShortcutBundle = Array<{
   description: string;
 }>;
 
-export const ShortcutContext = createContext({
+export function useShortcuts(
+  shortcuts: ShortcutBundle,
+  deps: React.DependencyList,
+) {
+  const { setShortcuts } = useContext(ShortcutContext);
+
+  useEffect(() => setShortcuts(shortcuts), [setShortcuts, ...deps]);
+}
+
+const ShortcutContext = createContext({
   setShortcuts: (_shortcuts: ShortcutBundle) => () => {},
 });
 

@@ -40,7 +40,7 @@ import { PaletteSwatch } from '../components/Palette';
 import { Popover } from '../components/Popover';
 import { Select } from '../components/Select';
 import { Spacer } from '../components/Spacer';
-import { ShortcutContext } from '../contexts/ShortcutContext';
+import { useShortcuts } from '../contexts/ShortcutContext';
 import { useRenderMode } from '../hooks/renderMode';
 import { DEFAULT_COLOR_PALETTE } from '../util/colorUtil';
 import { randomUint64 } from '../util/numberUtils';
@@ -180,38 +180,36 @@ interface PlaylistBodyProps {
 }
 
 function PlaylistBody({ playlist }: PlaylistBodyProps) {
-  const { save } = useContext(ProjectContext);
-  const { setShortcuts } = useContext(ShortcutContext);
+  const { save, update } = useContext(ProjectContext);
   const [selectedId, setSelectedId] = useState<bigint | null>(null);
   const pattern = useMemo(
     () => playlist.patterns.find((p) => p.id === selectedId) ?? null,
     [playlist, selectedId],
   );
 
-  useEffect(
-    () =>
-      setShortcuts([
-        {
-          shortcut: {
-            key: 'ArrowRight',
-          },
-          action: () => {
-            skip(playlist, 1n);
-            save(`Next pattern.`);
-          },
-          description: 'Skip to next pattern.',
+  useShortcuts(
+    [
+      {
+        shortcut: {
+          key: 'ArrowRight',
         },
-        {
-          shortcut: {
-            key: 'ArrowLeft',
-          },
-          action: () => {
-            skip(playlist, -1n);
-            save(`Previous pattern.`);
-          },
-          description: 'Skip to previous pattern.',
+        action: () => {
+          skip(playlist, 1n);
+          update();
         },
-      ]),
+        description: 'Skip to next pattern.',
+      },
+      {
+        shortcut: {
+          key: 'ArrowLeft',
+        },
+        action: () => {
+          skip(playlist, -1n);
+          update();
+        },
+        description: 'Skip to previous pattern.',
+      },
+    ],
     [playlist],
   );
 
@@ -342,7 +340,7 @@ function PlaylistBody({ playlist }: PlaylistBodyProps) {
           title="previous"
           onClick={() => {
             skip(playlist, -1n);
-            save(`Previous pattern.`);
+            update();
           }}
         >
           <BiSkipPrevious />
@@ -351,7 +349,7 @@ function PlaylistBody({ playlist }: PlaylistBodyProps) {
           title="next"
           onClick={() => {
             skip(playlist, 1n);
-            save(`Next pattern.`);
+            update();
           }}
         >
           <BiSkipNext />

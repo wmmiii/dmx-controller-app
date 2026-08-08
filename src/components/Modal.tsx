@@ -1,10 +1,9 @@
 import { Dialog } from '@base-ui/react';
 import clsx from 'clsx';
-import { JSX, useContext, useEffect, useRef, useState } from 'react';
+import { JSX, useEffect, useRef, useState } from 'react';
 import { BiX } from 'react-icons/bi';
 
-import { ShortcutContext } from '../contexts/ShortcutContext';
-
+import { useShortcuts } from '../contexts/ShortcutContext';
 import { IconButton } from './Button';
 import styles from './Modal.module.css';
 import { Spacer } from './Spacer';
@@ -28,7 +27,6 @@ export function Modal({
   footer,
   fullScreen,
 }: ModalProps): JSX.Element {
-  const { setShortcuts } = useContext(ShortcutContext);
   const mainWrapperRef = useRef<HTMLDivElement | null>(null);
   const mainRef = useRef<HTMLDivElement | null>(null);
   const footerRef = useRef<HTMLDivElement | null>(null);
@@ -59,16 +57,15 @@ export function Modal({
     };
   }, []);
 
-  useEffect(
-    () =>
-      setShortcuts([
-        {
-          shortcut: { key: 'Escape' },
-          action: onClose,
-          description: `Close "${title}" modal.`,
-        },
-      ]),
-    [title, onClose],
+  useShortcuts(
+    [
+      {
+        shortcut: { key: 'Escape' },
+        action: onClose,
+        description: `Close "${title}" modal.`,
+      },
+    ],
+    [onClose, title],
   );
 
   return (

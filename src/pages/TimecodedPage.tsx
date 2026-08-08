@@ -58,7 +58,7 @@ import { Waveform } from '../components/Waveform';
 import { useClipboard } from '../contexts/ClipboardContext';
 import { EffectRenderingContext } from '../contexts/EffectRenderingContext';
 import { PaletteContext } from '../contexts/PaletteContext';
-import { ShortcutContext } from '../contexts/ShortcutContext';
+import { useShortcuts } from '../contexts/ShortcutContext';
 import { getAvailableChannels } from '../engine/fixtures/fixture';
 import { useLaneInteraction } from '../hooks/laneInteraction';
 import { useRenderMode } from '../hooks/renderMode';
@@ -158,9 +158,7 @@ interface TimecodedBodyProps {
 
 function TimecodedBody({ show }: TimecodedBodyProps) {
   const { project, save, update } = useContext(ProjectContext);
-  const { setShortcuts } = useContext(ShortcutContext);
   const { get: getClipboard, set: setClipboard } = useClipboard();
-  const [editPalette, setEditPalette] = useState(false);
   const dragIndex = useRef<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [, forceRender] = useReducer((n: number) => n + 1, 0);
@@ -417,85 +415,84 @@ function TimecodedBody({ show }: TimecodedBodyProps) {
   }, [trackId, viewStart, viewEnd]);
 
   const copiedEffect = getClipboard(EffectSchema);
-  useEffect(() => {
-    if (!trackId) {
-      return;
-    }
-
-    const shortcuts: Parameters<typeof setShortcuts>[0] = [
-      {
+  const shortcuts = useMemo((): Parameters<typeof useShortcuts>[0] => {
+    const shortcuts: Parameters<typeof useShortcuts>[0] = [];
+    if (trackId) {
+      shortcuts.push({
         shortcut: {
           key: 'Space',
         },
         action: () => (playing ? pause(trackId) : play(trackId)),
         description: playing ? 'Pause show.' : 'Play show.',
-      },
-    ];
-
-    if (selectedEffect?.effect) {
-      shortcuts.push({
-        shortcut: {
-          key: 'KeyC',
-          modifiers: ['ctrl'],
-        },
-        action: () => {
-          setClipboard(selectedEffect.effect!);
-        },
-        description: 'Copy effect.',
       });
-
-      if (copiedEffect) {
+      if (selectedEffect?.effect) {
         shortcuts.push({
           shortcut: {
-            key: 'KeyV',
+            key: 'KeyC',
             modifiers: ['ctrl'],
           },
           action: () => {
-            selectedEffect.effect = clone(EffectSchema, copiedEffect);
-            save('Paste effect.');
+            setClipboard(selectedEffect.effect!);
           },
-          description: 'Paste effect.',
+          description: 'Copy effect.',
         });
+
+        if (copiedEffect) {
+          shortcuts.push({
+            shortcut: {
+              key: 'KeyV',
+              modifiers: ['ctrl'],
+            },
+            action: () => {
+              selectedEffect.effect = clone(EffectSchema, copiedEffect);
+              save('Paste effect.');
+            },
+            description: 'Paste effect.',
+          });
+        }
       }
     }
 
-    return setShortcuts(shortcuts);
+    if (selectedAddress) {
+      shortcuts.push(
+        {
+          shortcut: { key: 'Delete' },
+          action: () => {
+            const effects =
+              show.outputs[selectedAddress.laneIndex]?.layer?.effects;
+            if (
+              effects != null &&
+              selectedAddress.effectIndex < effects.length
+            ) {
+              effects.splice(selectedAddress.effectIndex, 1);
+              save('Delete effect.');
+            }
+            setSelectedAddress(null);
+          },
+          description: 'Delete the currently selected effect.',
+        },
+        {
+          shortcut: { key: 'Escape' },
+          action: () => setSelectedAddress(null),
+          description: 'Deselect effect.',
+        },
+      );
+    }
+
+    return shortcuts;
   }, [
+    show,
     trackId,
+    selectedAddress,
     selectedEffect,
     copiedEffect,
-    setShortcuts,
     playing,
     pause,
     play,
+    save,
   ]);
 
-  useEffect(() => {
-    if (selectedAddress == null) {
-      return undefined;
-    }
-
-    return setShortcuts([
-      {
-        shortcut: { key: 'Delete' },
-        action: () => {
-          const effects =
-            show.outputs[selectedAddress.laneIndex]?.layer?.effects;
-          if (effects != null && selectedAddress.effectIndex < effects.length) {
-            effects.splice(selectedAddress.effectIndex, 1);
-            save('Delete effect.');
-          }
-          setSelectedAddress(null);
-        },
-        description: 'Delete the currently selected effect.',
-      },
-      {
-        shortcut: { key: 'Escape' },
-        action: () => setSelectedAddress(null),
-        description: 'Deselect effect.',
-      },
-    ]);
-  }, [selectedAddress, show, save, setShortcuts]);
+  useShortcuts(shortcuts, [shortcuts]);
 
   const colorPalette = show.palettes[0].colorPalette;
 

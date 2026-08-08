@@ -191,24 +191,21 @@ pub fn redo() -> Result<UndoRedoResult, String> {
 /// Used when opening a new project or initializing from storage.
 ///
 /// # Arguments
-/// * `project_binary` - Binary protobuf representation of the project
-pub fn load(project_binary: &[u8]) -> Result<(), String> {
-    let project =
-        Project::decode(project_binary).map_err(|e| format!("Failed to decode project: {e}"))?;
-
+/// * `project` - The project to load as the new authoritative state
+pub fn load(project: Project) -> Result<(), String> {
     let mut state = PROJECT_STATE
         .lock()
         .map_err(|e| format!("Failed to lock state: {e}"))?;
 
-    state.project = project;
-
     // Reset the undo stack with this as the initial state
     state.operation_stack.clear();
     state.operation_stack.push(Operation {
-        project_state: project_binary.to_vec(),
+        project_state: project.encode_to_vec(),
         description: "Open project".to_string(),
     });
     state.operation_index = 0;
+
+    state.project = project;
 
     Ok(())
 }
@@ -432,4 +429,89 @@ pub fn rand_id() -> u64 {
         ^ u64::try_from(duration.as_micros())
             .unwrap()
             .wrapping_mul(31)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // `PROJECT_STATE` is a process-global singleton, so tests that mutate it must
+    // not run concurrently with each other. Serialize them through this guard.
+    static STATE_LOCK: Mutex<()> = Mutex::new(());
+
+    fn lock_state() -> std::sync::MutexGuard<'static, ()> {
+        STATE_LOCK.lock().unwrap_or_else(|e| e.into_inner())
+    }
+
+    fn test_project(name: &str) -> Project {
+        Project {
+            name: name.to_string(),
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn load_sets_current_project() {
+        let _guard = lock_state();
+
+        load(test_project("loaded-project")).unwrap();
+
+        let stored = Project::decode(get().unwrap().as_slice()).unwrap();
+        assert_eq!(stored, test_project("loaded-project"));
+    }
+
+    #[test]
+    fn load_resets_undo_stack_to_single_entry() {
+        let _guard = lock_state();
+
+        load(test_project("initial")).unwrap();
+
+        let undo_state = get_undo_state().unwrap();
+        assert!(
+            !undo_state.can_undo,
+            "a freshly loaded project has nothing to undo"
+        );
+        assert!(
+            !undo_state.can_redo,
+            "a freshly loaded project has nothing to redo"
+        );
+        assert!(undo().is_err(), "undo should fail with no prior operations");
+    }
+
+    #[test]
+    fn load_discards_prior_undo_history() {
+        let _guard = lock_state();
+
+        // Seed some undoable history on top of an initial project.
+        load(test_project("original")).unwrap();
+        save(&test_project("edit-1").encode_to_vec(), "Edit 1", true).unwrap();
+        save(&test_project("edit-2").encode_to_vec(), "Edit 2", true).unwrap();
+        assert!(get_undo_state().unwrap().can_undo);
+
+        // Loading a new project must wipe the accumulated history.
+        load(test_project("replacement")).unwrap();
+
+        let undo_state = get_undo_state().unwrap();
+        assert!(!undo_state.can_undo);
+        assert!(!undo_state.can_redo);
+        assert_eq!(
+            Project::decode(get().unwrap().as_slice()).unwrap(),
+            test_project("replacement")
+        );
+    }
+
+    #[test]
+    fn save_then_undo_returns_to_loaded_project() {
+        let _guard = lock_state();
+
+        load(test_project("base")).unwrap();
+        save(&test_project("modified").encode_to_vec(), "Modify", true).unwrap();
+
+        let undone = undo().unwrap();
+        assert_eq!(
+            Project::decode(undone.project_binary.as_slice()).unwrap(),
+            test_project("base"),
+            "undoing the only edit restores the loaded project"
+        );
+    }
 }

@@ -234,7 +234,6 @@ pub fn run() {
             project::update_project,
             project::undo_project,
             project::redo_project,
-            project::load_project,
             project::get_undo_state,
             project::request_update,
             project::toggle_tile,

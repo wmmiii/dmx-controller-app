@@ -564,9 +564,7 @@ mod tests {
         }
 
         // Load project into global state
-        use prost::Message;
-        let project_binary = project.encode_to_vec();
-        project::load(&project_binary).unwrap();
+        project::load(project).unwrap();
 
         // Calculate MIDI output
         let output = calculate_midi_output(controller_name, 0).unwrap();

@@ -1,6 +1,8 @@
 use dmx_engine::project::{self, UndoState};
+use dmx_engine::proto::FatProject;
 use dmx_engine::tile::toggle_tile as engine_toggle_tile;
 use serde::Serialize;
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex as StdMutex};
@@ -9,6 +11,7 @@ use tauri::{AppHandle, Emitter, Manager, State};
 use tokio::sync::Mutex as TokioMutex;
 use tokio::task::JoinHandle;
 
+use crate::cas::{read_cas_bytes, write_cas_bytes};
 use crate::ddp::DdpState;
 use crate::display_loop::DisplayLoopManager;
 use crate::output_loop::OutputLoopManager;
@@ -69,6 +72,9 @@ impl PersistState {
 /// Loads project from disk during app startup into the engine.
 /// If no project exists, creates a default project.
 pub fn load_from_disk(app: &AppHandle) -> Result<(), String> {
+    use dmx_engine::proto;
+    use prost::Message;
+
     let app_data_dir = app
         .path()
         .app_data_dir()
@@ -84,7 +90,9 @@ pub fn load_from_disk(app: &AppHandle) -> Result<(), String> {
 
     // If project exists, load into engine state
     if !project_binary.is_empty() {
-        project::load(&project_binary)?;
+        let project = proto::Project::decode(project_binary.as_slice())
+            .map_err(|e| format!("Failed to decode project: {e}"))?;
+        project::load(project)?;
     }
 
     // Ensure a project exists (creates default if none was loaded)
@@ -396,45 +404,6 @@ pub async fn redo_project(
     Ok(())
 }
 
-/// Loads a project, resetting the undo stack.
-#[tauri::command]
-pub async fn load_project(
-    project_binary: Vec<u8>,
-    app: AppHandle,
-    persist_state: State<'_, Arc<TokioMutex<PersistState>>>,
-    output_loop_manager: State<'_, Arc<TokioMutex<OutputLoopManager>>>,
-    display_loop_manager: State<'_, Arc<TokioMutex<DisplayLoopManager>>>,
-    serial_state: State<'_, Arc<TokioMutex<SerialState>>>,
-    sacn_state: State<'_, Arc<TokioMutex<SacnState>>>,
-    wled_state: State<'_, Arc<TokioMutex<WledState>>>,
-    ddp_state: State<'_, Arc<TokioMutex<DdpState>>>,
-) -> Result<(), String> {
-    // 1. Load into engine (resets undo stack)
-    project::load(&project_binary)?;
-
-    // 2. Emit updates and persist to disk
-    emit_and_persist(
-        &app,
-        Some("Load project.".to_string()),
-        persist_state.inner(),
-    )
-    .await?;
-
-    // 3. Rebuild output loops
-    rebuild_outputs(
-        serial_state.inner(),
-        output_loop_manager.inner(),
-        display_loop_manager.inner(),
-        sacn_state.inner(),
-        wled_state.inner(),
-        ddp_state.inner(),
-        &app,
-    )
-    .await?;
-
-    Ok(())
-}
-
 /// Returns the current undo/redo availability state.
 #[tauri::command]
 pub fn get_undo_state() -> Result<UndoStatePayload, String> {
@@ -466,9 +435,24 @@ pub async fn export_project(app: AppHandle) -> Result<bool, String> {
     let project = proto::Project::decode(project_binary.as_slice())
         .map_err(|e| format!("Failed to decode project: {e}"))?;
 
+    // Get CAS entries
+    let mut cas = HashMap::new();
+    for track in project.tracks.values() {
+        let digest = &track.digest;
+
+        let blob = read_cas_bytes(&app, digest)?;
+        cas.insert(digest.clone(), blob);
+    }
+
     // Build default filename from project name with date stamp
     let today = chrono::Local::now().format("%Y-%m-%d");
     let default_name = sanitize_filename::sanitize(format!("{}_{}.dmxapp", project.name, today));
+
+    // Create the fat project protocol buffer
+    let fat_project = FatProject {
+        project: Some(project),
+        cas,
+    };
 
     let path = app
         .dialog()
@@ -482,7 +466,7 @@ pub async fn export_project(app: AppHandle) -> Result<bool, String> {
         Some(path) => {
             std::fs::write(
                 path.as_path().ok_or("Invalid file path")?,
-                project.encode_to_vec(),
+                fat_project.encode_to_vec(),
             )
             .map_err(|e| format!("Failed to export project: {e}"))?;
             Ok(true)
@@ -504,7 +488,6 @@ pub async fn import_project(
     wled_state: State<'_, Arc<TokioMutex<WledState>>>,
     ddp_state: State<'_, Arc<TokioMutex<DdpState>>>,
 ) -> Result<(), String> {
-    use dmx_engine::proto;
     use prost::Message;
     use tauri_plugin_dialog::DialogExt;
 
@@ -523,12 +506,25 @@ pub async fn import_project(
     let file_bytes = std::fs::read(path.as_path().ok_or("Invalid file path")?)
         .map_err(|e| format!("Failed to read project file: {e}"))?;
 
-    let project = proto::Project::decode(file_bytes.as_slice())
+    let fat_project = FatProject::decode(file_bytes.as_slice())
         .map_err(|e| format!("Failed to decode project: {e}"))?;
 
-    // Load the asset-stripped project into the engine
-    let project_binary = project.encode_to_vec();
-    project::load(&project_binary)?;
+    // Load CAS entries onto filesystem
+    for (expected_digest, bytes) in fat_project.cas {
+        let actual_digest = write_cas_bytes(&app, &bytes)?;
+        if actual_digest != expected_digest {
+            return Err(format!(
+                "CAS digest mismatch: expected {expected_digest}, got {actual_digest}"
+            ));
+        }
+    }
+
+    // Load the project into the engine
+    if let Some(project) = fat_project.project {
+        project::load(project)?;
+    } else {
+        return Err("Could not load fat project, `project` field not set!".to_string());
+    }
 
     // Emit updates and persist
     emit_and_persist(

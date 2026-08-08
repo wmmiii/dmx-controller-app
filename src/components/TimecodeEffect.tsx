@@ -35,7 +35,7 @@ import {
   TimecodedEffect as TimecodeEffectProto,
   TimecodedEffectSchema,
 } from '@dmx-controller/proto/effect_pb';
-import { CSSProperties, JSX, useContext, useEffect, useState } from 'react';
+import { CSSProperties, JSX, useContext, useState } from 'react';
 import {
   BiDice6,
   BiLineChart,
@@ -53,7 +53,6 @@ import { MdSpeed } from 'react-icons/md';
 import { EffectRenderingContext } from '../contexts/EffectRenderingContext';
 import { PaletteContext } from '../contexts/PaletteContext';
 import { ProjectContext } from '../contexts/ProjectContext';
-import { ShortcutContext } from '../contexts/ShortcutContext';
 import { ChannelTypes } from '../engine/channel';
 import IconPanTilt from '../icons/IconPanTilt';
 import IconRgb from '../icons/IconRgb';
@@ -65,6 +64,7 @@ import {
 } from '../util/styleUtils';
 
 import clsx from 'clsx';
+import { useShortcuts } from '../contexts/ShortcutContext';
 import { sortedEntries } from '../util/sortUtils';
 import { Button, IconButton } from './Button';
 import { ClipboardControls } from './ClipboardControls';
@@ -109,30 +109,29 @@ export function TimecodeEffect({
   const { beatWidthPx, msToPx, beatConverters } = useContext(
     EffectRenderingContext,
   );
-  const { setShortcuts } = useContext(ShortcutContext);
 
-  useEffect(() => {
-    if (copyEffect && timecodeEffect === selectedEffect) {
-      return setShortcuts([
-        {
-          shortcut: { key: 'KeyV', modifiers: ['ctrl'] },
-          action: () => {
-            Object.assign(
-              timecodeEffect,
-              clone(TimecodedEffectSchema, copyEffect),
-              {
-                endMs: timecodeEffect.endMs,
-                startMs: timecodeEffect.startMs,
-              },
-            );
-            save('Paste effect.');
+  useShortcuts(
+    copyEffect && timecodeEffect === selectedEffect
+      ? [
+          {
+            shortcut: { key: 'KeyV', modifiers: ['ctrl'] },
+            action: () => {
+              Object.assign(
+                timecodeEffect,
+                clone(TimecodedEffectSchema, copyEffect),
+                {
+                  endMs: timecodeEffect.endMs,
+                  startMs: timecodeEffect.startMs,
+                },
+              );
+              save('Paste effect.');
+            },
+            description: 'Paste effect from clipboard onto selected effect.',
           },
-          description: 'Paste effect from clipboard onto selected effect.',
-        },
-      ]);
-    }
-    return undefined;
-  }, [copyEffect, timecodeEffect, selectedEffect, save]);
+        ]
+      : [],
+    [copyEffect, timecodeEffect, selectedEffect, save],
+  );
 
   if (!timecodeEffect.effect?.effect) {
     throw new Error('Timecode effect does not have effect!');

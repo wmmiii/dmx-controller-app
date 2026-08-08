@@ -103,16 +103,35 @@ pub async fn import_audio_file(
     Ok(Some(track_id.to_string()))
 }
 
+pub fn write_cas_bytes(app: &AppHandle, bytes: &[u8]) -> Result<String, String> {
+    let digest = sha256::digest(bytes);
+
+    let cas_dir = get_cas_path(app)?;
+    let cas_file_path = cas_dir.join(&digest);
+
+    // Write to CAS if the file doesn't already exist (may have been deleted)
+    if !cas_file_path.exists() {
+        std::fs::write(&cas_file_path, bytes)
+            .map_err(|e| format!("Failed to write blob {digest}: {e}"))?;
+    }
+
+    Ok(digest)
+}
+
 /// Returns the raw bytes of a CAS blob by digest.
 #[tauri::command]
 #[allow(clippy::needless_pass_by_value)]
 pub fn read_cas_blob(app: AppHandle, digest: &str) -> Result<tauri::ipc::Response, String> {
+    let bytes = read_cas_bytes(&app, digest)?;
+    Ok(tauri::ipc::Response::new(bytes))
+}
+
+pub fn read_cas_bytes(app: &AppHandle, digest: &str) -> Result<Vec<u8>, String> {
     if digest.is_empty() || !digest.chars().all(|c| c.is_ascii_hexdigit()) {
         return Err(format!("Invalid CAS digest: {digest}"));
     }
-    let path = get_blob_path(&app, digest)?;
-    let bytes = std::fs::read(&path).map_err(|e| format!("Failed to read blob {digest}: {e}"))?;
-    Ok(tauri::ipc::Response::new(bytes))
+    let path = get_blob_path(app, digest)?;
+    std::fs::read(&path).map_err(|e| format!("Failed to read blob {digest}: {e}"))
 }
 
 fn get_cas_path(app: &AppHandle) -> Result<PathBuf, String> {

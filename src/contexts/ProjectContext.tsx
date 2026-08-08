@@ -7,7 +7,6 @@ import {
   PropsWithChildren,
   createContext,
   useCallback,
-  useContext,
   useEffect,
   useRef,
   useState,
@@ -26,7 +25,7 @@ import {
 import upgradeProject from '../util/projectUpgrader';
 
 import styles from './ProjectContext.module.css';
-import { ShortcutContext } from './ShortcutContext';
+import { useShortcuts } from './ShortcutContext';
 
 let globalOpened = false;
 
@@ -45,7 +44,6 @@ export const ProjectContext = createContext({
 });
 
 export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
-  const { setShortcuts } = useContext(ShortcutContext);
   const [project, setProject] = useState<Project | null>(null);
   const projectRef = useRef(project);
 
@@ -169,27 +167,29 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
   );
 
   // Keyboard shortcuts for undo/redo based on backend state
-  useEffect(() => {
-    const shortcuts: Parameters<typeof setShortcuts>[0] = [];
-
-    if (undoState.canUndo) {
-      shortcuts.push({
-        shortcut: { key: 'KeyZ', modifiers: ['ctrl'] },
-        action: () => undoProjectCommand(),
-        description: `Undo ${undoState.undoDescription ?? ''}`,
-      });
-    }
-
-    if (undoState.canRedo) {
-      shortcuts.push({
-        shortcut: { key: 'KeyZ', modifiers: ['ctrl', 'shift'] },
-        action: () => redoProjectCommand(),
-        description: `Redo ${undoState.redoDescription ?? ''}`,
-      });
-    }
-
-    return setShortcuts(shortcuts);
-  }, [undoState, undoProjectCommand, redoProjectCommand, setShortcuts]);
+  useShortcuts(
+    [
+      ...(undoState.canUndo
+        ? [
+            {
+              shortcut: { key: 'KeyZ', modifiers: ['ctrl'] },
+              action: () => undoProjectCommand(),
+              description: `Undo ${undoState.undoDescription ?? ''}`,
+            },
+          ]
+        : []),
+      ...(undoState.canRedo
+        ? [
+            {
+              shortcut: { key: 'KeyZ', modifiers: ['ctrl', 'shift'] },
+              action: () => redoProjectCommand(),
+              description: `Redo ${undoState.redoDescription ?? ''}`,
+            },
+          ]
+        : []),
+    ] as Parameters<typeof useShortcuts>[0],
+    [undoState, undoProjectCommand, redoProjectCommand],
+  );
 
   if (project == null) {
     return (

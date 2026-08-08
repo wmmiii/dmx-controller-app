@@ -16,7 +16,7 @@ import React, {
 import { BiPlus, BiTrash } from 'react-icons/bi';
 
 import { ProjectContext } from '../contexts/ProjectContext';
-import { ShortcutContext } from '../contexts/ShortcutContext';
+import { useShortcuts } from '../contexts/ShortcutContext';
 import { ALL_CHANNELS } from '../engine/channel';
 import { LaneInteraction, useLaneInteraction } from '../hooks/laneInteraction';
 import {
@@ -44,7 +44,6 @@ export function SequenceEditor({
   sequenceId,
 }: SequenceEditorProps): JSX.Element {
   const { project, save } = useContext(ProjectContext);
-  const { setShortcuts } = useContext(ShortcutContext);
   const lanesElement = useRef<HTMLDivElement>(null);
   const [lanesWidth, setLanesWidth] = useState(100);
   const [selectedEffectAddress, setSelectedEffectAddress] = useState<{
@@ -71,33 +70,32 @@ export function SequenceEditor({
     ];
   }, [selectedEffectAddress, project]);
 
-  useEffect(
-    () =>
-      setShortcuts([
-        {
-          shortcut: { key: 'Escape' },
-          action: () => setSelectedEffectAddress(null),
-          description: 'Deselect the currently selected effect.',
+  useShortcuts(
+    [
+      {
+        shortcut: { key: 'Escape' },
+        action: () => setSelectedEffectAddress(null),
+        description: 'Deselect the currently selected effect.',
+      },
+      {
+        shortcut: { key: 'KeyC', modifiers: ['ctrl'] },
+        action: () => setCopyEffect(selectedEffect),
+        description: 'Copy currently selected effect to clipboard.',
+      },
+      {
+        shortcut: { key: 'Delete' },
+        action: () => {
+          const address = selectedEffectAddress;
+          if (address == null) {
+            return;
+          }
+          sequence.layers[address.layer]?.effects.splice(address.index, 1);
+          setSelectedEffectAddress(null);
+          save('Delete effect.');
         },
-        {
-          shortcut: { key: 'KeyC', modifiers: ['ctrl'] },
-          action: () => setCopyEffect(selectedEffect),
-          description: 'Copy currently selected effect to clipboard.',
-        },
-        {
-          shortcut: { key: 'Delete' },
-          action: () => {
-            const address = selectedEffectAddress;
-            if (address == null) {
-              return;
-            }
-            sequence.layers[address.layer]?.effects.splice(address.index, 1);
-            setSelectedEffectAddress(null);
-            save('Delete effect.');
-          },
-          description: 'Delete the currently selected effect.',
-        },
-      ]),
+        description: 'Delete the currently selected effect.',
+      },
+    ],
     [
       setSelectedEffectAddress,
       setCopyEffect,

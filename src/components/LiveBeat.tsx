@@ -8,11 +8,11 @@ import { BiPulse } from 'react-icons/bi';
 
 import { BeatContext } from '../contexts/BeatContext';
 import { ProjectContext } from '../contexts/ProjectContext';
-import { ShortcutContext } from '../contexts/ShortcutContext';
 import { listenToTick } from '../util/time';
 import { getBeatTSync } from '../wasm/engine';
 
 import clsx from 'clsx';
+import { useShortcuts } from '../contexts/ShortcutContext';
 import { ControllerConnection } from './ControllerConnection';
 import { NumberInput } from './Input';
 import styles from './LiveBeat.module.css';
@@ -24,7 +24,6 @@ interface LiveBeatProps {
 export function LiveBeat({ className }: LiveBeatProps): JSX.Element {
   const { project } = useContext(ProjectContext);
   const { setBeat, addBeatSample, sampling } = useContext(BeatContext);
-  const { setShortcuts } = useContext(ShortcutContext);
   const indicatorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -37,18 +36,17 @@ export function LiveBeat({ className }: LiveBeatProps): JSX.Element {
     });
   }, [indicatorRef, project]);
 
-  useEffect(
-    () =>
-      setShortcuts([
-        {
-          shortcut: {
-            key: 'Space',
-          },
-          action: () => addBeatSample(),
-          description: 'Sample beat.',
+  useShortcuts(
+    [
+      {
+        shortcut: {
+          key: 'Space',
         },
-      ]),
-    [addBeatSample, setShortcuts],
+        action: () => addBeatSample(),
+        description: 'Sample beat.',
+      },
+    ],
+    [addBeatSample],
   );
 
   const beatMatchAction = useMemo(
