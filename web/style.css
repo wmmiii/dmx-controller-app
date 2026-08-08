@@ -27,6 +27,17 @@ strong {
   font-weight: 500;
 }
 
+a {
+  color: var(--col-interactive);
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--col-interactive-hover);
+}
+
 .container {
   max-width: 800px;
   margin: 0 auto;
@@ -83,6 +94,71 @@ h1 {
   font-weight: 600;
   font-family: 'Montserrat', sans-serif;
   text-align: center;
+}
+
+.hero h2 {
+  max-width: 700px;
+  margin: var(--space-4) auto var(--space-2);
+  color: var(--col-text);
+  font-weight: 600;
+  font-size: 1.5rem;
+  font-family: 'Montserrat', sans-serif;
+  text-align: left;
+}
+
+.card-list {
+  max-width: 700px;
+  margin: 0 auto var(--space-3);
+  padding: 0;
+  text-align: left;
+  list-style: none;
+}
+
+.info-card {
+  max-width: 700px;
+  margin: 0 auto var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  background-color: var(--col-bg-higher);
+  border-left: 2px solid var(--col-accent);
+  border-radius: var(--dim-border-radius);
+}
+
+.info-card > h3 {
+  display: block;
+  margin-bottom: var(--space-0-5);
+  font-weight: 600;
+  font-size: 1.1rem;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.info-card p {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.info-card ul {
+  margin-top: var(--space-1);
+  padding-left: 0;
+  list-style: none;
+}
+
+.info-card ul li {
+  position: relative;
+  padding-left: var(--space-3);
+  font-size: 0.95rem;
+}
+
+.info-card ul li + li {
+  margin-top: var(--space-0-5);
+}
+
+.info-card ul li::before {
+  content: '›';
+  position: absolute;
+  left: var(--space-0-5);
+  color: var(--col-accent);
+  font-weight: 600;
 }
 
 /* Buttons */
@@ -149,7 +225,6 @@ h1 {
 
 .notice a {
   color: var(--col-warning);
-  text-decoration: none;
 }
 
 .notice a:hover {
@@ -219,15 +294,6 @@ h1 {
   font-size: 0.95rem;
 }
 
-.steps a {
-  color: var(--col-accent);
-  text-decoration: none;
-}
-
-.steps a:hover {
-  color: var(--col-interactive);
-}
-
 .substeps {
   margin: var(--space-2) 0;
   padding-left: var(--space-2);
@@ -239,38 +305,6 @@ h1 {
   padding: var(--space-1) 0 var(--space-1) var(--space-2);
   color: var(--col-text);
   font-size: 0.9rem;
-}
-
-/* Requirements */
-.requirements {
-  margin-bottom: var(--space-6);
-  padding: var(--space-4);
-  background-color: var(--col-bg-higher);
-}
-
-.requirements h2 {
-  margin-bottom: var(--space-2);
-  font-weight: 600;
-  font-size: 1.1rem;
-  font-family: 'Montserrat', sans-serif;
-}
-
-.requirements ul {
-  color: var(--col-text);
-  list-style: none;
-}
-
-.requirements li {
-  position: relative;
-  padding: var(--space-1) 0;
-  padding-left: var(--space-3);
-}
-
-.requirements li::before {
-  content: '•';
-  position: absolute;
-  left: var(--space-1);
-  color: var(--col-accent);
 }
 
 /* Footer */
@@ -287,17 +321,7 @@ footer .made-by {
   color: var(--col-text);
 }
 
-footer a {
-  color: var(--col-text);
-  text-decoration: none;
-  transition: color 0.2s ease;
-}
-
 footer .made-by a {
-  color: var(--col-accent);
-}
-
-footer a:hover {
   color: var(--col-accent);
 }
 

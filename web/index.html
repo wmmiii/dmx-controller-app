@@ -7,7 +7,7 @@
     <title>DMX Controller App — Free Desktop Lighting Control Software</title>
     <meta
       name="description"
-      content="Free desktop app for DMX lighting control. Supports Serial DMX, sACN/E1.31, WLED, and DDP. Import GDTF fixtures, drive GLSL shader visualizers on virtual pixel displays, sync effects to music with tap tempo, and control everything via MIDI input devices."
+      content="Free desktop app for DMX lighting control with an experimental interface. Supports Serial DMX, sACN/E1.31, WLED, and DDP. Import GDTF fixtures, drive GLSL shader visualizers on virtual pixel displays, sync effects to music with tap tempo, and control everything via MIDI input devices."
     />
     <meta name="author" content="Will Martin" />
     <meta name="theme-color" content="#1a1a2e" />
@@ -22,7 +22,7 @@
     />
     <meta
       property="og:description"
-      content="Free desktop app for DMX lighting control. Supports Serial DMX, sACN/E1.31, WLED, and DDP. Import GDTF fixtures, drive GLSL shader visualizers on virtual pixel displays, sync effects to music with tap tempo, and control everything via MIDI input devices."
+      content="Free desktop app for DMX lighting control with an experimental interface. Supports Serial DMX, sACN/E1.31, WLED, and DDP. Import GDTF fixtures, drive GLSL shader visualizers on virtual pixel displays, sync effects to music with tap tempo, and control everything via MIDI input devices."
     />
     <meta property="og:url" content="https://dmx-controller.app/" />
     <meta property="og:image" content="https://dmx-controller.app/icon.svg" />
@@ -35,7 +35,7 @@
     />
     <meta
       name="twitter:description"
-      content="Free desktop app for DMX lighting control. Supports Serial DMX, sACN/E1.31, WLED, and DDP. Import GDTF fixtures, drive GLSL shader visualizers on virtual pixel displays, sync effects to music with tap tempo, and control everything via MIDI input devices."
+      content="Free desktop app for DMX lighting control with an experimental interface. Supports Serial DMX, sACN/E1.31, WLED, and DDP. Import GDTF fixtures, drive GLSL shader visualizers on virtual pixel displays, sync effects to music with tap tempo, and control everything via MIDI input devices."
     />
     <meta name="twitter:image" content="https://dmx-controller.app/icon.svg" />
 
@@ -70,7 +70,7 @@
         "@context": "https://schema.org",
         "@type": "SoftwareApplication",
         "name": "DMX Controller App",
-        "description": "A free desktop application for controlling DMX lighting fixtures. Supports Serial DMX, sACN/E1.31, WLED, and DDP output protocols. Import fixtures using GDTF, drive GLSL shader visualizers on virtual pixel displays, sync effects to music with tap tempo, and control everything live with MIDI input devices.",
+        "description": "A free desktop application for controlling DMX lighting fixtures, built around an experimental interface. Supports Serial DMX, sACN/E1.31, WLED, and DDP output protocols. Import fixtures using GDTF, drive GLSL shader visualizers on virtual pixel displays, sync effects to music with tap tempo, and control everything live with MIDI input devices.",
         "url": "https://dmx-controller.app/",
         "downloadUrl": "https://github.com/wmmiii/dmx-controller-app/releases",
         "codeRepository": "https://github.com/wmmiii/dmx-controller-app",
@@ -110,23 +110,111 @@
       <header>
         <img src="icon.svg" alt="DMX Controller App" class="logo" />
         <h1>DMX Controller App</h1>
-        <p class="tagline">Flexible lighting control for live performances</p>
+        <p class="tagline">
+          Flexible lighting control for live performances with an experimental
+          interface that departs from traditional lighting-control conventions
+        </p>
       </header>
 
       <main>
         <section class="hero">
+          <h2>Modes</h2>
+          <ul class="card-list">
+            <li class="info-card">
+              <h3>Live</h3>
+              <p>
+                In this "busker" mode, you can design and manually drive a light
+                show to sync it with other performances!
+              </p>
+            </li>
+            <li class="info-card">
+              <h3>Autopilot</h3>
+              <p>
+                Design patterns and color palettes that are randomly cycled
+                through to create an ever-changing ambient atmosphere!
+              </p>
+            </li>
+            <li class="info-card">
+              <h3>Timecoded show</h3>
+              <p>
+                Import your audio files and create timecoded shows that sync to
+                the music!
+              </p>
+            </li>
+          </ul>
+          <h2>Output Protocols</h2>
+          <ul class="card-list">
+            <li class="info-card">
+              <h3>Serial DMX</h3>
+              <ul>
+                <li>512-channel universe</li>
+              </ul>
+            </li>
+            <li class="info-card">
+              <h3>sACN/E1.31</h3>
+              <ul>
+                <li>512-channel universe</li>
+                <li>Unlimited universes</li>
+              </ul>
+            </li>
+            <li class="info-card">
+              <h3>WLED</h3>
+              <ul>
+                <li>
+                  Can drive
+                  <a href="https://kno.wled.ge/" target="_blank" rel="noopener"
+                    >WLED</a
+                  >
+                  effects and color palettes
+                </li>
+                <li>
+                  Can render visualizers (GLSL shaders) directly to WLED devices
+                  using the
+                  <a
+                    href="https://kno.wled.ge/interfaces/ddp/"
+                    target="_blank"
+                    rel="noopener"
+                    >Distributed Display Protocol</a
+                  >
+                </li>
+              </ul>
+            </li>
+          </ul>
+          <h2>Input &amp; Controls</h2>
+          <ul class="card-list">
+            <li class="info-card">
+              <h3>MIDI</h3>
+              <p>Bring your own USB MIDI controller to drive live shows.</p>
+            </li>
+            <li class="info-card">
+              <h3>Microphone</h3>
+              <ul>
+                <li>
+                  Automatically detect beats to drive beat-synced effects.
+                </li>
+                <li>
+                  Analyze sound and frequency bands to modulate effects in real
+                  time.
+                </li>
+              </ul>
+            </li>
+            <li class="info-card">
+              <h3>GDTF</h3>
+              <p>
+                Import standard fixture definitions using the
+                <a href="https://gdtf-share.com/" target="_blank" rel="noopener"
+                  >GDTF format</a
+                >.
+              </p>
+            </li>
+          </ul>
           <p>
-            A desktop application for controlling DMX lighting fixtures with
-            support for <strong>Serial DMX</strong>,
-            <strong>sACN/E1.31</strong>, <strong>WLED</strong>, and
-            <strong>DDP</strong> output protocols. Each output supports a full
-            512-channel DMX universe, with unlimited sACN universes over your
-            network. Import fixtures using the industry-standard
-            <strong>GDTF format</strong>, drive GLSL
-            <strong>shader visualizers</strong> across virtual pixel displays,
-            sync effects to music with <strong>tap tempo</strong>, and control
-            everything live with <strong>MIDI input devices</strong>. Perform
-            live with an intuitive tile-based grid interface.
+            <strong>Heads up:</strong> this app takes an
+            <strong>experimental approach</strong>. Its interface
+            <strong
+              >departs from traditional lighting-control conventions</strong
+            >, so if you're used to other lighting software, expect things to
+            look and behave quite differently here!
           </p>
 
           <p class="free-note">
@@ -248,13 +336,17 @@
           </ol>
         </section>
 
-        <section class="requirements">
-          <h2>System Requirements</h2>
+        <section class="info-card">
+          <h3>System Requirements</h3>
           <ul>
             <li>Windows 10+, macOS 10.15+, or Debian Linux</li>
             <li>USB-DMX adapter for serial output (optional)</li>
             <li>Network connection for sACN/WLED output (optional)</li>
             <li>USB-MIDI controller for external input (optional)</li>
+            <li>
+              Microphone for automatic beat detection and sound reactive
+              features (optional)
+            </li>
           </ul>
         </section>
       </main>
