@@ -85,6 +85,14 @@ h1 {
   text-align: center;
 }
 
+.hero > p.experimental-note {
+  padding: var(--space-2) var(--space-3);
+  font-size: 1rem;
+  border-left: 3px solid var(--col-interactive);
+  border-radius: var(--dim-border-radius);
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
 /* Buttons */
 .cta-group {
   display: flex;
