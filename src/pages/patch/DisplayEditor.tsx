@@ -8,9 +8,18 @@ import {
   VirtualMappingSchema,
 } from '@dmx-controller/proto/display_pb';
 import { PhysicalSegment } from '@dmx-controller/proto/pixel_mapping_pb';
-import { useCallback, useContext, useMemo, useState } from 'react';
+import { useCallback, useContext, useMemo } from 'react';
 import { BiError, BiPlus, BiTrash } from 'react-icons/bi';
+import {
+  Link,
+  Navigate,
+  Outlet,
+  Route,
+  useNavigate,
+  useParams,
+} from 'react-router';
 
+import { Browser } from '../../components/Browser';
 import { Button, IconButton } from '../../components/Button';
 import { NumberInput } from '../../components/Input';
 import { Select } from '../../components/Select';
@@ -18,22 +27,18 @@ import { Toggle } from '../../components/Toggle';
 import { ProjectContext } from '../../contexts/ProjectContext';
 import { randomUint64 } from '../../util/numberUtils';
 import { getActivePatch } from '../../util/projectUtils';
-
-import { Browser } from '../../components/Browser';
 import styles from './DisplayEditor.module.css';
 
-export function DisplayEditor() {
-  const { project, save } = useContext(ProjectContext);
-  const [selectedDisplayId, setSelectedDisplayId] = useState<bigint | null>(
-    null,
-  );
+export const displaysRoutes = (
+  <Route path="displays" element={<DisplayEditor />}>
+    <Route path=":displayId" element={<DisplayDetail />} />
+  </Route>
+);
 
-  const selectedDisplay = useMemo(() => {
-    if (selectedDisplayId === null) {
-      return null;
-    }
-    return project.displays[selectedDisplayId.toString()];
-  }, [selectedDisplayId, project]);
+function DisplayEditor() {
+  const { project, save } = useContext(ProjectContext);
+  const navigate = useNavigate();
+  const { displayId } = useParams();
 
   return (
     <Browser
@@ -44,8 +49,8 @@ export function DisplayEditor() {
           display.name = name;
           save(`Set display name to "${name}".`);
         },
-        selected: BigInt(id) === selectedDisplayId,
-        onSelect: () => setSelectedDisplayId(BigInt(id)),
+        selected: id === displayId,
+        onSelect: () => navigate(`/patch/displays/${id}`),
         dim: !display.enabled,
       }))}
       listHeader={
@@ -59,8 +64,8 @@ export function DisplayEditor() {
               height: 64,
               enabled: true,
             });
-            setSelectedDisplayId(newId);
             save('Create new virtual display.');
+            navigate(`/patch/displays/${newId}`);
           }}
         >
           Add New Display
@@ -78,30 +83,47 @@ export function DisplayEditor() {
             This lets you combine several devices into one display, so separate
             fixtures can act as one continuous picture.
           </p>
+          <p>
+            To draw onto a display, create a{' '}
+            <Link to="/patch/visualizers">visualizer</Link>.
+          </p>
         </>
       }
     >
-      {selectedDisplayId !== null && selectedDisplay !== null ? (
-        <DisplayEditorPane
-          display={selectedDisplay}
-          displayId={selectedDisplayId}
-          setSelectedDisplayId={setSelectedDisplayId}
-        />
-      ) : null}
+      {displayId != null ? <Outlet /> : undefined}
     </Browser>
+  );
+}
+
+function DisplayDetail() {
+  const { project } = useContext(ProjectContext);
+  const navigate = useNavigate();
+  const { displayId } = useParams();
+
+  const display = displayId != null ? project.displays[displayId] : undefined;
+  if (displayId == null || display == null) {
+    return <Navigate to="/patch/displays" replace />;
+  }
+
+  return (
+    <DisplayEditorPane
+      display={display}
+      displayId={BigInt(displayId)}
+      clearDisplay={() => navigate('/patch/displays')}
+    />
   );
 }
 
 interface DisplayEditorPaneProps {
   displayId: bigint;
   display: VirtualDisplay;
-  setSelectedDisplayId: (displayId: bigint | null) => void;
+  clearDisplay: () => void;
 }
 
 function DisplayEditorPane({
   displayId,
   display,
-  setSelectedDisplayId,
+  clearDisplay,
 }: DisplayEditorPaneProps) {
   const { project, save } = useContext(ProjectContext);
 
@@ -114,7 +136,7 @@ function DisplayEditorPane({
           onClick={() => {
             delete project.displays[displayId!.toString()];
             save(`Deleted display "${display.name}".`);
-            setSelectedDisplayId(null);
+            clearDisplay();
           }}
         >
           Delete {display.name}

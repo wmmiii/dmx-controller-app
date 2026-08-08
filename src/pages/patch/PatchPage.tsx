@@ -6,6 +6,14 @@ import {
 } from '@dmx-controller/proto/output_pb';
 import { JSX, useContext, useState } from 'react';
 import { BiPlus, BiTrash } from 'react-icons/bi';
+import {
+  Navigate,
+  Outlet,
+  Route,
+  useLocation,
+  useNavigate,
+  useParams,
+} from 'react-router';
 
 import { Button } from '../../components/Button';
 import { EditableText } from '../../components/Input';
@@ -19,145 +27,119 @@ import {
   deleteFromOutputTargets,
   getActivePatch,
 } from '../../util/projectUtils';
-
 import { sortedEntries } from '../../util/sortUtils';
 import { DdpEditor } from './DdpEditor';
-import { DisplayEditor } from './DisplayEditor';
-import { GroupEditor } from './GroupEditor';
+import { displaysRoutes } from './DisplayEditor';
+import { groupsRoutes } from './GroupEditor';
 import styles from './PatchPage.module.css';
 import { SacnEditor } from './SacnEditor';
 import { SerialEditor } from './SerialEditor';
-import { VisualizerEditor } from './VisualizerEditor';
+import { visualizersRoutes } from './VisualizerEditor';
 import { WledEditor } from './WledEditor';
 
-const GROUP_KEY = 'group';
-const DISPLAY_KEY = 'display';
-const VISUALIZER_KEY = 'visualizer';
 const NEW_OUTPUT_KEY = 'new';
 
-export default function PatchPage(): JSX.Element {
+export const patchRoutes = (
+  <Route path="patch" element={<PatchLayout />}>
+    <Route index element={<Navigate to="/patch/groups" replace />} />
+    {groupsRoutes}
+    {displaysRoutes}
+    {visualizersRoutes}
+    <Route path="output/:outputId" element={<OutputEditor />} />
+  </Route>
+);
+
+function PatchLayout(): JSX.Element {
   const { project, save } = useContext(ProjectContext);
-  const [tabKey, setTabKey] = useState(GROUP_KEY);
+  const navigate = useNavigate();
+  const { outputId } = useParams();
+  const { pathname } = useLocation();
   const [showNewOutputDialog, setShowNewOutputDialog] = useState(false);
 
   const activePatch = getActivePatch(project);
 
-  // Show Displays tab only if there are displays or DDP outputs
+  let selectedTab: string;
+  if (outputId != null) {
+    selectedTab = outputId;
+  } else if (pathname.startsWith('/patch/displays')) {
+    selectedTab = 'displays';
+  } else if (pathname.startsWith('/patch/visualizers')) {
+    selectedTab = 'visualizers';
+  } else {
+    selectedTab = 'groups';
+  }
+
+  // Redirect stale/foreign output ids up to the default tab.
+  if (outputId != null && activePatch.outputs[outputId] == null) {
+    return <Navigate to="/patch/groups" replace />;
+  }
+
+  // Displays/Visualizers chips are normally shown only when there's something
+  // to map, but stay reachable via direct links/resume - so also show them
+  // whenever one of those routes is active.
   const hasDisplays = Object.keys(project.displays).length > 0;
   const hasDdpOutputs = Object.values(activePatch.outputs).some(
     (o) => o.output.case === 'ddpOutput',
   );
-  const showDisplaysTab = hasDisplays || hasDdpOutputs;
+  const showDisplaysTab =
+    hasDisplays ||
+    hasDdpOutputs ||
+    selectedTab === 'displays' ||
+    selectedTab === 'visualizers';
+
+  const outlet = <Outlet />;
 
   const tabs: TabsType = {
-    [GROUP_KEY]: {
+    groups: {
       name: 'Groups',
-      contents: <GroupEditor />,
+      contents: outlet,
     },
     ...(showDisplaysTab && {
-      [DISPLAY_KEY]: {
+      displays: {
         name: 'Displays',
-        contents: <DisplayEditor />,
+        contents: outlet,
       },
-      [VISUALIZER_KEY]: {
+      visualizers: {
         name: 'Visualizers',
-        contents: <VisualizerEditor />,
+        contents: outlet,
       },
     }),
   };
 
   for (const [outputIdString, output] of sortedEntries(activePatch.outputs)) {
-    const outputId = BigInt(outputIdString);
-    switch (output.output.case) {
-      case 'sacnDmxOutput':
-        tabs[outputId.toString()] = {
-          name: (
-            <OutputTabHeader
-              output={output}
-              outputId={outputId}
-              tabKey={tabKey}
-              setTabKey={setTabKey}
-            />
-          ),
-          contents: <SacnEditor outputId={outputId} />,
-        };
-        break;
-      case 'serialDmxOutput':
-        tabs[outputId.toString()] = {
-          name: (
-            <OutputTabHeader
-              output={output}
-              outputId={outputId}
-              tabKey={tabKey}
-              setTabKey={setTabKey}
-            />
-          ),
-          contents: <SerialEditor outputId={outputId} />,
-        };
-        break;
-      case 'wledOutput':
-        tabs[outputId.toString()] = {
-          name: (
-            <OutputTabHeader
-              output={output}
-              outputId={outputId}
-              tabKey={tabKey}
-              setTabKey={setTabKey}
-            />
-          ),
-          contents: <WledEditor outputId={outputId} />,
-        };
-        break;
-      case 'ddpOutput':
-        tabs[outputId.toString()] = {
-          name: (
-            <OutputTabHeader
-              output={output}
-              outputId={outputId}
-              tabKey={tabKey}
-              setTabKey={setTabKey}
-            />
-          ),
-          contents: <DdpEditor outputId={outputId} />,
-        };
-        break;
-      case undefined:
-        // Corrupted or legacy output with no type - show error tab so user can delete it
-        tabs[outputId.toString()] = {
-          name: (
-            <OutputTabHeader
-              output={output}
-              outputId={outputId}
-              tabKey={tabKey}
-              setTabKey={setTabKey}
-            />
-          ),
-          contents: (
-            <p style={{ color: 'var(--red-9)', padding: '1rem' }}>
-              This output has no type set (corrupted or legacy data). Please
-              delete it using the trash icon in the tab header and recreate it.
-            </p>
-          ),
-        };
-        break;
-      default: {
-        const exhaustiveCheck: never = output.output;
-        throw Error(
-          `Unknown output type in PatchPage! ${(exhaustiveCheck as { case: unknown }).case}`,
-        );
-      }
-    }
+    tabs[outputIdString] = {
+      name: (
+        <OutputTabHeader
+          output={output}
+          outputId={BigInt(outputIdString)}
+          selected={selectedTab === outputIdString}
+          onDeleted={() => navigate('/patch/groups')}
+        />
+      ),
+      contents: outlet,
+    };
   }
   tabs[NEW_OUTPUT_KEY] = {
     name: <BiPlus />,
-    contents: <></>,
+    contents: outlet,
   };
 
   const setTab = (key: string) => {
-    if (key === NEW_OUTPUT_KEY) {
-      setShowNewOutputDialog(true);
-    } else {
-      setTabKey(key);
+    switch (key) {
+      case NEW_OUTPUT_KEY:
+        setShowNewOutputDialog(true);
+        break;
+      case 'groups':
+        navigate('/patch/groups');
+        break;
+      case 'displays':
+        navigate('/patch/displays');
+        break;
+      case 'visualizers':
+        navigate('/patch/visualizers');
+        break;
+      default:
+        navigate(`/patch/output/${key}`);
     }
   };
 
@@ -165,7 +147,7 @@ export default function PatchPage(): JSX.Element {
     <div className={styles.wrapper}>
       <Tabs
         className={styles.tabWrapper}
-        selectedTab={tabKey.toString()}
+        selectedTab={selectedTab}
         setSelectedTab={(tab) => setTab(tab)}
         tabs={tabs}
         before={
@@ -231,7 +213,7 @@ export default function PatchPage(): JSX.Element {
                     },
                   );
                   save('Create Serial DMX output.');
-                  setTabKey(id.toString());
+                  navigate(`/patch/output/${id}`);
                   setShowNewOutputDialog(false);
                 }}
                 disabled={Boolean(
@@ -261,7 +243,7 @@ export default function PatchPage(): JSX.Element {
                     },
                   );
                   save('Create SACN DMX output.');
-                  setTabKey(id.toString());
+                  navigate(`/patch/output/${id}`);
                   setShowNewOutputDialog(false);
                 }}
               >
@@ -285,7 +267,7 @@ export default function PatchPage(): JSX.Element {
                     },
                   );
                   save('Create WLED output.');
-                  setTabKey(id.toString());
+                  navigate(`/patch/output/${id}`);
                   setShowNewOutputDialog(false);
                 }}
               >
@@ -309,7 +291,7 @@ export default function PatchPage(): JSX.Element {
                     },
                   );
                   save('Create DDP output.');
-                  setTabKey(id.toString());
+                  navigate(`/patch/output/${id}`);
                   setShowNewOutputDialog(false);
                 }}
               >
@@ -325,18 +307,55 @@ export default function PatchPage(): JSX.Element {
   );
 }
 
+function OutputEditor(): JSX.Element {
+  const { project } = useContext(ProjectContext);
+  const { outputId } = useParams();
+
+  const activePatch = getActivePatch(project);
+  const output = outputId != null ? activePatch.outputs[outputId] : undefined;
+  if (outputId == null || output == null) {
+    return <Navigate to="/patch/groups" replace />;
+  }
+
+  const id = BigInt(outputId);
+  switch (output.output.case) {
+    case 'sacnDmxOutput':
+      return <SacnEditor outputId={id} />;
+    case 'serialDmxOutput':
+      return <SerialEditor outputId={id} />;
+    case 'wledOutput':
+      return <WledEditor outputId={id} />;
+    case 'ddpOutput':
+      return <DdpEditor outputId={id} />;
+    case undefined:
+      // Corrupted or legacy output with no type - show error so user can delete it.
+      return (
+        <p style={{ color: 'var(--red-9)', padding: '1rem' }}>
+          This output has no type set (corrupted or legacy data). Please delete
+          it using the trash icon in the tab header and recreate it.
+        </p>
+      );
+    default: {
+      const exhaustiveCheck: never = output.output;
+      throw Error(
+        `Unknown output type in PatchPage! ${(exhaustiveCheck as { case: unknown }).case}`,
+      );
+    }
+  }
+}
+
 interface OutputTabHeaderProps {
   output: Output;
   outputId: bigint;
-  tabKey: string;
-  setTabKey: (key: string) => void;
+  selected: boolean;
+  onDeleted: () => void;
 }
 
 function OutputTabHeader({
   output,
   outputId,
-  tabKey,
-  setTabKey,
+  selected,
+  onDeleted,
 }: OutputTabHeaderProps) {
   const { project, save } = useContext(ProjectContext);
   return (
@@ -348,7 +367,7 @@ function OutputTabHeader({
           save(`Change name of output to ${name}.`);
         }}
       />
-      {tabKey === outputId.toString() && (
+      {selected && (
         <>
           &nbsp;
           <BiTrash
@@ -359,7 +378,7 @@ function OutputTabHeader({
 
               delete getActivePatch(project).outputs[outputId.toString()];
 
-              setTabKey(GROUP_KEY);
+              onDeleted();
               save(`Delete output ${output.name}.`);
               ev.stopPropagation();
             }}

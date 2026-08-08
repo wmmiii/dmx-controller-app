@@ -10,9 +10,11 @@ import {
   TargetGroup,
   TargetGroupSchema,
 } from '@dmx-controller/proto/output_pb';
-import { useCallback, useContext, useMemo, useState } from 'react';
+import { useCallback, useContext, useMemo } from 'react';
 import { BiPlus, BiTrash } from 'react-icons/bi';
+import { Navigate, Outlet, Route, useNavigate, useParams } from 'react-router';
 
+import { Browser } from '../../components/Browser';
 import { Button } from '../../components/Button';
 import { getOutputTargetName } from '../../components/OutputSelector';
 import { VersatileElement } from '../../components/VersatileElement';
@@ -25,14 +27,21 @@ import {
 } from '../../engine/group';
 import { useRenderMode } from '../../hooks/renderMode';
 import { randomUint64 } from '../../util/numberUtils';
-
-import { Browser } from '../../components/Browser';
 import { sortedEntries } from '../../util/sortUtils';
 import styles from './GroupEditor.module.css';
 
-export function GroupEditor() {
+export const groupsRoutes = (
+  <Route path="groups" element={<GroupEditor />}>
+    <Route path=":groupId" element={<GroupDetail />} />
+  </Route>
+);
+
+function GroupEditor() {
   const { project, save } = useContext(ProjectContext);
-  const [selectedGroupId, setSelectedGroupId] = useState<bigint | null>(null);
+  const navigate = useNavigate();
+  const { groupId } = useParams();
+
+  const selectedGroupId = groupId != null ? BigInt(groupId) : null;
 
   useRenderMode(
     {
@@ -48,32 +57,7 @@ export function GroupEditor() {
             value: {},
           },
     },
-    [selectedGroupId],
-  );
-
-  const selectedGroup = useMemo(() => {
-    if (selectedGroupId == null) {
-      return null;
-    }
-
-    return project.groups[selectedGroupId.toString()];
-  }, [project, selectedGroupId]);
-
-  useRenderMode(
-    {
-      mode: selectedGroupId
-        ? {
-            case: 'groupDebug',
-            value: {
-              groupId: selectedGroupId,
-            },
-          }
-        : {
-            case: 'blackout',
-            value: {},
-          },
-    },
-    [selectedGroupId],
+    [groupId],
   );
 
   return (
@@ -87,8 +71,8 @@ export function GroupEditor() {
             save(`Set group name to "${name}".`);
           }
         },
-        selected: BigInt(id) === selectedGroupId,
-        onSelect: () => setSelectedGroupId(BigInt(id)),
+        selected: id === groupId,
+        onSelect: () => navigate(`/patch/groups/${id}`),
       }))}
       listHeader={
         <Button
@@ -98,8 +82,8 @@ export function GroupEditor() {
             project.groups[newId.toString()] = create(TargetGroupSchema, {
               name: 'New Group',
             });
-            setSelectedGroupId(newId);
             save('Create new group.');
+            navigate(`/patch/groups/${newId}`);
           }}
         >
           Add New Group
@@ -121,14 +105,27 @@ export function GroupEditor() {
         </>
       }
     >
-      {selectedGroupId !== null && selectedGroup !== null ? (
-        <GroupEditorPane
-          groupId={selectedGroupId}
-          group={selectedGroup}
-          clearGroup={() => setSelectedGroupId(null)}
-        />
-      ) : null}
+      {groupId != null ? <Outlet /> : undefined}
     </Browser>
+  );
+}
+
+function GroupDetail() {
+  const { project } = useContext(ProjectContext);
+  const navigate = useNavigate();
+  const { groupId } = useParams();
+
+  const group = groupId != null ? project.groups[groupId] : undefined;
+  if (groupId == null || group == null) {
+    return <Navigate to="/patch/groups" replace />;
+  }
+
+  return (
+    <GroupEditorPane
+      groupId={BigInt(groupId)}
+      group={group}
+      clearGroup={() => navigate('/patch/groups')}
+    />
   );
 }
 

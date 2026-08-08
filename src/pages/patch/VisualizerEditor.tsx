@@ -8,12 +8,23 @@ import {
   VisualizerCompilationResult,
   VisualizerSchema,
 } from '@dmx-controller/proto/visualizer_pb';
+import { useQuery } from '@tanstack/react-query';
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { BiCopy, BiPlus, BiTrash } from 'react-icons/bi';
+import {
+  Link,
+  Navigate,
+  Outlet,
+  Route,
+  useNavigate,
+  useParams,
+} from 'react-router';
 
+import { Browser } from '../../components/Browser';
 import { Button } from '../../components/Button';
 import { ColorSwatch } from '../../components/ColorSwatch';
 import { MonacoEditor } from '../../components/MonacoEditor';
+import { Spacer } from '../../components/Spacer';
 import { Toggle } from '../../components/Toggle';
 import { ProjectContext } from '../../contexts/ProjectContext';
 import {
@@ -21,9 +32,6 @@ import {
   getBuiltinVisualizers,
 } from '../../system_interfaces/shader';
 import { randomUint64 } from '../../util/numberUtils';
-
-import { Browser } from '../../components/Browser';
-import { Spacer } from '../../components/Spacer';
 import styles from './VisualizerEditor.module.css';
 import { VisualizerPreview } from './VisualizerPreview';
 
@@ -48,16 +56,34 @@ vec4 visualizer(vec2 uv, vec2 frag_coord, vec4 prev_pixel) {
 }
 `;
 
-export function VisualizerEditor() {
-  const { project, save } = useContext(ProjectContext);
-  const [selectedId, setSelectedId] = useState<bigint | null>(null);
-  const [builtins, setBuiltins] = useState<{ [id: string]: Visualizer }>({});
+function useBuiltinVisualizers() {
+  const { data, isPending } = useQuery({
+    queryKey: ['builtinVisualizers'],
+    queryFn: async () => {
+      try {
+        return await getBuiltinVisualizers();
+      } catch (e) {
+        console.error('Failed to load builtin visualizers:', e);
+        throw e;
+      }
+    },
+    retry: false,
+  });
 
-  useEffect(() => {
-    getBuiltinVisualizers()
-      .then(setBuiltins)
-      .catch((e) => console.error('Failed to load builtin visualizers:', e));
-  }, []);
+  return { builtins: data ?? {}, loaded: !isPending };
+}
+
+export const visualizersRoutes = (
+  <Route path="visualizers" element={<VisualizerEditor />}>
+    <Route path=":visualizerId" element={<VisualizerDetail />} />
+  </Route>
+);
+
+function VisualizerEditor() {
+  const { project, save } = useContext(ProjectContext);
+  const navigate = useNavigate();
+  const { visualizerId } = useParams();
+  const { builtins } = useBuiltinVisualizers();
 
   const items = useMemo(() => {
     const items: Parameters<typeof Browser>[0]['items'] = [];
@@ -69,8 +95,8 @@ export function VisualizerEditor() {
             visualizer.name = name;
             save(`Set visualizer name to "${name}".`);
           },
-          selected: BigInt(id) === selectedId,
-          onSelect: () => setSelectedId(BigInt(id)),
+          selected: id === visualizerId,
+          onSelect: () => navigate(`/patch/visualizers/${id}`),
         }))
         .forEach((i) => items.push(i));
     };
@@ -82,7 +108,7 @@ export function VisualizerEditor() {
     items.push('Builtin');
     addItems(Object.entries(builtins));
     return items;
-  }, [project, builtins, selectedId]);
+  }, [project, builtins, visualizerId, navigate, save]);
 
   return (
     <Browser
@@ -98,7 +124,7 @@ export function VisualizerEditor() {
               glslSource: DEFAULT_GLSL,
             });
             save('Create new visualizer.');
-            setSelectedId(id);
+            navigate(`/patch/visualizers/${id}`);
           }}
         >
           Add Visualizer
@@ -108,8 +134,9 @@ export function VisualizerEditor() {
         <>
           <p>Select a visualizer to edit.</p>
           <p>
-            A visualizer is a GLSL fragment shader that renders onto a display.
-            It can react to the audio state or the beat.
+            A visualizer is a GLSL fragment shader that renders onto a{' '}
+            <Link to="/patch/displays">display</Link>. It can react to the audio
+            state or the beat.
           </p>
           <p>
             Think of them as{' '}
@@ -121,15 +148,36 @@ export function VisualizerEditor() {
         </>
       }
     >
-      {selectedId !== null ? (
-        <VisualizerEditorPane
-          builtins={builtins}
-          selectedId={selectedId}
-          setSelected={setSelectedId}
-          onDeleted={() => setSelectedId(null)}
-        />
-      ) : null}
+      {visualizerId != null ? <Outlet /> : undefined}
     </Browser>
+  );
+}
+
+function VisualizerDetail() {
+  const { project } = useContext(ProjectContext);
+  const navigate = useNavigate();
+  const { visualizerId } = useParams();
+  const { builtins, loaded } = useBuiltinVisualizers();
+
+  if (visualizerId == null) {
+    return <Navigate to="/patch/visualizers" replace />;
+  }
+
+  const inProject = project.visualizers[visualizerId] != null;
+  const isBuiltin = builtins[visualizerId] != null;
+
+  if (!inProject && !isBuiltin) {
+    // Builtins load asynchronously; only treat as missing once they've loaded.
+    return loaded ? <Navigate to="/patch/visualizers" replace /> : null;
+  }
+
+  return (
+    <VisualizerEditorPane
+      builtins={builtins}
+      selectedId={BigInt(visualizerId)}
+      setSelected={(id) => navigate(`/patch/visualizers/${id}`)}
+      onDeleted={() => navigate('/patch/visualizers')}
+    />
   );
 }
 

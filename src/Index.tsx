@@ -10,7 +10,7 @@ import {
   BiUndo,
   BiUpload,
 } from 'react-icons/bi';
-import { Route, Routes, useNavigate } from 'react-router';
+import { Outlet, useNavigate } from 'react-router';
 
 import styles from './Index.module.css';
 import { Button, ControllerButton, IconButton } from './components/Button';
@@ -23,14 +23,6 @@ import { Spacer } from './components/Spacer';
 import { WledVisualizer } from './components/WledVisualizer';
 import { ControllerContext } from './contexts/ControllerContext';
 import { ProjectContext } from './contexts/ProjectContext';
-import { AboutPage } from './pages/AboutPage';
-import AssetBrowserPage from './pages/AssetBrowserPage';
-import { AutopilotPage } from './pages/AutopilotPage';
-import { ControllerPage } from './pages/ControllerPage';
-import { LivePage } from './pages/LivePage';
-import ProjectPage from './pages/ProjectPage';
-import { TimecodedPage } from './pages/TimecodedPage';
-import PatchPage from './pages/patch/PatchPage';
 import { redoProject, undoProject } from './system_interfaces/project';
 import { getActivePatch } from './util/projectUtils';
 import { sortedEntries } from './util/sortUtils';
@@ -237,17 +229,7 @@ export default function Index(): JSX.Element {
       </header>
       <main>
         <ErrorBoundary>
-          <Routes>
-            <Route path="/" element={<LivePage />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/assets" element={<AssetBrowserPage />} />
-            <Route path="/autopilot" element={<AutopilotPage />} />
-            <Route path="/controller" element={<ControllerPage />} />
-            <Route path="/live" element={<LivePage />} />
-            <Route path="/patch" element={<PatchPage />} />
-            <Route path="/project" element={<ProjectPage />} />
-            <Route path="/timecoded" element={<TimecodedPage />} />
-          </Routes>
+          <Outlet />
         </ErrorBoundary>
       </main>
     </div>

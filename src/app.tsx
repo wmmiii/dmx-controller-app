@@ -1,9 +1,9 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter } from 'react-router';
+import { MemoryRouter } from 'react-router';
 
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import Index from './Index';
+import { AppRoutes, PersistLocation, initialPath } from './router';
 import { preloadWasm } from './wasm/engine';
 
 import { Clickwrap } from './components/Clickwrap';
@@ -39,21 +39,22 @@ root.render(
   <StrictMode>
     <Clickwrap>
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter basename="/">
+        <MemoryRouter initialEntries={[initialPath]}>
           <ShortcutProvider>
             <ProjectProvider>
               <ClipboardProvider>
                 <BeatProvider>
                   <AudioInputProvider>
                     <ControllerProvider>
-                      <Index />
+                      <PersistLocation />
+                      <AppRoutes />
                     </ControllerProvider>
                   </AudioInputProvider>
                 </BeatProvider>
               </ClipboardProvider>
             </ProjectProvider>
           </ShortcutProvider>
-        </BrowserRouter>
+        </MemoryRouter>
       </QueryClientProvider>
     </Clickwrap>
   </StrictMode>,
