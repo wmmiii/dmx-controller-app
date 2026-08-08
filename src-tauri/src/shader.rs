@@ -10,7 +10,6 @@ use dmx_engine::visualizer::shader_wrap::{preamble_line_count, wrap_user_shader}
 use dmx_engine::visualizer::uniforms::ShaderUniforms;
 use prost::Message;
 use tauri::State;
-use wgpu::util::DeviceExt;
 
 const TEXTURE_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8Unorm;
 
@@ -35,11 +34,38 @@ struct PooledTexture {
     in_use: bool,
 }
 
+/// Identifies the bind group a shader pass needs. Everything else in the bind
+/// group (uniform buffer, sampler) is stable for the lifetime of the pool, so
+/// the input texture is the only thing that varies between passes.
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+enum BindGroupKey {
+    Shader(usize),
+    /// Input texture indices plus the blend slot, which identifies the uniform
+    /// buffer holding this pass's `t`. Each Lerp node in a frame needs its own
+    /// buffer: `queue.write_buffer` writes are ordered against submits, not
+    /// against pass recording, so a shared buffer would give every blend pass
+    /// in the frame the last node's `t`.
+    Blend(usize, usize, usize),
+}
+
 /// Dynamically growing pool of `Rgba8Unorm` textures of a fixed resolution.
+///
+/// Also owns the per-frame GPU resources that are sized to that resolution: the
+/// uniform buffer every pass reads, the readback staging buffer, and the bind
+/// group cache. Recreating these per pass (which is what a naive implementation
+/// does) costs a GPU allocation for every node of the visualizer tree on every
+/// frame — the dominant source of frame-time jitter in this loop.
 struct TexturePool {
     entries: Vec<PooledTexture>,
     width: u32,
     height: u32,
+    uniform_buffer: Option<wgpu::Buffer>,
+    /// One uniform buffer per blend pass, reused across frames. Grown on demand
+    /// and indexed by `blend_slot`, which resets at the start of each frame.
+    blend_uniform_buffers: Vec<wgpu::Buffer>,
+    blend_slot: usize,
+    readback_buffer: Option<wgpu::Buffer>,
+    bind_groups: HashMap<BindGroupKey, wgpu::BindGroup>,
 }
 
 impl TexturePool {
@@ -48,6 +74,11 @@ impl TexturePool {
             entries: Vec::new(),
             width: width.max(1),
             height: height.max(1),
+            uniform_buffer: None,
+            blend_uniform_buffers: Vec::new(),
+            blend_slot: 0,
+            readback_buffer: None,
+            bind_groups: HashMap::new(),
         }
     }
 
@@ -59,7 +90,38 @@ impl TexturePool {
             self.width = width;
             self.height = height;
             self.entries.clear();
+            // Cached bind groups reference the discarded texture views.
+            self.bind_groups.clear();
+            self.readback_buffer = None;
         }
+    }
+
+    fn uniform_buffer(&mut self, device: &wgpu::Device) -> &wgpu::Buffer {
+        self.uniform_buffer.get_or_insert_with(|| {
+            device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("visualizer_uniforms"),
+                size: std::mem::size_of::<ShaderUniforms>() as u64,
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+                mapped_at_creation: false,
+            })
+        })
+    }
+
+    /// Claim the next blend slot for this frame, allocating its uniform buffer
+    /// on first use.
+    fn next_blend_slot(&mut self, device: &wgpu::Device) -> usize {
+        let slot = self.blend_slot;
+        self.blend_slot += 1;
+        if slot >= self.blend_uniform_buffers.len() {
+            self.blend_uniform_buffers
+                .push(device.create_buffer(&wgpu::BufferDescriptor {
+                    label: Some("visualizer_blend_uniforms"),
+                    size: std::mem::size_of::<[f32; 4]>() as u64,
+                    usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+                    mapped_at_creation: false,
+                }));
+        }
+        slot
     }
 
     fn acquire(&mut self, device: &wgpu::Device) -> Option<usize> {
@@ -109,6 +171,7 @@ impl TexturePool {
         for entry in &mut self.entries {
             entry.in_use = false;
         }
+        self.blend_slot = 0;
     }
 }
 
@@ -298,7 +361,7 @@ impl ShaderState {
     /// struct (with a 1-based line number into the user's source), not as `Err`.
     pub fn compile_shader(&mut self, id: u64, glsl_source: &str) -> VisualizerCompilationResult {
         let wrapped = wrap_user_shader(glsl_source);
-        log::info!("Compiling shader {id}, wrapped GLSL:\n{wrapped}");
+        log::debug!("Compiling shader {id}, wrapped GLSL:\n{wrapped}");
 
         let mut frontend = naga::front::glsl::Frontend::default();
         let options = naga::front::glsl::Options::from(naga::ShaderStage::Fragment);
@@ -387,6 +450,9 @@ impl ShaderState {
         width: u32,
         height: u32,
     ) -> Vec<u8> {
+        let width = width.max(1);
+        let height = height.max(1);
+
         // Get or create the texture pool for this display
         let pool = self
             .texture_pools
@@ -394,6 +460,12 @@ impl ShaderState {
             .or_insert_with(|| TexturePool::new(width, height));
         pool.resize(width, height);
         pool.release_all();
+
+        // Every node of the tree reads the same uniforms, so upload them once
+        // per frame instead of building a fresh buffer per pass.
+        let uniform_buffer = pool.uniform_buffer(&self.device).clone();
+        self.queue
+            .write_buffer(&uniform_buffer, 0, bytemuck::bytes_of(uniforms));
 
         // Get the previous frame's texture view for this display, or use black if none exists
         let prev_idx = self.get_previous_frame_idx(display_id);
@@ -407,23 +479,27 @@ impl ShaderState {
 
         let result_idx = self.render_tree(display_id, tree, uniforms, prev_idx, &mut encoder);
 
-        // Submit all batched render passes before readback
-        self.queue.submit(Some(encoder.finish()));
-
-        let pixels = if result_idx == BLACK_IDX {
-            vec![0u8; (width.max(1) as usize) * (height.max(1) as usize) * 4]
-        } else {
-            self.readback(display_id, result_idx, width.max(1), height.max(1))
-        };
-
-        // Copy the result to the persistent previous-frame texture for next frame
+        // Record the previous-frame copy and the readback copy into the same
+        // encoder as the render passes. Splitting these across three submits
+        // (with a blocking map in between) drained the GPU pipeline every frame.
         if result_idx == BLACK_IDX {
             // If we're rendering black, clear the previous frame texture
             self.previous_frame_textures.remove(&display_id);
-            self.previous_frame_views.remove(&display_id);
+            if self.previous_frame_views.remove(&display_id).is_some() {
+                self.invalidate_prev_frame_bind_groups(display_id);
+            }
         } else {
-            self.store_previous_frame(display_id, result_idx, width, height);
+            self.record_store_previous_frame(display_id, result_idx, width, height, &mut encoder);
+            self.record_readback_copy(display_id, result_idx, width, height, &mut encoder);
         }
+
+        self.queue.submit(Some(encoder.finish()));
+
+        let pixels = if result_idx == BLACK_IDX {
+            vec![0u8; (width as usize) * (height as usize) * 4]
+        } else {
+            self.map_readback(display_id, width, height)
+        };
 
         for id in self.pending_deletions.drain(..) {
             self.compiled_shaders.remove(&id);
@@ -442,14 +518,15 @@ impl ShaderState {
         }
     }
 
-    /// Copy the rendered result from the pool into a persistent texture for
-    /// this display, so it can be used as input to the next frame.
-    fn store_previous_frame(
+    /// Record a copy of the rendered result from the pool into a persistent
+    /// texture for this display, so it can be used as input to the next frame.
+    fn record_store_previous_frame(
         &mut self,
         display_id: u64,
         result_idx: usize,
         width: u32,
         height: u32,
+        encoder: &mut wgpu::CommandEncoder,
     ) {
         // Check if we need to create or resize the previous frame texture
         let needs_new_texture = self
@@ -475,14 +552,10 @@ impl ShaderState {
             let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
             self.previous_frame_textures.insert(display_id, texture);
             self.previous_frame_views.insert(display_id, view);
+            self.invalidate_prev_frame_bind_groups(display_id);
         }
 
         // Direct texture copy - vertex shader Y-flip ensures coordinates are aligned
-        let mut encoder = self
-            .device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: Some("copy_to_previous_frame"),
-            });
         encoder.copy_texture_to_texture(
             wgpu::TexelCopyTextureInfo {
                 texture: &self.texture_pools[&display_id].entries[result_idx].texture,
@@ -502,7 +575,6 @@ impl ShaderState {
                 depth_or_array_layers: 1,
             },
         );
-        self.queue.submit(Some(encoder.finish()));
     }
 
     /// Remove previous frame textures and pools for displays that no longer exist.
@@ -551,18 +623,18 @@ impl ShaderState {
                 let Some(out_idx) = pool.acquire(&self.device) else {
                     return BLACK_IDX; // Pool exhausted, graceful fallback
                 };
-                let in_view = self.view_for_idx(display_id, prev_idx);
-                let pool = self.texture_pools.get(&display_id).unwrap();
+                self.ensure_shader_bind_group(display_id, prev_idx);
+                let pool = &self.texture_pools[&display_id];
+                let bind_group = &pool.bind_groups[&BindGroupKey::Shader(prev_idx)];
                 let out_view = &pool.entries[out_idx].view;
                 let pipeline = &self.compiled_shaders[shader_id].pipeline;
-                Self::render_shader(
-                    &self.device,
-                    &self.shader_bind_group_layout,
-                    &self.sampler,
+                #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+                record_fullscreen_pass(
                     pipeline,
-                    uniforms,
-                    in_view,
+                    bind_group,
                     out_view,
+                    uniforms.resolution[0] as u32,
+                    uniforms.resolution[1] as u32,
                     encoder,
                 );
                 out_idx
@@ -603,18 +675,25 @@ impl ShaderState {
                     return BLACK_IDX;
                 };
                 {
-                    let view_a = self.view_for_idx(display_id, idx_a);
-                    let view_b = self.view_for_idx(display_id, idx_b);
-                    let pool = self.texture_pools.get(&display_id).unwrap();
+                    let slot = self
+                        .texture_pools
+                        .get_mut(&display_id)
+                        .unwrap()
+                        .next_blend_slot(&self.device);
+                    self.ensure_blend_bind_group(display_id, idx_a, idx_b, slot);
+
+                    let blend_uniform: [f32; 4] = [lerp.t, 0.0, 0.0, 0.0];
+                    let pool = &self.texture_pools[&display_id];
+                    self.queue.write_buffer(
+                        &pool.blend_uniform_buffers[slot],
+                        0,
+                        bytemuck::cast_slice(&blend_uniform),
+                    );
+                    let bind_group = &pool.bind_groups[&BindGroupKey::Blend(idx_a, idx_b, slot)];
                     let out_view = &pool.entries[out_idx].view;
-                    Self::blend_textures(
-                        &self.device,
-                        &self.blend_bind_group_layout,
+                    record_fullscreen_pass(
                         &self.blend_pipeline,
-                        &self.sampler,
-                        lerp.t,
-                        view_a,
-                        view_b,
+                        bind_group,
                         out_view,
                         pool.width,
                         pool.height,
@@ -633,6 +712,19 @@ impl ShaderState {
         }
     }
 
+    /// Drop cached bind groups that reference this display's previous-frame
+    /// view. Called whenever that view is replaced or removed, since the cache
+    /// otherwise keeps sampling a texture that is no longer the previous frame.
+    fn invalidate_prev_frame_bind_groups(&mut self, display_id: u64) {
+        let Some(pool) = self.texture_pools.get_mut(&display_id) else {
+            return;
+        };
+        pool.bind_groups.retain(|key, _| match key {
+            BindGroupKey::Shader(in_idx) => *in_idx != PREV_FRAME_IDX,
+            BindGroupKey::Blend(a, b, _) => *a != PREV_FRAME_IDX && *b != PREV_FRAME_IDX,
+        });
+    }
+
     /// Get the texture view for a given index. Handles pool indices, `BLACK_IDX`,
     /// and the special `PREV_FRAME_IDX` sentinel which maps to the previous frame's
     /// persistent texture for this display.
@@ -649,26 +741,21 @@ impl ShaderState {
         }
     }
 
-    #[allow(clippy::too_many_arguments)]
-    fn render_shader(
-        device: &wgpu::Device,
-        layout: &wgpu::BindGroupLayout,
-        sampler: &wgpu::Sampler,
-        pipeline: &wgpu::RenderPipeline,
-        uniforms: &ShaderUniforms,
-        in_view: &wgpu::TextureView,
-        out_view: &wgpu::TextureView,
-        encoder: &mut wgpu::CommandEncoder,
-    ) {
-        let bytes: &[u8] = bytemuck::bytes_of(uniforms);
-        let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("visualizer_uniforms"),
-            contents: bytes,
-            usage: wgpu::BufferUsages::UNIFORM,
-        });
-        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+    /// Populate the cached bind group for a shader pass reading `in_idx`.
+    /// Cached entries stay valid until the pool is resized, so after the first
+    /// frame this is a hash lookup rather than a driver-side allocation.
+    fn ensure_shader_bind_group(&mut self, display_id: u64, in_idx: usize) {
+        let key = BindGroupKey::Shader(in_idx);
+        if self.texture_pools[&display_id].bind_groups.contains_key(&key) {
+            return;
+        }
+
+        let in_view = self.view_for_idx(display_id, in_idx).clone();
+        let pool = self.texture_pools.get_mut(&display_id).unwrap();
+        let uniform_buffer = pool.uniform_buffer(&self.device).clone();
+        let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("visualizer_bind_group"),
-            layout,
+            layout: &self.shader_bind_group_layout,
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
@@ -676,87 +763,96 @@ impl ShaderState {
                 },
                 wgpu::BindGroupEntry {
                     binding: 1,
-                    resource: wgpu::BindingResource::TextureView(in_view),
+                    resource: wgpu::BindingResource::TextureView(&in_view),
                 },
                 wgpu::BindGroupEntry {
                     binding: 2,
-                    resource: wgpu::BindingResource::Sampler(sampler),
+                    resource: wgpu::BindingResource::Sampler(&self.sampler),
                 },
             ],
         });
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-        let width = uniforms.resolution[0] as u32;
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-        let height = uniforms.resolution[1] as u32;
-        record_fullscreen_pass(pipeline, &bind_group, out_view, width, height, encoder);
+        self.texture_pools
+            .get_mut(&display_id)
+            .unwrap()
+            .bind_groups
+            .insert(key, bind_group);
     }
 
-    #[allow(clippy::too_many_arguments)]
-    fn blend_textures(
-        device: &wgpu::Device,
-        layout: &wgpu::BindGroupLayout,
-        pipeline: &wgpu::RenderPipeline,
-        sampler: &wgpu::Sampler,
-        t: f32,
-        view_a: &wgpu::TextureView,
-        view_b: &wgpu::TextureView,
-        out_view: &wgpu::TextureView,
+    fn ensure_blend_bind_group(
+        &mut self,
+        display_id: u64,
+        idx_a: usize,
+        idx_b: usize,
+        slot: usize,
+    ) {
+        let key = BindGroupKey::Blend(idx_a, idx_b, slot);
+        if self.texture_pools[&display_id].bind_groups.contains_key(&key) {
+            return;
+        }
+
+        let view_a = self.view_for_idx(display_id, idx_a).clone();
+        let view_b = self.view_for_idx(display_id, idx_b).clone();
+        let uniform_buffer = self.texture_pools[&display_id].blend_uniform_buffers[slot].clone();
+        let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("visualizer_blend_bind_group"),
+            layout: &self.blend_bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: uniform_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::TextureView(&view_a),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::TextureView(&view_b),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 3,
+                    resource: wgpu::BindingResource::Sampler(&self.sampler),
+                },
+            ],
+        });
+        self.texture_pools
+            .get_mut(&display_id)
+            .unwrap()
+            .bind_groups
+            .insert(key, bind_group);
+    }
+
+    /// Record the texture-to-buffer copy that feeds `map_readback`. The staging
+    /// buffer is kept for the lifetime of the pool; allocating (and implicitly
+    /// destroying) a mappable buffer every frame is a per-frame GPU allocation.
+    fn record_readback_copy(
+        &mut self,
+        display_id: u64,
+        idx: usize,
         width: u32,
         height: u32,
         encoder: &mut wgpu::CommandEncoder,
     ) {
-        let blend_uniform: [f32; 4] = [t, 0.0, 0.0, 0.0];
-        let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("visualizer_blend_uniforms"),
-            contents: bytemuck::cast_slice(&blend_uniform),
-            usage: wgpu::BufferUsages::UNIFORM,
-        });
-        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("visualizer_blend_bind_group"),
-            layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: uniform_buffer.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: wgpu::BindingResource::TextureView(view_a),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 2,
-                    resource: wgpu::BindingResource::TextureView(view_b),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 3,
-                    resource: wgpu::BindingResource::Sampler(sampler),
-                },
-            ],
-        });
-        record_fullscreen_pass(pipeline, &bind_group, out_view, width, height, encoder);
-    }
-
-    /// Copy a pool texture back to the CPU as tightly-packed RGBA8 bytes.
-    fn readback(&self, display_id: u64, idx: usize, width: u32, height: u32) -> Vec<u8> {
-        let unpadded_bytes_per_row = width * 4;
-        let padded_bytes_per_row = align_up(unpadded_bytes_per_row, 256);
+        let padded_bytes_per_row = align_up(width * 4, 256);
         let buffer_size = u64::from(padded_bytes_per_row) * u64::from(height);
 
-        let output_buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("visualizer_readback"),
-            size: buffer_size,
-            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
-            mapped_at_creation: false,
-        });
+        let device = &self.device;
+        let pool = self.texture_pools.get_mut(&display_id).unwrap();
+        let output_buffer = pool
+            .readback_buffer
+            .get_or_insert_with(|| {
+                device.create_buffer(&wgpu::BufferDescriptor {
+                    label: Some("visualizer_readback"),
+                    size: buffer_size,
+                    usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+                    mapped_at_creation: false,
+                })
+            })
+            .clone();
 
-        let mut encoder = self
-            .device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: Some("visualizer_readback_encoder"),
-            });
         encoder.copy_texture_to_buffer(
             wgpu::TexelCopyTextureInfo {
-                texture: &self.texture_pools[&display_id].entries[idx].texture,
+                texture: &pool.entries[idx].texture,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
@@ -775,9 +871,20 @@ impl ShaderState {
                 depth_or_array_layers: 1,
             },
         );
-        self.queue.submit(Some(encoder.finish()));
+    }
 
-        let slice = output_buffer.slice(..);
+    /// Map the staging buffer written by `record_readback_copy` and return
+    /// tightly-packed RGBA8 bytes. Blocks until the GPU has finished the frame.
+    fn map_readback(&self, display_id: u64, width: u32, height: u32) -> Vec<u8> {
+        let unpadded_bytes_per_row = width * 4;
+        let padded_bytes_per_row = align_up(unpadded_bytes_per_row, 256);
+        let buffer_size = u64::from(padded_bytes_per_row) * u64::from(height);
+
+        let Some(output_buffer) = self.texture_pools[&display_id].readback_buffer.as_ref() else {
+            return vec![0u8; (width * height * 4) as usize];
+        };
+
+        let slice = output_buffer.slice(..buffer_size);
         slice.map_async(wgpu::MapMode::Read, |_| {});
         let _ = self.device.poll(wgpu::PollType::Wait);
 
@@ -841,50 +948,56 @@ pub fn get_builtin_visualizers() -> std::collections::HashMap<String, Vec<u8>> {
 /// undo, redo, load, and import — keeps shader state consistent without
 /// requiring explicit compile/delete calls in the UI.
 pub fn sync_visualizer_shaders(shader_state: &Mutex<ShaderState>) {
-    let (current, display_ids): (HashMap<u64, String>, Vec<u64>) =
-        match project::with_project(|project| {
-            let visualizers = project
-                .visualizers
-                .iter()
-                .map(|(&id, viz)| (id, viz.glsl_source.clone()))
-                .collect();
-            let displays = project.displays.keys().copied().collect();
-            Ok((visualizers, displays))
-        }) {
-            Ok(result) => result,
-            Err(e) => {
-                log::error!("shader sync: failed to read project: {e}");
-                return;
-            }
-        };
-
     let mut state = shader_state.lock().unwrap_or_else(|e| {
         log::error!("Shader state lock poisoned, recovering");
         e.into_inner()
     });
 
+    // This runs on every project mutation, so only the sources that actually
+    // changed are cloned out of the project — copying every visualizer's GLSL
+    // on each mutation shows up as allocation churn while dragging a control.
+    let scan: Result<(Vec<u64>, Vec<(u64, String)>, Vec<u64>), String> =
+        project::with_project(|project| {
+            let stale = state
+                .compiled_shaders
+                .keys()
+                .filter(|&&id| !is_builtin(id) && !project.visualizers.contains_key(&id))
+                .copied()
+                .collect();
+            let changed = project
+                .visualizers
+                .iter()
+                .filter(|(id, viz)| {
+                    state.compiled_glsl.get(id).map(String::as_str) != Some(&viz.glsl_source)
+                })
+                .map(|(&id, viz)| (id, viz.glsl_source.clone()))
+                .collect();
+            let displays = project.displays.keys().copied().collect();
+            Ok((stale, changed, displays))
+        });
+
+    let (stale, changed, display_ids) = match scan {
+        Ok(result) => result,
+        Err(e) => {
+            log::error!("shader sync: failed to read project: {e}");
+            return;
+        }
+    };
+
     // Remove user shaders whose IDs are no longer in the project.
-    let to_delete: Vec<u64> = state
-        .compiled_shaders
-        .keys()
-        .filter(|&&id| !is_builtin(id) && !current.contains_key(&id))
-        .copied()
-        .collect();
-    for id in to_delete {
+    for id in stale {
         state.mark_for_deletion(id);
         state.compiled_glsl.remove(&id);
     }
 
     // Compile shaders that are new or whose source has changed.
-    for (id, glsl) in &current {
-        if state.compiled_glsl.get(id).map(String::as_str) != Some(glsl.as_str()) {
-            let result = state.compile_shader(*id, glsl);
-            if !result.success {
-                log::warn!(
-                    "visualizer {id} failed to compile during project sync: {}",
-                    result.error_message
-                );
-            }
+    for (id, glsl) in changed {
+        let result = state.compile_shader(id, &glsl);
+        if !result.success {
+            log::warn!(
+                "visualizer {id} failed to compile during project sync: {}",
+                result.error_message
+            );
         }
     }
 
