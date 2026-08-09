@@ -263,8 +263,7 @@ mod tests {
     fn different_lerp_t_values_do_not_collapse() {
         // Lerp t values outside tolerance should NOT collapse
         let inner_a = VisualizerNode::lerp(VisualizerNode::black(), VisualizerNode::leaf(1), 0.5);
-        let inner_b =
-            VisualizerNode::lerp(VisualizerNode::black(), VisualizerNode::leaf(1), 0.6);
+        let inner_b = VisualizerNode::lerp(VisualizerNode::black(), VisualizerNode::leaf(1), 0.6);
 
         let tree = build_interpolated_tree(Some(inner_a), Some(inner_b), 0.3).unwrap();
 

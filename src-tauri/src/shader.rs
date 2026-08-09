@@ -573,9 +573,13 @@ impl ShaderState {
             Some(Node::Sequence(seq)) => {
                 let mut buffer_idx = prev_idx;
                 for child in &seq.nodes {
-                    let new_idx = self.render_tree(display_id, child, uniforms, buffer_idx, encoder);
+                    let new_idx =
+                        self.render_tree(display_id, child, uniforms, buffer_idx, encoder);
                     if buffer_idx != prev_idx {
-                        self.texture_pools.get_mut(&display_id).unwrap().release(buffer_idx);
+                        self.texture_pools
+                            .get_mut(&display_id)
+                            .unwrap()
+                            .release(buffer_idx);
                     }
                     buffer_idx = new_idx;
                 }
@@ -1100,8 +1104,14 @@ void main() {
                     // Verify key offsets match ShaderUniforms struct
                     assert_eq!(members[0].offset, 0, "u_color should be at offset 0");
                     assert_eq!(members[2].offset, 16, "u_resolution should be at offset 16");
-                    assert_eq!(members[8].offset, 48, "u_palette_primary should be at offset 48");
-                    assert_eq!(members[14].offset, 96, "u_audio_bands should be at offset 96");
+                    assert_eq!(
+                        members[8].offset, 48,
+                        "u_palette_primary should be at offset 48"
+                    );
+                    assert_eq!(
+                        members[14].offset, 96,
+                        "u_audio_bands should be at offset 96"
+                    );
                 }
             }
         }

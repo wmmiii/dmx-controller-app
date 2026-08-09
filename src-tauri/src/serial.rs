@@ -71,9 +71,7 @@ impl SerialState {
 
                 // Close ports that have disappeared
                 if !disappeared_ports.is_empty() {
-                    log::info!(
-                        "Detected disconnected serial ports: {disappeared_ports:?}"
-                    );
+                    log::info!("Detected disconnected serial ports: {disappeared_ports:?}");
 
                     let serial = state.lock().await;
                     serial.close_disconnected_ports(&disappeared_ports);
@@ -149,7 +147,10 @@ impl SerialState {
 
     /// Get the port name that the output is currently bound to
     pub fn get_bound_port_name(&self, output_id: &str) -> Option<String> {
-        let ports = self.dmx_ports.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let ports = self
+            .dmx_ports
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         ports.get(output_id).map(|(port_name, _)| port_name.clone())
     }
 

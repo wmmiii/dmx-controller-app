@@ -84,7 +84,13 @@ fn apply_rainbow_effect<T: RenderTarget<T>>(
             ..Default::default()
         };
 
-        apply_state(project, render_target, &info.output_target, &state, color_palette);
+        apply_state(
+            project,
+            render_target,
+            &info.output_target,
+            &state,
+            color_palette,
+        );
     }
 }
 
@@ -126,7 +132,13 @@ fn apply_circle_effect<T: RenderTarget<T>>(
             ..Default::default()
         };
 
-        apply_state(project, render_target, &info.output_target, &state, color_palette);
+        apply_state(
+            project,
+            render_target,
+            &info.output_target,
+            &state,
+            color_palette,
+        );
     }
 }
 

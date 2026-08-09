@@ -271,7 +271,9 @@ pub fn list_audio_inputs() -> Result<Vec<AudioInputDevice>, String> {
     let mut result = Vec::new();
     for device in devices {
         if let Ok(desc) = device.description() {
-            result.push(AudioInputDevice { name: desc.to_string() });
+            result.push(AudioInputDevice {
+                name: desc.to_string(),
+            });
         }
     }
     Ok(result)
@@ -412,7 +414,11 @@ fn run_stream_thread(
     let device = host
         .input_devices()
         .map_err(|e| e.to_string())?
-        .find(|d| d.description().map(|desc| desc.to_string() == device_name).unwrap_or(false))
+        .find(|d| {
+            d.description()
+                .map(|desc| desc.to_string() == device_name)
+                .unwrap_or(false)
+        })
         .ok_or_else(|| format!("Audio device '{device_name}' not found"))?;
 
     let config = device

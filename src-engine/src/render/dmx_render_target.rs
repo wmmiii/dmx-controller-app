@@ -157,7 +157,7 @@ impl<'a> DmxRenderTarget<'a> {
                                 let mut min_dist = f64::MAX;
                                 let mut update = None;
                                 for c in &color_wheel_mapping.colors {
-                                    let color = c.color?; 
+                                    let color = c.color?;
                                     let dist = (color.red - red).powf(2.0) + (color.green - green).powf(2.0) + (color.blue - blue).powf(2.0);
                                     if dist < min_dist {
                                         min_dist = dist;
@@ -185,10 +185,11 @@ impl<'a> DmxRenderTarget<'a> {
             .iter()
             .filter(|(_, channel)| channel.r#type == channel_type)
             .filter_map(|(index, channel)| {
-                let Some(
-                        crate::proto::dmx_fixture_definition::channel::Mapping::AmountMapping(mapping),
-                    ) = &channel.mapping else {
-                        return None;
+                let Some(crate::proto::dmx_fixture_definition::channel::Mapping::AmountMapping(
+                    mapping,
+                )) = &channel.mapping
+                else {
+                    return None;
                 };
 
                 let channel_index = (index + fixture_offset) as usize;
@@ -212,7 +213,10 @@ impl<'a> DmxRenderTarget<'a> {
             .iter()
             .filter(|(_, channel)| channel.r#type == channel_type)
             .filter_map(|(index, channel)| {
-                let Some(crate::proto::dmx_fixture_definition::channel::Mapping::AngleMapping(mapping)) = &channel.mapping else {
+                let Some(crate::proto::dmx_fixture_definition::channel::Mapping::AngleMapping(
+                    mapping,
+                )) = &channel.mapping
+                else {
                     return None;
                 };
 
@@ -242,8 +246,7 @@ impl<'a> RenderTarget<DmxRenderTarget<'a>> for DmxRenderTarget<'a> {
         state: &crate::proto::FixtureState,
         color_palette: &ColorPalette,
     ) {
-
-        let Some(fixture) = self.fixtures.get(&qualified_fixture_id.fixture)  else {
+        let Some(fixture) = self.fixtures.get(&qualified_fixture_id.fixture) else {
             return;
         };
 
@@ -278,7 +281,16 @@ impl<'a> RenderTarget<DmxRenderTarget<'a>> for DmxRenderTarget<'a> {
             ]
         );
 
-        let channels: Vec<(usize, f64)> = state.channels.iter().map(|c| ((c.index + fixture.channel_offset) as usize, f64::from(c.value) / 255.0)).collect();
+        let channels: Vec<(usize, f64)> = state
+            .channels
+            .iter()
+            .map(|c| {
+                (
+                    (c.index + fixture.channel_offset) as usize,
+                    f64::from(c.value) / 255.0,
+                )
+            })
+            .collect();
         all_updates.extend(channels);
 
         self.apply_updates(all_updates);
@@ -315,8 +327,8 @@ impl<'a> RenderTarget<DmxRenderTarget<'a>> for DmxRenderTarget<'a> {
 #[allow(clippy::field_reassign_with_default, clippy::needless_range_loop)]
 mod tests {
     use super::*;
-    use crate::proto::dmx_fixture_definition::channel::Mapping;
     use crate::proto::dmx_fixture_definition::Channel;
+    use crate::proto::dmx_fixture_definition::channel::Mapping;
     use crate::proto::{FixtureState, PhysicalDmxFixture, QualifiedFixtureId, SerialDmxOutput};
     use std::collections::HashMap;
 

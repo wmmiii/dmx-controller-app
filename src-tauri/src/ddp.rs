@@ -72,10 +72,7 @@ impl DdpState {
                 if let Some(buffer) = buffers.get(display_id) {
                     let floats = map_segment_to_rgb(buffer, virtual_mapping, segment);
                     // Convert f32 [0.0, 1.0] to u8 [0, 255] with gamma correction for WS281X LEDs
-                    floats
-                        .iter()
-                        .map(|f| gamma_correct(*f))
-                        .collect()
+                    floats.iter().map(|f| gamma_correct(*f)).collect()
                 } else {
                     // No buffer available, output black
                     output_black_segment(segment)
