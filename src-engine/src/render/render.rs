@@ -154,6 +154,7 @@ pub fn render_wled(
 
             let mut render_target = WledRenderTarget {
                 id: output_id,
+                color_palette: None,
                 segments: wled_output
                     .segments
                     .iter()
@@ -167,6 +168,7 @@ pub fn render_wled(
                         }),
                         speed: 1.0,
                         brightness: 1.0,
+                        send_palette: false,
                     })
                     .collect(),
             };

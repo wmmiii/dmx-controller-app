@@ -1,5 +1,45 @@
-use dmx_engine::proto::WledRenderTarget;
+use dmx_engine::proto::wled_render_target::Segment;
+use dmx_engine::proto::{Color, ColorPalette, WledRenderTarget};
 use serde::{Deserialize, Serialize};
+
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+fn to_rgb_bytes(red: f64, green: f64, blue: f64, white: f64) -> [u8; 3] {
+    let channel = |value: f64| ((value + white) * 255.0).floor() as u8;
+    [channel(red), channel(green), channel(blue)]
+}
+
+fn palette_color_to_rgb(color: Option<&Color>) -> [u8; 3] {
+    match color {
+        Some(color) => to_rgb_bytes(
+            color.red,
+            color.green,
+            color.blue,
+            color.white.unwrap_or(0.0),
+        ),
+        None => [0, 0, 0],
+    }
+}
+
+fn segment_colors(segment: &Segment, color_palette: Option<&ColorPalette>) -> [[u8; 3]; 3] {
+    if segment.send_palette {
+        if let Some(palette) = color_palette {
+            return [&palette.primary, &palette.secondary, &palette.tertiary].map(|description| {
+                palette_color_to_rgb(description.as_ref().and_then(|d| d.color.as_ref()))
+            });
+        }
+    }
+
+    let color = match segment.primary_color.as_ref() {
+        Some(color) => to_rgb_bytes(
+            f64::from(color.red),
+            f64::from(color.green),
+            f64::from(color.blue),
+            0.0,
+        ),
+        None => [0, 0, 0],
+    };
+    [color, color, color]
+}
 
 pub struct WledState {
     client: reqwest::Client,
@@ -8,7 +48,7 @@ pub struct WledState {
 #[derive(Deserialize, Serialize)]
 struct WledSegment {
     id: u16,
-    col: [[u8; 3]; 1],
+    col: [[u8; 3]; 3],
     fx: u16,
     sx: u8,
     pal: u16,
@@ -46,11 +86,7 @@ impl WledState {
                 .enumerate()
                 .map(|(i, s)| WledSegment {
                     id: u16::try_from(i).unwrap(),
-                    col: [[
-                        (s.primary_color.as_ref().map_or(0.0, |c| c.red) * 255.0).floor() as u8,
-                        (s.primary_color.as_ref().map_or(0.0, |c| c.green) * 255.0).floor() as u8,
-                        (s.primary_color.as_ref().map_or(0.0, |c| c.blue) * 255.0).floor() as u8,
-                    ]],
+                    col: segment_colors(s, wled_render_target.color_palette.as_ref()),
                     fx: u16::try_from(s.effect).unwrap(),
                     #[allow(clippy::cast_sign_loss)]
                     sx: (s.speed * 255.0).floor() as u8,

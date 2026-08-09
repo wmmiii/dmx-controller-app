@@ -80,7 +80,7 @@ export function isAmountChannel(type: string): type is AmountChannel {
   return AMOUNT_CHANNELS.includes(type as AmountChannel);
 }
 
-export const WLED_CHANNELS = ['wledEffect', 'wledPalette'];
+export const WLED_CHANNELS = ['wledEffect', 'wledPalette', 'sendPalette'];
 export type WledChannel = (typeof WLED_CHANNELS)[number];
 export function isWledChannel(type: string): type is WledChannel {
   return WLED_CHANNELS.includes(type as WledChannel);

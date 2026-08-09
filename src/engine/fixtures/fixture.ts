@@ -66,7 +66,7 @@ export function getAvailableChannels(
         WLED_CHANNELS.forEach((c) => channels.add(c));
         const colorChannels: ColorChannel[] = ['red', 'green', 'blue'];
         colorChannels.forEach((c) => channels.add(c));
-        const amountChannels: AmountChannel[] = ['dimmer'];
+        const amountChannels: AmountChannel[] = ['dimmer', 'speed'];
         amountChannels.forEach((c) => channels.add(c));
         break;
       case 'ddpOutput':

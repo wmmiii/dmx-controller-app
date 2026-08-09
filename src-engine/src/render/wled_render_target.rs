@@ -1,5 +1,6 @@
 #![allow(clippy::cast_possible_truncation)]
 
+use crate::palette::interpolate_palettes;
 use crate::proto::ColorPalette;
 use crate::proto::WledRenderTarget;
 use crate::proto::wled_render_target::Color;
@@ -22,7 +23,15 @@ impl RenderTarget<WledRenderTarget> for WledRenderTarget {
             return;
         }
 
+        if self.color_palette.is_none() {
+            self.color_palette = Some(color_palette.clone());
+        }
+
         let mut segment = self.segments[qualified_fixture_id.fixture as usize];
+
+        if let Some(send_palette) = state.send_palette {
+            segment.send_palette = send_palette;
+        }
 
         if let Some(effect) = state.wled_effect {
             segment.effect = effect;
@@ -52,6 +61,10 @@ impl RenderTarget<WledRenderTarget> for WledRenderTarget {
             segment.brightness = dimmer as f32;
         }
 
+        if let Some(speed) = state.speed {
+            segment.speed = speed as f32;
+        }
+
         self.segments[usize::from(qualified_fixture_id.fixture as u16)] = segment;
     }
 
@@ -67,6 +80,14 @@ impl RenderTarget<WledRenderTarget> for WledRenderTarget {
             })
         };
 
+        self.color_palette = match (&a.color_palette, &b.color_palette) {
+            (Some(a_palette), Some(b_palette)) => {
+                Some(interpolate_palettes(a_palette, b_palette, t))
+            }
+            (Some(palette), None) | (None, Some(palette)) => Some(palette.clone()),
+            (None, None) => None,
+        };
+
         for index in 0..self.segments.len() {
             let mut segment = self.segments[index];
             let a_segment = a.segments[index];
@@ -75,9 +96,11 @@ impl RenderTarget<WledRenderTarget> for WledRenderTarget {
             if t < 0.5 {
                 segment.effect = a_segment.effect;
                 segment.palette = a_segment.palette;
+                segment.send_palette = a_segment.send_palette;
             } else {
                 segment.effect = b_segment.effect;
                 segment.palette = b_segment.palette;
+                segment.send_palette = b_segment.send_palette;
             }
 
             segment.primary_color =

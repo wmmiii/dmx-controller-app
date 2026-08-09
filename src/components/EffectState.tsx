@@ -29,6 +29,7 @@ import { ColorSwatch } from './ColorSwatch';
 import styles from './EffectState.module.css';
 import { NumberInput, NumberInputMode } from './Input';
 import { Select } from './Select';
+import { Toggle } from './Toggle';
 import { VisualizerSelect } from './VisualizerSelect';
 
 type ColorSelectorType = 'none' | 'color' | PaletteColor;
@@ -125,26 +126,41 @@ export function EffectState({
         availableChannels.filter(
           (channel) => WLED_CHANNELS.indexOf(channel as any) > -1,
         ) as Array<keyof FixtureStateProto>
-      ).map((channel) => (
-        <Channel
-          key={channel}
-          name={channel}
-          mode="counting"
-          values={states.map((s) => ({
-            value: (s.state as any)[channel],
-            onChange: (value) => {
-              (s.state as any)[channel] = value;
-            },
-            onFinalize: (value) => {
-              if (value === undefined) {
-                save(`Removed ${channel} on ${s.name}.`);
-              } else {
-                save(`Set ${channel} on ${s.name}.`);
-              }
-            },
-          }))}
-        />
-      ))}
+      ).map((channel) =>
+        channel === 'sendPalette' ? (
+          <BooleanChannel
+            key={channel}
+            name="Send palette"
+            title="Send all three palette colors to the WLED fixture."
+            values={states.map((s) => ({
+              value: s.state.sendPalette ?? false,
+              onChange: (value) => {
+                s.state.sendPalette = value;
+                save(`Set send palette on ${s.name}.`);
+              },
+            }))}
+          />
+        ) : (
+          <Channel
+            key={channel}
+            name={channel}
+            mode="counting"
+            values={states.map((s) => ({
+              value: (s.state as any)[channel],
+              onChange: (value) => {
+                (s.state as any)[channel] = value;
+              },
+              onFinalize: (value) => {
+                if (value === undefined) {
+                  save(`Removed ${channel} on ${s.name}.`);
+                } else {
+                  save(`Set ${channel} on ${s.name}.`);
+                }
+              },
+            }))}
+          />
+        ),
+      )}
       {isDisplay && (
         <>
           <span style={{ gridColumnStart: 1, gridColumnEnd: 2 }}>
@@ -196,6 +212,32 @@ function Channel({ name, values, mode }: ChannelProps) {
           onChange={v.onChange}
           onFinalize={v.onFinalize}
         />
+      ))}
+    </>
+  );
+}
+
+interface BooleanChannelProps {
+  name: string;
+  title?: string;
+  values: Array<{
+    value: boolean;
+    onChange: (value: boolean) => void;
+  }>;
+}
+
+function BooleanChannel({ name, title, values }: BooleanChannelProps) {
+  return (
+    <>
+      <span style={{ gridColumnStart: 1, gridColumnEnd: 2 }}>{name}</span>
+      {values.map((v, i) => (
+        <div
+          key={i}
+          className={styles.channelValue}
+          style={{ gridColumnStart: i + 2, gridColumnEnd: i + 3 }}
+        >
+          <Toggle title={title} value={v.value} onChange={v.onChange} />
+        </div>
       ))}
     </>
   );

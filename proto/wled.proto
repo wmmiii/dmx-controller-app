@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package dmx_controller;
 
+import "proto/color.proto";
+
 message WledOutput {
   string ip_address = 1;
   map<uint32, PhysicalWledSegment> segments = 2;
@@ -24,8 +26,10 @@ message WledRenderTarget {
     Color primary_color = 3;
     float speed = 4;
     float brightness = 5;
+    bool send_palette = 6;
   }
 
   uint64 id = 1;
   repeated Segment segments = 2;
+  optional ColorPalette color_palette = 3;
 }
