@@ -48,18 +48,23 @@ export function deleteFromOutputTargets(
     );
   }
 
-  // Delete from timecoded shows.
-  Object.values(project.shows)
-    .flatMap((s) => s.outputs)
-    .forEach((o) => deleteFromOutputTarget(o.outputTarget));
-
   // Delete from scenes.
   Object.values(project.scenes)
     .flatMap((s) => s.tileMap)
     .map((r) => r.tile!)
-    .forEach((o) => {
-      o.targetedEffects.forEach((c) => deleteFromOutputTarget(c.outputTarget));
-    });
+    .flatMap((p) => p.targetedEffects)
+    .forEach((e) => deleteFromOutputTarget(e.outputTarget));
+
+  // Delete from autopilot playlists.
+  Object.values(project.playlists)
+    .flatMap((p) => p.patterns)
+    .flatMap((p) => p.targetedEffects)
+    .forEach((e) => deleteFromOutputTarget(e.outputTarget));
+
+  // Delete from timecoded shows.
+  Object.values(project.shows)
+    .flatMap((s) => s.outputs)
+    .forEach((o) => deleteFromOutputTarget(o.outputTarget));
 }
 
 export function createNewProject() {

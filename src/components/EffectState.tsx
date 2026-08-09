@@ -133,10 +133,14 @@ export function EffectState({
             name="Send palette"
             title="Send all three palette colors to the WLED fixture."
             values={states.map((s) => ({
-              value: s.state.sendPalette ?? false,
+              value: s.state.sendPalette,
               onChange: (value) => {
                 s.state.sendPalette = value;
-                save(`Set send palette on ${s.name}.`);
+                save(
+                  value === undefined
+                    ? `Removed send palette on ${s.name}.`
+                    : `Set send palette on ${s.name}.`,
+                );
               },
             }))}
           />
@@ -221,8 +225,8 @@ interface BooleanChannelProps {
   name: string;
   title?: string;
   values: Array<{
-    value: boolean;
-    onChange: (value: boolean) => void;
+    value: boolean | undefined;
+    onChange: (value: boolean | undefined) => void;
   }>;
 }
 
@@ -236,7 +240,25 @@ function BooleanChannel({ name, title, values }: BooleanChannelProps) {
           className={styles.channelValue}
           style={{ gridColumnStart: i + 2, gridColumnEnd: i + 3 }}
         >
-          <Toggle title={title} value={v.value} onChange={v.onChange} />
+          {v.value !== undefined ? (
+            <div className={styles.value}>
+              <Toggle title={title} value={v.value} onChange={v.onChange} />
+              <IconButton
+                title={`Remove ${name}`}
+                onClick={() => v.onChange(undefined)}
+              >
+                <BiX />
+              </IconButton>
+            </div>
+          ) : (
+            <IconButton
+              className={styles.addButton}
+              title={`Add ${name}`}
+              onClick={() => v.onChange(true)}
+            >
+              <BiPlus />
+            </IconButton>
+          )}
         </div>
       ))}
     </>

@@ -345,13 +345,28 @@ export function deleteTargetGroup(project: Project, groupId: bigint) {
   // Remove group from scenes.
   for (const scene of Object.values(project.scenes)) {
     for (const tile of scene.tileMap) {
-      for (const channel of tile.tile!.targetedEffects) {
-        deleteFromOutputTarget(channel);
+      for (const targetedEffect of tile.tile!.targetedEffects) {
+        deleteFromOutputTarget(targetedEffect);
         if (
-          channel.outputTarget?.output.case === 'group' &&
-          channel.outputTarget.output.value === groupId
+          targetedEffect.outputTarget?.output.case === 'group' &&
+          targetedEffect.outputTarget.output.value === groupId
         ) {
-          delete channel.outputTarget;
+          delete targetedEffect.outputTarget;
+        }
+      }
+    }
+  }
+
+  // Remove group from autopilot playlist.
+  for (const playlist of Object.values(project.playlists)) {
+    for (const pattern of playlist.patterns) {
+      for (const targetedEffect of pattern.targetedEffects) {
+        deleteFromOutputTarget(targetedEffect);
+        if (
+          targetedEffect.outputTarget?.output.case === 'group' &&
+          targetedEffect.outputTarget.output.value === groupId
+        ) {
+          delete targetedEffect.outputTarget;
         }
       }
     }
