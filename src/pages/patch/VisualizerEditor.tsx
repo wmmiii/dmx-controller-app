@@ -20,6 +20,7 @@ import {
   useParams,
 } from 'react-router';
 
+import { Effect, FixtureState } from '@dmx-controller/proto/effect_pb';
 import { Browser } from '../../components/Browser';
 import { Button } from '../../components/Button';
 import { ColorSwatch } from '../../components/ColorSwatch';
@@ -32,6 +33,7 @@ import {
   getBuiltinVisualizers,
 } from '../../system_interfaces/shader';
 import { randomUint64 } from '../../util/numberUtils';
+import { iterateAllEffects as visitAllEffects } from '../../util/projectUtils';
 import styles from './VisualizerEditor.module.css';
 import { VisualizerPreview } from './VisualizerPreview';
 
@@ -368,6 +370,38 @@ function VisualizerEditorPane({
     ) {
       return;
     }
+    const deleteFromState = (state: FixtureState | undefined) => {
+      if (!state) {
+        return;
+      }
+      const index = state.visualizerIds.indexOf(selectedId);
+      if (index !== -1) {
+        state.visualizerIds.splice(index, 1);
+      }
+    };
+    const deleteFromEffect = (effect: Effect | undefined) => {
+      if (!effect) {
+        return;
+      }
+      switch (effect.effect.case) {
+        case 'staticEffect':
+          deleteFromState(effect.effect.value.state);
+          break;
+        case 'rampEffect':
+          deleteFromState(effect.effect.value.stateStart);
+          deleteFromState(effect.effect.value.stateEnd);
+          break;
+        case 'strobeEffect':
+          deleteFromState(effect.effect.value.stateA);
+          deleteFromState(effect.effect.value.stateB);
+          break;
+        case 'randomEffect':
+          deleteFromEffect(effect.effect.value.effectA);
+          deleteFromEffect(effect.effect.value.effectB);
+          break;
+      }
+    };
+    visitAllEffects(project, deleteFromEffect);
     delete project.visualizers[selectedId.toString()];
     save(`Delete visualizer "${visualizer.name}".`);
     onDeleted();
