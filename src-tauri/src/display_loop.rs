@@ -94,11 +94,27 @@ impl DisplayLoopManager {
         })
         .map_err(|e| format!("Failed to check displays: {e}"))?;
 
-        if has_displays {
-            self.start_display_loop(ddp_state).await
-        } else {
-            self.stop_display_loop().await
+        if !has_displays {
+            return self.stop_display_loop().await;
         }
+
+        // The loop re-reads its display and DDP configuration from the project
+        // on every iteration, so a running loop already picks up project
+        // changes. Restarting it here would stall rendering for up to a frame
+        // on every save — including saves that touch nothing display-related.
+        if self.is_display_loop_running().await {
+            return Ok(());
+        }
+
+        self.start_display_loop(ddp_state).await
+    }
+
+    async fn is_display_loop_running(&self) -> bool {
+        self.display_loop
+            .lock()
+            .await
+            .as_ref()
+            .is_some_and(|handle| !handle.task.is_finished())
     }
 
     /// Starts the unified display loop.
