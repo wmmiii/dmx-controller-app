@@ -5,6 +5,7 @@
 //! logic is shared with the native Rust engine via the `dmx-engine` crate.
 
 use dmx_engine::beat::{beat_t_from_parts, effective_beat_t_from_parts};
+use dmx_engine::visualizer::utils;
 use prost::Message;
 use wasm_bindgen::prelude::*;
 
@@ -108,6 +109,15 @@ pub fn active_playlist_selection(
         transitioning: selection.transition.is_some(),
         position_ms: selection.position_ms,
     })
+}
+
+/// The starter GLSL template for a new visualizer, documenting the available
+/// engine uniforms. Shared with the native/MCP create path so the editor and
+/// agents seed new visualizers identically.
+#[wasm_bindgen]
+#[must_use]
+pub fn default_visualizer_glsl() -> String {
+    utils::DEFAULT_VISUALIZER_GLSL.to_string()
 }
 
 /// Analyzes mono audio samples and produces multi-LOD waveform data for

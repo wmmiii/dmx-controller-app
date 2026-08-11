@@ -6,6 +6,7 @@ import { BiChevronDown, BiChevronUp, BiX } from 'react-icons/bi';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { getBuiltinVisualizers } from '../system_interfaces/shader';
 
+import { sortedEntries } from '../util/sortUtils';
 import { IconButton } from './Button';
 import { Select } from './Select';
 import styles from './VisualizerSelect.module.css';
@@ -55,14 +56,14 @@ export function VisualizerSelect({ state }: VisualizerSelectProps) {
         options={[
           {
             label: 'My Visualizers',
-            options: Object.entries(project.visualizers).map(([id, v]) => ({
+            options: sortedEntries(project.visualizers).map(([id, v]) => ({
               value: id,
               label: v.name,
             })),
           },
           {
             label: 'Built-in',
-            options: Object.entries(builtins).map(([id, v]) => ({
+            options: sortedEntries(builtins).map(([id, v]) => ({
               value: id,
               label: v.name,
             })),

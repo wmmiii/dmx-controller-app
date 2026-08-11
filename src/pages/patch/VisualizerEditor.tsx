@@ -20,7 +20,6 @@ import {
   useParams,
 } from 'react-router';
 
-import { Effect, FixtureState } from '@dmx-controller/proto/effect_pb';
 import { Browser } from '../../components/Browser';
 import { Button } from '../../components/Button';
 import { ColorSwatch } from '../../components/ColorSwatch';
@@ -28,35 +27,16 @@ import { MonacoEditor } from '../../components/MonacoEditor';
 import { Spacer } from '../../components/Spacer';
 import { Toggle } from '../../components/Toggle';
 import { ProjectContext } from '../../contexts/ProjectContext';
+import { deleteVisualizer } from '../../system_interfaces/project';
 import {
   compileVisualizer,
   getBuiltinVisualizers,
 } from '../../system_interfaces/shader';
 import { randomUint64 } from '../../util/numberUtils';
-import { iterateAllEffects as visitAllEffects } from '../../util/projectUtils';
+import { sortedEntries } from '../../util/sortUtils';
+import { getDefaultVisualizerGlsl } from '../../wasm/engine';
 import styles from './VisualizerEditor.module.css';
 import { VisualizerPreview } from './VisualizerPreview';
-
-const DEFAULT_GLSL = `// Available uniforms:
-//   vec3  u_color             — display color RGB
-//   float u_audio_bands[16]   — frequency bands, 0.0-1.0 (low to high)
-//   float u_beat_t            — beat phase, 0.0-1.0 (position within beat)
-//   float u_beat_count        — beat number
-//   vec3  u_palette_primary   — palette color 1
-//   vec3  u_palette_secondary — palette color 2
-//   vec3  u_palette_tertiary  — palette color 3
-//   vec2  u_resolution        — display size in pixels
-//   float u_time_ms           — wall-clock milliseconds
-//
-// Parameters:
-//   vec2 uv          — normalized coords (0,0) top-left to (1,1) bottom-right
-//   vec2 frag_coord  — raw pixel coords
-//   vec4 prev_pixel  — output of the previous shader in a sequence (or black)
-
-vec4 visualizer(vec2 uv, vec2 frag_coord, vec4 prev_pixel) {
-    return vec4(u_palette_primary.rgb, 1.0);
-}
-`;
 
 function useBuiltinVisualizers() {
   const { data, isPending } = useQuery({
@@ -102,7 +82,7 @@ function VisualizerEditor() {
         }))
         .forEach((i) => items.push(i));
     };
-    const visualizers = Object.entries(project.visualizers);
+    const visualizers = sortedEntries(project.visualizers);
     if (visualizers.length > 0) {
       items.push('My Visualizers');
       addItems(visualizers);
@@ -119,11 +99,11 @@ function VisualizerEditor() {
       listHeader={
         <Button
           icon={<BiPlus size={18} />}
-          onClick={() => {
+          onClick={async () => {
             const id = randomUint64();
             project.visualizers[id.toString()] = create(VisualizerSchema, {
               name: 'New Visualizer',
-              glslSource: DEFAULT_GLSL,
+              glslSource: await getDefaultVisualizerGlsl(),
             });
             save('Create new visualizer.');
             navigate(`/patch/visualizers/${id}`);
@@ -362,7 +342,7 @@ function VisualizerEditorPane({
     setSelected(newId);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (
       !window.confirm(
         `Delete visualizer "${visualizer.name}"? This cannot be undone.`,
@@ -370,40 +350,7 @@ function VisualizerEditorPane({
     ) {
       return;
     }
-    const deleteFromState = (state: FixtureState | undefined) => {
-      if (!state) {
-        return;
-      }
-      const index = state.visualizerIds.indexOf(selectedId);
-      if (index !== -1) {
-        state.visualizerIds.splice(index, 1);
-      }
-    };
-    const deleteFromEffect = (effect: Effect | undefined) => {
-      if (!effect) {
-        return;
-      }
-      switch (effect.effect.case) {
-        case 'staticEffect':
-          deleteFromState(effect.effect.value.state);
-          break;
-        case 'rampEffect':
-          deleteFromState(effect.effect.value.stateStart);
-          deleteFromState(effect.effect.value.stateEnd);
-          break;
-        case 'strobeEffect':
-          deleteFromState(effect.effect.value.stateA);
-          deleteFromState(effect.effect.value.stateB);
-          break;
-        case 'randomEffect':
-          deleteFromEffect(effect.effect.value.effectA);
-          deleteFromEffect(effect.effect.value.effectB);
-          break;
-      }
-    };
-    visitAllEffects(project, deleteFromEffect);
-    delete project.visualizers[selectedId.toString()];
-    save(`Delete visualizer "${visualizer.name}".`);
+    await deleteVisualizer(selectedId);
     onDeleted();
   };
 

@@ -294,11 +294,8 @@ impl ShaderState {
         Ok(state)
     }
 
-    /// Compile a user shader. Compilation failures are reported in the returned
-    /// struct (with a 1-based line number into the user's source), not as `Err`.
-    pub fn compile_shader(&mut self, id: u64, glsl_source: &str) -> VisualizerCompilationResult {
+    pub fn validate_shader(glsl_source: &str) -> VisualizerCompilationResult {
         let wrapped = wrap_user_shader(glsl_source);
-        log::info!("Compiling shader {id}, wrapped GLSL:\n{wrapped}");
 
         let mut frontend = naga::front::glsl::Frontend::default();
         let options = naga::front::glsl::Options::from(naga::ShaderStage::Fragment);
@@ -335,9 +332,27 @@ impl ShaderState {
             };
         }
 
-        // `module` was validated above for line-numbered error reporting; wgpu
-        // re-parses the GLSL itself via `ShaderSource::Glsl`.
-        drop(module);
+        VisualizerCompilationResult {
+            success: true,
+            error_message: String::new(),
+            error_line: 0,
+        }
+    }
+
+    /// Compile a user shader and register its GPU pipeline. Compilation failures
+    /// are reported in the returned struct (with a 1-based line number into the
+    /// user's source), not as `Err`.
+    pub fn compile_shader(&mut self, id: u64, glsl_source: &str) -> VisualizerCompilationResult {
+        // naga validates with line-numbered error reporting; wgpu re-parses the
+        // GLSL itself via `ShaderSource::Glsl` below.
+        let result = Self::validate_shader(glsl_source);
+        if !result.success {
+            return result;
+        }
+
+        let wrapped = wrap_user_shader(glsl_source);
+        log::info!("Compiling shader {id}, wrapped GLSL:\n{wrapped}");
+
         let fragment_module = self
             .device
             .create_shader_module(wgpu::ShaderModuleDescriptor {

@@ -7,6 +7,8 @@ mod cas;
 mod ddp;
 mod display_loop;
 #[cfg(desktop)]
+mod mcp;
+#[cfg(desktop)]
 mod midi;
 mod output_loop;
 mod project;
@@ -223,6 +225,9 @@ pub fn run() {
                 }
             }
 
+            #[cfg(desktop)]
+            mcp::spawn(app.handle().clone());
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -244,6 +249,7 @@ pub fn run() {
             project::get_undo_state,
             project::request_update,
             project::toggle_tile,
+            project::delete_visualizer,
             project::export_project,
             project::import_project,
             project::new_project,
@@ -255,6 +261,8 @@ pub fn run() {
             shader::get_builtin_visualizers,
             #[cfg(desktop)]
             serial::list_ports,
+            #[cfg(desktop)]
+            mcp::bridge::mcp_frontend_response,
             project::frontend_ready_for_update,
         ])
         .build(tauri::generate_context!())

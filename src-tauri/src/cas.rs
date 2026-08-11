@@ -1,7 +1,8 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use dmx_engine::project::{self, rand_id};
+use dmx_engine::project::{self};
+use dmx_engine::project_util::rand_id;
 use dmx_engine::proto::Track;
 use tauri::{AppHandle, Manager, State};
 use tokio::sync::Mutex;
@@ -9,9 +10,6 @@ use tokio::sync::Mutex;
 use crate::project::{PersistState, emit_and_persist};
 
 /// Imports a new audio file into the project.
-///
-/// Returns the track ID as a string since u64 values above 2^53 lose
-/// precision when parsed as a JSON number on the frontend.
 #[tauri::command]
 pub async fn import_audio_file(
     app: AppHandle,
@@ -87,18 +85,12 @@ pub async fn import_audio_file(
         beat_keyframes: Vec::new(),
     };
 
-    project::with_project_mut(|proj| {
+    // Record as a single undoable operation, then emit and persist to disk.
+    project::save(&format!("Import audio file: {file_name}"), true, |proj| {
         proj.tracks.insert(track_id, track);
         Ok(())
     })?;
-
-    // Emit project update and persist to disk
-    emit_and_persist(
-        &app,
-        Some(format!("Import audio file: {file_name}")),
-        persist_state.inner(),
-    )
-    .await?;
+    emit_and_persist(&app, persist_state.inner()).await?;
 
     Ok(Some(track_id.to_string()))
 }

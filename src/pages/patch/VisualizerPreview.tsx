@@ -6,7 +6,7 @@ import { addAudioAnalysisListener } from '../../system_interfaces/audio_input';
 import styles from './VisualizerEditor.module.css';
 import {
   VERTEX_SHADER_SRC,
-  toUserLine,
+  parseWebGLError,
   wrapShaderWebGL2,
 } from './wrapShaderWebGL2';
 
@@ -35,18 +35,6 @@ interface UniformLocations {
   resolution: WebGLUniformLocation | null;
   previousTexture: WebGLUniformLocation | null;
   usePreviousTexture: WebGLUniformLocation | null;
-}
-
-function parseWebGLError(
-  log: string,
-): { line: number; message: string } | null {
-  // Common formats: "ERROR: 0:42: ..." or "0:42(3): error ..."
-  const m = log.match(/(?:ERROR:\s*\d+:(\d+)|(\d+):\d+\(\d+\))/);
-  if (!m) {
-    return null;
-  }
-  const wrappedLine = parseInt(m[1] ?? m[2], 10);
-  return { line: toUserLine(wrappedLine), message: log.trim() };
 }
 
 function cacheUniformLocations(

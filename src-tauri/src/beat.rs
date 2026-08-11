@@ -39,7 +39,7 @@ impl TauriBeatSampler {
 
         if let Some(new_beat) = new_beat_optional {
             let _ = project::with_project_mut(|project| transition_beat(project, &new_beat, t));
-            emit_project_update(app_handle, None);
+            emit_project_update(app_handle);
         }
 
         let _ = app_handle.emit("beat-sampling-state", true);

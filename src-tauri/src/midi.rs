@@ -582,7 +582,7 @@ fn handle_action_result(
 
         drop(sampler); // Release lock before emitting
         if result.modified {
-            emit_project_update(app_handle, None);
+            emit_project_update(app_handle);
         }
     }
 }

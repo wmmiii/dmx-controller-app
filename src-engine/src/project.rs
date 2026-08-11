@@ -6,6 +6,7 @@ use std::{
 
 use crate::{
     palette::DEFAULT_COLOR_PALETTE,
+    project_util::rand_id,
     proto::{
         BeatMetadata, ControllerBindingsMap, ControllerMapping, FixtureDefinitions, Patch, Project,
         Scene,
@@ -59,25 +60,24 @@ static PROJECT_STATE: LazyLock<Mutex<ProjectState>> = LazyLock::new(|| {
     })
 });
 
-/// Saves a new project state, optionally adding to the undo stack.
+/// Atomically applies a change to the current project.
 ///
 /// # Arguments
-/// * `project_binary` - Binary protobuf representation of the project
-/// * `description` - Human-readable description of the change
-/// * `undoable` - Whether this operation should be added to the undo stack
-pub fn save(project_binary: &[u8], description: &str, undoable: bool) -> Result<(), String> {
-    let project =
-        Project::decode(project_binary).map_err(|e| format!("Failed to decode project: {e}"))?;
-
+/// * `description` - Human-readable description of the change (for the undo stack)
+/// * `undoable` - Whether this change should be added to the undo stack
+/// * `f` - Mutates the live project in place; its return value is passed through
+pub fn save<T, F>(description: &str, undoable: bool, f: F) -> Result<T, String>
+where
+    F: FnOnce(&mut Project) -> Result<T, String>,
+{
     let mut state = PROJECT_STATE
         .lock()
         .map_err(|e| format!("Failed to lock state: {e}"))?;
 
-    // Update the current project state
-    state.project = project;
+    let result = f(&mut state.project)?;
 
-    // Add to undo stack if undoable
     if undoable {
+        let project_binary = state.project.encode_to_vec();
         // Remove any redo operations (everything after current index)
         #[allow(clippy::cast_sign_loss)]
         let current_idx = (state.operation_index + 1) as usize;
@@ -85,9 +85,8 @@ pub fn save(project_binary: &[u8], description: &str, undoable: bool) -> Result<
             state.operation_stack.truncate(current_idx);
         }
 
-        // Push the new operation
         state.operation_stack.push(Operation {
-            project_state: project_binary.to_vec(),
+            project_state: project_binary,
             description: description.to_string(),
         });
 
@@ -99,7 +98,27 @@ pub fn save(project_binary: &[u8], description: &str, undoable: bool) -> Result<
         }
     }
 
-    Ok(())
+    Ok(result)
+}
+
+/// Replaces the whole project with a snapshot decoded from `project_binary`.
+///
+/// # Arguments
+/// * `project_binary` - Binary protobuf representation of the project
+/// * `description` - Human-readable description of the change
+/// * `undoable` - Whether this operation should be added to the undo stack
+pub fn save_snapshot(
+    project_binary: &[u8],
+    description: &str,
+    undoable: bool,
+) -> Result<(), String> {
+    let project =
+        Project::decode(project_binary).map_err(|e| format!("Failed to decode project: {e}"))?;
+
+    save(description, undoable, move |p| {
+        *p = project;
+        Ok(())
+    })
 }
 
 /// Updates project state without persistence or undo tracking.
@@ -222,7 +241,7 @@ pub fn get_undo_state() -> Result<UndoState, String> {
     let can_redo =
         state.operation_index < (i32::try_from(state.operation_stack.len()).unwrap()) - 1;
 
-    let undo_description = if can_undo {
+    let undo_description = if state.operation_index >= 0 {
         #[allow(clippy::cast_sign_loss)]
         Some(
             state.operation_stack[state.operation_index as usize]
@@ -294,29 +313,19 @@ where
 /// Creates and loads a default project if none exists.
 /// Returns true if a new project was created, false if one already existed.
 pub fn ensure_project_exists() -> Result<bool, String> {
-    let mut state = PROJECT_STATE
-        .lock()
-        .map_err(|e| format!("Failed to lock state: {e}"))?;
-
     // Check if project already has a name (meaning it was loaded)
-    if !state.project.name.is_empty() {
+    let already_loaded = {
+        let state = PROJECT_STATE
+            .lock()
+            .map_err(|e| format!("Failed to lock state: {e}"))?;
+        !state.project.name.is_empty()
+    };
+
+    if already_loaded {
         return Ok(false);
     }
 
-    // Create default project with minimal required fields
-    let default_project = create_default_project()?;
-    let project_binary = default_project.encode_to_vec();
-
-    state.project = default_project;
-
-    // Initialize undo stack with this as the first state
-    state.operation_stack.clear();
-    state.operation_stack.push(Operation {
-        project_state: project_binary,
-        description: "New project".to_string(),
-    });
-    state.operation_index = 0;
-
+    new_project()?;
     Ok(true)
 }
 
@@ -417,20 +426,6 @@ pub fn new_project() -> Result<Vec<u8>, String> {
     Ok(project_binary)
 }
 
-/// Generates a random u64 ID.
-#[must_use]
-pub fn rand_id() -> u64 {
-    use std::time::{SystemTime, UNIX_EPOCH};
-    let duration = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default();
-    // Combine time with a simple counter for uniqueness
-    u64::try_from(duration.as_nanos()).unwrap()
-        ^ u64::try_from(duration.as_micros())
-            .unwrap()
-            .wrapping_mul(31)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -484,8 +479,8 @@ mod tests {
 
         // Seed some undoable history on top of an initial project.
         load(test_project("original")).unwrap();
-        save(&test_project("edit-1").encode_to_vec(), "Edit 1", true).unwrap();
-        save(&test_project("edit-2").encode_to_vec(), "Edit 2", true).unwrap();
+        save_snapshot(&test_project("edit-1").encode_to_vec(), "Edit 1", true).unwrap();
+        save_snapshot(&test_project("edit-2").encode_to_vec(), "Edit 2", true).unwrap();
         assert!(get_undo_state().unwrap().can_undo);
 
         // Loading a new project must wipe the accumulated history.
@@ -505,7 +500,7 @@ mod tests {
         let _guard = lock_state();
 
         load(test_project("base")).unwrap();
-        save(&test_project("modified").encode_to_vec(), "Modify", true).unwrap();
+        save_snapshot(&test_project("modified").encode_to_vec(), "Modify", true).unwrap();
 
         let undone = undo().unwrap();
         assert_eq!(

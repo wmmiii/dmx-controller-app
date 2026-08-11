@@ -13,6 +13,7 @@ import { ClipboardProvider } from './contexts/ClipboardContext';
 import { ControllerProvider } from './contexts/ControllerContext';
 import { ProjectProvider } from './contexts/ProjectContext';
 import { ShortcutProvider } from './contexts/ShortcutContext';
+import './system_interfaces/visualizer';
 import { installExternalLinkHandler } from './util/browserUtils';
 import './vars.css';
 

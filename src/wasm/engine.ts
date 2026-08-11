@@ -1,7 +1,7 @@
 import { toBinary } from '@bufbuild/protobuf';
 import { Track, TrackSchema } from '@dmx-controller/proto/audio_pb';
 import type { Playlist } from '@dmx-controller/proto/autopilot_pb';
-import type { Project } from '@dmx-controller/proto/project_pb';
+import { Project } from '@dmx-controller/proto/project_pb';
 
 // WASM module types - these match the generated wasm-bindgen bindings
 interface WasmEngineModule {
@@ -28,6 +28,7 @@ interface WasmEngineModule {
     transition_ms: number,
     system_t: bigint,
   ): WasmActivePlaylistSelection;
+  default_visualizer_glsl(): string;
 }
 
 interface WasmActivePlaylistSelection {
@@ -206,6 +207,15 @@ export function getActivePlaylistSelection(
   } catch {
     return null;
   }
+}
+
+/**
+ * Returns the starter GLSL template for a new visualizer, sourced from the
+ * shared engine so the editor and MCP agents seed new visualizers identically.
+ */
+export async function getDefaultVisualizerGlsl(): Promise<string> {
+  const wasm = await initWasm();
+  return wasm.default_visualizer_glsl();
 }
 
 /**

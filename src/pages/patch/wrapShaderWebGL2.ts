@@ -35,7 +35,11 @@ void main() {
     } else {
         prev = checkerboard(gl_FragCoord.xy);
     }
-    fragColor = visualizer(uv, gl_FragCoord.xy, prev);
+    vec4 result = visualizer(uv, gl_FragCoord.xy, prev);
+    // Alpha composites the shader's color over prev_pixel; return alpha = 1 for
+    // opaque. Mirrors the engine wrapper (src-engine/.../shader_wrap.rs).
+    float a = clamp(result.a, 0.0, 1.0);
+    fragColor = vec4(mix(prev.rgb, result.rgb, a), 1.0);
 }
 `;
 
@@ -55,6 +59,19 @@ export function wrapShaderWebGL2(glslSource: string): string {
 
 // Translate a wrapped-shader line number from a WebGL error log back to the
 // user's editor line number.
-export function toUserLine(wrappedLine: number): number {
+function toUserLine(wrappedLine: number): number {
   return Math.max(1, wrappedLine - PREAMBLE_LINES);
+}
+
+// Parse a WebGL compile/link log into a user-space line number and message.
+// Handles the common "ERROR: 0:42: ..." and "0:42(3): error ..." formats.
+export function parseWebGLError(
+  log: string,
+): { line: number; message: string } | null {
+  const m = log.match(/(?:ERROR:\s*\d+:(\d+)|(\d+):\d+\(\d+\))/);
+  if (!m) {
+    return null;
+  }
+  const wrappedLine = parseInt(m[1] ?? m[2], 10);
+  return { line: toUserLine(wrappedLine), message: log.trim() };
 }

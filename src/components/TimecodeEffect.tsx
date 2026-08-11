@@ -852,7 +852,6 @@ function PresetEffectDetails({
       <Select
         value={effectCase ?? ''}
         onChange={(value) => {
-          console.log('EFFECT ', value);
           if (value === effectCase) {
             return;
           }

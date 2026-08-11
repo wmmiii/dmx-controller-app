@@ -30,15 +30,8 @@ import { sortedEntries } from './util/sortUtils';
 export default function Index(): JSX.Element {
   const { connectedDevices, connect: connectMidi } =
     useContext(ControllerContext);
-  const {
-    project,
-    downloadProject,
-    openProject,
-    newProject,
-    lastOperation,
-    canUndo,
-    canRedo,
-  } = useContext(ProjectContext);
+  const { project, downloadProject, openProject, newProject, undoState } =
+    useContext(ProjectContext);
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const patch = getActivePatch(project);
@@ -225,11 +218,19 @@ export default function Index(): JSX.Element {
           </div>
         )}
         <Spacer />
-        <div className={styles.message}>{lastOperation}</div>
-        <IconButton title="Undo" onClick={undoProject} disabled={!canUndo}>
+        <div className={styles.message}>{undoState.undoDescription}</div>
+        <IconButton
+          title="Undo"
+          onClick={undoProject}
+          disabled={!undoState.canUndo}
+        >
           <BiUndo />
         </IconButton>
-        <IconButton title="Redo" onClick={redoProject} disabled={!canRedo}>
+        <IconButton
+          title="Redo"
+          onClick={redoProject}
+          disabled={!undoState.canRedo}
+        >
           <BiRedo />
         </IconButton>
         <ControllerButton

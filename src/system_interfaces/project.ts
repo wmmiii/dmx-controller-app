@@ -3,10 +3,9 @@ import { Project, ProjectSchema } from '@dmx-controller/proto/project_pb';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 
-// Event payload types from Tauri backend
+// Event payload types from Tauri backend.
 interface ProjectUpdatedEvent {
   project_binary: number[];
-  description: string;
 }
 
 interface UndoStateChangedEvent {
@@ -17,7 +16,7 @@ interface UndoStateChangedEvent {
 }
 
 // Subscriber types
-type ProjectSubscriber = (project: Project, description: string) => void;
+type ProjectSubscriber = (project: Project) => void;
 type UndoStateSubscriber = (state: UndoStateChangedEvent) => void;
 
 // Subscriber lists
@@ -130,6 +129,15 @@ export async function toggleTile(
   });
 }
 
+/**
+ * Deletes a user visualizer by id. The backend strips its id from every effect
+ * that references it and persists the change in one atomic, undoable operation,
+ * sharing the cross-reference crawl with the MCP delete path.
+ */
+export async function deleteVisualizer(id: bigint): Promise<void> {
+  await invoke('delete_visualizer', { id: id.toString() });
+}
+
 // Initialize Tauri event listeners at module load
 initProjectListeners();
 
@@ -148,7 +156,7 @@ async function initProjectListeners(): Promise<void> {
 
     // Notify all subscribers
     for (const subscriber of projectSubscribers) {
-      subscriber(project, payload.description);
+      subscriber(project);
     }
   });
 

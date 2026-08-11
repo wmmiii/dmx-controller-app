@@ -4,7 +4,9 @@ import {
   SettingsSchema,
 } from '@dmx-controller/proto/settings_pb';
 import { JSX, useContext } from 'react';
+import { BiCopy } from 'react-icons/bi';
 
+import { IconButton } from '../components/Button';
 import { TextInput } from '../components/Input';
 import { Select } from '../components/Select';
 import { Toggle } from '../components/Toggle';
@@ -29,6 +31,9 @@ const NUMBER_INPUT_OPTIONS = [
 
 export default function ProjectPage(): JSX.Element {
   const { project, save } = useContext(ProjectContext);
+
+  const mcpUrl = 'http://127.0.0.1:41324/mcp';
+  const cliCommand = `claude mcp add --transport http dmx-controller-app ${mcpUrl}`;
 
   return (
     <table className={styles.table}>
@@ -89,6 +94,25 @@ export default function ProjectPage(): JSX.Element {
                 save(`Set number input mode to ${option?.name ?? mode}.`);
               }}
             />
+          </td>
+        </tr>
+        <tr>
+          <th>MCP server</th>
+          <td>
+            <p>
+              <code>{mcpUrl}</code>
+            </p>
+            <h3>Claude Code</h3>
+            <p>
+              <code>{cliCommand}</code>
+              &emsp;
+              <IconButton
+                title="Copy command"
+                onClick={() => navigator.clipboard.writeText(cliCommand)}
+              >
+                <BiCopy />
+              </IconButton>
+            </p>
           </td>
         </tr>
       </tbody>

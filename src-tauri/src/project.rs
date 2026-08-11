@@ -1,6 +1,7 @@
 use dmx_engine::project::{self, UndoState};
 use dmx_engine::proto::FatProject;
 use dmx_engine::tile::toggle_tile as engine_toggle_tile;
+use dmx_engine::visualizer::utils as visualizer_utils;
 use serde::Serialize;
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -54,15 +55,14 @@ impl PersistState {
         }
     }
 
-    /// Flush any pending writes immediately (called on app exit)
+    /// Persist the project to disk immediately, cancelling any pending debounce.
     pub fn flush_sync(&mut self) {
         // Cancel any pending debounce
         if let Some(handle) = self.debounce_handle.take() {
             handle.abort();
         }
 
-        // Write pending project
-        if let Some(data) = self.pending_project.take() {
+        if let Some(data) = project::get().ok().or_else(|| self.pending_project.take()) {
             let path = self.app_data_dir.join(PROJECT_KEY);
             let _ = std::fs::write(&path, &data);
         }
@@ -128,10 +128,9 @@ fn schedule_flush(persist_state: &Arc<TokioMutex<PersistState>>) -> JoinHandle<(
 /// This is the standard way to finalize a project modification.
 pub async fn emit_and_persist(
     app: &AppHandle,
-    description: Option<String>,
     persist_state: &Arc<TokioMutex<PersistState>>,
 ) -> Result<(), String> {
-    emit_project_update(app, description);
+    emit_project_update(app);
     emit_undo_state(app);
 
     // Queue debounced persist to disk
@@ -151,11 +150,10 @@ pub async fn emit_and_persist(
     Ok(())
 }
 
-/// Payload for the project-updated event
+/// Payload for the project-updated event.
 #[derive(Clone, Serialize)]
 struct ProjectUpdatedPayload {
     project_binary: Vec<u8>,
-    description: Option<String>,
 }
 
 /// Payload for the undo-state-changed event
@@ -179,15 +177,9 @@ impl From<UndoState> for UndoStatePayload {
 }
 
 /// Emits a project-updated event (low-level, called when frontend is ready).
-fn emit_project_update_impl(app: &AppHandle, description: Option<String>) {
+fn emit_project_update_impl(app: &AppHandle) {
     if let Ok(project_binary) = project::get() {
-        let _ = app.emit(
-            "project-updated",
-            ProjectUpdatedPayload {
-                project_binary,
-                description,
-            },
-        );
+        let _ = app.emit("project-updated", ProjectUpdatedPayload { project_binary });
     }
 }
 
@@ -201,7 +193,7 @@ fn emit_undo_state(app: &AppHandle) {
 
 /// Marks the project as dirty and emits update if frontend is ready.
 /// This is the single entry point for all project update emissions.
-pub fn emit_project_update(app_handle: &AppHandle, description: Option<String>) {
+pub fn emit_project_update(app_handle: &AppHandle) {
     // Set dirty flag
     PROJECT_DIRTY.store(true, Ordering::Release);
 
@@ -209,7 +201,7 @@ pub fn emit_project_update(app_handle: &AppHandle, description: Option<String>) 
     if FRONTEND_READY.swap(false, Ordering::AcqRel) {
         // Frontend was ready - send update now
         PROJECT_DIRTY.store(false, Ordering::Release);
-        emit_project_update_impl(app_handle, description);
+        emit_project_update_impl(app_handle);
     }
     // Otherwise, update will be sent when frontend signals ready
 }
@@ -224,7 +216,7 @@ pub async fn frontend_ready_for_update(app: AppHandle) -> Result<(), String> {
     if PROJECT_DIRTY.swap(false, Ordering::AcqRel) {
         // Project was dirty - send update now
         FRONTEND_READY.store(false, Ordering::Release);
-        emit_project_update_impl(&app, None);
+        emit_project_update_impl(&app);
     }
     // Otherwise, update will be sent when project changes
 
@@ -268,6 +260,36 @@ pub async fn rebuild_outputs(
     Ok(())
 }
 
+/// Saves project state with undo support and persistence using state pulled off the `AppHandle`.
+pub async fn save_project_internal(app: &AppHandle) -> Result<(), String> {
+    let persist_state = app.state::<Arc<TokioMutex<PersistState>>>().inner().clone();
+    let output_loop_manager = app
+        .state::<Arc<TokioMutex<OutputLoopManager>>>()
+        .inner()
+        .clone();
+    let display_loop_manager = app
+        .state::<Arc<TokioMutex<DisplayLoopManager>>>()
+        .inner()
+        .clone();
+    let serial_state = app.state::<Arc<TokioMutex<SerialState>>>().inner().clone();
+    let sacn_state = app.state::<Arc<TokioMutex<SacnState>>>().inner().clone();
+    let wled_state = app.state::<Arc<TokioMutex<WledState>>>().inner().clone();
+    let ddp_state = app.state::<Arc<TokioMutex<DdpState>>>().inner().clone();
+
+    emit_and_persist(app, &persist_state).await?;
+
+    rebuild_outputs(
+        &serial_state,
+        &output_loop_manager,
+        &display_loop_manager,
+        &sacn_state,
+        &wled_state,
+        &ddp_state,
+        app,
+    )
+    .await
+}
+
 /// Saves project state with undo support and persistence.
 #[tauri::command]
 pub async fn save_project(
@@ -275,33 +297,12 @@ pub async fn save_project(
     description: String,
     undoable: bool,
     app: AppHandle,
-    persist_state: State<'_, Arc<TokioMutex<PersistState>>>,
-    output_loop_manager: State<'_, Arc<TokioMutex<OutputLoopManager>>>,
-    display_loop_manager: State<'_, Arc<TokioMutex<DisplayLoopManager>>>,
-    serial_state: State<'_, Arc<TokioMutex<SerialState>>>,
-    sacn_state: State<'_, Arc<TokioMutex<SacnState>>>,
-    wled_state: State<'_, Arc<TokioMutex<WledState>>>,
-    ddp_state: State<'_, Arc<TokioMutex<DdpState>>>,
 ) -> Result<(), String> {
     // 1. Update engine state + undo stack
-    project::save(&project_binary, &description, undoable)?;
+    project::save_snapshot(&project_binary, &description, undoable)?;
 
-    // 2. Emit updates and persist to disk
-    emit_and_persist(&app, Some(description), persist_state.inner()).await?;
-
-    // 3. Rebuild output loops
-    rebuild_outputs(
-        serial_state.inner(),
-        output_loop_manager.inner(),
-        display_loop_manager.inner(),
-        sacn_state.inner(),
-        wled_state.inner(),
-        ddp_state.inner(),
-        &app,
-    )
-    .await?;
-
-    Ok(())
+    // 2. Emit, persist, and rebuild output loops
+    save_project_internal(&app).await
 }
 
 /// Updates project state without persistence or undo tracking.
@@ -321,7 +322,7 @@ pub async fn update_project(
     project::update(&project_binary)?;
 
     // 2. Emit project update (flow-controlled)
-    emit_project_update(&app, None);
+    emit_project_update(&app);
 
     // 3. Rebuild output loops
     rebuild_outputs(
@@ -340,68 +341,16 @@ pub async fn update_project(
 
 /// Undoes the last operation.
 #[tauri::command]
-pub async fn undo_project(
-    app: AppHandle,
-    persist_state: State<'_, Arc<TokioMutex<PersistState>>>,
-    output_loop_manager: State<'_, Arc<TokioMutex<OutputLoopManager>>>,
-    display_loop_manager: State<'_, Arc<TokioMutex<DisplayLoopManager>>>,
-    serial_state: State<'_, Arc<TokioMutex<SerialState>>>,
-    sacn_state: State<'_, Arc<TokioMutex<SacnState>>>,
-    wled_state: State<'_, Arc<TokioMutex<WledState>>>,
-    ddp_state: State<'_, Arc<TokioMutex<DdpState>>>,
-) -> Result<(), String> {
-    // 1. Perform undo in engine
-    let result = project::undo()?;
-
-    // 2. Emit updates and persist to disk
-    emit_and_persist(&app, Some(result.description), persist_state.inner()).await?;
-
-    // 3. Rebuild output loops
-    rebuild_outputs(
-        serial_state.inner(),
-        output_loop_manager.inner(),
-        display_loop_manager.inner(),
-        sacn_state.inner(),
-        wled_state.inner(),
-        ddp_state.inner(),
-        &app,
-    )
-    .await?;
-
-    Ok(())
+pub async fn undo_project(app: AppHandle) -> Result<(), String> {
+    project::undo()?;
+    save_project_internal(&app).await
 }
 
 /// Redoes the previously undone operation.
 #[tauri::command]
-pub async fn redo_project(
-    app: AppHandle,
-    persist_state: State<'_, Arc<TokioMutex<PersistState>>>,
-    output_loop_manager: State<'_, Arc<TokioMutex<OutputLoopManager>>>,
-    display_loop_manager: State<'_, Arc<TokioMutex<DisplayLoopManager>>>,
-    serial_state: State<'_, Arc<TokioMutex<SerialState>>>,
-    sacn_state: State<'_, Arc<TokioMutex<SacnState>>>,
-    wled_state: State<'_, Arc<TokioMutex<WledState>>>,
-    ddp_state: State<'_, Arc<TokioMutex<DdpState>>>,
-) -> Result<(), String> {
-    // 1. Perform redo in engine
-    let result = project::redo()?;
-
-    // 2. Emit updates and persist to disk
-    emit_and_persist(&app, Some(result.description), persist_state.inner()).await?;
-
-    // 3. Rebuild output loops
-    rebuild_outputs(
-        serial_state.inner(),
-        output_loop_manager.inner(),
-        display_loop_manager.inner(),
-        sacn_state.inner(),
-        wled_state.inner(),
-        ddp_state.inner(),
-        &app,
-    )
-    .await?;
-
-    Ok(())
+pub async fn redo_project(app: AppHandle) -> Result<(), String> {
+    project::redo()?;
+    save_project_internal(&app).await
 }
 
 /// Returns the current undo/redo availability state.
@@ -416,7 +365,7 @@ pub fn get_undo_state() -> Result<UndoStatePayload, String> {
 #[allow(clippy::needless_pass_by_value, clippy::unnecessary_wraps)]
 pub fn request_update(app: AppHandle) -> Result<(), String> {
     // Emit project update (flow-controlled) and undo state (immediate)
-    emit_project_update(&app, None);
+    emit_project_update(&app);
     emit_undo_state(&app);
 
     Ok(())
@@ -478,16 +427,7 @@ pub async fn export_project(app: AppHandle) -> Result<bool, String> {
 /// Imports a project by showing a native open dialog, reading the file, and
 /// loading the project into the engine.
 #[tauri::command]
-pub async fn import_project(
-    app: AppHandle,
-    persist_state: State<'_, Arc<TokioMutex<PersistState>>>,
-    output_loop_manager: State<'_, Arc<TokioMutex<OutputLoopManager>>>,
-    display_loop_manager: State<'_, Arc<TokioMutex<DisplayLoopManager>>>,
-    serial_state: State<'_, Arc<TokioMutex<SerialState>>>,
-    sacn_state: State<'_, Arc<TokioMutex<SacnState>>>,
-    wled_state: State<'_, Arc<TokioMutex<WledState>>>,
-    ddp_state: State<'_, Arc<TokioMutex<DdpState>>>,
-) -> Result<(), String> {
+pub async fn import_project(app: AppHandle) -> Result<(), String> {
     use prost::Message;
     use tauri_plugin_dialog::DialogExt;
 
@@ -526,76 +466,43 @@ pub async fn import_project(
         return Err("Could not load fat project, `project` field not set!".to_string());
     }
 
-    // Emit updates and persist
-    emit_and_persist(
-        &app,
-        Some("Open project.".to_string()),
-        persist_state.inner(),
-    )
-    .await?;
-
-    // Rebuild output loops
-    rebuild_outputs(
-        serial_state.inner(),
-        output_loop_manager.inner(),
-        display_loop_manager.inner(),
-        sacn_state.inner(),
-        wled_state.inner(),
-        ddp_state.inner(),
-        &app,
-    )
-    .await?;
-
-    Ok(())
+    save_project_internal(&app).await
 }
 
 /// Resets the project to a fresh default, clearing undo history.
 #[tauri::command]
-pub async fn new_project(
-    app: AppHandle,
-    persist_state: State<'_, Arc<TokioMutex<PersistState>>>,
-    output_loop_manager: State<'_, Arc<TokioMutex<OutputLoopManager>>>,
-    display_loop_manager: State<'_, Arc<TokioMutex<DisplayLoopManager>>>,
-    serial_state: State<'_, Arc<TokioMutex<SerialState>>>,
-    sacn_state: State<'_, Arc<TokioMutex<SacnState>>>,
-    wled_state: State<'_, Arc<TokioMutex<WledState>>>,
-    ddp_state: State<'_, Arc<TokioMutex<DdpState>>>,
-) -> Result<(), String> {
-    // 1. Reset engine to default project
+pub async fn new_project(app: AppHandle) -> Result<(), String> {
     project::new_project()?;
+    save_project_internal(&app).await
+}
 
-    // 2. Emit updates and persist to disk
-    emit_and_persist(
-        &app,
-        Some("New project.".to_string()),
-        persist_state.inner(),
-    )
-    .await?;
+/// Deletes a user visualizer.
+#[tauri::command]
+pub async fn delete_visualizer(id: String, app: AppHandle) -> Result<(), String> {
+    let id: u64 = id
+        .parse()
+        .map_err(|_| format!("Invalid visualizer id: {id}"))?;
 
-    // 4. Rebuild output loops
-    rebuild_outputs(
-        serial_state.inner(),
-        output_loop_manager.inner(),
-        display_loop_manager.inner(),
-        sacn_state.inner(),
-        wled_state.inner(),
-        ddp_state.inner(),
-        &app,
-    )
-    .await?;
+    let name = project::with_project(|p| Ok(p.visualizers.get(&id).map(|v| v.name.clone())))?
+        .ok_or_else(|| format!("No visualizer with id {id}"))?;
+    let description = format!("Delete visualizer \"{name}\".");
 
-    Ok(())
+    project::save(&description, true, |p| {
+        if visualizer_utils::delete_visualizer(p, id) {
+            Ok(())
+        } else {
+            Err(format!("No visualizer with id {id}"))
+        }
+    })?;
+
+    save_project_internal(&app).await
 }
 
 /// Toggles a tile on/off based on its current state.
 /// Returns whether the tile was enabled (true) or disabled (false).
 #[tauri::command]
-pub async fn toggle_tile(
-    scene_id: String,
-    tile_id: String,
-    app: AppHandle,
-    persist_state: State<'_, Arc<TokioMutex<PersistState>>>,
-) -> Result<bool, String> {
+#[allow(clippy::needless_pass_by_value)]
+pub fn toggle_tile(scene_id: String, tile_id: String, app: AppHandle) -> Result<bool, String> {
     let scene_id: u64 = scene_id.parse().map_err(|_| "Invalid scene_id")?;
     let tile_id: u64 = tile_id.parse().map_err(|_| "Invalid tile_id")?;
 
@@ -605,10 +512,10 @@ pub async fn toggle_tile(
         .map_err(|e| e.to_string())?
         .as_millis() as u64;
 
-    let (modified, enabled, description) = project::with_project_mut(|project| {
+    let (modified, enabled) = project::with_project_mut(|project| {
         let beat = match &project.live_beat {
             Some(b) => *b,
-            None => return Ok((false, false, String::new())),
+            None => return Ok((false, false)),
         };
 
         let scene = project.scenes.get_mut(&scene_id).ok_or("Scene not found")?;
@@ -621,8 +528,6 @@ pub async fn toggle_tile(
 
         let tile = tile_entry.tile.as_mut().ok_or("Tile entry has no tile")?;
 
-        let tile_name = tile.name.clone();
-
         engine_toggle_tile(tile, &beat, t);
 
         // Determine if tile is now enabled based on transition state
@@ -631,18 +536,12 @@ pub async fn toggle_tile(
             Some(dmx_engine::proto::scene::tile::Transition::StartFadeInMs(_))
         );
 
-        let description = format!(
-            "{} tile {}.",
-            if enabled { "Enable" } else { "Disable" },
-            tile_name
-        );
-
-        Ok((true, enabled, description))
+        Ok((true, enabled))
     })?;
 
     if modified {
-        // Emit updates and persist to disk
-        emit_and_persist(&app, Some(description), persist_state.inner()).await?;
+        // Transient: emit to the webview, but no undo entry or disk write.
+        emit_project_update(&app);
     }
 
     Ok(enabled)

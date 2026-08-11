@@ -31,6 +31,13 @@ import { useShortcuts } from './ShortcutContext';
 
 let globalOpened = false;
 
+type UndoState = {
+  canUndo: boolean;
+  canRedo: boolean;
+  undoDescription: null | string;
+  redoDescription: null | string;
+};
+
 export const ProjectContext = createContext({
   project: create(ProjectSchema, {}) as Project,
   lastLoad: new Date(),
@@ -40,9 +47,12 @@ export const ProjectContext = createContext({
   downloadProject: () => {},
   openProject: () => {},
   newProject: () => {},
-  lastOperation: null as string | null,
-  canUndo: false,
-  canRedo: false,
+  undoState: {
+    canUndo: false,
+    canRedo: false,
+    undoDescription: null,
+    redoDescription: null,
+  } as UndoState,
 });
 
 export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
@@ -50,7 +60,6 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
   const projectRef = useRef(project);
 
   const [lastLoad] = useState(new Date());
-  const [lastOperation, setLastOperation] = useState<string | null>(null);
   const [isOpening, setIsOpening] = useState(false);
 
   // Update coalescing: drop intermediate updates when updates are queued rapidly
@@ -80,22 +89,21 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
   // Subscribe to backend project updates with flow control.
   // The backend only sends updates when we signal ready, preventing MIDI
   // sliders from overwhelming the UI. We use RAF to sync with the display.
-  useEffect(() => {
-    const unsubscribe = subscribeToProjectUpdates((newProject, description) => {
-      // Use RAF to sync state update with display refresh
-      requestAnimationFrame(() => {
-        // Apply any project upgrades and set state
-        upgradeProject(newProject);
-        setProject(newProject);
-        setLastOperation(description);
+  useEffect(
+    () =>
+      subscribeToProjectUpdates((newProject) => {
+        // Use RAF to sync state update with display refresh
+        requestAnimationFrame(() => {
+          // Apply any project upgrades and set state
+          upgradeProject(newProject);
+          setProject(newProject);
 
-        // Signal backend we're ready for the next update
-        frontendReadyForUpdate();
-      });
-    });
-
-    return unsubscribe;
-  }, []);
+          // Signal backend we're ready for the next update
+          frontendReadyForUpdate();
+        });
+      }),
+    [],
+  );
 
   // Subscribe to undo state changes from backend
   useEffect(() => {
@@ -227,9 +235,7 @@ export function ProjectProvider({ children }: PropsWithChildren): JSX.Element {
         downloadProject: () => invoke('export_project'),
         openProject: () => runWithLoading('import_project'),
         newProject: () => runWithLoading('new_project'),
-        lastOperation: lastOperation,
-        canUndo: undoState.canUndo,
-        canRedo: undoState.canRedo,
+        undoState: undoState,
       }}
     >
       {children}

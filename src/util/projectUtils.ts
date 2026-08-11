@@ -24,41 +24,6 @@ export function getOutput(project: Project, outputId: bigint) {
 }
 
 /**
- * Iterates through all effects and runs a function over them.
- */
-export function iterateAllEffects(
-  project: Project,
-  visitor: (effect: Effect) => void,
-) {
-  // Visit effects in scenes.
-  Object.values(project.scenes)
-    .flatMap((s) => s.tileMap)
-    .map((r) => r.tile!)
-    .flatMap((p) => p.targetedEffects)
-    .map((t) => t.effect)
-    .filter((e) => e != null)
-    .forEach(visitor);
-
-  // Visit effects in autopilot playlists.
-  Object.values(project.playlists)
-    .flatMap((p) => p.patterns)
-    .flatMap((p) => p.targetedEffects)
-    .map((t) => t.effect)
-    .filter((e) => e != null)
-    .forEach(visitor);
-
-  // Visit effects in timecoded shows.
-  Object.values(project.shows)
-    .flatMap((s) => s.outputs)
-    .map((o) => o.layer)
-    .filter((l) => l != null)
-    .flatMap((l) => l.effects)
-    .map((e) => e.effect)
-    .filter((e) => e != null)
-    .forEach(visitor);
-}
-
-/**
  * Iterates through all occurrences of output targets and removes any that match the provided predicate.
  */
 export function deleteFromOutputTargets(

@@ -40,7 +40,9 @@ void main() {
     vec2 uv = v_clip_pos * 0.5 + 0.5;
     vec2 frag_coord = uv * u_resolution.xy;
     vec4 prev = texture(sampler2D(t_previous, s_previous), uv);
-    fragColor = visualizer(uv, frag_coord, prev);
+    vec4 result = visualizer(uv, frag_coord, prev);
+    float a = clamp(result.a, 0.0, 1.0);
+    fragColor = vec4(mix(prev.rgb, result.rgb, a), 1.0);
 }
 ";
 

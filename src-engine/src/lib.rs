@@ -5,6 +5,7 @@ pub mod hash;
 pub mod midi;
 pub mod palette;
 pub mod project;
+pub mod project_util;
 pub mod proto;
 pub mod render;
 pub mod tile;

@@ -6,5 +6,6 @@
   th {
     padding-right: var(--space-2);
     font-weight: var(--font-weight-heavy);
+    vertical-align: top;
   }
 }
