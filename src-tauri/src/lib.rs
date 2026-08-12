@@ -1,10 +1,7 @@
 #[cfg(desktop)]
-mod audio_analysis;
-#[cfg(desktop)]
 mod audio_input;
 mod beat;
 mod cas;
-mod ddp;
 mod display_loop;
 #[cfg(desktop)]
 mod mcp;
@@ -13,11 +10,9 @@ mod midi;
 mod output_loop;
 mod project;
 mod render;
-mod sacn;
 #[cfg(desktop)]
 mod serial;
 mod shader;
-mod wled;
 
 /// No-op stub for mobile — serial DMX hardware is not available on iOS/Android
 #[cfg(mobile)]
@@ -43,6 +38,7 @@ mod serial {
     }
 }
 
+use dmx_runtime::{ddp::DdpState, sacn::SacnState, wled::WledState};
 use std::sync::Arc;
 use std::sync::Mutex as StdMutex;
 use tauri::{Manager, RunEvent};
@@ -159,15 +155,15 @@ pub fn run() {
 
             app.manage(serial_state_arc);
 
-            let sacn_state = sacn::SacnState::new()
+            let sacn_state = SacnState::new()
                 .map_err(|e| Box::new(std::io::Error::other(e)) as Box<dyn std::error::Error>)?;
             app.manage(Arc::new(Mutex::new(sacn_state)));
 
-            let wled_state = wled::WledState::new()
+            let wled_state = WledState::new()
                 .map_err(|e| Box::new(std::io::Error::other(e)) as Box<dyn std::error::Error>)?;
             app.manage(Arc::new(Mutex::new(wled_state)));
 
-            let ddp_state = ddp::DdpState::new();
+            let ddp_state = DdpState::default();
             let ddp_state_arc = Arc::new(Mutex::new(ddp_state));
             app.manage(ddp_state_arc.clone());
 
@@ -204,8 +200,8 @@ pub fn run() {
                 app.state::<Arc<Mutex<serial::SerialState>>>()
                     .inner()
                     .clone(),
-                app.state::<Arc<Mutex<sacn::SacnState>>>().inner().clone(),
-                app.state::<Arc<Mutex<wled::WledState>>>().inner().clone(),
+                app.state::<Arc<Mutex<SacnState>>>().inner().clone(),
+                app.state::<Arc<Mutex<WledState>>>().inner().clone(),
             );
 
             // Prevent the system from sleeping while the app is running so that

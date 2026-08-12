@@ -13,13 +13,13 @@ use tokio::sync::Mutex as TokioMutex;
 use tokio::task::JoinHandle;
 
 use crate::cas::{read_cas_bytes, write_cas_bytes};
-use crate::ddp::DdpState;
+use dmx_runtime::ddp::DdpState;
 use crate::display_loop::DisplayLoopManager;
 use crate::output_loop::OutputLoopManager;
-use crate::sacn::SacnState;
+use dmx_runtime::sacn::SacnState;
 use crate::serial::SerialState;
 use crate::shader::ShaderState;
-use crate::wled::WledState;
+use dmx_runtime::wled::WledState;
 
 // =============================================================================
 // Flow control for project updates to frontend
