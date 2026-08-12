@@ -39,8 +39,8 @@ struct DisplayLoopConfig {
 pub struct DisplayLoopManager {
     display_loop: Arc<Mutex<Option<DisplayLoopHandle>>>,
     events: Arc<dyn EventSink>,
-    /// `None` when GPU initialization failed. Displays then render black
-    /// rather than taking the whole loop down with them.
+    /// `None` when GPU initialization failed. Displays render black rather
+    /// than taking the whole loop down with them.
     shader_state: Option<Arc<StdMutex<ShaderState>>>,
 }
 

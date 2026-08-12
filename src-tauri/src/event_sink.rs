@@ -4,7 +4,7 @@ use prost::Message;
 use serde::Serialize;
 use tauri::{AppHandle, Emitter};
 
-/// Maximum dimension for visualization buffers sent to frontend.
+/// Maximum size for visualization buffers sent to frontend.
 /// Larger displays are downsampled to reduce IPC overhead.
 const MAX_VISUALIZATION_SIZE: u32 = 20;
 
