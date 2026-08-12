@@ -9,9 +9,10 @@ description = "Platform integration for the DMX controller: transports, render l
 crate-type = ["rlib"]
 
 [features]
-default = ["visualizer", "audio"]
+default = ["visualizer", "audio", "midi"]
 visualizer = ["dep:ddp-rs", "dep:naga", "dep:wgpu", "dep:bytemuck"]
-audio = ["dep:rustfft"]
+audio = ["dep:cpal", "dep:rustfft"]
+midi = ["dep:midir"]
 
 [dependencies]
 dmx-engine = { path = "../src-engine" }
@@ -25,10 +26,16 @@ tokio = { version = "1.48.0", features = ["time", "macros", "sync", "net", "rt-m
 bytemuck = { version = "1.21", features = ["derive"], optional = true }
 ddp-rs = { version = "1.2.1", optional = true }
 
+[target.'cfg(target_os = "linux")'.dependencies]
+alsa-sys = "0.3"
+libc = "0.2"
+
 [target.'cfg(not(target_os = "ios"))'.dependencies]
 open_dmx = "1.1.1"
 serialport = "4.7.3"
 
+cpal = { version = "0.17", optional = true }
+midir = { version = "0.10.2", optional = true }
 naga = { version = "26.0", features = ["glsl-in", "spv-out"], optional = true }
 rustfft = { version = "6", optional = true }
 wgpu = { version = "26.0", features = ["vulkan", "metal", "wgsl", "glsl"], optional = true }

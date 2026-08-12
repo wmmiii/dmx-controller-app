@@ -1463,10 +1463,14 @@ dependencies = [
 name = "dmx-runtime"
 version = "0.1.0"
 dependencies = [
+ "alsa-sys",
  "bytemuck",
+ "cpal",
  "ddp-rs",
  "dmx-engine",
+ "libc",
  "log",
+ "midir",
  "naga",
  "open_dmx",
  "prost",
@@ -1483,16 +1487,12 @@ dependencies = [
 name = "dmx_controller_app"
 version = "0.1.0"
 dependencies = [
- "alsa-sys",
  "axum",
  "base64 0.22.1",
  "chrono",
- "cpal",
  "dmx-engine",
  "dmx-runtime",
- "libc",
  "log",
- "midir",
  "mime_guess",
  "png 0.17.16",
  "prost",

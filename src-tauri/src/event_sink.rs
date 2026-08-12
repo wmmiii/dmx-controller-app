@@ -1,3 +1,4 @@
+use dmx_engine::audio::AudioAnalysis;
 use dmx_engine::proto::{DisplayBuffer, WledRenderTarget};
 use dmx_runtime::events::EventSink;
 use prost::Message;
@@ -30,6 +31,30 @@ struct DisplayRenderEvent {
 struct RenderErrorEvent {
     output_id: String,
     message: String,
+}
+
+#[derive(Clone, Serialize)]
+struct MidiMessage {
+    device_name: String,
+    data: Vec<u8>,
+}
+
+#[derive(Clone, Serialize)]
+struct MidiConnectionStatusEvent {
+    controller_name: String,
+    connected: bool,
+}
+
+/// Mirrors `dmx_runtime::audio_input::AudioInputDevice`, which the frontend
+/// also receives from `list_audio_inputs`.
+#[derive(Clone, Serialize)]
+struct AudioInputDevice {
+    name: String,
+}
+
+#[derive(Clone, Serialize)]
+struct AudioDeviceListChangedEvent {
+    devices: Vec<AudioInputDevice>,
 }
 
 pub struct TauriEventSink {
@@ -87,5 +112,55 @@ impl EventSink for TauriEventSink {
         if let Err(e) = self.app.emit("render-error-clear", output_id.to_string()) {
             log::error!("Failed to emit render error clear event: {e}");
         }
+    }
+
+    /// Routed through the project module so it keeps the `PROJECT_DIRTY` /
+    /// `FRONTEND_READY` handshake that throttles updates to the webview.
+    fn project_updated(&self) {
+        crate::project::emit_project_update(&self.app);
+    }
+
+    fn beat_sampling_state(&self, sampling: bool) {
+        if let Err(e) = self.app.emit("beat-sampling-state", sampling) {
+            log::error!("Failed to emit beat sampling state event: {e}");
+        }
+    }
+
+    fn midi_message(&self, device_name: &str, data: &[u8]) {
+        let event = MidiMessage {
+            device_name: device_name.to_string(),
+            data: data.to_vec(),
+        };
+        if let Err(e) = self.app.emit("midi-message", &event) {
+            log::error!("Failed to emit MIDI event: {e}");
+        }
+    }
+
+    fn midi_connection_status(&self, controller_name: &str, connected: bool) {
+        let event = MidiConnectionStatusEvent {
+            controller_name: controller_name.to_string(),
+            connected,
+        };
+        if let Err(e) = self.app.emit("midi-connection-status", &event) {
+            log::error!("Failed to emit midi-connection-status event: {e}");
+        }
+    }
+
+    fn audio_devices_changed(&self, device_names: &[String]) {
+        let event = AudioDeviceListChangedEvent {
+            devices: device_names
+                .iter()
+                .map(|name| AudioInputDevice { name: name.clone() })
+                .collect(),
+        };
+        let _ = self.app.emit("audio-device-list-changed", &event);
+    }
+
+    fn audio_beat_active(&self, active: bool) {
+        let _ = self.app.emit("audio-beat-active", active);
+    }
+
+    fn audio_analysis(&self, analysis: &AudioAnalysis) {
+        let _ = self.app.emit("audio-input-analysis", analysis);
     }
 }

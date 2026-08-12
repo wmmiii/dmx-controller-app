@@ -1,5 +1,5 @@
 use crate::beat::SharedBeatSampler;
-use crate::project::emit_project_update;
+use crate::events::EventSink;
 use dmx_engine::{
     midi::{ActionResult, ControlCommandType, calculate_midi_output, perform_action},
     project,
@@ -11,25 +11,12 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::Mutex as StdMutex;
 use std::time::{SystemTime, UNIX_EPOCH};
-use tauri::{AppHandle, Emitter, State};
 use tokio::sync::{Mutex, oneshot};
 
 #[derive(Deserialize, Serialize, Clone)]
 pub struct MidiPortCandidate {
     id: String,
     name: String,
-}
-
-#[derive(Serialize, Clone)]
-struct MidiMessage {
-    device_name: String,
-    data: Vec<u8>,
-}
-
-#[derive(Serialize, Clone)]
-struct MidiConnectionStatusEvent {
-    controller_name: String,
-    connected: bool,
 }
 
 /// Shared state for MIDI input processing across all devices
@@ -60,14 +47,14 @@ impl MidiInputState {
 /// Per-device connection state.
 #[allow(dead_code)]
 struct DeviceConnection {
-    input_connection: MidiInputConnection<AppHandle>,
+    input_connection: MidiInputConnection<Arc<dyn EventSink>>,
     output_connection: Arc<StdMutex<Option<MidiOutputConnection>>>,
     shutdown_tx: Option<oneshot::Sender<()>>,
 }
 
 pub struct MidiState {
     connections: StdMutex<HashMap<String, DeviceConnection>>,
-    app_handle: StdMutex<Option<AppHandle>>,
+    events: Arc<dyn EventSink>,
     watcher_cancel_tx: StdMutex<Option<tokio::sync::watch::Sender<bool>>>,
     /// Shared state for MIDI input processing (Arc for sharing with callbacks)
     input_state: Arc<StdMutex<MidiInputState>>,
@@ -75,10 +62,10 @@ pub struct MidiState {
 }
 
 impl MidiState {
-    pub fn new(app_handle: AppHandle, beat_sampler: SharedBeatSampler) -> Self {
+    pub fn new(events: Arc<dyn EventSink>, beat_sampler: SharedBeatSampler) -> Self {
         MidiState {
             connections: StdMutex::new(HashMap::new()),
-            app_handle: StdMutex::new(Some(app_handle)),
+            events,
             watcher_cancel_tx: StdMutex::new(None),
             input_state: Arc::new(StdMutex::new(MidiInputState::new())),
             beat_sampler,
@@ -95,8 +82,7 @@ impl MidiState {
             *watcher = Some(cancel_tx);
         }
 
-        // Spawn the watcher task using Tauri's async runtime
-        tauri::async_runtime::spawn(async move {
+        tokio::spawn(async move {
             Self::device_watcher_loop(state, cancel_rx).await;
         });
 
@@ -204,21 +190,12 @@ impl MidiState {
         connected: bool,
     ) {
         let midi_state = state.lock().await;
-        if let Ok(app_handle_guard) = midi_state.app_handle.lock() {
-            if let Some(app_handle) = app_handle_guard.as_ref() {
-                let event = MidiConnectionStatusEvent {
-                    controller_name: controller_name.to_string(),
-                    connected,
-                };
-                if let Err(e) = app_handle.emit("midi-connection-status", &event) {
-                    log::error!("Failed to emit midi-connection-status event: {e}");
-                }
-            }
-        }
+        midi_state
+            .events
+            .midi_connection_status(controller_name, connected);
     }
 }
 
-#[tauri::command]
 pub fn list_midi_inputs() -> Result<Vec<MidiPortCandidate>, String> {
     let midi_input = MidiInput::new("DMX Controller App MIDI Input").map_err(|e| e.to_string())?;
 
@@ -258,15 +235,6 @@ fn connect_midi_internal(state: &MidiState, candidate: MidiPortCandidate) -> Res
         })?
         .clone();
 
-    // Get app handle for event emission
-    let app_handle = state
-        .app_handle
-        .lock()
-        .map_err(|e| format!("Failed to lock app handle: {e}"))?
-        .as_ref()
-        .ok_or("App handle not initialized")?
-        .clone();
-
     // Capture device name, input state, and beat sampler for the MIDI callback
     let device_name_for_callback = candidate.name.clone();
     let input_state_for_callback = Arc::clone(&state.input_state);
@@ -276,26 +244,19 @@ fn connect_midi_internal(state: &MidiState, candidate: MidiPortCandidate) -> Res
         .connect(
             &input_port,
             "dmx-controller-input",
-            move |_timestamp, message, app_handle| {
-                // Emit midi-message event for debugging (ControllerPage)
-                let midi_msg = MidiMessage {
-                    device_name: device_name_for_callback.clone(),
-                    data: message.to_vec(),
-                };
-                if let Err(e) = app_handle.emit("midi-message", &midi_msg) {
-                    log::error!("Failed to emit MIDI event: {e}");
-                }
+            move |_timestamp, message, events: &mut Arc<dyn EventSink>| {
+                // Emitted for debugging (ControllerPage)
+                events.midi_message(&device_name_for_callback, message);
 
-                // Process the MIDI input
                 process_midi_input(
-                    app_handle,
+                    events.as_ref(),
                     &device_name_for_callback,
                     message,
                     &input_state_for_callback,
                     &beat_sampler_for_callback,
                 );
             },
-            app_handle,
+            Arc::clone(&state.events),
         )
         .map_err(|e| e.to_string())?;
 
@@ -326,7 +287,7 @@ fn connect_midi_internal(state: &MidiState, candidate: MidiPortCandidate) -> Res
     let output_conn_clone = Arc::clone(&output_connection);
     let device_name_for_output = candidate.name.clone();
 
-    tauri::async_runtime::spawn(async move {
+    tokio::spawn(async move {
         let mut interval = tokio::time::interval(tokio::time::Duration::from_millis(33));
 
         loop {
@@ -357,23 +318,17 @@ fn connect_midi_internal(state: &MidiState, candidate: MidiPortCandidate) -> Res
     Ok(())
 }
 
-#[tauri::command]
 pub async fn connect_midi(
-    state: State<'_, Arc<Mutex<MidiState>>>,
+    state: &Arc<Mutex<MidiState>>,
     candidate: MidiPortCandidate,
 ) -> Result<(), String> {
     let midi_state = state.lock().await;
     connect_midi_internal(&midi_state, candidate)
 }
 
-#[tauri::command]
-pub async fn disconnect_midi(
-    state: State<'_, Arc<Mutex<MidiState>>>,
-    device_name: String,
-) -> Result<(), String> {
+pub async fn disconnect_midi(state: &Arc<Mutex<MidiState>>, device_name: &str) {
     let midi_state = state.lock().await;
-    disconnect_device(&midi_state, &device_name);
-    Ok(())
+    disconnect_device(&midi_state, device_name);
 }
 
 /// Disconnect a single device by name, leaving other devices connected.
@@ -445,7 +400,7 @@ pub fn output_value(conn: &mut MidiOutputConnection, channel: &[u8], value: f64)
 
 /// Process incoming MIDI input and perform actions
 fn process_midi_input(
-    app_handle: &AppHandle,
+    events: &dyn EventSink,
     device_name: &str,
     message: &[u8],
     input_state: &Arc<StdMutex<MidiInputState>>,
@@ -487,7 +442,7 @@ fn process_midi_input(
     // Perform the action
     match perform_action(binding_id, &channel, value, cct, t) {
         Ok(action_result) => {
-            handle_action_result(app_handle, &action_result, beat_sampler, t);
+            handle_action_result(events, &action_result, beat_sampler, t);
         }
         Err(e) => {
             log::error!("Failed to perform MIDI action: {e}");
@@ -564,7 +519,7 @@ fn parse_midi_message(
 
 /// Handle the result of a MIDI action
 fn handle_action_result(
-    app_handle: &AppHandle,
+    events: &dyn EventSink,
     result: &ActionResult,
     beat_sampler: &SharedBeatSampler,
     t: u64,
@@ -575,14 +530,14 @@ fn handle_action_result(
             return;
         };
 
-        // We want to handle beat matching at the Tauri level.
+        // We want to handle beat matching at the runtime level.
         if let BeatMatch(_) = action {
-            sampler.add_sample(app_handle, t);
+            sampler.add_sample(events, t);
         }
 
         drop(sampler); // Release lock before emitting
         if result.modified {
-            emit_project_update(app_handle);
+            events.project_updated();
         }
     }
 }
