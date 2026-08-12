@@ -324,6 +324,7 @@ pub struct FftAnalyzer {
 }
 
 impl FftAnalyzer {
+    #[must_use]
     pub fn new(fft_size: usize, sample_rate: u32) -> Self {
         let mut planner = FftPlanner::new();
         let fft = planner.plan_fft_forward(fft_size);
