@@ -1,0 +1,42 @@
+[package]
+name = "dmx-runtime"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85.0"
+description = "Platform integration for the DMX controller: transports, render loops and device watchers."
+
+[lib]
+crate-type = ["rlib"]
+
+[features]
+default = ["visualizer", "audio"]
+visualizer = ["dep:ddp-rs"]
+audio = ["dep:rustfft"]
+
+[dependencies]
+dmx-engine = { path = "../src-engine" }
+reqwest = { version = "0.12.28", features = ["json"] }
+sacn = "0.11.0"
+serde = { version = "1.0", features = ["derive"] }
+
+ddp-rs = { version = "1.2.1", optional = true }
+
+[target.'cfg(not(target_os = "ios"))'.dependencies]
+rustfft = { version = "6", optional = true }
+
+[lints.rust]
+dead_code = "deny"
+deprecated = "deny"
+unused_imports = "deny"
+unused_variables = "deny"
+unused_mut = "deny"
+
+[lints.clippy]
+all = { level = "deny", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+# Allow some pedantic lints that are too noisy
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+module_name_repetitions = "allow"
+too_many_arguments = "allow"
+too_many_lines = "allow"

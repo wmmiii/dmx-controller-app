@@ -22,14 +22,13 @@ axum = "0.8"
 base64 = "0.22"
 bytemuck = { version = "1.21", features = ["derive"] }
 chrono = "0.4.44"
-ddp-rs = "1.2.1"
 dmx-engine = { path = "../src-engine" }
+dmx-runtime = { path = "../src-runtime" }
 log = "0.4"
 png = "0.17"
 prost = "0.14.1"
 reqwest = { version = "0.12.28", features = ["json"] }
 rmcp = { version = "2.2.0", features = ["server", "macros", "transport-streamable-http-server"] }
-sacn = "0.11.0"
 sanitize-filename = "0.6.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0.147"

@@ -6,17 +6,12 @@ use ddp_rs::protocol::{ID, PixelConfig};
 use dmx_engine::proto::{DdpOutput, DisplayBuffer, PhysicalDisplayMapping, VirtualMapping};
 use dmx_engine::render::segment_mapping::map_segment_to_rgb;
 
+#[derive(Default)]
 pub struct DdpState {
     connections: HashMap<String, DDPConnection>,
 }
 
 impl DdpState {
-    pub fn new() -> Self {
-        DdpState {
-            connections: HashMap::new(),
-        }
-    }
-
     fn get_or_create_connection(&mut self, ip_address: &str) -> Result<&mut DDPConnection, String> {
         if !self.connections.contains_key(ip_address) {
             let socket = UdpSocket::bind("0.0.0.0:0").map_err(|e| e.to_string())?;

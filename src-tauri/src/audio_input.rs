@@ -9,7 +9,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Manager};
 use tokio::sync::Mutex;
 
-use crate::audio_analysis::FftAnalyzer;
+use dmx_runtime::audio_analysis::FftAnalyzer;
 use crate::beat::SharedBeatSampler;
 
 /// Suppress ALSA and JACK error messages during audio device enumeration.

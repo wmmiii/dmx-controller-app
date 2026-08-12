@@ -10,9 +10,9 @@ use tauri::{AppHandle, Emitter};
 use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
 
-use crate::sacn::SacnState;
+use dmx_runtime::sacn::SacnState;
 use crate::serial::SerialState;
-use crate::wled::WledState;
+use dmx_runtime::wled::WledState;
 
 // Default FPS for each output type when not specified
 const DEFAULT_SERIAL_FPS: u32 = 44;
