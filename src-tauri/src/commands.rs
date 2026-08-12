@@ -1,4 +1,4 @@
-use crate::event_sink::TauriEventSink;
+use crate::event_sink::{self, TauriEventSink};
 use dmx_engine::beat::{set_bpm as engine_set_bpm, set_first_beat as engine_set_first_beat};
 use dmx_engine::project;
 use dmx_runtime::beat::SharedBeatSampler;
@@ -37,10 +37,6 @@ pub fn get_builtin_visualizers() -> HashMap<String, Vec<u8>> {
 }
 
 /// Add a beat sample for tempo detection (called from keyboard shortcut).
-///
-/// No-ops silently when audio beat detection is active (`audio_active = true`)
-/// so that manual taps and microphone-derived beats don't interfere with each
-/// other's BPM estimates.
 #[tauri::command]
 #[allow(clippy::cast_possible_truncation)]
 pub async fn add_beat_sample(
@@ -52,7 +48,7 @@ pub async fn add_beat_sample(
         .lock()
         .map_err(|e| format!("Failed to lock beat sampler: {e}"))?;
 
-    if sampler.audio_active {
+    if !sampler.accepts_taps() {
         return Ok(());
     }
 
@@ -60,7 +56,7 @@ pub async fn add_beat_sample(
         .duration_since(UNIX_EPOCH)
         .map_err(|e| e.to_string())?
         .as_millis() as u64;
-    sampler.add_sample(&TauriEventSink::new(app_handle), t);
+    dmx_runtime::beat::add_sample(&mut sampler, &TauriEventSink::new(app_handle), t);
 
     Ok(())
 }
@@ -71,10 +67,15 @@ pub fn set_first_beat() -> Result<(), String> {
     project::with_project_mut(engine_set_first_beat)
 }
 
-/// Returns the current beat position `[0.0, 1.0)` using the engine clock.
 #[tauri::command]
 pub fn set_bpm(bpm: u16) -> Result<(), String> {
     project::with_project_mut(|project| engine_set_bpm(project, bpm))
+}
+
+#[tauri::command]
+pub async fn frontend_ready_for_update(app: AppHandle) -> Result<(), String> {
+    event_sink::frontend_ready(&app);
+    Ok(())
 }
 
 #[cfg(desktop)]

@@ -6,7 +6,8 @@ mod mcp;
 mod project;
 mod render;
 
-use dmx_runtime::beat::{RuntimeBeatSampler, SharedBeatSampler};
+use dmx_engine::beat::BeatSampler;
+use dmx_runtime::beat::SharedBeatSampler;
 use dmx_runtime::display_loop::DisplayLoopManager;
 use dmx_runtime::events::EventSink;
 use dmx_runtime::output_loop::OutputLoopManager;
@@ -91,7 +92,7 @@ pub fn run() {
                 Arc::new(event_sink::TauriEventSink::new(app.handle().clone()));
 
             let shared_beat_sampler: SharedBeatSampler =
-                Arc::new(StdMutex::new(RuntimeBeatSampler::default()));
+                Arc::new(StdMutex::new(BeatSampler::default()));
 
             app.manage(shared_beat_sampler.clone());
 
@@ -244,7 +245,7 @@ pub fn run() {
             commands::list_ports,
             #[cfg(desktop)]
             mcp::bridge::mcp_frontend_response,
-            project::frontend_ready_for_update,
+            commands::frontend_ready_for_update,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");

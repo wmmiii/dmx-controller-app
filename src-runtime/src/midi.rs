@@ -245,7 +245,6 @@ fn connect_midi_internal(state: &MidiState, candidate: MidiPortCandidate) -> Res
             &input_port,
             "dmx-controller-input",
             move |_timestamp, message, events: &mut Arc<dyn EventSink>| {
-                // Emitted for debugging (ControllerPage)
                 events.midi_message(&device_name_for_callback, message);
 
                 process_midi_input(
@@ -532,7 +531,7 @@ fn handle_action_result(
 
         // We want to handle beat matching at the runtime level.
         if let BeatMatch(_) = action {
-            sampler.add_sample(events, t);
+            crate::beat::add_sample(&mut sampler, events, t);
         }
 
         drop(sampler); // Release lock before emitting

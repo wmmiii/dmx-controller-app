@@ -9,7 +9,7 @@ pub trait EventSink: Send + Sync + 'static {
     fn render_error_clear(&self, _output_id: u64) {}
 
     fn project_updated(&self) {}
-    fn beat_sampling_state(&self, _sampling: bool) {}
+    fn beat_sampled(&self) {}
 
     fn midi_message(&self, _device_name: &str, _data: &[u8]) {}
     fn midi_connection_status(&self, _controller_name: &str, _connected: bool) {}

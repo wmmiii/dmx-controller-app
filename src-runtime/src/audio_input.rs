@@ -271,7 +271,7 @@ pub fn list_audio_inputs() -> Result<Vec<AudioInputDevice>, String> {
 /// available again.
 fn end_audio_beat(state: &AudioInputState) {
     if let Ok(mut sampler) = state.beat_sampler.lock() {
-        sampler.audio_active = false;
+        sampler.set_audio_active(false);
     }
     state.events.audio_beat_active(false);
 }
@@ -331,7 +331,7 @@ fn start_stream(state: &AudioInputState, device_name: &str) -> Result<(), String
     // stream stops and end_audio_beat() is called.
     let beat_sampler = Arc::clone(&state.beat_sampler);
     if let Ok(mut sampler) = beat_sampler.lock() {
-        sampler.audio_active = true;
+        sampler.set_audio_active(true);
     }
     events.audio_beat_active(true);
 
@@ -509,7 +509,7 @@ where
                                 .map(|d| d.as_millis() as u64)
                             && let Ok(mut sampler) = beat_sampler.lock()
                         {
-                            sampler.add_sample(events.as_ref(), t);
+                            crate::beat::add_sample(&mut sampler, events.as_ref(), t);
                         }
 
                         events.audio_analysis(&analysis);

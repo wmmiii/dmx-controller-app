@@ -1,9 +1,26 @@
 use dmx_engine::audio::AudioAnalysis;
+use dmx_engine::project::{self, UndoState};
 use dmx_engine::proto::{DisplayBuffer, WledRenderTarget};
 use dmx_runtime::events::EventSink;
 use prost::Message;
 use serde::Serialize;
+use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{AppHandle, Emitter};
+
+// =============================================================================
+// Flow control for project updates to frontend
+// =============================================================================
+//
+// This prevents overwhelming the frontend with rapid updates (e.g., from MIDI).
+//
+// Protocol:
+// 1. Frontend signals "ready" when it can accept an update
+// 2. Backend sets "dirty" when the project changes via emit_project_update
+// 3. When both flags are set, we send an update and clear both
+// 4. Frontend signals "ready" again after processing
+
+static PROJECT_DIRTY: AtomicBool = AtomicBool::new(false);
+static FRONTEND_READY: AtomicBool = AtomicBool::new(true); // Start ready for initial update
 
 /// Maximum size for visualization buffers sent to frontend.
 /// Larger displays are downsampled to reduce IPC overhead.
@@ -45,8 +62,6 @@ struct MidiConnectionStatusEvent {
     connected: bool,
 }
 
-/// Mirrors `dmx_runtime::audio_input::AudioInputDevice`, which the frontend
-/// also receives from `list_audio_inputs`.
 #[derive(Clone, Serialize)]
 struct AudioInputDevice {
     name: String,
@@ -55,6 +70,72 @@ struct AudioInputDevice {
 #[derive(Clone, Serialize)]
 struct AudioDeviceListChangedEvent {
     devices: Vec<AudioInputDevice>,
+}
+
+/// Payload for the project-updated event.
+#[derive(Clone, Serialize)]
+struct ProjectUpdatedPayload {
+    project_binary: Vec<u8>,
+}
+
+/// Payload for the undo-state-changed event
+#[derive(Clone, Serialize)]
+pub struct UndoStatePayload {
+    can_undo: bool,
+    can_redo: bool,
+    undo_description: Option<String>,
+    redo_description: Option<String>,
+}
+
+impl From<UndoState> for UndoStatePayload {
+    fn from(state: UndoState) -> Self {
+        UndoStatePayload {
+            can_undo: state.can_undo,
+            can_redo: state.can_redo,
+            undo_description: state.undo_description,
+            redo_description: state.redo_description,
+        }
+    }
+}
+
+/// Emits a project-updated event (low-level, called when frontend is ready).
+fn emit_project_update_impl(app: &AppHandle) {
+    if let Ok(project_binary) = project::get() {
+        let _ = app.emit("project-updated", ProjectUpdatedPayload { project_binary });
+    }
+}
+
+/// Emits undo-state-changed event. Called separately from project updates
+/// since undo state changes are infrequent and should be immediate.
+pub fn emit_undo_state(app: &AppHandle) {
+    if let Ok(undo_state) = project::get_undo_state() {
+        let _ = app.emit("undo-state-changed", UndoStatePayload::from(undo_state));
+    }
+}
+
+/// Marks the project as dirty and emits update if frontend is ready.
+/// This is the single entry point for all project update emissions.
+pub fn emit_project_update(app: &AppHandle) {
+    PROJECT_DIRTY.store(true, Ordering::Release);
+
+    // Check if frontend is ready (and clear the flag atomically if so)
+    if FRONTEND_READY.swap(false, Ordering::AcqRel) {
+        PROJECT_DIRTY.store(false, Ordering::Release);
+        emit_project_update_impl(app);
+    }
+    // Otherwise, update will be sent when frontend signals ready
+}
+
+/// Called by the frontend when it's ready for the next project update.
+pub fn frontend_ready(app: &AppHandle) {
+    FRONTEND_READY.store(true, Ordering::Release);
+
+    // Check if project is dirty (and clear the flag atomically if so)
+    if PROJECT_DIRTY.swap(false, Ordering::AcqRel) {
+        FRONTEND_READY.store(false, Ordering::Release);
+        emit_project_update_impl(app);
+    }
+    // Otherwise, update will be sent when project changes
 }
 
 pub struct TauriEventSink {
@@ -114,14 +195,12 @@ impl EventSink for TauriEventSink {
         }
     }
 
-    /// Routed through the project module so it keeps the `PROJECT_DIRTY` /
-    /// `FRONTEND_READY` handshake that throttles updates to the webview.
     fn project_updated(&self) {
-        crate::project::emit_project_update(&self.app);
+        emit_project_update(&self.app);
     }
 
-    fn beat_sampling_state(&self, sampling: bool) {
-        if let Err(e) = self.app.emit("beat-sampling-state", sampling) {
+    fn beat_sampled(&self) {
+        if let Err(e) = self.app.emit("beat-sampling-state", true) {
             log::error!("Failed to emit beat sampling state event: {e}");
         }
     }
