@@ -17,6 +17,11 @@ jobs:
       - name: Generate protobufs
         run: pnpm run proto:generate
 
+      # src/wasm/pkg is generated and gitignored, and the frontend imports it,
+      # so every check below this line needs it to already exist.
+      - name: Build WASM engine
+        run: pnpm run wasm:build
+
       - name: Type check
         run: pnpm run type-check
 
