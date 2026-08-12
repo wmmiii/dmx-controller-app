@@ -14,10 +14,10 @@ use tokio::task::JoinHandle;
 
 use crate::cas::{read_cas_bytes, write_cas_bytes};
 use dmx_runtime::ddp::DdpState;
-use crate::display_loop::DisplayLoopManager;
-use crate::output_loop::OutputLoopManager;
+use dmx_runtime::display_loop::DisplayLoopManager;
+use dmx_runtime::output_loop::OutputLoopManager;
 use dmx_runtime::sacn::SacnState;
-use crate::serial::SerialState;
+use dmx_runtime::serial::SerialState;
 use dmx_runtime::shader::ShaderState;
 use dmx_runtime::wled::WledState;
 
