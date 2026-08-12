@@ -10,19 +10,32 @@ crate-type = ["rlib"]
 
 [features]
 default = ["visualizer", "audio"]
-visualizer = ["dep:ddp-rs"]
+visualizer = ["dep:ddp-rs", "dep:naga", "dep:wgpu", "dep:bytemuck"]
 audio = ["dep:rustfft"]
 
 [dependencies]
 dmx-engine = { path = "../src-engine" }
+log = "0.4"
+prost = "0.14.1"
 reqwest = { version = "0.12.28", features = ["json"] }
 sacn = "0.11.0"
 serde = { version = "1.0", features = ["derive"] }
+tokio = { version = "1.48.0", features = ["time", "macros", "sync", "net", "rt-multi-thread"] }
 
+bytemuck = { version = "1.21", features = ["derive"], optional = true }
 ddp-rs = { version = "1.2.1", optional = true }
 
 [target.'cfg(not(target_os = "ios"))'.dependencies]
+open_dmx = "1.1.1"
+serialport = "4.7.3"
+
+naga = { version = "26.0", features = ["glsl-in", "spv-out"], optional = true }
 rustfft = { version = "6", optional = true }
+wgpu = { version = "26.0", features = ["vulkan", "metal", "wgsl", "glsl"], optional = true }
+
+[target.'cfg(target_os = "ios")'.dependencies]
+naga = { version = "26.0", default-features = false, features = ["glsl-in", "spv-out"], optional = true }
+wgpu = { version = "26.0", default-features = false, features = ["metal", "wgsl", "glsl"], optional = true }
 
 [lints.rust]
 dead_code = "deny"

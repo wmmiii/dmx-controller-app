@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 
 use dmx_engine::project;
 use dmx_engine::proto::visualizer_node::Node;
@@ -9,7 +9,6 @@ use dmx_engine::visualizer::builtin::{BUILTIN_VISUALIZERS, is_builtin};
 use dmx_engine::visualizer::shader_wrap::{preamble_line_count, wrap_user_shader};
 use dmx_engine::visualizer::uniforms::ShaderUniforms;
 use prost::Message;
-use tauri::State;
 use wgpu::util::DeviceExt;
 
 const TEXTURE_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8Unorm;
@@ -294,6 +293,7 @@ impl ShaderState {
         Ok(state)
     }
 
+    #[must_use]
     pub fn validate_shader(glsl_source: &str) -> VisualizerCompilationResult {
         let wrapped = wrap_user_shader(glsl_source);
 
@@ -819,12 +819,10 @@ impl ShaderState {
 /// Compile (or recompile) a user visualizer's GLSL. Returns a prost-encoded
 /// `VisualizerCompilationResult` so the frontend can surface line-numbered
 /// errors. Compilation failures are reported in the payload, not as `Err`.
-#[tauri::command]
-#[allow(clippy::needless_pass_by_value)]
 pub fn compile_visualizer(
-    shader_state: State<'_, Arc<Mutex<ShaderState>>>,
-    id: String,
-    glsl_source: String,
+    shader_state: &Mutex<ShaderState>,
+    id: &str,
+    glsl_source: &str,
 ) -> Result<Vec<u8>, String> {
     let id: u64 = id
         .parse()
@@ -833,13 +831,12 @@ pub fn compile_visualizer(
         log::error!("Shader state lock poisoned, recovering");
         e.into_inner()
     });
-    Ok(state.compile_shader(id, &glsl_source).encode_to_vec())
+    Ok(state.compile_shader(id, glsl_source).encode_to_vec())
 }
 
 /// Return the built-in visualizers as a map from ID string to prost-encoded
 /// `Visualizer` messages. The map shape matches `project.visualizers` so the
 /// frontend can treat builtins and user visualizers uniformly.
-#[tauri::command]
 pub fn get_builtin_visualizers() -> std::collections::HashMap<String, Vec<u8>> {
     BUILTIN_VISUALIZERS
         .iter()
