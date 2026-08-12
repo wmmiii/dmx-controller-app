@@ -1,42 +1,21 @@
 use dmx_engine::project;
 use dmx_engine::proto::output::Output as ProtoOutput;
 use dmx_engine::render::render::{RenderError, render_dmx, render_wled};
-use prost::Message;
-use serde::Serialize;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tauri::{AppHandle, Emitter};
 use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
 
-use dmx_runtime::sacn::SacnState;
+use crate::events::EventSink;
+use crate::sacn::SacnState;
 use crate::serial::SerialState;
-use dmx_runtime::wled::WledState;
+use crate::wled::WledState;
 
 // Default FPS for each output type when not specified
 const DEFAULT_SERIAL_FPS: u32 = 44;
 const DEFAULT_SACN_FPS: u32 = 44;
 const DEFAULT_WLED_FPS: u32 = 42;
-
-// Event payloads for rendering results
-#[derive(Clone, Serialize)]
-struct DmxRenderEvent {
-    output_id: String,
-    data: Vec<u8>,
-}
-
-#[derive(Clone, Serialize)]
-struct WledRenderEvent {
-    output_id: String,
-    data: Vec<u8>,
-}
-
-#[derive(Clone, Serialize)]
-struct RenderErrorEvent {
-    output_id: String,
-    message: String,
-}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum OutputType {
@@ -62,14 +41,14 @@ struct OutputLoopHandle {
 
 pub struct OutputLoopManager {
     loops: Arc<Mutex<HashMap<u64, OutputLoopHandle>>>,
-    app: AppHandle,
+    events: Arc<dyn EventSink>,
 }
 
 impl OutputLoopManager {
-    pub fn new(app: AppHandle) -> Self {
+    pub fn new(events: Arc<dyn EventSink>) -> Self {
         OutputLoopManager {
             loops: Arc::new(Mutex::new(HashMap::new())),
-            app,
+            events,
         }
     }
 
@@ -81,7 +60,7 @@ impl OutputLoopManager {
         sacn_state: Arc<Mutex<SacnState>>,
         wled_state: Arc<Mutex<WledState>>,
     ) {
-        tauri::async_runtime::spawn(async move {
+        tokio::spawn(async move {
             let manager = manager.lock().await;
             if let Err(e) = manager
                 .rebuild_all_loops(serial_state, sacn_state, wled_state)
@@ -105,7 +84,7 @@ impl OutputLoopManager {
 
         let (cancel_tx, cancel_rx) = tokio::sync::watch::channel(false);
         let output_type_clone = output_type.clone();
-        let app_clone = self.app.clone();
+        let events = Arc::clone(&self.events);
 
         // The task does NOT remove itself from the map on exit.
         // stop_loop removes the handle before signalling cancel, so the task
@@ -119,7 +98,7 @@ impl OutputLoopManager {
                 serial_state,
                 sacn_state,
                 wled_state,
-                app_clone,
+                events,
                 cancel_rx,
             )
             .await
@@ -284,40 +263,16 @@ impl OutputLoopManager {
         Ok(())
     }
 
-    fn emit_error(output_id: u64, message: String, app: &AppHandle) {
-        let event = RenderErrorEvent {
-            output_id: output_id.to_string(),
-            message,
-        };
-        if let Err(e) = app.emit("render-error", event) {
-            log::error!("Failed to emit render error event: {e}");
-        }
-    }
-
-    fn clear_error(output_id: u64, app: &AppHandle) {
-        // Emit output_id string to signal clearing the error
-        if let Err(e) = app.emit("render-error-clear", output_id.to_string()) {
-            log::error!("Failed to emit render error clear event: {e}");
-        }
-    }
-
     fn render_and_emit_dmx(
         output_id: u64,
         system_t: u64,
         frame: u32,
-        app: &AppHandle,
+        events: &dyn EventSink,
     ) -> Result<Vec<u8>, RenderError> {
         let dmx_data = render_dmx(output_id, system_t, frame)?;
         let dmx_vec = dmx_data.to_vec();
 
-        // Emit render event to frontend
-        let event = DmxRenderEvent {
-            output_id: output_id.to_string(),
-            data: dmx_vec.clone(),
-        };
-        if let Err(e) = app.emit("dmx-render", event) {
-            log::error!("Failed to emit DMX render event: {e}");
-        }
+        events.dmx_render(output_id, &dmx_vec);
 
         Ok(dmx_vec)
     }
@@ -328,7 +283,7 @@ impl OutputLoopManager {
         serial_state: Arc<Mutex<SerialState>>,
         sacn_state: Arc<Mutex<SacnState>>,
         wled_state: Arc<Mutex<WledState>>,
-        app: AppHandle,
+        events: Arc<dyn EventSink>,
         cancel_rx: tokio::sync::watch::Receiver<bool>,
     ) -> Result<(), String> {
         let target_fps = match &output_type {
@@ -360,7 +315,7 @@ impl OutputLoopManager {
 
             let result = match &output_type {
                 OutputType::Serial { .. } => {
-                    match Self::render_and_emit_dmx(output_id, system_t, frame, &app) {
+                    match Self::render_and_emit_dmx(output_id, system_t, frame, events.as_ref()) {
                         Ok(dmx_vec) => {
                             let serial = serial_state.lock().await;
                             let output_result =
@@ -383,7 +338,7 @@ impl OutputLoopManager {
                     ip_address,
                     ..
                 } => {
-                    match Self::render_and_emit_dmx(output_id, system_t, frame, &app) {
+                    match Self::render_and_emit_dmx(output_id, system_t, frame, events.as_ref()) {
                         Ok(dmx_vec) => {
                             let sacn = sacn_state.lock().await;
                             let output_result =
@@ -405,14 +360,7 @@ impl OutputLoopManager {
                     // Render WLED
                     match render_wled(output_id, system_t, frame) {
                         Ok(wled_data) => {
-                            // Emit render event to frontend (encode to protobuf bytes)
-                            let event = WledRenderEvent {
-                                output_id: output_id.to_string(),
-                                data: wled_data.encode_to_vec(),
-                            };
-                            if let Err(e) = app.emit("wled-render", event) {
-                                log::error!("Failed to emit WLED render event: {e}");
-                            }
+                            events.wled_render(output_id, &wled_data);
 
                             // Output via WLED
                             let wled = wled_state.lock().await;
@@ -434,8 +382,8 @@ impl OutputLoopManager {
             };
 
             match result {
-                Ok(()) => Self::clear_error(output_id, &app),
-                Err(e) => Self::emit_error(output_id, e, &app),
+                Ok(()) => events.render_error_clear(output_id),
+                Err(e) => events.render_error(output_id, &e),
             }
 
             frame = frame.wrapping_add(1);
