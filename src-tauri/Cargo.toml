@@ -20,7 +20,6 @@ tauri-build = { version = "2.4.1", features = [] }
 [dependencies]
 axum = "0.8"
 base64 = "0.22"
-bytemuck = { version = "1.21", features = ["derive"] }
 chrono = "0.4.44"
 dmx-engine = { path = "../src-engine" }
 dmx-runtime = { path = "../src-runtime" }
@@ -41,10 +40,6 @@ tauri-plugin-opener = "2"
 tauri-plugin-process = "2"
 tokio = { version = "1.48.0", features = ["time", "macros", "sync", "net", "rt-multi-thread"] }
 
-[target.'cfg(target_os = "ios")'.dependencies]
-wgpu = { version = "26.0", default-features = false, features = ["metal", "wgsl", "glsl"] }
-naga = { version = "26.0", default-features = false, features = ["glsl-in", "spv-out"] }
-
 [target.'cfg(target_os = "linux")'.dependencies]
 alsa-sys = "0.3"
 libc = "0.2"
@@ -52,12 +47,7 @@ libc = "0.2"
 [target.'cfg(not(target_os = "ios"))'.dependencies]
 cpal = "0.17"
 midir = "0.10.2"
-naga = { version = "26.0", features = ["glsl-in", "spv-out"] }
-open_dmx = "1.1.1"
-rustfft = "6"
-serialport = "4.7.3"
 tauri-plugin-keepawake = "0.1.0"
-wgpu = { version = "26.0", features = ["vulkan", "metal", "wgsl", "glsl"] }
 
 [lints.rust]
 dead_code = "deny"

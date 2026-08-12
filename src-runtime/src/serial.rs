@@ -7,19 +7,13 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
+#[derive(Default)]
 pub struct SerialState {
     dmx_ports: std::sync::Mutex<HashMap<String, (String, DMXSerial)>>, // output_id -> (port_name, connection)
     watcher_cancel_tx: std::sync::Mutex<Option<tokio::sync::watch::Sender<bool>>>,
 }
 
 impl SerialState {
-    pub fn new() -> Self {
-        SerialState {
-            dmx_ports: std::sync::Mutex::new(HashMap::new()),
-            watcher_cancel_tx: std::sync::Mutex::new(None),
-        }
-    }
-
     /// Start watching for new serial ports and auto-binding
     pub fn start_port_watcher(&self, state: Arc<Mutex<SerialState>>) {
         let (cancel_tx, cancel_rx) = tokio::sync::watch::channel(false);
@@ -30,8 +24,7 @@ impl SerialState {
             *watcher = Some(cancel_tx);
         }
 
-        // Spawn the watcher task using Tauri's async runtime
-        tauri::async_runtime::spawn(async move {
+        tokio::spawn(async move {
             Self::port_watcher_loop(state, cancel_rx).await;
         });
 
@@ -311,7 +304,6 @@ impl SerialState {
     }
 }
 
-#[tauri::command]
 pub fn list_ports() -> Result<Vec<String>, String> {
     match available_ports() {
         Ok(ports) => {

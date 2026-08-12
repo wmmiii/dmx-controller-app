@@ -1463,12 +1463,20 @@ dependencies = [
 name = "dmx-runtime"
 version = "0.1.0"
 dependencies = [
+ "bytemuck",
  "ddp-rs",
  "dmx-engine",
+ "log",
+ "naga",
+ "open_dmx",
+ "prost",
  "reqwest 0.12.28",
  "rustfft",
  "sacn",
  "serde",
+ "serialport",
+ "tokio",
+ "wgpu",
 ]
 
 [[package]]
@@ -1478,7 +1486,6 @@ dependencies = [
  "alsa-sys",
  "axum",
  "base64 0.22.1",
- "bytemuck",
  "chrono",
  "cpal",
  "dmx-engine",
@@ -1487,17 +1494,13 @@ dependencies = [
  "log",
  "midir",
  "mime_guess",
- "naga",
- "open_dmx",
  "png 0.17.16",
  "prost",
  "reqwest 0.12.28",
  "rmcp",
- "rustfft",
  "sanitize-filename",
  "serde",
  "serde_json",
- "serialport",
  "sha256",
  "tauri",
  "tauri-build",
@@ -1507,7 +1510,6 @@ dependencies = [
  "tauri-plugin-opener",
  "tauri-plugin-process",
  "tokio",
- "wgpu",
 ]
 
 [[package]]
