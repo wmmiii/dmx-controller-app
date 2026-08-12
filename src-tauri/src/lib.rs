@@ -3,39 +3,18 @@ mod audio_input;
 mod beat;
 mod cas;
 mod commands;
-mod display_loop;
+mod event_sink;
 #[cfg(desktop)]
 mod mcp;
 #[cfg(desktop)]
 mod midi;
-mod output_loop;
 mod project;
 mod render;
 
-#[cfg(desktop)]
-pub(crate) use dmx_runtime::serial;
-
-/// No-op stub for mobile — serial DMX hardware is not available on iOS/Android
-#[cfg(mobile)]
-mod serial {
-    #[derive(Default)]
-    pub struct SerialState;
-
-    impl SerialState {
-        pub fn auto_bind_serial_outputs(&self) -> Result<(), String> {
-            Ok(())
-        }
-
-        pub fn output_dmx_internal(&self, _output_id: &str, _data: &[u8]) -> Result<(), String> {
-            Ok(())
-        }
-
-        pub fn try_close_port(&self, _output_id: &str) -> Result<(), String> {
-            Ok(())
-        }
-    }
-}
-
+use dmx_runtime::display_loop::DisplayLoopManager;
+use dmx_runtime::events::EventSink;
+use dmx_runtime::output_loop::OutputLoopManager;
+use dmx_runtime::serial::SerialState;
 use dmx_runtime::{ddp::DdpState, sacn::SacnState, shader::ShaderState, wled::WledState};
 use std::sync::Arc;
 use std::sync::Mutex as StdMutex;
@@ -76,6 +55,11 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_process::init())
         .setup(|app| {
+            // `setup` runs outside any Tokio context, but the device watchers
+            // and render loops started below spawn onto whichever runtime is
+            // current. Enter Tauri's for the rest of this closure.
+            let _runtime = tauri::async_runtime::handle().inner().enter();
+
             // Register logging plugin first so all log::* calls are captured
             if cfg!(debug_assertions) {
                 app.handle().plugin(
@@ -140,15 +124,12 @@ pub fn run() {
                 app.manage(audio_input_state_arc);
             }
 
-            let serial_state = serial::SerialState::default();
+            let serial_state = SerialState::default();
             let serial_state_arc = Arc::new(Mutex::new(serial_state));
 
             #[cfg(desktop)]
             {
-                // Start the port watcher for auto-binding. `setup` runs outside
-                // any Tokio context, so enter Tauri's runtime first — the
-                // watcher spawns onto whichever runtime is current.
-                let _runtime = tauri::async_runtime::handle().inner().enter();
+                // Start the port watcher for auto-binding.
                 let state_clone = serial_state_arc.clone();
                 let serial = serial_state_arc.blocking_lock();
                 serial.start_port_watcher(state_clone);
@@ -169,7 +150,7 @@ pub fn run() {
             app.manage(ddp_state_arc.clone());
 
             // Initialize the GPU shader state for visualizer rendering.
-            match tauri::async_runtime::block_on(ShaderState::new()) {
+            let shader_state = match tauri::async_runtime::block_on(ShaderState::new()) {
                 Ok(shader_state) => {
                     let shader_state_arc = Arc::new(StdMutex::new(shader_state));
                     app.manage(shader_state_arc.clone());
@@ -177,30 +158,32 @@ pub fn run() {
                     // Sync user visualizers from the loaded project so they're
                     // compiled before the display loop starts rendering.
                     dmx_runtime::shader::sync_visualizer_shaders(&shader_state_arc);
+                    Some(shader_state_arc)
                 }
-                Err(e) => log::error!("Failed to initialize GPU shader state: {e}"),
-            }
+                Err(e) => {
+                    log::error!("Failed to initialize GPU shader state: {e}");
+                    None
+                }
+            };
 
-            let display_loop_manager = display_loop::DisplayLoopManager::new(app.handle().clone());
+            let events: Arc<dyn EventSink> =
+                Arc::new(event_sink::TauriEventSink::new(app.handle().clone()));
+
+            let display_loop_manager = DisplayLoopManager::new(Arc::clone(&events), shader_state);
             let display_loop_manager_arc = Arc::new(Mutex::new(display_loop_manager));
             app.manage(display_loop_manager_arc.clone());
 
             // Start display loop for loaded project (handles all displays and DDP outputs)
-            display_loop::DisplayLoopManager::start_on_load(
-                display_loop_manager_arc,
-                ddp_state_arc,
-            );
+            DisplayLoopManager::start_on_load(display_loop_manager_arc, ddp_state_arc);
 
-            let output_loop_manager = output_loop::OutputLoopManager::new(app.handle().clone());
+            let output_loop_manager = OutputLoopManager::new(events);
             let output_loop_manager_arc = Arc::new(Mutex::new(output_loop_manager));
             app.manage(output_loop_manager_arc.clone());
 
             // Start output loops for loaded project (Serial, sACN, WLED - DDP is handled by display loop)
-            output_loop::OutputLoopManager::start_on_load(
+            OutputLoopManager::start_on_load(
                 output_loop_manager_arc,
-                app.state::<Arc<Mutex<serial::SerialState>>>()
-                    .inner()
-                    .clone(),
+                app.state::<Arc<Mutex<SerialState>>>().inner().clone(),
                 app.state::<Arc<Mutex<SacnState>>>().inner().clone(),
                 app.state::<Arc<Mutex<WledState>>>().inner().clone(),
             );
