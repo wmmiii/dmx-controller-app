@@ -416,8 +416,7 @@ fn run_stream_thread(
         .map_err(|e| e.to_string())?
         .find(|d| {
             d.description()
-                .map(|desc| desc.to_string() == device_name)
-                .unwrap_or(false)
+                .is_ok_and(|desc| desc.to_string() == device_name)
         })
         .ok_or_else(|| format!("Audio device '{device_name}' not found"))?;
 
