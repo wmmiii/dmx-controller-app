@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::sync::OnceLock;
+use std::vec;
 
 use crate::proto::dmx_fixture_definition::Mode;
 use crate::proto::{Color, ColorPalette, DmxFixtureDefinition, PhysicalDmxFixture};
@@ -293,7 +294,30 @@ impl<'a> RenderTarget<DmxRenderTarget<'a>> for DmxRenderTarget<'a> {
             .collect();
         all_updates.extend(channels);
 
+        // Calculate color channels while holding immutable borrow.
+        let color_channels_for_dimmer: Vec<usize> = {
+            let has_dimmer = mode.channels.iter().any(|(_, c)| c.r#type == "dimmer");
+            if has_dimmer {
+                vec![]
+            } else {
+                mode.channels
+                    .iter()
+                    .filter(|(_, c)| {
+                        matches!(c.r#type.as_str(), "red" | "green" | "blue" | "white")
+                    })
+                    .map(|(idx, _)| (idx + fixture.channel_offset - 1) as usize)
+                    .collect()
+            }
+        };
+
         self.apply_updates(all_updates);
+
+        // Apply virtual dimmer,
+        if let Some(dimmer) = state.dimmer {
+            for channel_index in color_channels_for_dimmer {
+                self.universe[channel_index] *= dimmer;
+            }
+        }
     }
 
     fn interpolate(&mut self, a: &DmxRenderTarget<'a>, b: &DmxRenderTarget<'a>, t: f64) {
