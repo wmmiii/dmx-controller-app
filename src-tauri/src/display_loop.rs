@@ -12,7 +12,7 @@ use tauri::{AppHandle, Emitter, Manager};
 use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
 
-use crate::ddp::DdpState;
+use dmx_runtime::ddp::DdpState;
 use crate::shader::ShaderState;
 
 const DEFAULT_DISPLAY_FPS: u32 = 30;
