@@ -2,6 +2,7 @@
 mod audio_input;
 mod beat;
 mod cas;
+mod commands;
 mod display_loop;
 #[cfg(desktop)]
 mod mcp;
@@ -10,20 +11,17 @@ mod midi;
 mod output_loop;
 mod project;
 mod render;
+
 #[cfg(desktop)]
-mod serial;
-mod shader;
+pub(crate) use dmx_runtime::serial;
 
 /// No-op stub for mobile — serial DMX hardware is not available on iOS/Android
 #[cfg(mobile)]
 mod serial {
+    #[derive(Default)]
     pub struct SerialState;
 
     impl SerialState {
-        pub fn new() -> Self {
-            SerialState
-        }
-
         pub fn auto_bind_serial_outputs(&self) -> Result<(), String> {
             Ok(())
         }
@@ -38,7 +36,7 @@ mod serial {
     }
 }
 
-use dmx_runtime::{ddp::DdpState, sacn::SacnState, wled::WledState};
+use dmx_runtime::{ddp::DdpState, sacn::SacnState, shader::ShaderState, wled::WledState};
 use std::sync::Arc;
 use std::sync::Mutex as StdMutex;
 use tauri::{Manager, RunEvent};
@@ -142,12 +140,15 @@ pub fn run() {
                 app.manage(audio_input_state_arc);
             }
 
-            let serial_state = serial::SerialState::new();
+            let serial_state = serial::SerialState::default();
             let serial_state_arc = Arc::new(Mutex::new(serial_state));
 
             #[cfg(desktop)]
             {
-                // Start the port watcher for auto-binding
+                // Start the port watcher for auto-binding. `setup` runs outside
+                // any Tokio context, so enter Tauri's runtime first — the
+                // watcher spawns onto whichever runtime is current.
+                let _runtime = tauri::async_runtime::handle().inner().enter();
                 let state_clone = serial_state_arc.clone();
                 let serial = serial_state_arc.blocking_lock();
                 serial.start_port_watcher(state_clone);
@@ -168,14 +169,14 @@ pub fn run() {
             app.manage(ddp_state_arc.clone());
 
             // Initialize the GPU shader state for visualizer rendering.
-            match tauri::async_runtime::block_on(shader::ShaderState::new()) {
+            match tauri::async_runtime::block_on(ShaderState::new()) {
                 Ok(shader_state) => {
                     let shader_state_arc = Arc::new(StdMutex::new(shader_state));
                     app.manage(shader_state_arc.clone());
 
                     // Sync user visualizers from the loaded project so they're
                     // compiled before the display loop starts rendering.
-                    shader::sync_visualizer_shaders(&shader_state_arc);
+                    dmx_runtime::shader::sync_visualizer_shaders(&shader_state_arc);
                 }
                 Err(e) => log::error!("Failed to initialize GPU shader state: {e}"),
             }
@@ -253,10 +254,10 @@ pub fn run() {
             cas::read_cas_blob,
             render::render_dmx,
             render::set_render_mode,
-            shader::compile_visualizer,
-            shader::get_builtin_visualizers,
+            commands::compile_visualizer,
+            commands::get_builtin_visualizers,
             #[cfg(desktop)]
-            serial::list_ports,
+            commands::list_ports,
             #[cfg(desktop)]
             mcp::bridge::mcp_frontend_response,
             project::frontend_ready_for_update,

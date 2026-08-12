@@ -18,7 +18,7 @@ use crate::display_loop::DisplayLoopManager;
 use crate::output_loop::OutputLoopManager;
 use dmx_runtime::sacn::SacnState;
 use crate::serial::SerialState;
-use crate::shader::ShaderState;
+use dmx_runtime::shader::ShaderState;
 use dmx_runtime::wled::WledState;
 
 // =============================================================================
@@ -254,7 +254,7 @@ pub async fn rebuild_outputs(
     // Sync GPU shader state with project.visualizers so undo/redo/load/copy
     // all stay consistent without ad-hoc compile calls in the UI.
     if let Some(shader_state) = app.try_state::<Arc<StdMutex<ShaderState>>>() {
-        crate::shader::sync_visualizer_shaders(&shader_state);
+        dmx_runtime::shader::sync_visualizer_shaders(&shader_state);
     }
 
     Ok(())
