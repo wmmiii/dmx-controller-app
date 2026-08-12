@@ -2,38 +2,21 @@ use dmx_engine::project;
 use dmx_engine::proto::output::Output as ProtoOutput;
 use dmx_engine::proto::{DdpOutput, DisplayBuffer, PhysicalDisplayMapping};
 use dmx_engine::render::render::{DisplayRenderData, RenderError, render_display_target};
-use prost::Message;
-use serde::Serialize;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::Mutex as StdMutex;
 use std::time::{Duration, Instant};
-use tauri::{AppHandle, Emitter, Manager};
 use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
 
-use dmx_runtime::ddp::DdpState;
-use dmx_runtime::shader::ShaderState;
+use crate::ddp::DdpState;
+use crate::events::EventSink;
+use crate::shader::ShaderState;
 
 const DEFAULT_DISPLAY_FPS: u32 = 30;
 /// FPS for emitting display render events to frontend for visualization.
 /// Lower than output FPS to reduce IPC overhead (pixel buffers can be large).
 const VISUALIZATION_FPS: u32 = 10;
-/// Maximum dimension for visualization buffers sent to frontend.
-/// Larger displays are downsampled to reduce IPC overhead.
-const MAX_VISUALIZATION_SIZE: u32 = 20;
-
-#[derive(Clone, Serialize)]
-struct DisplayRenderEvent {
-    display_id: String,
-    data: Vec<u8>,
-}
-
-#[derive(Clone, Serialize)]
-struct RenderErrorEvent {
-    output_id: String,
-    message: String,
-}
 
 struct DisplayLoopHandle {
     task: JoinHandle<()>,
@@ -55,20 +38,27 @@ struct DisplayLoopConfig {
 
 pub struct DisplayLoopManager {
     display_loop: Arc<Mutex<Option<DisplayLoopHandle>>>,
-    app: AppHandle,
+    events: Arc<dyn EventSink>,
+    /// `None` when GPU initialization failed. Displays then render black
+    /// rather than taking the whole loop down with them.
+    shader_state: Option<Arc<StdMutex<ShaderState>>>,
 }
 
 impl DisplayLoopManager {
-    pub fn new(app: AppHandle) -> Self {
+    pub fn new(
+        events: Arc<dyn EventSink>,
+        shader_state: Option<Arc<StdMutex<ShaderState>>>,
+    ) -> Self {
         DisplayLoopManager {
             display_loop: Arc::new(Mutex::new(None)),
-            app,
+            events,
+            shader_state,
         }
     }
 
     /// Starts display loop on app load if displays exist.
     pub fn start_on_load(manager: Arc<Mutex<Self>>, ddp_state: Arc<Mutex<DdpState>>) {
-        tauri::async_runtime::spawn(async move {
+        tokio::spawn(async move {
             let manager = manager.lock().await;
             if let Err(e) = manager.rebuild_display_loop(ddp_state).await {
                 log::error!("Failed to start display loop on startup: {e}");
@@ -124,10 +114,12 @@ impl DisplayLoopManager {
         self.stop_display_loop().await?;
 
         let (cancel_tx, cancel_rx) = tokio::sync::watch::channel(false);
-        let app_clone = self.app.clone();
+        let events = Arc::clone(&self.events);
+        let shader_state = self.shader_state.clone();
 
         let task = tokio::spawn(async move {
-            if let Err(e) = Self::run_display_loop(ddp_state, app_clone, cancel_rx).await {
+            let result = Self::run_display_loop(ddp_state, events, shader_state, cancel_rx).await;
+            if let Err(e) = result {
                 log::error!("Display loop failed: {e}");
             }
         });
@@ -161,7 +153,8 @@ impl DisplayLoopManager {
     /// Unified display loop that renders all displays and outputs to all DDP devices.
     async fn run_display_loop(
         ddp_state: Arc<Mutex<DdpState>>,
-        app: AppHandle,
+        events: Arc<dyn EventSink>,
+        shader_state: Option<Arc<StdMutex<ShaderState>>>,
         cancel_rx: tokio::sync::watch::Receiver<bool>,
     ) -> Result<(), String> {
         let frame_duration = Duration::from_millis(1000 / u64::from(DEFAULT_DISPLAY_FPS));
@@ -267,8 +260,6 @@ impl DisplayLoopManager {
                 break;
             }
 
-            let shader_state = app.try_state::<Arc<StdMutex<ShaderState>>>();
-
             // Render all displays
             let mut buffers: HashMap<u64, DisplayBuffer> = HashMap::new();
             for display_id in &config.display_ids {
@@ -281,15 +272,9 @@ impl DisplayLoopManager {
                     }
                 };
 
-                let buffer = render_display_buffer(*display_id, &data, shader_state.as_deref());
+                let buffer = render_display_buffer(*display_id, &data, shader_state.as_ref());
 
-                let event = DisplayRenderEvent {
-                    display_id: display_id.to_string(),
-                    data: buffer.downsample(MAX_VISUALIZATION_SIZE).encode_to_vec(),
-                };
-                if let Err(e) = app.emit("display-render", event) {
-                    log::error!("Failed to emit display render event: {e}");
-                }
+                events.display_render(*display_id, &buffer);
                 buffers.insert(*display_id, buffer);
             }
 
@@ -302,9 +287,9 @@ impl DisplayLoopManager {
                     ddp_config.output_id,
                     &ddp_config.mappings,
                 ) {
-                    Self::emit_error(ddp_config.output_id, e, &app);
+                    events.render_error(ddp_config.output_id, &e);
                 } else {
-                    Self::clear_error(ddp_config.output_id, &app);
+                    events.render_error_clear(ddp_config.output_id);
                 }
             }
 
@@ -325,22 +310,6 @@ impl DisplayLoopManager {
         }
 
         Ok(())
-    }
-
-    fn emit_error(output_id: u64, message: String, app: &AppHandle) {
-        let event = RenderErrorEvent {
-            output_id: output_id.to_string(),
-            message,
-        };
-        if let Err(e) = app.emit("render-error", event) {
-            log::error!("Failed to emit render error event: {e}");
-        }
-    }
-
-    fn clear_error(output_id: u64, app: &AppHandle) {
-        if let Err(e) = app.emit("render-error-clear", output_id.to_string()) {
-            log::error!("Failed to emit render error clear event: {e}");
-        }
     }
 }
 
