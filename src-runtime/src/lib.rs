@@ -3,4 +3,8 @@ pub mod audio_analysis;
 #[cfg(feature = "visualizer")]
 pub mod ddp;
 pub mod sacn;
+#[cfg(not(target_os = "ios"))]
+pub mod serial;
+#[cfg(feature = "visualizer")]
+pub mod shader;
 pub mod wled;

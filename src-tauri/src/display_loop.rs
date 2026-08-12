@@ -13,7 +13,7 @@ use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
 
 use dmx_runtime::ddp::DdpState;
-use crate::shader::ShaderState;
+use dmx_runtime::shader::ShaderState;
 
 const DEFAULT_DISPLAY_FPS: u32 = 30;
 /// FPS for emitting display render events to frontend for visualization.

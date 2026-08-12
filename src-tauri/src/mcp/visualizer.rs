@@ -17,7 +17,7 @@ use tauri::Manager;
 
 use super::AppMcp;
 use super::utils::{self, json_result};
-use crate::shader::ShaderState;
+use dmx_runtime::shader::ShaderState;
 
 /// Visualizer-specific helpers on the shared [`AppMcp`] server.
 impl AppMcp {
