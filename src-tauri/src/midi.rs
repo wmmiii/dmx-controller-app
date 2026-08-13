@@ -249,8 +249,7 @@ fn connect_midi_internal(state: &MidiState, candidate: MidiPortCandidate) -> Res
         .find(|p| {
             midi_input
                 .port_name(p)
-                .map(|name| name == candidate.name)
-                .unwrap_or(false)
+                .is_ok_and(|name| name == candidate.name)
         })
         .ok_or_else(|| {
             let name = &candidate.name;
@@ -310,8 +309,7 @@ fn connect_midi_internal(state: &MidiState, candidate: MidiPortCandidate) -> Res
     if let Some(output_port) = output_ports.iter().find(|p| {
         midi_output
             .port_name(p)
-            .map(|name| name == candidate.name)
-            .unwrap_or(false)
+            .is_ok_and(|name| name == candidate.name)
     }) {
         if let Ok(conn) = midi_output.connect(output_port, "dmx-controller-output") {
             let mut out = output_connection

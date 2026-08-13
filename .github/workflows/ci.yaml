@@ -17,6 +17,9 @@ jobs:
       - name: Generate protobufs
         run: pnpm run proto:generate
 
+      - name: Build WASM engine
+        run: pnpm run wasm:build
+
       - name: Type check
         run: pnpm run type-check
 

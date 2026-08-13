@@ -110,7 +110,6 @@ export function DmxUniverse({
           let channelDescriptions: JSX.Element;
 
           if (ciArray.length > 1) {
-            classes.push(styles.warning);
             channelDescriptions = (
               <div className={styles.collisionWarning}>
                 Collision:
@@ -144,6 +143,7 @@ export function DmxUniverse({
               key={i}
               className={clsx(styles.channel, {
                 [styles.startChannel]: fixtureStartCi,
+                [styles.warning]: ciArray.length > 1,
               })}
               id={fixtureStartCi?.startChannel?.id}
               element={fixtureStartCi?.startChannel}

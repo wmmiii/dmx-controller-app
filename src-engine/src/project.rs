@@ -198,7 +198,7 @@ pub fn redo() -> Result<UndoRedoResult, String> {
 
     let result = UndoRedoResult {
         project_binary: next_state.project_state.clone(),
-        description: format!("Redo: {}", &next_state.description),
+        description: format!("Redo: {}", next_state.description),
     };
 
     state.project = project;
