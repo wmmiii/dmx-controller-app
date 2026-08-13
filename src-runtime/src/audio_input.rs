@@ -6,11 +6,11 @@ use std::sync::Arc;
 use std::sync::Mutex as StdMutex;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
-use tauri::{AppHandle, Emitter, Manager};
 use tokio::sync::Mutex;
 
-use dmx_runtime::audio_analysis::FftAnalyzer;
+use crate::audio_analysis::FftAnalyzer;
 use crate::beat::SharedBeatSampler;
+use crate::events::EventSink;
 
 /// Suppress ALSA and JACK error messages during audio device enumeration.
 #[cfg(target_os = "linux")]
@@ -76,11 +76,6 @@ pub struct AudioInputDevice {
     name: String,
 }
 
-#[derive(Serialize, Clone)]
-struct AudioDeviceListChangedEvent {
-    devices: Vec<AudioInputDevice>,
-}
-
 pub struct AudioInputState {
     /// Sender to stop the stream thread. Dropping or sending stops the stream.
     stream_stop_tx: StdMutex<Option<std::sync::mpsc::Sender<()>>>,
@@ -97,19 +92,21 @@ pub struct AudioInputState {
     /// bits in an `AtomicU32` for lock-free reads on the realtime audio thread.
     /// Updated by the watcher loop from `project.audio_input_gain_db`.
     gain_linear: Arc<AtomicU32>,
-    app_handle: StdMutex<Option<AppHandle>>,
+    events: Arc<dyn EventSink>,
+    beat_sampler: SharedBeatSampler,
     watcher_cancel_tx: StdMutex<Option<tokio::sync::watch::Sender<bool>>>,
 }
 
 impl AudioInputState {
-    pub fn new(app_handle: AppHandle) -> Self {
+    pub fn new(events: Arc<dyn EventSink>, beat_sampler: SharedBeatSampler) -> Self {
         Self {
             stream_stop_tx: StdMutex::new(None),
             stream_thread: StdMutex::new(None),
             stream_emit_flag: StdMutex::new(None),
             active_device: StdMutex::new(None),
             gain_linear: Arc::new(AtomicU32::new(1.0f32.to_bits())),
-            app_handle: StdMutex::new(Some(app_handle)),
+            events,
+            beat_sampler,
             watcher_cancel_tx: StdMutex::new(None),
         }
     }
@@ -123,7 +120,7 @@ impl AudioInputState {
             });
             *watcher = Some(cancel_tx);
         }
-        tauri::async_runtime::spawn(async move {
+        tokio::spawn(async move {
             Self::device_watcher_loop(state, cancel_rx).await;
         });
         log::info!("Audio input device watcher started");
@@ -147,16 +144,7 @@ impl AudioInputState {
                 // Emit device list changes to frontend
                 if current_names != known_devices {
                     let audio_state = state.lock().await;
-                    if let Ok(handle_guard) = audio_state.app_handle.lock()
-                        && let Some(app_handle) = handle_guard.as_ref()
-                    {
-                        let _ = app_handle.emit(
-                            "audio-device-list-changed",
-                            &AudioDeviceListChangedEvent {
-                                devices: current_devices,
-                            },
-                        );
-                    }
+                    audio_state.events.audio_devices_changed(&current_names);
                     known_devices.clone_from(&current_names);
                 }
 
@@ -264,7 +252,6 @@ impl AudioInputState {
     }
 }
 
-#[tauri::command]
 pub fn list_audio_inputs() -> Result<Vec<AudioInputDevice>, String> {
     let host = get_audio_host();
     let devices = host.input_devices().map_err(|e| e.to_string())?;
@@ -283,15 +270,10 @@ pub fn list_audio_inputs() -> Result<Vec<AudioInputDevice>, String> {
 /// Called whenever the audio stream stops so manual tap tempo becomes
 /// available again.
 fn end_audio_beat(state: &AudioInputState) {
-    if let Ok(handle_guard) = state.app_handle.lock()
-        && let Some(app_handle) = handle_guard.as_ref()
-    {
-        let beat_sampler = app_handle.state::<SharedBeatSampler>();
-        if let Ok(mut sampler) = beat_sampler.lock() {
-            sampler.audio_active = false;
-        }
-        let _ = app_handle.emit("audio-beat-active", false);
+    if let Ok(mut sampler) = state.beat_sampler.lock() {
+        sampler.set_audio_active(false);
     }
+    state.events.audio_beat_active(false);
 }
 
 /// Stop the current stream thread by:
@@ -343,21 +325,15 @@ fn stop_stream(state: &AudioInputState) {
 fn start_stream(state: &AudioInputState, device_name: &str) -> Result<(), String> {
     stop_stream(state);
 
-    let app_handle = state
-        .app_handle
-        .lock()
-        .map_err(|e| format!("Failed to lock app handle: {e}"))?
-        .as_ref()
-        .ok_or("App handle not initialized")?
-        .clone();
+    let events = Arc::clone(&state.events);
 
     // Activate audio beat mode: manual tap commands will be ignored until the
     // stream stops and end_audio_beat() is called.
-    let beat_sampler: SharedBeatSampler = Arc::clone(&*app_handle.state::<SharedBeatSampler>());
+    let beat_sampler = Arc::clone(&state.beat_sampler);
     if let Ok(mut sampler) = beat_sampler.lock() {
-        sampler.audio_active = true;
+        sampler.set_audio_active(true);
     }
-    let _ = app_handle.emit("audio-beat-active", true);
+    events.audio_beat_active(true);
 
     // Create a fresh emit gate for this stream. The callback holds a clone and
     // checks it before emitting; stop_stream() sets it to false.
@@ -378,7 +354,7 @@ fn start_stream(state: &AudioInputState, device_name: &str) -> Result<(), String
         .spawn(move || {
             if let Err(e) = run_stream_thread(
                 &device_name_owned,
-                app_handle,
+                events,
                 &stop_rx,
                 beat_sampler,
                 emit_flag,
@@ -404,7 +380,7 @@ fn start_stream(state: &AudioInputState, device_name: &str) -> Result<(), String
 /// Runs on a dedicated thread. Creates the cpal stream and blocks until stop signal.
 fn run_stream_thread(
     device_name: &str,
-    app_handle: AppHandle,
+    events: Arc<dyn EventSink>,
     stop_rx: &std::sync::mpsc::Receiver<()>,
     beat_sampler: SharedBeatSampler,
     emit_flag: Arc<AtomicBool>,
@@ -439,7 +415,7 @@ fn run_stream_thread(
             build_input_stream::<$t>(
                 &device,
                 &config_stream,
-                app_handle,
+                events,
                 sample_rate,
                 channels,
                 beat_sampler,
@@ -477,7 +453,7 @@ fn run_stream_thread(
 fn build_input_stream<T: cpal::SizedSample + Send + 'static>(
     device: &cpal::Device,
     config: &cpal::StreamConfig,
-    app_handle: AppHandle,
+    events: Arc<dyn EventSink>,
     sample_rate: u32,
     channels: usize,
     beat_sampler: SharedBeatSampler,
@@ -532,10 +508,10 @@ where
                                 .map(|d| d.as_millis() as u64)
                             && let Ok(mut sampler) = beat_sampler.lock()
                         {
-                            sampler.add_sample(&app_handle, t);
+                            crate::beat::add_sample(&mut sampler, events.as_ref(), t);
                         }
 
-                        let _ = app_handle.emit("audio-input-analysis", &analysis);
+                        events.audio_analysis(&analysis);
                         dmx_engine::audio::update_audio_analysis(analysis);
                     }
                 }

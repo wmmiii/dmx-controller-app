@@ -107,6 +107,7 @@ pub struct BeatSampler {
     /// Counts consecutive samples rejected by phase-locking. When this exceeds
     /// [`PHASE_REJECT_LIMIT`], the sampler resets to allow tempo changes.
     consecutive_rejects: u32,
+    audio_active: bool,
 }
 
 impl BeatSampler {
@@ -116,7 +117,19 @@ impl BeatSampler {
             samples: Vec::new(),
             beat_count: 0,
             consecutive_rejects: 0,
+            audio_active: false,
         }
+    }
+
+    pub fn set_audio_active(&mut self, active: bool) {
+        self.audio_active = active;
+    }
+
+    /// Taps are refused while automatic detection owns the sampler, so the two
+    /// sources cannot interleave into one tempo estimate.
+    #[must_use]
+    pub fn accepts_taps(&self) -> bool {
+        !self.audio_active
     }
 
     /// Records a new beat timestamp and advances the rolling window.

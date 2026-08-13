@@ -1,18 +1,17 @@
-use dmx_engine::project::{self, UndoState};
+use dmx_engine::project;
 use dmx_engine::proto::FatProject;
 use dmx_engine::tile::toggle_tile as engine_toggle_tile;
 use dmx_engine::visualizer::utils as visualizer_utils;
-use serde::Serialize;
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex as StdMutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use tauri::{AppHandle, Emitter, Manager, State};
+use tauri::{AppHandle, Manager, State};
 use tokio::sync::Mutex as TokioMutex;
 use tokio::task::JoinHandle;
 
 use crate::cas::{read_cas_bytes, write_cas_bytes};
+use crate::event_sink::{UndoStatePayload, emit_project_update, emit_undo_state};
 use dmx_runtime::ddp::DdpState;
 use dmx_runtime::display_loop::DisplayLoopManager;
 use dmx_runtime::output_loop::OutputLoopManager;
@@ -20,21 +19,6 @@ use dmx_runtime::sacn::SacnState;
 use dmx_runtime::serial::SerialState;
 use dmx_runtime::shader::ShaderState;
 use dmx_runtime::wled::WledState;
-
-// =============================================================================
-// Flow control for project updates to frontend
-// =============================================================================
-//
-// This prevents overwhelming the frontend with rapid updates (e.g., from MIDI).
-//
-// Protocol:
-// 1. Frontend signals "ready" when it can accept an update
-// 2. Backend sets "dirty" when project changes via mark_project_dirty_and_maybe_emit
-// 3. When both flags are set, we send an update and clear both
-// 4. Frontend signals "ready" again after processing
-
-static PROJECT_DIRTY: AtomicBool = AtomicBool::new(false);
-static FRONTEND_READY: AtomicBool = AtomicBool::new(true); // Start ready for initial update
 
 const PROJECT_KEY: &str = "tmp-project-1";
 const DEBOUNCE_MS: u64 = 1000;
@@ -146,79 +130,6 @@ pub async fn emit_and_persist(
     // Schedule new flush and store the handle
     let handle = schedule_flush(persist_state);
     state.debounce_handle = Some(handle);
-
-    Ok(())
-}
-
-/// Payload for the project-updated event.
-#[derive(Clone, Serialize)]
-struct ProjectUpdatedPayload {
-    project_binary: Vec<u8>,
-}
-
-/// Payload for the undo-state-changed event
-#[derive(Clone, Serialize)]
-pub struct UndoStatePayload {
-    can_undo: bool,
-    can_redo: bool,
-    undo_description: Option<String>,
-    redo_description: Option<String>,
-}
-
-impl From<UndoState> for UndoStatePayload {
-    fn from(state: UndoState) -> Self {
-        UndoStatePayload {
-            can_undo: state.can_undo,
-            can_redo: state.can_redo,
-            undo_description: state.undo_description,
-            redo_description: state.redo_description,
-        }
-    }
-}
-
-/// Emits a project-updated event (low-level, called when frontend is ready).
-fn emit_project_update_impl(app: &AppHandle) {
-    if let Ok(project_binary) = project::get() {
-        let _ = app.emit("project-updated", ProjectUpdatedPayload { project_binary });
-    }
-}
-
-/// Emits undo-state-changed event. Called separately from project updates
-/// since undo state changes are infrequent and should be immediate.
-fn emit_undo_state(app: &AppHandle) {
-    if let Ok(undo_state) = project::get_undo_state() {
-        let _ = app.emit("undo-state-changed", UndoStatePayload::from(undo_state));
-    }
-}
-
-/// Marks the project as dirty and emits update if frontend is ready.
-/// This is the single entry point for all project update emissions.
-pub fn emit_project_update(app_handle: &AppHandle) {
-    // Set dirty flag
-    PROJECT_DIRTY.store(true, Ordering::Release);
-
-    // Check if frontend is ready (and clear the flag atomically if so)
-    if FRONTEND_READY.swap(false, Ordering::AcqRel) {
-        // Frontend was ready - send update now
-        PROJECT_DIRTY.store(false, Ordering::Release);
-        emit_project_update_impl(app_handle);
-    }
-    // Otherwise, update will be sent when frontend signals ready
-}
-
-/// Called by frontend when it's ready for the next project update.
-#[tauri::command]
-pub async fn frontend_ready_for_update(app: AppHandle) -> Result<(), String> {
-    // Set ready flag
-    FRONTEND_READY.store(true, Ordering::Release);
-
-    // Check if project is dirty (and clear the flag atomically if so)
-    if PROJECT_DIRTY.swap(false, Ordering::AcqRel) {
-        // Project was dirty - send update now
-        FRONTEND_READY.store(false, Ordering::Release);
-        emit_project_update_impl(&app);
-    }
-    // Otherwise, update will be sent when project changes
 
     Ok(())
 }
