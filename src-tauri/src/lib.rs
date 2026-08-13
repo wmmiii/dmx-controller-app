@@ -6,17 +6,11 @@ mod mcp;
 mod project;
 mod render;
 
-use dmx_engine::beat::BeatSampler;
-use dmx_runtime::beat::SharedBeatSampler;
-use dmx_runtime::display_loop::DisplayLoopManager;
 use dmx_runtime::events::EventSink;
-use dmx_runtime::output_loop::OutputLoopManager;
-use dmx_runtime::serial::SerialState;
-use dmx_runtime::{ddp::DdpState, sacn::SacnState, shader::ShaderState, wled::WledState};
+use dmx_runtime::project_store::DiskProjectStore;
+use dmx_runtime::runtime::{Runtime, RuntimeConfig};
 use std::sync::Arc;
-use std::sync::Mutex as StdMutex;
 use tauri::{Manager, RunEvent};
-use tokio::sync::Mutex;
 
 #[cfg(desktop)]
 use tauri_plugin_keepawake::TauriPluginKeepawakeExt;
@@ -73,122 +67,31 @@ pub fn run() {
                 )?;
             }
 
-            // Get app data dir for persistence
+            let to_setup_error =
+                |e: String| Box::new(std::io::Error::other(e)) as Box<dyn std::error::Error>;
+
             let app_data_dir = app
                 .path()
                 .app_data_dir()
                 .map_err(|e| format!("Failed to get app data dir: {e}"))
-                .map_err(|e| Box::new(std::io::Error::other(e)) as Box<dyn std::error::Error>)?;
+                .map_err(to_setup_error)?;
 
-            // Load project from disk into engine
-            project::load_from_disk(app.handle())
-                .map_err(|e| Box::new(std::io::Error::other(e)) as Box<dyn std::error::Error>)?;
-
-            // Create and manage PersistState for debounced writes
-            let persist_state = project::PersistState::new(app_data_dir);
-            app.manage(Arc::new(Mutex::new(persist_state)));
+            let store = Arc::new(DiskProjectStore::new(&app_data_dir));
+            store.load().map_err(to_setup_error)?;
 
             let events: Arc<dyn EventSink> =
                 Arc::new(event_sink::TauriEventSink::new(app.handle().clone()));
 
-            let shared_beat_sampler: SharedBeatSampler =
-                Arc::new(StdMutex::new(BeatSampler::default()));
+            let runtime = tauri::async_runtime::block_on(Runtime::start(RuntimeConfig {
+                events,
+                persist: Some(store),
+                enable_visualizer: true,
+                enable_audio: true,
+                enable_midi: true,
+            }))
+            .map_err(to_setup_error)?;
 
-            app.manage(shared_beat_sampler.clone());
-
-            #[cfg(desktop)]
-            {
-                let midi_state = dmx_runtime::midi::MidiState::new(
-                    Arc::clone(&events),
-                    shared_beat_sampler.clone(),
-                );
-                let midi_state_arc = Arc::new(Mutex::new(midi_state));
-
-                // Start the MIDI device watcher for auto-reconnect
-                {
-                    let state_clone = midi_state_arc.clone();
-                    let midi = midi_state_arc.blocking_lock();
-                    midi.start_device_watcher(state_clone);
-                }
-
-                app.manage(midi_state_arc);
-            }
-
-            #[cfg(desktop)]
-            {
-                let audio_input_state = dmx_runtime::audio_input::AudioInputState::new(
-                    Arc::clone(&events),
-                    shared_beat_sampler.clone(),
-                );
-                let audio_input_state_arc = Arc::new(Mutex::new(audio_input_state));
-                {
-                    let state_clone = audio_input_state_arc.clone();
-                    let audio = audio_input_state_arc.blocking_lock();
-                    audio.start_device_watcher(state_clone);
-                }
-                app.manage(audio_input_state_arc);
-            }
-
-            let serial_state = SerialState::default();
-            let serial_state_arc = Arc::new(Mutex::new(serial_state));
-
-            #[cfg(desktop)]
-            {
-                // Start the port watcher for auto-binding.
-                let state_clone = serial_state_arc.clone();
-                let serial = serial_state_arc.blocking_lock();
-                serial.start_port_watcher(state_clone);
-            }
-
-            app.manage(serial_state_arc);
-
-            let sacn_state = SacnState::new()
-                .map_err(|e| Box::new(std::io::Error::other(e)) as Box<dyn std::error::Error>)?;
-            app.manage(Arc::new(Mutex::new(sacn_state)));
-
-            let wled_state = WledState::new()
-                .map_err(|e| Box::new(std::io::Error::other(e)) as Box<dyn std::error::Error>)?;
-            app.manage(Arc::new(Mutex::new(wled_state)));
-
-            let ddp_state = DdpState::default();
-            let ddp_state_arc = Arc::new(Mutex::new(ddp_state));
-            app.manage(ddp_state_arc.clone());
-
-            // Initialize the GPU shader state for visualizer rendering.
-            let shader_state = match tauri::async_runtime::block_on(ShaderState::new()) {
-                Ok(shader_state) => {
-                    let shader_state_arc = Arc::new(StdMutex::new(shader_state));
-                    app.manage(shader_state_arc.clone());
-
-                    // Sync user visualizers from the loaded project so they're
-                    // compiled before the display loop starts rendering.
-                    dmx_runtime::shader::sync_visualizer_shaders(&shader_state_arc);
-                    Some(shader_state_arc)
-                }
-                Err(e) => {
-                    log::error!("Failed to initialize GPU shader state: {e}");
-                    None
-                }
-            };
-
-            let display_loop_manager = DisplayLoopManager::new(Arc::clone(&events), shader_state);
-            let display_loop_manager_arc = Arc::new(Mutex::new(display_loop_manager));
-            app.manage(display_loop_manager_arc.clone());
-
-            // Start display loop for loaded project (handles all displays and DDP outputs)
-            DisplayLoopManager::start_on_load(display_loop_manager_arc, ddp_state_arc);
-
-            let output_loop_manager = OutputLoopManager::new(events);
-            let output_loop_manager_arc = Arc::new(Mutex::new(output_loop_manager));
-            app.manage(output_loop_manager_arc.clone());
-
-            // Start output loops for loaded project (Serial, sACN, WLED - DDP is handled by display loop)
-            OutputLoopManager::start_on_load(
-                output_loop_manager_arc,
-                app.state::<Arc<Mutex<SerialState>>>().inner().clone(),
-                app.state::<Arc<Mutex<SacnState>>>().inner().clone(),
-                app.state::<Arc<Mutex<WledState>>>().inner().clone(),
-            );
+            app.manage(runtime);
 
             // Prevent the system from sleeping while the app is running so that
             // output is never interrupted by idle sleep.
@@ -252,13 +155,10 @@ pub fn run() {
 
     // Run app with exit handler to flush pending writes
     app.run(|app_handle, event| {
-        if let RunEvent::Exit = event {
-            // Flush any pending writes before exit
-            if let Some(persist_state) = app_handle.try_state::<Arc<Mutex<project::PersistState>>>()
-            {
-                let mut state = persist_state.blocking_lock();
-                state.flush_sync();
-            }
+        if let RunEvent::Exit = event
+            && let Some(runtime) = app_handle.try_state::<Arc<Runtime>>()
+        {
+            runtime.flush_persist();
         }
     });
 }

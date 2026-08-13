@@ -113,7 +113,7 @@ fn emit_project_update_impl(app: &AppHandle) {
 
 /// Emits undo-state-changed event. Called separately from project updates
 /// since undo state changes are infrequent and should be immediate.
-pub fn emit_undo_state(app: &AppHandle) {
+fn emit_undo_state(app: &AppHandle) {
     if let Ok(undo_state) = project::get_undo_state() {
         emit(app, "undo-state-changed", UndoStatePayload::from(undo_state));
     }
@@ -121,7 +121,7 @@ pub fn emit_undo_state(app: &AppHandle) {
 
 /// Marks the project as dirty and emits update if frontend is ready.
 /// This is the single entry point for all project update emissions.
-pub fn emit_project_update(app: &AppHandle) {
+fn emit_project_update(app: &AppHandle) {
     PROJECT_DIRTY.store(true, Ordering::Release);
 
     // Check if frontend is ready (and clear the flag atomically if so)
@@ -205,6 +205,10 @@ impl EventSink for TauriEventSink {
 
     fn project_updated(&self) {
         emit_project_update(&self.app);
+    }
+
+    fn undo_state_changed(&self) {
+        emit_undo_state(&self.app);
     }
 
     fn beat_sampled(&self) {

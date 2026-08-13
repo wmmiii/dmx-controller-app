@@ -3,9 +3,9 @@ use dmx_engine::proto::Project;
 use rmcp::ErrorData;
 use rmcp::model::{CallToolResult, ContentBlock};
 use serde_json::Value;
-use tauri::AppHandle;
-
-use crate::project::save_project_internal;
+use dmx_runtime::runtime::Runtime;
+use std::sync::Arc;
+use tauri::{AppHandle, Manager};
 
 /// Serialize any JSON value into a pretty-printed text [`CallToolResult`]. The
 /// standard success shape for every tool's response.
@@ -32,7 +32,9 @@ where
     // a bad request (missing id, failed consistency check) the agent can act on.
     project::save(&description, true, f).map_err(|e| ErrorData::invalid_params(e, None))?;
 
-    save_project_internal(app)
+    let runtime = app.state::<Arc<Runtime>>().inner().clone();
+    runtime
+        .persist_and_rebuild()
         .await
         .map_err(|e| ErrorData::internal_error(e, None))
 }
