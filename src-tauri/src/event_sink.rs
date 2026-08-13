@@ -98,10 +98,16 @@ impl From<UndoState> for UndoStatePayload {
     }
 }
 
+fn emit<S: Serialize + Clone>(app: &AppHandle, event: &str, payload: S) {
+    if let Err(e) = app.emit(event, payload) {
+        log::error!("Failed to emit {event}: {e}");
+    }
+}
+
 /// Emits a project-updated event (low-level, called when frontend is ready).
 fn emit_project_update_impl(app: &AppHandle) {
     if let Ok(project_binary) = project::get() {
-        let _ = app.emit("project-updated", ProjectUpdatedPayload { project_binary });
+        emit(app, "project-updated", ProjectUpdatedPayload { project_binary });
     }
 }
 
@@ -109,7 +115,7 @@ fn emit_project_update_impl(app: &AppHandle) {
 /// since undo state changes are infrequent and should be immediate.
 pub fn emit_undo_state(app: &AppHandle) {
     if let Ok(undo_state) = project::get_undo_state() {
-        let _ = app.emit("undo-state-changed", UndoStatePayload::from(undo_state));
+        emit(app, "undo-state-changed", UndoStatePayload::from(undo_state));
     }
 }
 
@@ -146,53 +152,55 @@ impl TauriEventSink {
     pub fn new(app: AppHandle) -> Self {
         Self { app }
     }
+
+    fn emit<S: Serialize + Clone>(&self, event: &str, payload: S) {
+        emit(&self.app, event, payload);
+    }
 }
 
 impl EventSink for TauriEventSink {
     fn dmx_render(&self, output_id: u64, data: &[u8]) {
-        let event = DmxRenderEvent {
-            output_id: output_id.to_string(),
-            data: data.to_vec(),
-        };
-        if let Err(e) = self.app.emit("dmx-render", event) {
-            log::error!("Failed to emit DMX render event: {e}");
-        }
+        self.emit(
+            "dmx-render",
+            DmxRenderEvent {
+                output_id: output_id.to_string(),
+                data: data.to_vec(),
+            },
+        );
     }
 
     fn wled_render(&self, output_id: u64, target: &WledRenderTarget) {
-        let event = WledRenderEvent {
-            output_id: output_id.to_string(),
-            data: target.encode_to_vec(),
-        };
-        if let Err(e) = self.app.emit("wled-render", event) {
-            log::error!("Failed to emit WLED render event: {e}");
-        }
+        self.emit(
+            "wled-render",
+            WledRenderEvent {
+                output_id: output_id.to_string(),
+                data: target.encode_to_vec(),
+            },
+        );
     }
 
     fn display_render(&self, display_id: u64, buffer: &DisplayBuffer) {
-        let event = DisplayRenderEvent {
-            display_id: display_id.to_string(),
-            data: buffer.downsample(MAX_VISUALIZATION_SIZE).encode_to_vec(),
-        };
-        if let Err(e) = self.app.emit("display-render", event) {
-            log::error!("Failed to emit display render event: {e}");
-        }
+        self.emit(
+            "display-render",
+            DisplayRenderEvent {
+                display_id: display_id.to_string(),
+                data: buffer.downsample(MAX_VISUALIZATION_SIZE).encode_to_vec(),
+            },
+        );
     }
 
     fn render_error(&self, output_id: u64, message: &str) {
-        let event = RenderErrorEvent {
-            output_id: output_id.to_string(),
-            message: message.to_string(),
-        };
-        if let Err(e) = self.app.emit("render-error", event) {
-            log::error!("Failed to emit render error event: {e}");
-        }
+        self.emit(
+            "render-error",
+            RenderErrorEvent {
+                output_id: output_id.to_string(),
+                message: message.to_string(),
+            },
+        );
     }
 
     fn render_error_clear(&self, output_id: u64) {
-        if let Err(e) = self.app.emit("render-error-clear", output_id.to_string()) {
-            log::error!("Failed to emit render error clear event: {e}");
-        }
+        self.emit("render-error-clear", output_id.to_string());
     }
 
     fn project_updated(&self) {
@@ -200,46 +208,46 @@ impl EventSink for TauriEventSink {
     }
 
     fn beat_sampled(&self) {
-        if let Err(e) = self.app.emit("beat-sampling-state", true) {
-            log::error!("Failed to emit beat sampling state event: {e}");
-        }
+        self.emit("beat-sampling-state", true);
     }
 
     fn midi_message(&self, device_name: &str, data: &[u8]) {
-        let event = MidiMessage {
-            device_name: device_name.to_string(),
-            data: data.to_vec(),
-        };
-        if let Err(e) = self.app.emit("midi-message", &event) {
-            log::error!("Failed to emit MIDI event: {e}");
-        }
+        self.emit(
+            "midi-message",
+            MidiMessage {
+                device_name: device_name.to_string(),
+                data: data.to_vec(),
+            },
+        );
     }
 
     fn midi_connection_status(&self, controller_name: &str, connected: bool) {
-        let event = MidiConnectionStatusEvent {
-            controller_name: controller_name.to_string(),
-            connected,
-        };
-        if let Err(e) = self.app.emit("midi-connection-status", &event) {
-            log::error!("Failed to emit midi-connection-status event: {e}");
-        }
+        self.emit(
+            "midi-connection-status",
+            MidiConnectionStatusEvent {
+                controller_name: controller_name.to_string(),
+                connected,
+            },
+        );
     }
 
     fn audio_devices_changed(&self, device_names: &[String]) {
-        let event = AudioDeviceListChangedEvent {
-            devices: device_names
-                .iter()
-                .map(|name| AudioInputDevice { name: name.clone() })
-                .collect(),
-        };
-        let _ = self.app.emit("audio-device-list-changed", &event);
+        self.emit(
+            "audio-device-list-changed",
+            AudioDeviceListChangedEvent {
+                devices: device_names
+                    .iter()
+                    .map(|name| AudioInputDevice { name: name.clone() })
+                    .collect(),
+            },
+        );
     }
 
     fn audio_beat_active(&self, active: bool) {
-        let _ = self.app.emit("audio-beat-active", active);
+        self.emit("audio-beat-active", active);
     }
 
     fn audio_analysis(&self, analysis: &AudioAnalysis) {
-        let _ = self.app.emit("audio-input-analysis", analysis);
+        self.emit("audio-input-analysis", analysis);
     }
 }
