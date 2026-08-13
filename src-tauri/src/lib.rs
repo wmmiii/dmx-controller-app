@@ -1,16 +1,13 @@
-#[cfg(desktop)]
-mod audio_input;
-mod beat;
 mod cas;
 mod commands;
 mod event_sink;
 #[cfg(desktop)]
 mod mcp;
-#[cfg(desktop)]
-mod midi;
 mod project;
 mod render;
 
+use dmx_engine::beat::BeatSampler;
+use dmx_runtime::beat::SharedBeatSampler;
 use dmx_runtime::display_loop::DisplayLoopManager;
 use dmx_runtime::events::EventSink;
 use dmx_runtime::output_loop::OutputLoopManager;
@@ -43,7 +40,7 @@ pub fn run() {
 
     // Suppress ALSA/JACK error messages on Linux before audio device enumeration.
     #[cfg(desktop)]
-    audio_input::suppress_audio_lib_errors();
+    dmx_runtime::audio_input::suppress_audio_lib_errors();
 
     let builder = tauri::Builder::default();
 
@@ -91,15 +88,20 @@ pub fn run() {
             let persist_state = project::PersistState::new(app_data_dir);
             app.manage(Arc::new(Mutex::new(persist_state)));
 
-            let shared_beat_sampler: beat::SharedBeatSampler =
-                Arc::new(StdMutex::new(beat::TauriBeatSampler::new()));
+            let events: Arc<dyn EventSink> =
+                Arc::new(event_sink::TauriEventSink::new(app.handle().clone()));
+
+            let shared_beat_sampler: SharedBeatSampler =
+                Arc::new(StdMutex::new(BeatSampler::default()));
 
             app.manage(shared_beat_sampler.clone());
 
             #[cfg(desktop)]
             {
-                let midi_state =
-                    midi::MidiState::new(app.handle().clone(), shared_beat_sampler.clone());
+                let midi_state = dmx_runtime::midi::MidiState::new(
+                    Arc::clone(&events),
+                    shared_beat_sampler.clone(),
+                );
                 let midi_state_arc = Arc::new(Mutex::new(midi_state));
 
                 // Start the MIDI device watcher for auto-reconnect
@@ -114,7 +116,10 @@ pub fn run() {
 
             #[cfg(desktop)]
             {
-                let audio_input_state = audio_input::AudioInputState::new(app.handle().clone());
+                let audio_input_state = dmx_runtime::audio_input::AudioInputState::new(
+                    Arc::clone(&events),
+                    shared_beat_sampler.clone(),
+                );
                 let audio_input_state_arc = Arc::new(Mutex::new(audio_input_state));
                 {
                     let state_clone = audio_input_state_arc.clone();
@@ -166,9 +171,6 @@ pub fn run() {
                 }
             };
 
-            let events: Arc<dyn EventSink> =
-                Arc::new(event_sink::TauriEventSink::new(app.handle().clone()));
-
             let display_loop_manager = DisplayLoopManager::new(Arc::clone(&events), shader_state);
             let display_loop_manager_arc = Arc::new(Mutex::new(display_loop_manager));
             app.manage(display_loop_manager_arc.clone());
@@ -211,17 +213,17 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            beat::add_beat_sample,
-            beat::set_first_beat,
-            beat::set_bpm,
+            commands::add_beat_sample,
+            commands::set_first_beat,
+            commands::set_bpm,
             #[cfg(desktop)]
-            audio_input::list_audio_inputs,
+            commands::list_audio_inputs,
             #[cfg(desktop)]
-            midi::connect_midi,
+            commands::connect_midi,
             #[cfg(desktop)]
-            midi::disconnect_midi,
+            commands::disconnect_midi,
             #[cfg(desktop)]
-            midi::list_midi_inputs,
+            commands::list_midi_inputs,
             project::save_project,
             project::update_project,
             project::undo_project,
@@ -243,7 +245,7 @@ pub fn run() {
             commands::list_ports,
             #[cfg(desktop)]
             mcp::bridge::mcp_frontend_response,
-            project::frontend_ready_for_update,
+            commands::frontend_ready_for_update,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");
