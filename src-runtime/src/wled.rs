@@ -41,27 +41,6 @@ fn segment_colors(segment: &Segment, color_palette: Option<&ColorPalette>) -> [[
     [color, color, color]
 }
 
-/// `fx` and `pal` are whatever the device supports — WLED documents them as
-/// `0..info.fxcount` and `0..info.palcount`, which we would have to query the
-/// device to know — so the project's values pass through as-is and WLED
-/// resolves them against what it actually has. `sx` and `bri` really are
-/// bytes, and those casts saturate.
-#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-fn to_wled_segment(
-    index: usize,
-    segment: &Segment,
-    color_palette: Option<&ColorPalette>,
-) -> WledSegment {
-    WledSegment {
-        id: index,
-        col: segment_colors(segment, color_palette),
-        fx: segment.effect,
-        sx: (segment.speed * 255.0).floor() as u8,
-        pal: segment.palette,
-        bri: (segment.brightness * 255.0).floor() as u8,
-    }
-}
-
 pub struct WledState {
     client: reqwest::Client,
 }
@@ -92,6 +71,10 @@ impl WledState {
         Ok(WledState { client })
     }
 
+    // fx and pal go out unnarrowed: WLED documents them as 0..info.fxcount and
+    // 0..info.palcount, so the ceiling is the device's and we would have to
+    // query it to know. sx and bri really are bytes, and those casts saturate.
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     pub(crate) async fn output_wled(
         &self,
         ip_address: &str,
@@ -103,8 +86,13 @@ impl WledState {
                 .segments
                 .iter()
                 .enumerate()
-                .map(|(index, segment)| {
-                    to_wled_segment(index, segment, wled_render_target.color_palette.as_ref())
+                .map(|(index, segment)| WledSegment {
+                    id: index,
+                    col: segment_colors(segment, wled_render_target.color_palette.as_ref()),
+                    fx: segment.effect,
+                    sx: (segment.speed * 255.0).floor() as u8,
+                    pal: segment.palette,
+                    bri: (segment.brightness * 255.0).floor() as u8,
                 })
                 .collect(),
         };
