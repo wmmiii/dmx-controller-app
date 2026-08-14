@@ -3,7 +3,7 @@ mod events;
 use clap::{Parser, ValueEnum};
 use dmx_engine::project;
 use dmx_engine::proto::render_mode::{Autopilot, Blackout, Mode};
-use dmx_engine::proto::{FatProject, RenderMode};
+use dmx_engine::proto::{self, FatProject};
 use dmx_engine::render::render::RENDER_MODE_REF;
 use dmx_runtime::runtime::{Runtime, RuntimeConfig};
 use log::LevelFilter;
@@ -19,7 +19,7 @@ use crate::events::LogEventSink;
 /// the default rates before the loops are torn down.
 const BLACKOUT_DRAIN: Duration = Duration::from_millis(250);
 
-/// Runs a DMX show without a display, for unattended installs.
+/// Renders a DMX project without a display, for unattended installs.
 #[derive(Parser)]
 #[command(name = "dmx-controller-headless", version)]
 struct Args {
@@ -27,9 +27,9 @@ struct Args {
     #[arg(long, value_name = "PATH")]
     project: PathBuf,
 
-    /// How the show is driven. The playlist comes from the project itself.
+    /// Autopilot takes its playlist from the project itself.
     #[arg(long, value_enum)]
-    mode: ShowMode,
+    mode: RenderMode,
 
     /// Minimum level to log. The RUST_LOG env filter refines it per module.
     #[arg(long, default_value = "info", value_name = "LEVEL")]
@@ -50,7 +50,7 @@ struct Args {
 }
 
 #[derive(Clone, ValueEnum)]
-enum ShowMode {
+enum RenderMode {
     Autopilot,
 }
 
@@ -82,7 +82,7 @@ async fn run(args: Args) -> Result<(), String> {
     let playlist_id = load_project(&args.project)?;
 
     set_render_mode(match args.mode {
-        ShowMode::Autopilot => Mode::Autopilot(Autopilot { playlist_id }),
+        RenderMode::Autopilot => Mode::Autopilot(Autopilot { playlist_id }),
     })?;
 
     #[cfg(feature = "audio")]
@@ -154,7 +154,7 @@ fn set_render_mode(mode: Mode) -> Result<(), String> {
     let mut render_mode = RENDER_MODE_REF
         .lock()
         .map_err(|e| format!("Failed to lock render mode: {e}"))?;
-    *render_mode = RenderMode { mode: Some(mode) };
+    *render_mode = proto::RenderMode { mode: Some(mode) };
 
     Ok(())
 }
