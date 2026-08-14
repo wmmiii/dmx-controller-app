@@ -3,7 +3,7 @@ mod events;
 use clap::{Parser, ValueEnum};
 use dmx_engine::project;
 use dmx_engine::proto::render_mode::{Autopilot, Blackout, Mode};
-use dmx_engine::proto::{self, FatProject};
+use dmx_engine::proto::{self, FatProject, Project};
 use dmx_engine::render::render::RENDER_MODE_REF;
 use dmx_runtime::runtime::{Runtime, RuntimeConfig};
 use log::LevelFilter;
@@ -19,7 +19,7 @@ use crate::events::LogEventSink;
 /// the default rates before the loops are torn down.
 const BLACKOUT_DRAIN: Duration = Duration::from_millis(250);
 
-/// Renders a DMX project without a display, for unattended installs.
+/// Renders a DMX Controller App project without a display, for unattended installs.
 #[derive(Parser)]
 #[command(name = "dmx-controller-headless", version)]
 struct Args {
@@ -27,7 +27,7 @@ struct Args {
     #[arg(long, value_name = "PATH")]
     project: PathBuf,
 
-    /// Autopilot takes its playlist from the project itself.
+    /// The render mode.
     #[arg(long, value_enum)]
     mode: RenderMode,
 
@@ -79,11 +79,11 @@ async fn main() -> ExitCode {
 }
 
 async fn run(args: Args) -> Result<(), String> {
-    let playlist_id = load_project(&args.project)?;
+    let project = read_project(&args.project)?;
+    let render_mode = resolve_render_mode(&args.mode, &project)?;
 
-    set_render_mode(match args.mode {
-        RenderMode::Autopilot => Mode::Autopilot(Autopilot { playlist_id }),
-    })?;
+    project::load(project)?;
+    set_render_mode(render_mode)?;
 
     #[cfg(feature = "audio")]
     if !args.no_audio {
@@ -108,8 +108,7 @@ async fn run(args: Args) -> Result<(), String> {
     runtime.shutdown().await
 }
 
-/// Loads the project into the engine and returns the playlist to run.
-fn load_project(path: &Path) -> Result<u64, String> {
+fn read_project(path: &Path) -> Result<Project, String> {
     let file_bytes =
         std::fs::read(path).map_err(|e| format!("Failed to read {}: {e}", path.display()))?;
 
@@ -124,30 +123,32 @@ fn load_project(path: &Path) -> Result<u64, String> {
         .project
         .ok_or_else(|| format!("{} contains no project", path.display()))?;
 
-    let playlist_id = project.active_playlist;
-    if playlist_id == 0 {
-        return Err(format!(
-            "{} has no active playlist. Open it in the desktop app, select a playlist, and export again.",
-            path.display()
-        ));
+    log::info!("Loaded project \"{}\"", project.name);
+
+    Ok(project)
+}
+
+fn resolve_render_mode(mode: &RenderMode, project: &Project) -> Result<Mode, String> {
+    match mode {
+        RenderMode::Autopilot => {
+            let playlist_id = project.active_playlist;
+            if playlist_id == 0 {
+                return Err(
+                    "Project has no active playlist. Open it in the desktop app, select a playlist, and export again."
+                        .to_string(),
+                );
+            }
+
+            let playlist = project
+                .playlists
+                .get(&playlist_id)
+                .ok_or_else(|| format!("Active playlist {playlist_id} is not in the project"))?;
+
+            log::info!("Autopilot playlist \"{}\"", playlist.name);
+
+            Ok(Mode::Autopilot(Autopilot { playlist_id }))
+        }
     }
-
-    let playlist = project.playlists.get(&playlist_id).ok_or_else(|| {
-        format!(
-            "Active playlist {playlist_id} is not present in {}",
-            path.display()
-        )
-    })?;
-
-    log::info!(
-        "Loaded project \"{}\", playlist \"{}\"",
-        project.name,
-        playlist.name
-    );
-
-    project::load(project)?;
-
-    Ok(playlist_id)
 }
 
 fn set_render_mode(mode: Mode) -> Result<(), String> {
@@ -192,7 +193,7 @@ async fn wait_for_ctrl_c() {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use dmx_engine::proto::{Playlist, Project};
+    use dmx_engine::proto::Playlist;
     use std::collections::HashMap;
 
     struct Fixture(PathBuf);
@@ -202,17 +203,6 @@ mod tests {
             let path = std::env::temp_dir().join(format!("dmx-headless-{name}.dmxapp"));
             std::fs::write(&path, bytes).unwrap();
             Self(path)
-        }
-
-        fn of(project: Project, name: &str) -> Self {
-            Self::new(
-                name,
-                &FatProject {
-                    project: Some(project),
-                    cas: HashMap::new(),
-                }
-                .encode_to_vec(),
-            )
         }
     }
 
@@ -239,7 +229,7 @@ mod tests {
 
     #[test]
     fn reports_a_missing_file() {
-        let error = load_project(Path::new("/nonexistent/show.dmxapp")).unwrap_err();
+        let error = read_project(Path::new("/nonexistent/show.dmxapp")).unwrap_err();
         assert!(error.contains("Failed to read"), "{error}");
     }
 
@@ -247,46 +237,54 @@ mod tests {
     fn reports_an_absent_project() {
         let fixture = Fixture::new("absent-project", &FatProject::default().encode_to_vec());
 
-        let error = load_project(&fixture.0).unwrap_err();
+        let error = read_project(&fixture.0).unwrap_err();
         assert!(error.contains("contains no project"), "{error}");
     }
 
     #[test]
-    fn reports_an_unset_active_playlist() {
-        let fixture = Fixture::of(
-            Project {
-                active_playlist: 0,
-                ..project_with_playlist(7)
-            },
-            "unset-playlist",
+    fn reads_back_the_stored_project() {
+        let fixture = Fixture::new(
+            "valid",
+            &FatProject {
+                project: Some(project_with_playlist(7)),
+                cas: HashMap::new(),
+            }
+            .encode_to_vec(),
         );
 
-        let error = load_project(&fixture.0).unwrap_err();
+        assert_eq!(read_project(&fixture.0), Ok(project_with_playlist(7)));
+    }
+
+    #[test]
+    fn autopilot_reports_an_unset_active_playlist() {
+        let project = Project {
+            active_playlist: 0,
+            ..project_with_playlist(7)
+        };
+
+        let error = resolve_render_mode(&RenderMode::Autopilot, &project).unwrap_err();
         assert!(error.contains("no active playlist"), "{error}");
     }
 
     #[test]
-    fn reports_an_active_playlist_that_was_deleted() {
-        let fixture = Fixture::of(
-            Project {
-                playlists: HashMap::new(),
-                ..project_with_playlist(7)
-            },
-            "deleted-playlist",
-        );
+    fn autopilot_reports_an_active_playlist_that_was_deleted() {
+        let project = Project {
+            playlists: HashMap::new(),
+            ..project_with_playlist(7)
+        };
 
-        let error = load_project(&fixture.0).unwrap_err();
-        assert!(error.contains("Active playlist 7 is not present"), "{error}");
+        let error = resolve_render_mode(&RenderMode::Autopilot, &project).unwrap_err();
+        assert!(
+            error.contains("Active playlist 7 is not in the project"),
+            "{error}"
+        );
     }
 
     #[test]
-    fn loads_a_project_with_an_active_playlist() {
-        let fixture = Fixture::of(project_with_playlist(7), "valid");
-
-        assert_eq!(load_project(&fixture.0), Ok(7));
+    fn autopilot_selects_the_active_playlist() {
         assert_eq!(
-            project::with_project(|project| Ok(project.name.clone())),
-            Ok("Test Show".to_string())
+            resolve_render_mode(&RenderMode::Autopilot, &project_with_playlist(7)),
+            Ok(Mode::Autopilot(Autopilot { playlist_id: 7 }))
         );
     }
 }
