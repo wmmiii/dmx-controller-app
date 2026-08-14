@@ -41,11 +41,12 @@ struct OutputLoopHandle {
 
 pub struct OutputLoopManager {
     loops: Mutex<HashMap<u64, OutputLoopHandle>>,
-    /// Serializes whole reconciliations. `loops` alone cannot: `start_loop`
-    /// releases it between removing the old handle and inserting the new one,
-    /// so two concurrent rebuilds can both spawn a loop for one output and
-    /// leave the loser running untracked.
-    reconcile: Mutex<()>,
+    /// Held for the whole of `rebuild_all_loops` and `stop_all`. The `loops`
+    /// map alone is not enough: `start_loop` releases it between removing an
+    /// output's old handle and inserting its new one, so two overlapping
+    /// rebuilds can each spawn a loop for that output, and whichever inserts
+    /// first is overwritten and left running with nothing able to cancel it.
+    loop_rebuild: Mutex<()>,
     events: Arc<dyn EventSink>,
 }
 
@@ -53,7 +54,7 @@ impl OutputLoopManager {
     pub fn new(events: Arc<dyn EventSink>) -> Self {
         OutputLoopManager {
             loops: Mutex::new(HashMap::new()),
-            reconcile: Mutex::new(()),
+            loop_rebuild: Mutex::new(()),
             events,
         }
     }
@@ -142,7 +143,7 @@ impl OutputLoopManager {
     }
 
     pub async fn stop_all(&self) -> Result<(), String> {
-        let _reconcile = self.reconcile.lock().await;
+        let _guard = self.loop_rebuild.lock().await;
 
         let output_ids: Vec<u64> = self.loops.lock().await.keys().copied().collect();
         for output_id in output_ids {
@@ -157,7 +158,7 @@ impl OutputLoopManager {
         sacn_state: Arc<SacnState>,
         wled_state: Arc<WledState>,
     ) -> Result<(), String> {
-        let _reconcile = self.reconcile.lock().await;
+        let _guard = self.loop_rebuild.lock().await;
 
         // Extract desired outputs from project (avoid holding lock during async I/O)
         let desired_outputs: HashMap<u64, OutputType> = project::with_project(|project| {

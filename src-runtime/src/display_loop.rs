@@ -38,11 +38,12 @@ struct DisplayLoopConfig {
 
 pub struct DisplayLoopManager {
     display_loop: Mutex<Option<DisplayLoopHandle>>,
-    /// Serializes whole reconciliations. `display_loop` alone cannot: the
-    /// running check and the insert that follows it are separate acquisitions,
-    /// so two concurrent rebuilds can both start a loop and leave one of them
-    /// running untracked.
-    reconcile: Mutex<()>,
+    /// Held for the whole of `rebuild_display_loop` and `stop_display_loop`.
+    /// The `display_loop` slot alone is not enough: the running check and the
+    /// insert that follows it are separate acquisitions, so two overlapping
+    /// rebuilds can each start a loop, and whichever inserts first is
+    /// overwritten and left running with nothing able to cancel it.
+    loop_rebuild: Mutex<()>,
     events: Arc<dyn EventSink>,
     /// `None` when GPU initialization failed. Displays render black rather
     /// than taking the whole loop down with them.
@@ -56,7 +57,7 @@ impl DisplayLoopManager {
     ) -> Self {
         DisplayLoopManager {
             display_loop: Mutex::new(None),
-            reconcile: Mutex::new(()),
+            loop_rebuild: Mutex::new(()),
             events,
             shader_state,
         }
@@ -77,7 +78,7 @@ impl DisplayLoopManager {
         &self,
         ddp_state: Arc<Mutex<DdpState>>,
     ) -> Result<(), String> {
-        let _reconcile = self.reconcile.lock().await;
+        let _guard = self.loop_rebuild.lock().await;
 
         // Check if any enabled displays exist with mappings in the current patch
         let has_displays: bool = project::with_project(|project| {
@@ -92,7 +93,7 @@ impl DisplayLoopManager {
         .map_err(|e| format!("Failed to check displays: {e}"))?;
 
         if !has_displays {
-            return self.stop_locked().await;
+            return self.stop_display_loop_unguarded().await;
         }
 
         // The loop re-reads its display and DDP configuration from the project
@@ -118,7 +119,7 @@ impl DisplayLoopManager {
     /// This loop renders all displays in lock-step and outputs to all DDP devices.
     async fn start_display_loop(&self, ddp_state: Arc<Mutex<DdpState>>) -> Result<(), String> {
         // Stop existing display loop if running
-        self.stop_locked().await?;
+        self.stop_display_loop_unguarded().await?;
 
         let (cancel_tx, cancel_rx) = tokio::sync::watch::channel(false);
         let events = Arc::clone(&self.events);
@@ -141,11 +142,12 @@ impl DisplayLoopManager {
     }
 
     pub async fn stop_display_loop(&self) -> Result<(), String> {
-        let _reconcile = self.reconcile.lock().await;
-        self.stop_locked().await
+        let _guard = self.loop_rebuild.lock().await;
+        self.stop_display_loop_unguarded().await
     }
 
-    async fn stop_locked(&self) -> Result<(), String> {
+    /// Caller must already hold `loop_rebuild`.
+    async fn stop_display_loop_unguarded(&self) -> Result<(), String> {
         let mut display_loop = self.display_loop.lock().await;
 
         if let Some(handle) = display_loop.take() {
