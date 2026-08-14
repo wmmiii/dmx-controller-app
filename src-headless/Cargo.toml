@@ -1,0 +1,42 @@
+[package]
+name = "dmx-controller-headless"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85.0"
+description = "Headless DMX controller for unattended installs."
+
+[[bin]]
+name = "dmx-controller-headless"
+path = "src/main.rs"
+
+[features]
+default = ["visualizer", "audio", "midi", "serial"]
+visualizer = ["dmx-runtime/visualizer"]
+audio = ["dmx-runtime/audio"]
+midi = ["dmx-runtime/midi"]
+serial = ["dmx-runtime/serial"]
+
+[dependencies]
+clap = { version = "4.5", features = ["derive"] }
+dmx-engine = { path = "../src-engine" }
+dmx-runtime = { path = "../src-runtime", default-features = false }
+env_logger = "0.11"
+log = "0.4"
+prost = "0.14.1"
+tokio = { version = "1.48.0", features = ["macros", "rt-multi-thread", "signal", "time"] }
+
+[lints.rust]
+dead_code = "deny"
+deprecated = "deny"
+unused_imports = "deny"
+unused_variables = "deny"
+unused_mut = "deny"
+
+[lints.clippy]
+all = { level = "deny", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+module_name_repetitions = "allow"
+too_many_arguments = "allow"
+too_many_lines = "allow"
