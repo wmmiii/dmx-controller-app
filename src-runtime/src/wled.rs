@@ -86,13 +86,13 @@ impl WledState {
                 .segments
                 .iter()
                 .enumerate()
-                .map(|(index, segment)| WledSegment {
-                    id: index,
-                    col: segment_colors(segment, wled_render_target.color_palette.as_ref()),
-                    fx: segment.effect,
-                    sx: (segment.speed * 255.0).floor() as u8,
-                    pal: segment.palette,
-                    bri: (segment.brightness * 255.0).floor() as u8,
+                .map(|(i, s)| WledSegment {
+                    id: i,
+                    col: segment_colors(s, wled_render_target.color_palette.as_ref()),
+                    fx: s.effect,
+                    sx: (s.speed * 255.0).floor() as u8,
+                    pal: s.palette,
+                    bri: (s.brightness * 255.0).floor() as u8,
                 })
                 .collect(),
         };
