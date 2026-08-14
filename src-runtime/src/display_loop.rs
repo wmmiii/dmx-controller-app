@@ -133,7 +133,7 @@ impl DisplayLoopManager {
         Ok(())
     }
 
-    async fn stop_display_loop(&self) -> Result<(), String> {
+    pub async fn stop_display_loop(&self) -> Result<(), String> {
         let mut display_loop = self.display_loop.lock().await;
 
         if let Some(handle) = display_loop.take() {

@@ -4,16 +4,14 @@ use std::sync::Arc;
 use dmx_engine::project::{self};
 use dmx_engine::project_util::rand_id;
 use dmx_engine::proto::Track;
+use dmx_runtime::runtime::Runtime;
 use tauri::{AppHandle, Manager, State};
-use tokio::sync::Mutex;
-
-use crate::project::{PersistState, emit_and_persist};
 
 /// Imports a new audio file into the project.
 #[tauri::command]
 pub async fn import_audio_file(
     app: AppHandle,
-    persist_state: State<'_, Arc<Mutex<PersistState>>>,
+    runtime: State<'_, Arc<Runtime>>,
 ) -> Result<Option<String>, String> {
     use tauri_plugin_dialog::DialogExt;
 
@@ -90,7 +88,7 @@ pub async fn import_audio_file(
         proj.tracks.insert(track_id, track);
         Ok(())
     })?;
-    emit_and_persist(&app, persist_state.inner()).await?;
+    runtime.persist_changes()?;
 
     Ok(Some(track_id.to_string()))
 }
