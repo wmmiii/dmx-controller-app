@@ -7,7 +7,7 @@ mod project;
 mod render;
 
 use dmx_runtime::events::EventSink;
-use dmx_runtime::project_store::{DiskProjectStore, ProjectStore};
+use dmx_runtime::project_store::{self, DiskProjectStore};
 use dmx_runtime::runtime::{Runtime, RuntimeConfig};
 use std::sync::Arc;
 use tauri::{Manager, RunEvent};
@@ -77,7 +77,7 @@ pub fn run() {
                 .map_err(to_setup_error)?;
 
             let store = Arc::new(DiskProjectStore::new(&app_data_dir));
-            store.load().map_err(to_setup_error)?;
+            project_store::load_into_engine(store.as_ref()).map_err(to_setup_error)?;
 
             let events: Arc<dyn EventSink> =
                 Arc::new(event_sink::TauriEventSink::new(app.handle().clone()));

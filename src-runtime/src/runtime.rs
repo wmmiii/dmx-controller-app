@@ -198,7 +198,10 @@ impl Runtime {
         self.events.undo_state_changed();
 
         if let Some(persist) = &self.persist {
-            persist.queue_write(project::get()?);
+            project::with_project(|project| {
+                persist.queue_write(project);
+                Ok(())
+            })?;
         }
 
         Ok(())
@@ -236,8 +239,15 @@ impl Runtime {
     }
 
     pub fn flush_persist(&self) {
-        if let Some(persist) = &self.persist {
-            persist.flush_sync();
+        let Some(persist) = &self.persist else {
+            return;
+        };
+
+        // Cloned out rather than written under the project lock, so a slow disk
+        // can't stall a render mid-shutdown.
+        match project::with_project(|project| Ok(project.clone())) {
+            Ok(project) => persist.flush_sync(&project),
+            Err(e) => log::error!("Failed to read project for flush: {e}"),
         }
     }
 }

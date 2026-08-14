@@ -9,13 +9,30 @@ use tokio::task::JoinHandle;
 const PROJECT_KEY: &str = "tmp-project-1";
 const DEBOUNCE_MS: u64 = 1000;
 
-/// Where the project lives between runs.
+/// Where the project lives between runs — a filesystem today, a network
+/// service just as well.
 pub trait ProjectStore: Send + Sync + 'static {
-    /// Loads the stored project into the engine. Must leave a usable project
-    /// behind, so a store with nothing to load creates a fresh default.
-    fn load(&self) -> Result<(), String>;
-    fn queue_write(&self, project_binary: Vec<u8>);
-    fn flush_sync(&self);
+    /// `None` when the store holds no project yet. Deciding what to do about
+    /// that is the caller's business, not the store's.
+    fn load(&self) -> Result<Option<Project>, String>;
+    fn queue_write(&self, project: &Project);
+    fn flush_sync(&self, project: &Project);
+}
+
+/// Puts `store`'s project into the engine, creating a default when the store
+/// has nothing saved.
+pub fn load_into_engine(store: &dyn ProjectStore) -> Result<(), String> {
+    match store.load()? {
+        Some(stored) => project::load(stored)?,
+        None => {
+            project::new_project()?;
+        }
+    }
+
+    // Backstop for a stored project that decoded but carries nothing.
+    project::ensure_project_exists()?;
+
+    Ok(())
 }
 
 #[derive(Default)]
@@ -47,24 +64,26 @@ impl DiskProjectStore {
 }
 
 fn write(path: &Path, data: &[u8]) {
+    if let Some(dir) = path.parent()
+        && let Err(e) = std::fs::create_dir_all(dir)
+    {
+        log::error!("Failed to create project directory: {e}");
+        return;
+    }
+
     if let Err(e) = std::fs::write(path, data) {
         log::error!("Failed to write project: {e}");
     }
 }
 
 impl ProjectStore for DiskProjectStore {
-    /// Loads the autosave into the engine. An absent or truncated autosave
-    /// yields a fresh default project — never a zero-valued `Project`, which
-    /// decodes happily from empty bytes but carries no scenes or palettes.
-    fn load(&self) -> Result<(), String> {
-        if let Some(dir) = self.path.parent() {
-            std::fs::create_dir_all(dir)
-                .map_err(|e| format!("Failed to create app data dir: {e}"))?;
-        }
-
+    /// An absent or zero-length autosave reads as `None` rather than as an
+    /// empty `Project` — empty bytes decode happily into one that carries no
+    /// scenes, palettes or patches.
+    fn load(&self) -> Result<Option<Project>, String> {
         let project_binary = match std::fs::read(&self.path) {
             Ok(bytes) => bytes,
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Vec::new(),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
             Err(e) => {
                 return Err(format!(
                     "Failed to read project at {}: {e}",
@@ -74,23 +93,17 @@ impl ProjectStore for DiskProjectStore {
         };
 
         if project_binary.is_empty() {
-            project::new_project()?;
-            return Ok(());
+            return Ok(None);
         }
 
-        let project = Project::decode(project_binary.as_slice())
-            .map_err(|e| format!("Failed to decode project: {e}"))?;
-        project::load(project)?;
-
-        // Backstop for an autosave that decoded but carries nothing.
-        project::ensure_project_exists()?;
-
-        Ok(())
+        Project::decode(project_binary.as_slice())
+            .map(Some)
+            .map_err(|e| format!("Failed to decode project: {e}"))
     }
 
-    fn queue_write(&self, project_binary: Vec<u8>) {
+    fn queue_write(&self, project: &Project) {
         let mut pending = self.lock_pending();
-        pending.project_binary = Some(project_binary);
+        pending.project_binary = Some(project.encode_to_vec());
 
         if let Some(handle) = pending.debounce.take() {
             handle.abort();
@@ -112,17 +125,15 @@ impl ProjectStore for DiskProjectStore {
         }));
     }
 
-    /// Writes immediately, cancelling any pending debounce. Prefers live engine
-    /// state over the queued snapshot so an exit never persists a stale project.
-    fn flush_sync(&self) {
+    /// Writes immediately, dropping any queued write in favour of `project`.
+    fn flush_sync(&self, project: &Project) {
         let mut pending = self.lock_pending();
 
         if let Some(handle) = pending.debounce.take() {
             handle.abort();
         }
+        pending.project_binary = None;
 
-        if let Some(data) = project::get().ok().or_else(|| pending.project_binary.take()) {
-            write(&self.path, &data);
-        }
+        write(&self.path, &project.encode_to_vec());
     }
 }
