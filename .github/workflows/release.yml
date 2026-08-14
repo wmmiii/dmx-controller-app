@@ -122,10 +122,12 @@ jobs:
     strategy:
       matrix:
         include:
+          # Named to match `dpkg --print-architecture` on the target machine,
+          # so an operator can pick their download without knowing Rust triples.
           - runner: ubuntu-22.04
-            target: x86_64-unknown-linux-gnu
+            platform: linux-amd64
           - runner: ubuntu-22.04-arm
-            target: aarch64-unknown-linux-gnu
+            platform: linux-arm64
 
     steps:
       - name: Checkout repository
@@ -154,14 +156,14 @@ jobs:
 
       - name: Package binary
         run: |
-          tar -czf dmx-controller-headless-${{ matrix.target }}.tar.gz \
+          tar -czf dmx-controller-headless-${{ matrix.platform }}.tar.gz \
             -C target/release dmx-controller-headless
 
       - name: Upload headless binary
         uses: actions/upload-artifact@v4
         with:
-          name: headless-${{ matrix.target }}
-          path: dmx-controller-headless-${{ matrix.target }}.tar.gz
+          name: headless-${{ matrix.platform }}
+          path: dmx-controller-headless-${{ matrix.platform }}.tar.gz
           if-no-files-found: error
 
   # build-ios:
