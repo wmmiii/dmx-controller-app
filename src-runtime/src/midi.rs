@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::Mutex as StdMutex;
 use std::time::{SystemTime, UNIX_EPOCH};
-use tokio::sync::{Mutex, oneshot};
+use tokio::sync::oneshot;
 
 #[derive(Deserialize, Serialize, Clone)]
 pub struct MidiPortCandidate {
@@ -73,7 +73,7 @@ impl MidiState {
     }
 
     /// Start watching for MIDI device connections and auto-reconnect
-    pub fn start_device_watcher(&self, state: Arc<Mutex<MidiState>>) {
+    pub fn start_device_watcher(self: &Arc<Self>) {
         let (cancel_tx, cancel_rx) = tokio::sync::watch::channel(false);
 
         // Store the cancel sender
@@ -82,6 +82,7 @@ impl MidiState {
             *watcher = Some(cancel_tx);
         }
 
+        let state = Arc::clone(self);
         tokio::spawn(async move {
             Self::device_watcher_loop(state, cancel_rx).await;
         });
@@ -90,7 +91,7 @@ impl MidiState {
     }
 
     async fn device_watcher_loop(
-        state: Arc<Mutex<MidiState>>,
+        state: Arc<MidiState>,
         mut cancel_rx: tokio::sync::watch::Receiver<bool>,
     ) {
         let mut known_devices: Vec<String> = Vec::new();
@@ -132,13 +133,8 @@ impl MidiState {
                     if disappeared_devices.contains(controller_name) {
                         log::info!("MIDI controller disconnected: {controller_name}");
 
-                        // Remove the connection from state
-                        {
-                            let midi_state = state.lock().await;
-                            disconnect_device(&midi_state, controller_name);
-                        }
-
-                        Self::emit_connection_status(&state, controller_name, false).await;
+                        disconnect_device(&state, controller_name);
+                        state.emit_connection_status(controller_name, false);
                     }
                 }
 
@@ -149,14 +145,9 @@ impl MidiState {
                     {
                         log::info!("Auto-reconnecting to MIDI controller: {controller_name}");
 
-                        let result = {
-                            let midi_state = state.lock().await;
-                            connect_midi_internal(&midi_state, matching_device.clone())
-                        }; // Lock dropped here
-
-                        match result {
+                        match connect_midi_internal(&state, matching_device.clone()) {
                             Ok(()) => {
-                                Self::emit_connection_status(&state, controller_name, true).await;
+                                state.emit_connection_status(controller_name, true);
                             }
                             Err(e) => {
                                 log::error!(
@@ -184,14 +175,8 @@ impl MidiState {
         log::info!("MIDI device watcher loop exited");
     }
 
-    async fn emit_connection_status(
-        state: &Arc<Mutex<MidiState>>,
-        controller_name: &str,
-        connected: bool,
-    ) {
-        let midi_state = state.lock().await;
-        midi_state
-            .events
+    fn emit_connection_status(&self, controller_name: &str, connected: bool) {
+        self.events
             .midi_connection_status(controller_name, connected);
     }
 }
@@ -315,17 +300,12 @@ fn connect_midi_internal(state: &MidiState, candidate: MidiPortCandidate) -> Res
     Ok(())
 }
 
-pub async fn connect_midi(
-    state: &Arc<Mutex<MidiState>>,
-    candidate: MidiPortCandidate,
-) -> Result<(), String> {
-    let midi_state = state.lock().await;
-    connect_midi_internal(&midi_state, candidate)
+pub fn connect_midi(state: &MidiState, candidate: MidiPortCandidate) -> Result<(), String> {
+    connect_midi_internal(state, candidate)
 }
 
-pub async fn disconnect_midi(state: &Arc<Mutex<MidiState>>, device_name: &str) {
-    let midi_state = state.lock().await;
-    disconnect_device(&midi_state, device_name);
+pub fn disconnect_midi(state: &MidiState, device_name: &str) {
+    disconnect_device(state, device_name);
 }
 
 /// Disconnect a single device by name, leaving other devices connected.
