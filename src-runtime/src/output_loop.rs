@@ -4,7 +4,7 @@ use dmx_engine::render::render::{RenderError, render_dmx, render_wled};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, MutexGuard};
 use tokio::task::JoinHandle;
 
 use crate::events::EventSink;
@@ -40,14 +40,21 @@ struct OutputLoopHandle {
 }
 
 pub struct OutputLoopManager {
-    loops: Arc<Mutex<HashMap<u64, OutputLoopHandle>>>,
+    loops: Mutex<HashMap<u64, OutputLoopHandle>>,
+    /// Held for the whole of `rebuild_all_loops` and `stop_all`. The `loops`
+    /// map alone is not enough: `start_loop` releases it between removing an
+    /// output's old handle and inserting its new one, so two overlapping
+    /// rebuilds can each spawn a loop for that output, and whichever inserts
+    /// first is overwritten and left running with nothing able to cancel it.
+    loop_rebuild_lock: Mutex<()>,
     events: Arc<dyn EventSink>,
 }
 
 impl OutputLoopManager {
     pub fn new(events: Arc<dyn EventSink>) -> Self {
         OutputLoopManager {
-            loops: Arc::new(Mutex::new(HashMap::new())),
+            loops: Mutex::new(HashMap::new()),
+            loop_rebuild_lock: Mutex::new(()),
             events,
         }
     }
@@ -55,13 +62,12 @@ impl OutputLoopManager {
     /// Starts output loops for the currently loaded project.
     /// Should be called after app startup to begin DMX output.
     pub fn start_on_load(
-        manager: Arc<Mutex<Self>>,
-        serial_state: Arc<Mutex<SerialState>>,
-        sacn_state: Arc<Mutex<SacnState>>,
-        wled_state: Arc<Mutex<WledState>>,
+        manager: Arc<Self>,
+        serial_state: Arc<SerialState>,
+        sacn_state: Arc<SacnState>,
+        wled_state: Arc<WledState>,
     ) {
         tokio::spawn(async move {
-            let manager = manager.lock().await;
             if let Err(e) = manager
                 .rebuild_all_loops(serial_state, sacn_state, wled_state)
                 .await
@@ -71,16 +77,17 @@ impl OutputLoopManager {
         });
     }
 
-    pub async fn start_loop(
+    async fn start_loop(
         &self,
         output_id: u64,
         output_type: OutputType,
-        serial_state: Arc<Mutex<SerialState>>,
-        sacn_state: Arc<Mutex<SacnState>>,
-        wled_state: Arc<Mutex<WledState>>,
+        serial_state: Arc<SerialState>,
+        sacn_state: Arc<SacnState>,
+        wled_state: Arc<WledState>,
+        rebuild_guard: &MutexGuard<'_, ()>,
     ) -> Result<(), String> {
         // Stop existing loop if running
-        self.stop_loop(output_id).await?;
+        self.stop_loop(output_id, rebuild_guard).await?;
 
         let (cancel_tx, cancel_rx) = tokio::sync::watch::channel(false);
         let output_type_clone = output_type.clone();
@@ -119,7 +126,11 @@ impl OutputLoopManager {
         Ok(())
     }
 
-    pub async fn stop_loop(&self, output_id: u64) -> Result<(), String> {
+    async fn stop_loop(
+        &self,
+        output_id: u64,
+        _rebuild_guard: &MutexGuard<'_, ()>,
+    ) -> Result<(), String> {
         let mut loops = self.loops.lock().await;
 
         if let Some(handle) = loops.remove(&output_id) {
@@ -137,19 +148,23 @@ impl OutputLoopManager {
     }
 
     pub async fn stop_all(&self) -> Result<(), String> {
+        let rebuild_guard = self.loop_rebuild_lock.lock().await;
+
         let output_ids: Vec<u64> = self.loops.lock().await.keys().copied().collect();
         for output_id in output_ids {
-            self.stop_loop(output_id).await?;
+            self.stop_loop(output_id, &rebuild_guard).await?;
         }
         Ok(())
     }
 
     pub async fn rebuild_all_loops(
         &self,
-        serial_state: Arc<Mutex<SerialState>>,
-        sacn_state: Arc<Mutex<SacnState>>,
-        wled_state: Arc<Mutex<WledState>>,
+        serial_state: Arc<SerialState>,
+        sacn_state: Arc<SacnState>,
+        wled_state: Arc<WledState>,
     ) -> Result<(), String> {
+        let rebuild_guard = self.loop_rebuild_lock.lock().await;
+
         // Extract desired outputs from project (avoid holding lock during async I/O)
         let desired_outputs: HashMap<u64, OutputType> = project::with_project(|project| {
             let active_patch = project
@@ -245,14 +260,12 @@ impl OutputLoopManager {
                 Some(OutputType::Serial { .. })
             );
             let will_restart = to_start.iter().any(|(id, _)| *id == output_id);
-            self.stop_loop(output_id).await?;
+            self.stop_loop(output_id, &rebuild_guard).await?;
             // Close the serial port when the output is disabled or deleted. Skip
             // this when the loop is being immediately restarted (e.g. FPS change)
             // so we don't briefly drop and reopen the same port.
             if is_serial && !will_restart {
-                let serial = serial_state.lock().await;
-                let _ = serial.try_close_port(&output_id.to_string());
-                drop(serial);
+                let _ = serial_state.try_close_port(&output_id.to_string());
             }
         }
 
@@ -264,6 +277,7 @@ impl OutputLoopManager {
                 serial_state.clone(),
                 sacn_state.clone(),
                 wled_state.clone(),
+                &rebuild_guard,
             )
             .await?;
         }
@@ -288,9 +302,9 @@ impl OutputLoopManager {
     async fn run_output_loop(
         output_id: u64,
         output_type: OutputType,
-        serial_state: Arc<Mutex<SerialState>>,
-        sacn_state: Arc<Mutex<SacnState>>,
-        wled_state: Arc<Mutex<WledState>>,
+        serial_state: Arc<SerialState>,
+        sacn_state: Arc<SacnState>,
+        wled_state: Arc<WledState>,
         events: Arc<dyn EventSink>,
         cancel_rx: tokio::sync::watch::Receiver<bool>,
     ) -> Result<(), String> {
@@ -325,11 +339,7 @@ impl OutputLoopManager {
                 OutputType::Serial { .. } => {
                     match Self::render_and_emit_dmx(output_id, system_t, frame, events.as_ref()) {
                         Ok(dmx_vec) => {
-                            let serial = serial_state.lock().await;
-                            let output_result =
-                                serial.output_dmx_internal(&output_id.to_string(), &dmx_vec);
-                            drop(serial);
-                            output_result
+                            serial_state.output_dmx_internal(&output_id.to_string(), &dmx_vec)
                         }
                         Err(RenderError::OutputNotFound { .. }) => {
                             // Output was deleted - exit loop gracefully
@@ -348,11 +358,7 @@ impl OutputLoopManager {
                 } => {
                     match Self::render_and_emit_dmx(output_id, system_t, frame, events.as_ref()) {
                         Ok(dmx_vec) => {
-                            let sacn = sacn_state.lock().await;
-                            let output_result =
-                                sacn.output_sacn_internal(*universe, ip_address, &dmx_vec);
-                            drop(sacn);
-                            output_result
+                            sacn_state.output_sacn_internal(*universe, ip_address, &dmx_vec)
                         }
                         Err(RenderError::OutputNotFound { .. }) => {
                             // Output was deleted - exit loop gracefully
@@ -370,12 +376,7 @@ impl OutputLoopManager {
                         Ok(wled_data) => {
                             events.wled_render(output_id, &wled_data);
 
-                            // Output via WLED
-                            let wled = wled_state.lock().await;
-                            let output_result =
-                                wled.output_wled_internal(ip_address, &wled_data).await;
-                            drop(wled);
-                            output_result
+                            wled_state.output_wled_internal(ip_address, &wled_data).await
                         }
                         Err(RenderError::OutputNotFound { .. }) => {
                             // Output was deleted - exit loop gracefully

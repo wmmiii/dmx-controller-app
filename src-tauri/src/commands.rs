@@ -96,7 +96,7 @@ pub async fn connect_midi(
     candidate: MidiPortCandidate,
 ) -> Result<(), String> {
     let midi = runtime.midi.as_ref().ok_or("MIDI is not enabled")?;
-    dmx_runtime::midi::connect_midi(midi, candidate).await
+    dmx_runtime::midi::connect_midi(midi, candidate)
 }
 
 #[cfg(desktop)]
@@ -107,6 +107,6 @@ pub async fn disconnect_midi(
     device_name: String,
 ) -> Result<(), String> {
     let midi = runtime.midi.as_ref().ok_or("MIDI is not enabled")?;
-    dmx_runtime::midi::disconnect_midi(midi, &device_name).await;
+    dmx_runtime::midi::disconnect_midi(midi, &device_name);
     Ok(())
 }
