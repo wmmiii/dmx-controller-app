@@ -34,9 +34,8 @@ pub struct RuntimeConfig {
     pub enable_midi: bool,
 }
 
-/// Everything needed to drive a loaded project's outputs, assembled once and
-/// shared by reference. Construct with [`Runtime::start`] after the project is
-/// in the engine — the loops read it as soon as they spin up.
+/// Construct with [`Runtime::start`] once the project is already in the
+/// engine — the loops read it as soon as they spin up.
 pub struct Runtime {
     pub events: Arc<dyn EventSink>,
     pub beat_sampler: SharedBeatSampler,
@@ -103,8 +102,6 @@ impl Runtime {
             match ShaderState::new().await {
                 Ok(state) => {
                     let state = Arc::new(StdMutex::new(state));
-                    // Compile the project's visualizers before the display loop
-                    // starts rendering them.
                     shader::sync_visualizer_shaders(&state);
                     Some(state)
                 }
@@ -158,7 +155,6 @@ impl Runtime {
         }))
     }
 
-    /// Reconciles the running loops with the project's current outputs.
     pub async fn rebuild_outputs(&self) -> Result<(), String> {
         {
             let serial = self.serial.lock().await;
@@ -191,8 +187,6 @@ impl Runtime {
         Ok(())
     }
 
-    /// Announces a project change and queues it for persistence, without
-    /// touching the running loops.
     pub fn persist_changes(&self) -> Result<(), String> {
         self.events.project_updated();
         self.events.undo_state_changed();
@@ -207,20 +201,18 @@ impl Runtime {
         Ok(())
     }
 
-    /// Finalizes an undoable project change: announce, persist, rebuild.
     pub async fn finalize_project_modification(&self) -> Result<(), String> {
         self.persist_changes()?;
         self.rebuild_outputs().await
     }
 
-    /// Leaves no undo entry and writes nothing to disk.
     pub async fn finalize_transient_project_modification(&self) -> Result<(), String> {
         self.events.project_updated();
         self.rebuild_outputs().await
     }
 
-    /// Stops every loop and flushes any queued write. Leaves the last rendered
-    /// frame on the wire, so blackout must be set before calling this.
+    /// Leaves the last rendered frame on the wire, so blackout must be set
+    /// before calling this.
     pub async fn shutdown(&self) -> Result<(), String> {
         {
             let manager = self.output_loops.lock().await;
@@ -243,8 +235,8 @@ impl Runtime {
             return;
         };
 
-        // Cloned out rather than written under the project lock, so a slow disk
-        // can't stall a render mid-shutdown.
+        // Cloned out rather than written under the project lock, so a slow
+        // disk can't stall a render.
         match project::with_project(|project| Ok(project.clone())) {
             Ok(project) => persist.flush_sync(&project),
             Err(e) => log::error!("Failed to read project for flush: {e}"),

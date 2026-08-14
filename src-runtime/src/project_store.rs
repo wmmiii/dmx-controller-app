@@ -9,28 +9,23 @@ use tokio::task::JoinHandle;
 const PROJECT_KEY: &str = "tmp-project-1";
 const DEBOUNCE_MS: u64 = 1000;
 
-/// Where the project lives between runs — a filesystem today, a network
-/// service just as well.
 pub trait ProjectStore: Send + Sync + 'static {
-    /// `None` when the store holds no project yet. Deciding what to do about
-    /// that is the caller's business, not the store's.
+    /// `None` when the store holds no project yet.
     fn load(&self) -> Result<Option<Project>, String>;
     fn queue_write(&self, project: &Project);
     fn flush_sync(&self, project: &Project);
 }
 
-/// Puts `store`'s project into the engine, creating a default when the store
-/// has nothing saved.
 pub fn load_into_engine(store: &dyn ProjectStore) -> Result<(), String> {
     match store.load()? {
-        Some(stored) => project::load(stored)?,
+        Some(stored) => {
+            project::load(stored)?;
+            project::ensure_project_exists()?;
+        }
         None => {
             project::new_project()?;
         }
     }
-
-    // Backstop for a stored project that decoded but carries nothing.
-    project::ensure_project_exists()?;
 
     Ok(())
 }
@@ -62,8 +57,6 @@ impl DiskProjectStore {
         })
     }
 
-    /// Takes `path` rather than `&self` so the debounce task can call it
-    /// without holding a reference to the store.
     fn write(path: &Path, data: &[u8]) {
         if let Some(dir) = path.parent()
             && let Err(e) = std::fs::create_dir_all(dir)
@@ -79,9 +72,8 @@ impl DiskProjectStore {
 }
 
 impl ProjectStore for DiskProjectStore {
-    /// An absent or zero-length autosave reads as `None` rather than as an
-    /// empty `Project` — empty bytes decode happily into one that carries no
-    /// scenes, palettes or patches.
+    /// Empty bytes decode happily into a `Project` carrying no scenes,
+    /// palettes or patches, so a zero-length autosave reads as `None`.
     fn load(&self) -> Result<Option<Project>, String> {
         let project_binary = match std::fs::read(&self.path) {
             Ok(bytes) => bytes,
@@ -127,7 +119,6 @@ impl ProjectStore for DiskProjectStore {
         }));
     }
 
-    /// Writes immediately, dropping any queued write in favour of `project`.
     fn flush_sync(&self, project: &Project) {
         let mut pending = self.lock_pending();
 
