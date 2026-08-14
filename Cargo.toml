@@ -1,5 +1,5 @@
 [workspace]
-members = ["src-engine", "src-runtime", "src-tauri"]
+members = ["src-engine", "src-headless", "src-runtime", "src-tauri"]
 resolver = "3"
 
 # Exclude wasm-engine since it targets wasm32-unknown-unknown
