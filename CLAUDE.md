@@ -4,9 +4,11 @@ Guidance for Claude Code when working in this repository. Keep this file lean: b
 
 ## Stack
 
-React 19 + TypeScript frontend (`src/`, built with Vite), wrapped as a native desktop app via Tauri (`src-tauri/`). A shared Rust rendering engine (`src-engine/`) handles DMX/effect/scene rendering and is used directly by the Tauri build; a separate minimal crate (`src/wasm-engine/`, excluded from the Cargo workspace, built via `wasm-pack`) compiles a subset of that same logic to WASM so the frontend can do beat-timing and waveform math without an IPC round-trip — see its own CLAUDE.md. All data structures are Protocol Buffers under `proto/`; regenerate TS bindings with `pnpm run proto:generate` after any `.proto` edit. Proto files are the authoritative source for the data model/capabilities — prefer them over prose here when they disagree.
+React 19 + TypeScript frontend (`src/`, built with Vite), wrapped as a native desktop app via Tauri (`src-tauri/`). A shared Rust rendering engine (`src-engine/`) handles DMX/effect/scene rendering. `src-engine` must keep compiling to `wasm32-unknown-unknown` for `src/wasm-engine`, so tokio/serialport/wgpu/cpal cannot live there — that constraint is why `src-runtime/` exists, holding the native platform integration that both `src-tauri` and the headless CLI (`src-headless/`) assemble. A separate minimal crate (`src/wasm-engine/`, excluded from the Cargo workspace, built via `wasm-pack`) compiles a subset of the engine's logic to WASM so the frontend can do beat-timing and waveform math without an IPC round-trip — see its own CLAUDE.md. All data structures are Protocol Buffers under `proto/`; regenerate TS bindings with `pnpm run proto:generate` after any `.proto` edit. Proto files are the authoritative source for the data model/capabilities — prefer them over prose here when they disagree.
 
-**The app only runs inside the Tauri webview.** `src/system_interfaces/` is a thin Tauri IPC binding layer (`invoke`/`listen`) with no browser fallback — nothing past the initial paint (project load/save, MIDI, DMX/WLED/DDP output, the Visualizer) works outside Tauri. `pnpm run tauri:dev` is the only supported way to run or test the app.
+**The desktop UI only runs inside the Tauri webview.** `src/system_interfaces/` is a thin Tauri IPC binding layer (`invoke`/`listen`) with no browser fallback — nothing past the initial paint (project load/save, MIDI, DMX/WLED/DDP output, the Visualizer) works outside Tauri. `pnpm run tauri:dev` is the only supported way to run or test the frontend.
+
+**The rendering pipeline is not tied to the webview.** `src-headless` is a second entry point that drives the same loops with no UI, for unattended installs. Both entry points are thin assemblers over `src-runtime`, so anything they'd both need belongs there rather than in `src-tauri`. Headless is deliberately read-only (`persist: None`) and takes a `.dmxapp` export rather than the desktop's autosave file.
 
 **Output types are not structurally uniform.** Serial and sACN/E1.31 share a classic 512-channel DMX byte array. WLED gets its own segment/effect state (WLED's onboard engine renders the pixels — no per-pixel data is sent). DDP isn't part of the fixture/effect system at all — it only receives raw per-pixel data from virtual displays via the Visualizer's display pipeline. Don't assume a shared "universe" across output types; see `src-engine/src/render/`.
 
@@ -14,8 +16,10 @@ React 19 + TypeScript frontend (`src/`, built with Vite), wrapped as a native de
 
 ## Where things live
 
-- `src-engine/src/render/` — Rust rendering engine (shared by desktop + WASM)
-- `src-tauri/src/` — native platform integration: MIDI, Serial, sACN, WLED, DDP, audio capture, wgpu-based Visualizer shaders
+- `src-engine/src/render/` — Rust rendering engine (shared by desktop, headless + WASM)
+- `src-runtime/src/` — native platform integration shared by desktop and headless: MIDI, Serial, sACN, WLED, DDP, audio capture, wgpu-based Visualizer shaders, render loops
+- `src-tauri/src/` — what genuinely needs Tauri: `#[tauri::command]` wrappers, event emission, native dialogs, the content-addressed store, MCP
+- `src-headless/src/` — CLI binary for unattended installs
 - `src/engine/` — TypeScript glue that routes render calls into the native engine
 - `src/system_interfaces/` — Tauri IPC bindings (see above)
 - `src/pages/` — one file/folder per top-level route (routing + nav lives in `src/Index.tsx`)
@@ -26,14 +30,15 @@ React 19 + TypeScript frontend (`src/`, built with Vite), wrapped as a native de
 
 - `pnpm run tauri:dev` - Run the app (the only supported way to develop/test it)
 - `pnpm run build` - Generate protos, build the WASM engine, build the frontend for production
-- `pnpm run test` - Jest + Rust `cargo test` (src-engine and src-tauri)
+- `pnpm run test` - Jest + Rust `cargo test` (src-engine, src-runtime, src-tauri, src-headless)
+- `cargo run -p dmx-controller-headless -- --project <PATH> --mode autopilot` - Run the headless CLI (see README for flags)
 - `pnpm run type-check` / `pnpm run lint` / `pnpm run cleanup` - see Agent Workflow below before running these
 - `pnpm run proto:generate` - Regenerate TS bindings from `.proto` files; needed after any proto edit before the new types are usable
 - `pnpm run tauri:ios` - iOS simulator
 
 `pnpm run dev` exists only because Tauri's `beforeDevCommand` shells out to it to boot the Vite dev server before wrapping it in the native webview — don't run it standalone, it won't produce a working app.
 
-CI/CD lives in `.github/workflows/`: `ci.yaml` is the PR gate, `deploy.yaml` deploys `web/` to GitHub Pages, `release.yml` builds Tauri binaries — gated on an actual version bump in `src-tauri/tauri.conf.json`, not just any merge to `main`.
+CI/CD lives in `.github/workflows/`: `ci.yaml` is the PR gate, `deploy.yaml` deploys `web/` to GitHub Pages, `release.yml` builds Tauri binaries plus the headless Linux binaries — gated on an actual version bump in `src-tauri/tauri.conf.json`, not just any merge to `main`. The headless job builds natively on x86_64 and arm64 runners and pins ubuntu-22.04 for its glibc floor; see the comment in `release.yml` before changing the runner.
 
 ## Code Style
 
@@ -66,4 +71,4 @@ CI/CD lives in `.github/workflows/`: `ci.yaml` is the PR gate, `deploy.yaml` dep
 
 ## Website Sync
 
-`web/` is a static landing page auto-deployed to GitHub Pages on push to `main`. When a change affects user-facing features, supported protocols, or the onboarding flow, update `web/index.html` to match — it currently describes Serial/sACN/WLED/DDP output, the Visualizer, GDTF import, tap tempo, and MIDI control. It shares CSS variables with `src/vars.css` (symlinked to `public/vars.css`).
+`web/` is a static landing page auto-deployed to GitHub Pages on push to `main`. When a change affects user-facing features, supported protocols, or the onboarding flow, update `web/index.html` to match — it currently describes Serial/sACN/WLED/DDP output, the Visualizer, GDTF import, tap tempo, MIDI control, and headless operation. It shares CSS variables with `src/vars.css` (symlinked to `public/vars.css`).
