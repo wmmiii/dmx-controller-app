@@ -147,7 +147,7 @@ impl DisplayLoopManager {
         shader_state: Option<Arc<StdMutex<ShaderState>>>,
         cancel_rx: tokio::sync::watch::Receiver<bool>,
     ) -> Result<(), String> {
-        let frame_duration = Duration::from_millis(1000 / u64::from(DEFAULT_DISPLAY_FPS));
+        let frame_duration = Duration::from_nanos(1_000_000_000 / u64::from(DEFAULT_DISPLAY_FPS));
         let mut frame = 0u32;
 
         log::info!(
