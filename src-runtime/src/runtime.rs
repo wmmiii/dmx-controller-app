@@ -21,10 +21,10 @@ use crate::display_loop::DisplayLoopManager;
 #[cfg(feature = "visualizer")]
 use crate::shader::{self, ShaderState};
 
-#[cfg(all(feature = "midi", not(target_os = "ios")))]
+#[cfg(feature = "midi")]
 use crate::midi::MidiState;
 
-#[cfg(all(feature = "audio", not(target_os = "ios")))]
+#[cfg(feature = "audio")]
 use crate::audio_input::AudioInputState;
 
 pub struct RuntimeConfig {
@@ -55,9 +55,9 @@ pub struct Runtime {
     #[cfg(feature = "visualizer")]
     pub shader: Option<Arc<StdMutex<ShaderState>>>,
 
-    #[cfg(all(feature = "midi", not(target_os = "ios")))]
+    #[cfg(feature = "midi")]
     pub midi: Option<Arc<MidiState>>,
-    #[cfg(all(feature = "audio", not(target_os = "ios")))]
+    #[cfg(feature = "audio")]
     pub audio: Option<Arc<AudioInputState>>,
 
     persist: Option<Arc<dyn ProjectStore>>,
@@ -70,7 +70,7 @@ impl Runtime {
         let events = config.events;
         let beat_sampler: SharedBeatSampler = Arc::new(StdMutex::new(BeatSampler::default()));
 
-        #[cfg(all(feature = "midi", not(target_os = "ios")))]
+        #[cfg(feature = "midi")]
         let midi = if config.enable_midi {
             let state = Arc::new(MidiState::new(
                 Arc::clone(&events),
@@ -82,7 +82,7 @@ impl Runtime {
             None
         };
 
-        #[cfg(all(feature = "audio", not(target_os = "ios")))]
+        #[cfg(feature = "audio")]
         let audio = if config.enable_audio {
             let state = Arc::new(AudioInputState::new(
                 Arc::clone(&events),
@@ -95,7 +95,7 @@ impl Runtime {
         };
 
         let serial = Arc::new(SerialState::default());
-        #[cfg(not(target_os = "ios"))]
+        #[cfg(feature = "serial")]
         serial.start_port_watcher();
 
         let sacn = Arc::new(SacnState::new()?);
@@ -151,9 +151,9 @@ impl Runtime {
             display_loops,
             #[cfg(feature = "visualizer")]
             shader,
-            #[cfg(all(feature = "midi", not(target_os = "ios")))]
+            #[cfg(feature = "midi")]
             midi,
-            #[cfg(all(feature = "audio", not(target_os = "ios")))]
+            #[cfg(feature = "audio")]
             audio,
             persist: config.persist,
         }))
