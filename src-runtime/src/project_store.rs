@@ -61,18 +61,20 @@ impl DiskProjectStore {
             e.into_inner()
         })
     }
-}
 
-fn write(path: &Path, data: &[u8]) {
-    if let Some(dir) = path.parent()
-        && let Err(e) = std::fs::create_dir_all(dir)
-    {
-        log::error!("Failed to create project directory: {e}");
-        return;
-    }
+    /// Takes `path` rather than `&self` so the debounce task can call it
+    /// without holding a reference to the store.
+    fn write(path: &Path, data: &[u8]) {
+        if let Some(dir) = path.parent()
+            && let Err(e) = std::fs::create_dir_all(dir)
+        {
+            log::error!("Failed to create project directory: {e}");
+            return;
+        }
 
-    if let Err(e) = std::fs::write(path, data) {
-        log::error!("Failed to write project: {e}");
+        if let Err(e) = std::fs::write(path, data) {
+            log::error!("Failed to write project: {e}");
+        }
     }
 }
 
@@ -119,7 +121,7 @@ impl ProjectStore for DiskProjectStore {
                 e.into_inner()
             });
             if let Some(data) = pending.project_binary.take() {
-                write(&path, &data);
+                Self::write(&path, &data);
             }
             pending.debounce = None;
         }));
@@ -134,6 +136,6 @@ impl ProjectStore for DiskProjectStore {
         }
         pending.project_binary = None;
 
-        write(&self.path, &project.encode_to_vec());
+        Self::write(&self.path, &project.encode_to_vec());
     }
 }
