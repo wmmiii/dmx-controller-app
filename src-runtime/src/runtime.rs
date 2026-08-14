@@ -205,7 +205,7 @@ impl Runtime {
     }
 
     /// Finalizes an undoable project change: announce, persist, rebuild.
-    pub async fn persist_and_rebuild(&self) -> Result<(), String> {
+    pub async fn finalize_project_modification(&self) -> Result<(), String> {
         self.persist_changes()?;
         self.rebuild_outputs().await
     }

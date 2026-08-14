@@ -23,7 +23,7 @@ pub async fn save_project(
     project::save_snapshot(&project_binary, &description, undoable)?;
 
     // 2. Emit, persist, and rebuild output loops
-    runtime.persist_and_rebuild().await
+    runtime.finalize_project_modification().await
 }
 
 /// Updates project state without persistence or undo tracking.
@@ -42,14 +42,14 @@ pub async fn update_project(
 #[tauri::command]
 pub async fn undo_project(runtime: State<'_, Arc<Runtime>>) -> Result<(), String> {
     project::undo()?;
-    runtime.persist_and_rebuild().await
+    runtime.finalize_project_modification().await
 }
 
 /// Redoes the previously undone operation.
 #[tauri::command]
 pub async fn redo_project(runtime: State<'_, Arc<Runtime>>) -> Result<(), String> {
     project::redo()?;
-    runtime.persist_and_rebuild().await
+    runtime.finalize_project_modification().await
 }
 
 /// Returns the current undo/redo availability state.
@@ -168,14 +168,14 @@ pub async fn import_project(
         return Err("Could not load fat project, `project` field not set!".to_string());
     }
 
-    runtime.persist_and_rebuild().await
+    runtime.finalize_project_modification().await
 }
 
 /// Resets the project to a fresh default, clearing undo history.
 #[tauri::command]
 pub async fn new_project(runtime: State<'_, Arc<Runtime>>) -> Result<(), String> {
     project::new_project()?;
-    runtime.persist_and_rebuild().await
+    runtime.finalize_project_modification().await
 }
 
 /// Deletes a user visualizer.
@@ -200,7 +200,7 @@ pub async fn delete_visualizer(
         }
     })?;
 
-    runtime.persist_and_rebuild().await
+    runtime.finalize_project_modification().await
 }
 
 /// Toggles a tile on/off based on its current state.

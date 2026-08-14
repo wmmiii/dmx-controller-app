@@ -34,7 +34,7 @@ where
 
     let runtime = app.state::<Arc<Runtime>>().inner().clone();
     runtime
-        .persist_and_rebuild()
+        .finalize_project_modification()
         .await
         .map_err(|e| ErrorData::internal_error(e, None))
 }
