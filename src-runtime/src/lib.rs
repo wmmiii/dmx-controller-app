@@ -18,4 +18,5 @@ pub mod sacn;
 pub mod serial;
 #[cfg(feature = "visualizer")]
 pub mod shader;
+pub mod util;
 pub mod wled;

@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::collections::hash_map::Entry;
 use std::net::UdpSocket;
 
 use ddp_rs::connection::DDPConnection;
@@ -13,20 +14,22 @@ pub struct DdpState {
 
 impl DdpState {
     fn get_or_create_connection(&mut self, ip_address: &str) -> Result<&mut DDPConnection, String> {
-        if !self.connections.contains_key(ip_address) {
-            let socket = UdpSocket::bind("0.0.0.0:0").map_err(|e| e.to_string())?;
-            // DDP uses port 4048 by default
-            let addr_with_port = format!("{ip_address}:4048");
-            let conn = DDPConnection::try_new(
-                &addr_with_port,
-                PixelConfig::default(),
-                ID::Default,
-                socket,
-            )
-            .map_err(|e| e.to_string())?;
-            self.connections.insert(ip_address.to_string(), conn);
+        match self.connections.entry(ip_address.to_string()) {
+            Entry::Occupied(entry) => Ok(entry.into_mut()),
+            Entry::Vacant(entry) => {
+                let socket = UdpSocket::bind("0.0.0.0:0").map_err(|e| e.to_string())?;
+                // DDP uses port 4048 by default
+                let addr_with_port = format!("{ip_address}:4048");
+                let connection = DDPConnection::try_new(
+                    &addr_with_port,
+                    PixelConfig::default(),
+                    ID::Default,
+                    socket,
+                )
+                .map_err(|e| e.to_string())?;
+                Ok(entry.insert(connection))
+            }
         }
-        Ok(self.connections.get_mut(ip_address).unwrap())
     }
 
     /// Output DDP data for a physical display device.
@@ -37,7 +40,7 @@ impl DdpState {
     /// * `output_id` - The output ID for this DDP device
     /// * `mappings` - Tuples of (`display_id`, mapping) for this output
     #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-    pub fn output_ddp_internal(
+    pub(crate) fn output_ddp(
         &mut self,
         buffers: &HashMap<u64, DisplayBuffer>,
         ddp_output: &DdpOutput,

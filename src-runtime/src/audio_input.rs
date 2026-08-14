@@ -10,6 +10,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use crate::audio_analysis::FftAnalyzer;
 use crate::beat::SharedBeatSampler;
 use crate::events::EventSink;
+use crate::util::lock_or_recover;
 
 /// Suppress ALSA and JACK error messages during audio device enumeration.
 #[cfg(target_os = "linux")]
@@ -113,10 +114,7 @@ impl AudioInputState {
     pub fn start_device_watcher(self: &Arc<Self>) {
         let (cancel_tx, cancel_rx) = tokio::sync::watch::channel(false);
         {
-            let mut watcher = self.watcher_cancel_tx.lock().unwrap_or_else(|e| {
-                log::error!("Watcher cancel lock poisoned, recovering");
-                e.into_inner()
-            });
+            let mut watcher = lock_or_recover(&self.watcher_cancel_tx, "Watcher cancel");
             *watcher = Some(cancel_tx);
         }
         let state = Arc::clone(self);
@@ -124,6 +122,13 @@ impl AudioInputState {
             Self::device_watcher_loop(state, cancel_rx).await;
         });
         log::info!("Audio input device watcher started");
+    }
+
+    /// Signals the device watcher started by [`Self::start_device_watcher`] to exit.
+    pub fn stop_device_watcher(&self) {
+        if let Some(cancel_tx) = lock_or_recover(&self.watcher_cancel_tx, "Watcher cancel").take() {
+            let _ = cancel_tx.send(true);
+        }
     }
 
     async fn device_watcher_loop(
@@ -137,102 +142,19 @@ impl AudioInputState {
                 break;
             }
 
-            if let Ok(current_devices) = list_audio_inputs() {
-                let current_names: Vec<String> =
-                    current_devices.iter().map(|d| d.name.clone()).collect();
+            match list_audio_inputs() {
+                Ok(current_devices) => {
+                    let current_names: Vec<String> =
+                        current_devices.iter().map(|d| d.name.clone()).collect();
 
-                // Emit device list changes to frontend
-                if current_names != known_devices {
-                    state.events.audio_devices_changed(&current_names);
-                    known_devices.clone_from(&current_names);
-                }
-
-                // Read both audio settings from the project in one transaction.
-                let (desired_device, gain_db) = project::with_project(|p| {
-                    Ok((p.selected_audio_input.clone(), p.audio_input_gain_db))
-                })
-                .unwrap_or_default();
-
-                // Update the gain atomic so the audio callback picks it up without
-                // taking a lock on the realtime thread.
-                let gain_linear = 10.0f32.powf(gain_db / 20.0);
-                state
-                    .gain_linear
-                    .store(gain_linear.to_bits(), Ordering::Relaxed);
-
-                let current_active = state
-                    .active_device
-                    .lock()
-                    .unwrap_or_else(|e| {
-                        log::error!("Active device lock poisoned, recovering");
-                        e.into_inner()
-                    })
-                    .clone();
-
-                let desired = if desired_device.is_empty() {
-                    None
-                } else {
-                    Some(desired_device)
-                };
-
-                match (&current_active, &desired) {
-                    // No change needed
-                    (a, b) if a == b => {}
-                    // Need to disconnect (desired is None or changed)
-                    (Some(_), None) => {
-                        stop_stream(&state);
-                        end_audio_beat(&state);
-                        *state.active_device.lock().unwrap_or_else(|e| {
-                            log::error!("Active device lock poisoned, recovering");
-                            e.into_inner()
-                        }) = None;
-                        log::info!("Audio input deselected");
+                    if current_names != known_devices {
+                        state.events.audio_devices_changed(&current_names);
+                        known_devices.clone_from(&current_names);
                     }
-                    // Need to connect or switch device
-                    (_, Some(device_name)) => {
-                        // Only connect if device is currently available
-                        if current_names.contains(device_name) {
-                            // Stop existing stream first if switching
-                            if current_active.is_some() {
-                                stop_stream(&state);
-                                *state.active_device.lock().unwrap_or_else(|e| {
-                                    log::error!("Active device lock poisoned, recovering");
-                                    e.into_inner()
-                                }) = None;
-                            }
-                            match start_stream(&state, device_name) {
-                                Ok(()) => {
-                                    *state.active_device.lock().unwrap_or_else(|e| {
-                                        log::error!("Active device lock poisoned, recovering");
-                                        e.into_inner()
-                                    }) = Some(device_name.clone());
-                                    log::info!("Audio input connected to device: {device_name}");
-                                }
-                                Err(e) => {
-                                    log::error!(
-                                        "Failed to connect to audio device '{device_name}': {e}"
-                                    );
-                                    end_audio_beat(&state);
-                                    *state.active_device.lock().unwrap_or_else(|e| {
-                                        log::error!("Active device lock poisoned, recovering");
-                                        e.into_inner()
-                                    }) = None;
-                                }
-                            }
-                        } else if current_active.is_some() {
-                            // Desired device not available, stop current stream
-                            stop_stream(&state);
-                            end_audio_beat(&state);
-                            *state.active_device.lock().unwrap_or_else(|e| {
-                                log::error!("Active device lock poisoned, recovering");
-                                e.into_inner()
-                            }) = None;
-                            log::info!("Audio device '{device_name}' not available, disconnected");
-                        }
-                    }
-                    // Both None — nothing to do
-                    (None, None) => {}
+
+                    Self::reconcile_active_device(&state, &current_names);
                 }
+                Err(e) => log::error!("Failed to list audio input devices: {e}"),
             }
 
             tokio::select! {
@@ -246,6 +168,79 @@ impl AudioInputState {
         }
 
         log::info!("Audio input device watcher loop exited");
+    }
+
+    /// Brings the capture stream in line with the project's selected device and
+    /// gain. Returns without touching the stream when the project can't be
+    /// read, leaving whatever is running in place for the next tick to retry.
+    fn reconcile_active_device(state: &AudioInputState, current_names: &[String]) {
+        let settings =
+            project::with_project(|p| Ok((p.selected_audio_input.clone(), p.audio_input_gain_db)));
+
+        let (desired_device, gain_db) = match settings {
+            Ok(settings) => settings,
+            Err(e) => {
+                log::error!("Failed to read audio settings from project: {e}");
+                return;
+            }
+        };
+
+        // Update the gain atomic so the audio callback picks it up without
+        // taking a lock on the realtime thread.
+        let gain_linear = 10.0f32.powf(gain_db / 20.0);
+        state
+            .gain_linear
+            .store(gain_linear.to_bits(), Ordering::Relaxed);
+
+        let current_active = lock_or_recover(&state.active_device, "Active device").clone();
+
+        let desired = if desired_device.is_empty() {
+            None
+        } else {
+            Some(desired_device)
+        };
+
+        match (&current_active, &desired) {
+            // No change needed
+            (a, b) if a == b => {}
+            // Need to disconnect (desired is None or changed)
+            (Some(_), None) => {
+                stop_stream(state);
+                end_audio_beat(state);
+                *lock_or_recover(&state.active_device, "Active device") = None;
+                log::info!("Audio input deselected");
+            }
+            // Need to connect or switch device
+            (_, Some(device_name)) => {
+                if current_names.contains(device_name) {
+                    // Stop existing stream first if switching
+                    if current_active.is_some() {
+                        stop_stream(state);
+                        *lock_or_recover(&state.active_device, "Active device") = None;
+                    }
+                    match start_stream(state, device_name) {
+                        Ok(()) => {
+                            *lock_or_recover(&state.active_device, "Active device") =
+                                Some(device_name.clone());
+                            log::info!("Audio input connected to device: {device_name}");
+                        }
+                        Err(e) => {
+                            log::error!("Failed to connect to audio device '{device_name}': {e}");
+                            end_audio_beat(state);
+                            *lock_or_recover(&state.active_device, "Active device") = None;
+                        }
+                    }
+                } else if current_active.is_some() {
+                    // Desired device not available, stop current stream
+                    stop_stream(state);
+                    end_audio_beat(state);
+                    *lock_or_recover(&state.active_device, "Active device") = None;
+                    log::info!("Audio device '{device_name}' not available, disconnected");
+                }
+            }
+            // Both None — nothing to do
+            (None, None) => {}
+        }
     }
 }
 
@@ -279,39 +274,28 @@ fn end_audio_beat(state: &AudioInputState) {
 /// 2. Sending a stop signal to unblock the thread.
 /// 3. Joining the thread, ensuring the cpal stream is fully dropped before
 ///    we return.
+impl AudioInputState {
+    /// Stops capture and releases the device, joining the stream thread.
+    pub fn stop_capture(&self) {
+        stop_stream(self);
+    }
+}
+
 fn stop_stream(state: &AudioInputState) {
     // Gate the callback before touching the thread so that any `CoreAudio`
     // callback already in-flight returns without emitting.
-    if let Some(flag) = state
-        .stream_emit_flag
-        .lock()
-        .unwrap_or_else(|e| {
-            log::error!("Stream emit flag lock poisoned, recovering");
-            e.into_inner()
-        })
+    if let Some(flag) = lock_or_recover(&state.stream_emit_flag, "Stream emit flag")
         .take()
     {
         flag.store(false, Ordering::SeqCst);
     }
 
-    if let Some(tx) = state
-        .stream_stop_tx
-        .lock()
-        .unwrap_or_else(|e| {
-            log::error!("Stream stop tx lock poisoned, recovering");
-            e.into_inner()
-        })
+    if let Some(tx) = lock_or_recover(&state.stream_stop_tx, "Stream stop tx")
         .take()
     {
         let _ = tx.send(());
     }
-    let handle = state
-        .stream_thread
-        .lock()
-        .unwrap_or_else(|e| {
-            log::error!("Stream thread lock poisoned, recovering");
-            e.into_inner()
-        })
+    let handle = lock_or_recover(&state.stream_thread, "Stream thread")
         .take();
     if let Some(handle) = handle {
         let _ = handle.join();
@@ -335,10 +319,7 @@ fn start_stream(state: &AudioInputState, device_name: &str) -> Result<(), String
     // Create a fresh emit gate for this stream. The callback holds a clone and
     // checks it before emitting; stop_stream() sets it to false.
     let emit_flag = Arc::new(AtomicBool::new(true));
-    *state.stream_emit_flag.lock().unwrap_or_else(|e| {
-        log::error!("Stream emit flag lock poisoned, recovering");
-        e.into_inner()
-    }) = Some(Arc::clone(&emit_flag));
+    *lock_or_recover(&state.stream_emit_flag, "Stream emit flag") = Some(Arc::clone(&emit_flag));
 
     let gain_linear = Arc::clone(&state.gain_linear);
     let (stop_tx, stop_rx) = std::sync::mpsc::channel::<()>();
@@ -362,14 +343,8 @@ fn start_stream(state: &AudioInputState, device_name: &str) -> Result<(), String
         })
         .map_err(|e| format!("Failed to spawn audio stream thread: {e}"))?;
 
-    *state.stream_thread.lock().unwrap_or_else(|e| {
-        log::error!("Stream thread lock poisoned, recovering");
-        e.into_inner()
-    }) = Some(handle);
-    *state.stream_stop_tx.lock().unwrap_or_else(|e| {
-        log::error!("Stream stop tx lock poisoned, recovering");
-        e.into_inner()
-    }) = Some(stop_tx);
+    *lock_or_recover(&state.stream_thread, "Stream thread") = Some(handle);
+    *lock_or_recover(&state.stream_stop_tx, "Stream stop tx") = Some(stop_tx);
 
     Ok(())
 }

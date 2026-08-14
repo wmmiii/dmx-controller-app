@@ -1,3 +1,4 @@
+use crate::util::lock_or_recover;
 use dmx_engine::project;
 use dmx_engine::proto::SerialDmxOutput;
 use dmx_engine::proto::output::Output as ProtoOutput;
@@ -19,7 +20,7 @@ impl SerialState {
 
         // Store the cancel sender
         {
-            let mut watcher = self.watcher_cancel_tx.lock().unwrap();
+            let mut watcher = lock_or_recover(&self.watcher_cancel_tx, "Watcher cancel");
             *watcher = Some(cancel_tx);
         }
 
@@ -29,6 +30,13 @@ impl SerialState {
         });
 
         log::info!("Serial port watcher started");
+    }
+
+    /// Signals the device watcher started by [`Self::start_port_watcher`] to exit.
+    pub fn stop_port_watcher(&self) {
+        if let Some(cancel_tx) = lock_or_recover(&self.watcher_cancel_tx, "Watcher cancel").take() {
+            let _ = cancel_tx.send(true);
+        }
     }
 
     async fn port_watcher_loop(
@@ -95,8 +103,7 @@ impl SerialState {
         log::info!("Port watcher loop exited");
     }
 
-    /// Internal method for use by output loop
-    pub fn output_dmx_internal(&self, output_id: &str, data: &[u8]) -> Result<(), String> {
+    pub(crate) fn output_dmx(&self, output_id: &str, data: &[u8]) -> Result<(), String> {
         let mut ports = self
             .dmx_ports
             .lock()
@@ -136,10 +143,7 @@ impl SerialState {
 
     /// Get the port name that the output is currently bound to
     pub fn get_bound_port_name(&self, output_id: &str) -> Option<String> {
-        let ports = self
-            .dmx_ports
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let ports = lock_or_recover(&self.dmx_ports, "DMX ports");
         ports.get(output_id).map(|(port_name, _)| port_name.clone())
     }
 
@@ -239,14 +243,16 @@ impl SerialState {
         for (output_id_str, desired_port_option) in serial_outputs {
             let current_port = self.get_bound_port_name(&output_id_str);
 
-            // Determine if we need to rebind
-            let needs_rebind = match (
-                &current_port,
-                desired_port_option.as_ref().is_some_and(|p| !p.is_empty()),
-            ) {
-                (None, false) => false, // Not bound and no port desired - nothing to do
-                (None, true) => true,   // Not bound but should be - bind it
-                (Some(current), false) => {
+            // An empty `last_port` means the same thing as an absent one, so
+            // both collapse to None and every arm below binds what it needs.
+            let desired_port = desired_port_option
+                .as_deref()
+                .filter(|port| !port.is_empty());
+
+            let needs_rebind = match (&current_port, desired_port) {
+                (None, None) => false, // Not bound and no port desired - nothing to do
+                (None, Some(_)) => true, // Not bound but should be - bind it
+                (Some(current), None) => {
                     // Bound but no port desired - unbind it
                     log::debug!(
                         "Output '{output_id_str}' has no last_port set, closing port '{current}'"
@@ -254,15 +260,14 @@ impl SerialState {
                     let _ = self.try_close_port(&output_id_str);
                     false
                 }
-                (Some(current), true) => current != desired_port_option.as_ref().unwrap(), // Check if port changed
+                (Some(current), Some(desired)) => current != desired,
             };
 
-            if let Some(desired_port) = desired_port_option
-                && !desired_port.is_empty()
+            if let Some(desired_port) = desired_port
                 && needs_rebind
             {
                 // Check if the desired port is available
-                if available_port_names.contains(&desired_port) {
+                if available_port_names.iter().any(|port| port == desired_port) {
                     // Close any existing port binding first
                     if let Some(current) = current_port {
                         log::debug!(

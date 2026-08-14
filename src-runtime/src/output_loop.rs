@@ -8,6 +8,7 @@ use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
 
 use crate::events::EventSink;
+use crate::util::now_ms;
 use crate::sacn::SacnState;
 use crate::serial::SerialState;
 use crate::wled::WledState;
@@ -306,17 +307,13 @@ impl OutputLoopManager {
             let loop_start = Instant::now();
 
             // Render the frame
-            #[allow(clippy::cast_possible_truncation)]
-            let system_t = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_millis() as u64;
+            let system_t = now_ms();
 
             let result = match &output_type {
                 OutputType::Serial { .. } => {
                     match Self::render_and_emit_dmx(output_id, system_t, frame, events.as_ref()) {
                         Ok(dmx_vec) => {
-                            serial_state.output_dmx_internal(&output_id.to_string(), &dmx_vec)
+                            serial_state.output_dmx(&output_id.to_string(), &dmx_vec)
                         }
                         Err(RenderError::OutputNotFound { .. }) => {
                             // Output was deleted - exit loop gracefully
@@ -335,7 +332,7 @@ impl OutputLoopManager {
                 } => {
                     match Self::render_and_emit_dmx(output_id, system_t, frame, events.as_ref()) {
                         Ok(dmx_vec) => {
-                            sacn_state.output_sacn_internal(*universe, ip_address, &dmx_vec)
+                            sacn_state.output_sacn(*universe, ip_address, &dmx_vec)
                         }
                         Err(RenderError::OutputNotFound { .. }) => {
                             // Output was deleted - exit loop gracefully
@@ -353,7 +350,7 @@ impl OutputLoopManager {
                         Ok(wled_data) => {
                             events.wled_render(output_id, &wled_data);
 
-                            wled_state.output_wled_internal(ip_address, &wled_data).await
+                            wled_state.output_wled(ip_address, &wled_data).await
                         }
                         Err(RenderError::OutputNotFound { .. }) => {
                             // Output was deleted - exit loop gracefully

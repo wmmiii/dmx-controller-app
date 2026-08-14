@@ -1,5 +1,6 @@
 use crate::beat::SharedBeatSampler;
 use crate::events::EventSink;
+use crate::util::{lock_or_recover, now_ms};
 use dmx_engine::{
     midi::{ActionResult, ControlCommandType, calculate_midi_output, perform_action},
     project,
@@ -10,7 +11,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::Mutex as StdMutex;
-use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::oneshot;
 
 #[derive(Deserialize, Serialize, Clone)]
@@ -78,7 +78,7 @@ impl MidiState {
 
         // Store the cancel sender
         {
-            let mut watcher = self.watcher_cancel_tx.lock().unwrap();
+            let mut watcher = lock_or_recover(&self.watcher_cancel_tx, "Watcher cancel");
             *watcher = Some(cancel_tx);
         }
 
@@ -88,6 +88,13 @@ impl MidiState {
         });
 
         log::info!("MIDI device watcher started");
+    }
+
+    /// Signals the device watcher started by [`Self::start_device_watcher`] to exit.
+    pub fn stop_device_watcher(&self) {
+        if let Some(cancel_tx) = lock_or_recover(&self.watcher_cancel_tx, "Watcher cancel").take() {
+            let _ = cancel_tx.send(true);
+        }
     }
 
     async fn device_watcher_loop(
@@ -126,7 +133,10 @@ impl MidiState {
                         .map(|cm| cm.controller_to_binding.keys().cloned().collect())
                         .unwrap_or_default())
                 })
-                .unwrap_or_default();
+                .unwrap_or_else(|e| {
+                    log::error!("Failed to read controller mappings, skipping reconnect: {e}");
+                    Vec::new()
+                });
 
                 // Handle disconnections
                 for controller_name in &known_controller_names {
@@ -328,37 +338,48 @@ fn disconnect_device(state: &MidiState, device_name: &str) {
 }
 
 /// Output MIDI state for a specific device.
-#[allow(clippy::cast_possible_truncation)]
 fn output_midi_state_for_device(
     device_name: &str,
     output_conn: &Arc<StdMutex<Option<MidiOutputConnection>>>,
 ) {
-    let t = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_millis() as u64;
+    let midi_output = match calculate_midi_output(device_name, now_ms()) {
+        Ok(midi_output) => midi_output,
+        Err(e) => {
+            log::error!("Failed to calculate MIDI output for '{device_name}': {e}");
+            return;
+        }
+    };
 
-    // Calculate MIDI output values from project state
-    let midi_output = calculate_midi_output(device_name, t);
+    let mut output_conn = lock_or_recover(output_conn, "MIDI output connection");
+    let Some(connection) = output_conn.as_mut() else {
+        return;
+    };
 
-    if let Ok(midi_output) = midi_output {
-        if let Ok(mut output_conn) = output_conn.lock() {
-            if let Some(connection) = output_conn.as_mut() {
-                for (channel, value) in midi_output {
-                    let channel_address: Vec<u8> = channel
-                        .split(", ")
-                        .map(|s| s.parse().expect("Parse error"))
-                        .collect();
-
-                    output_value(connection, &channel_address, value);
-                }
-            }
+    for (channel, value) in midi_output {
+        match parse_channel_address(&channel) {
+            Ok(channel_address) => output_value(connection, channel_address, value),
+            Err(e) => log::error!("Skipping MIDI output for '{device_name}': {e}"),
         }
     }
 }
 
+/// Binding keys are built as `"{command}, {data1}"`, so anything else means the
+/// project carries a binding this build can't address.
+fn parse_channel_address(channel: &str) -> Result<[u8; 2], String> {
+    let mut parts = channel.split(", ");
+    let address = (parts.next(), parts.next(), parts.next());
+
+    match address {
+        (Some(command), Some(data), None) => match (command.parse(), data.parse()) {
+            (Ok(command), Ok(data)) => Ok([command, data]),
+            _ => Err(format!("channel address '{channel}' is not a pair of bytes")),
+        },
+        _ => Err(format!("channel address '{channel}' is not a pair")),
+    }
+}
+
 #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-pub fn output_value(conn: &mut MidiOutputConnection, channel: &[u8], value: f64) {
+fn output_value(conn: &mut MidiOutputConnection, channel: [u8; 2], value: f64) {
     // CCs 0-31 support 14-bit resolution with LSB at CC+32
     if channel[1] < 32 {
         // 14-bit mode: map to 0-16383, split into MSB (bits 7-13) and LSB (bits 0-6)
@@ -410,11 +431,7 @@ fn process_midi_input(
     };
 
     let channel = format!("{command}, {data1}");
-    #[allow(clippy::cast_possible_truncation)]
-    let t = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_millis() as u64;
+    let t = now_ms();
 
     // Perform the action
     match perform_action(binding_id, &channel, value, cct, t) {

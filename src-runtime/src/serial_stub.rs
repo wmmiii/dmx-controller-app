@@ -8,7 +8,7 @@ impl SerialState {
         Ok(())
     }
 
-    pub fn output_dmx_internal(&self, _output_id: &str, _data: &[u8]) -> Result<(), String> {
+    pub(crate) fn output_dmx(&self, _output_id: &str, _data: &[u8]) -> Result<(), String> {
         Ok(())
     }
 

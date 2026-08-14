@@ -11,6 +11,8 @@ use tokio::task::JoinHandle;
 
 use crate::ddp::DdpState;
 use crate::events::EventSink;
+use crate::util::lock_or_recover;
+use crate::util::now_ms;
 use crate::shader::ShaderState;
 
 const DEFAULT_DISPLAY_FPS: u32 = 30;
@@ -163,11 +165,7 @@ impl DisplayLoopManager {
 
             let loop_start = Instant::now();
 
-            #[allow(clippy::cast_possible_truncation)]
-            let system_t = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_millis() as u64;
+            let system_t = now_ms();
 
             // Get all display IDs and DDP output configs from project
             let config: Result<DisplayLoopConfig, String> = project::with_project(|project| {
@@ -271,7 +269,7 @@ impl DisplayLoopManager {
             // Output to all DDP devices
             for ddp_config in &config.ddp_outputs {
                 let mut ddp = ddp_state.lock().await;
-                if let Err(e) = ddp.output_ddp_internal(
+                if let Err(e) = ddp.output_ddp(
                     &buffers,
                     &ddp_config.ddp_output,
                     ddp_config.output_id,
@@ -312,10 +310,7 @@ fn render_display_buffer(
     if let (Some(tree), Some(shader_state)) = (&data.uniforms.visualizer_tree, shader_state) {
         // Readback blocks on GPU work; keep it off the async executor threads.
         let rgba = tokio::task::block_in_place(|| {
-            let mut state = shader_state.lock().unwrap_or_else(|e| {
-                log::error!("Shader state lock poisoned, recovering");
-                e.into_inner()
-            });
+            let mut state = lock_or_recover(&shader_state, "Shader state");
             state.render_and_readback(
                 display_id,
                 tree,

@@ -1,3 +1,4 @@
+use crate::util::lock_or_recover;
 use dmx_engine::project;
 use dmx_engine::proto::Project;
 use prost::Message;
@@ -51,10 +52,7 @@ impl DiskProjectStore {
     }
 
     fn lock_pending(&self) -> std::sync::MutexGuard<'_, Pending> {
-        self.pending.lock().unwrap_or_else(|e| {
-            log::error!("Project store lock poisoned, recovering");
-            e.into_inner()
-        })
+        lock_or_recover(&self.pending, "Project store")
     }
 
     fn write(path: &Path, data: &[u8]) {
@@ -108,10 +106,7 @@ impl ProjectStore for DiskProjectStore {
         pending.debounce = Some(tokio::spawn(async move {
             tokio::time::sleep(Duration::from_millis(DEBOUNCE_MS)).await;
 
-            let mut pending = shared.lock().unwrap_or_else(|e| {
-                log::error!("Project store lock poisoned, recovering");
-                e.into_inner()
-            });
+            let mut pending = lock_or_recover(&shared, "Project store");
             if let Some(data) = pending.project_binary.take() {
                 Self::write(&path, &data);
             }
