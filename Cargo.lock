@@ -1574,7 +1574,36 @@ dependencies = [
 ]
 
 [[package]]
-name = "dmx-controller-headless"
+name = "dmx-controller-app"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "base64 0.22.1",
+ "chrono",
+ "dmx-engine",
+ "dmx-runtime",
+ "log",
+ "mime_guess",
+ "png 0.17.16",
+ "prost",
+ "reqwest 0.12.28",
+ "rmcp",
+ "sanitize-filename",
+ "serde",
+ "serde_json",
+ "sha256",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-keepawake",
+ "tauri-plugin-log",
+ "tauri-plugin-opener",
+ "tauri-plugin-process",
+ "tokio",
+]
+
+[[package]]
+name = "dmx-controller-app-headless"
 version = "0.1.0"
 dependencies = [
  "clap",
@@ -1621,35 +1650,6 @@ dependencies = [
  "serialport",
  "tokio",
  "wgpu",
-]
-
-[[package]]
-name = "dmx_controller_app"
-version = "0.1.0"
-dependencies = [
- "axum",
- "base64 0.22.1",
- "chrono",
- "dmx-engine",
- "dmx-runtime",
- "log",
- "mime_guess",
- "png 0.17.16",
- "prost",
- "reqwest 0.12.28",
- "rmcp",
- "sanitize-filename",
- "serde",
- "serde_json",
- "sha256",
- "tauri",
- "tauri-build",
- "tauri-plugin-dialog",
- "tauri-plugin-keepawake",
- "tauri-plugin-log",
- "tauri-plugin-opener",
- "tauri-plugin-process",
- "tokio",
 ]
 
 [[package]]

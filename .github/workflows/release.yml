@@ -151,20 +151,20 @@ jobs:
             protobuf-compiler
 
       - name: Build headless binary
-        run: cargo build --release -p dmx-controller-headless
+        run: cargo build --release -p dmx-controller-app-headless
         env:
           PROTOC: /usr/bin/protoc
 
       - name: Package binary
         run: |
-          tar -czf dmx-controller-headless-${{ matrix.platform }}.tar.gz \
-            -C target/release dmx-controller-headless
+          tar -czf dmx-controller-app-headless-${{ matrix.platform }}.tar.gz \
+            -C target/release dmx-controller-app-headless
 
       - name: Upload headless binary
         uses: actions/upload-artifact@v4
         with:
           name: headless-${{ matrix.platform }}
-          path: dmx-controller-headless-${{ matrix.platform }}.tar.gz
+          path: dmx-controller-app-headless-${{ matrix.platform }}.tar.gz
           if-no-files-found: error
 
   # build-ios:

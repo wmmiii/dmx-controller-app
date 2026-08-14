@@ -31,7 +31,7 @@ React 19 + TypeScript frontend (`src/`, built with Vite), wrapped as a native de
 - `pnpm run tauri:dev` - Run the app (the only supported way to develop/test it)
 - `pnpm run build` - Generate protos, build the WASM engine, build the frontend for production
 - `pnpm run test` - Jest + Rust `cargo test` (src-engine, src-runtime, src-tauri, src-headless)
-- `cargo run -p dmx-controller-headless -- --project <PATH> --mode autopilot` - Run the headless CLI (see README for flags)
+- `cargo run -p dmx-controller-app-headless -- --project <PATH> --mode autopilot` - Run the headless CLI (see README for flags)
 - `pnpm run type-check` / `pnpm run lint` / `pnpm run cleanup` - see Agent Workflow below before running these
 - `pnpm run proto:generate` - Regenerate TS bindings from `.proto` files; needed after any proto edit before the new types are usable
 - `pnpm run tauri:ios` - iOS simulator

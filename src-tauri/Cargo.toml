@@ -1,5 +1,5 @@
 [package]
-name = "dmx_controller_app"
+name = "dmx-controller-app"
 version = "0.1.0"
 description = "A lighting controller for DMX and friends."
 authors = ["wmmiii"]
