@@ -351,7 +351,6 @@ impl ShaderState {
         }
 
         let wrapped = wrap_user_shader(glsl_source);
-        log::info!("Compiling shader {id}, wrapped GLSL:\n{wrapped}");
 
         let fragment_module = self
             .device
