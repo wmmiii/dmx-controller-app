@@ -9,10 +9,11 @@ description = "Platform integration for the DMX controller: transports, render l
 crate-type = ["rlib"]
 
 [features]
-default = ["visualizer", "audio", "midi"]
+default = ["visualizer", "audio", "midi", "serial"]
 visualizer = ["dep:ddp-rs", "dep:naga", "dep:wgpu", "dep:bytemuck"]
 audio = ["dep:cpal", "dep:rustfft"]
 midi = ["dep:midir"]
+serial = ["dep:open_dmx", "dep:serialport"]
 
 [dependencies]
 dmx-engine = { path = "../src-engine" }
@@ -24,20 +25,21 @@ serde = { version = "1.0", features = ["derive"] }
 tokio = { version = "1.48.0", features = ["time", "macros", "sync", "net", "rt-multi-thread"] }
 
 bytemuck = { version = "1.21", features = ["derive"], optional = true }
+cpal = { version = "0.17", optional = true }
 ddp-rs = { version = "1.2.1", optional = true }
+midir = { version = "0.10.2", optional = true }
+open_dmx = { version = "1.1.1", optional = true }
+rustfft = { version = "6", optional = true }
+serialport = { version = "4.7.3", optional = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 alsa-sys = "0.3"
 libc = "0.2"
 
+# wgpu and naga take different backends per platform, which is a property of
+# the target rather than of any feature.
 [target.'cfg(not(target_os = "ios"))'.dependencies]
-open_dmx = "1.1.1"
-serialport = "4.7.3"
-
-cpal = { version = "0.17", optional = true }
-midir = { version = "0.10.2", optional = true }
 naga = { version = "26.0", features = ["glsl-in", "spv-out"], optional = true }
-rustfft = { version = "6", optional = true }
 wgpu = { version = "26.0", features = ["vulkan", "metal", "wgsl", "glsl"], optional = true }
 
 [target.'cfg(target_os = "ios")'.dependencies]
