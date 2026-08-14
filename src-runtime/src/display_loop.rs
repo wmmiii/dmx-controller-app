@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::Mutex as StdMutex;
 use std::time::{Duration, Instant};
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, MutexGuard};
 use tokio::task::JoinHandle;
 
 use crate::ddp::DdpState;
@@ -78,7 +78,7 @@ impl DisplayLoopManager {
         &self,
         ddp_state: Arc<Mutex<DdpState>>,
     ) -> Result<(), String> {
-        let _guard = self.loop_rebuild_lock.lock().await;
+        let rebuild_guard = self.loop_rebuild_lock.lock().await;
 
         // Check if any enabled displays exist with mappings in the current patch
         let has_displays: bool = project::with_project(|project| {
@@ -93,7 +93,7 @@ impl DisplayLoopManager {
         .map_err(|e| format!("Failed to check displays: {e}"))?;
 
         if !has_displays {
-            return self.stop_display_loop_unguarded().await;
+            return self.stop_display_loop_locked(&rebuild_guard).await;
         }
 
         // The loop re-reads its display and DDP configuration from the project
@@ -104,7 +104,7 @@ impl DisplayLoopManager {
             return Ok(());
         }
 
-        self.start_display_loop(ddp_state).await
+        self.start_display_loop(ddp_state, &rebuild_guard).await
     }
 
     async fn is_display_loop_running(&self) -> bool {
@@ -117,9 +117,13 @@ impl DisplayLoopManager {
 
     /// Starts the unified display loop.
     /// This loop renders all displays in lock-step and outputs to all DDP devices.
-    async fn start_display_loop(&self, ddp_state: Arc<Mutex<DdpState>>) -> Result<(), String> {
+    async fn start_display_loop(
+        &self,
+        ddp_state: Arc<Mutex<DdpState>>,
+        rebuild_guard: &MutexGuard<'_, ()>,
+    ) -> Result<(), String> {
         // Stop existing display loop if running
-        self.stop_display_loop_unguarded().await?;
+        self.stop_display_loop_locked(rebuild_guard).await?;
 
         let (cancel_tx, cancel_rx) = tokio::sync::watch::channel(false);
         let events = Arc::clone(&self.events);
@@ -142,12 +146,14 @@ impl DisplayLoopManager {
     }
 
     pub async fn stop_display_loop(&self) -> Result<(), String> {
-        let _guard = self.loop_rebuild_lock.lock().await;
-        self.stop_display_loop_unguarded().await
+        let rebuild_guard = self.loop_rebuild_lock.lock().await;
+        self.stop_display_loop_locked(&rebuild_guard).await
     }
 
-    /// Caller must already hold `loop_rebuild_lock`.
-    async fn stop_display_loop_unguarded(&self) -> Result<(), String> {
+    async fn stop_display_loop_locked(
+        &self,
+        _rebuild_guard: &MutexGuard<'_, ()>,
+    ) -> Result<(), String> {
         let mut display_loop = self.display_loop.lock().await;
 
         if let Some(handle) = display_loop.take() {

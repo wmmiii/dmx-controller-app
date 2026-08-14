@@ -4,7 +4,7 @@ use dmx_engine::render::render::{RenderError, render_dmx, render_wled};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, MutexGuard};
 use tokio::task::JoinHandle;
 
 use crate::events::EventSink;
@@ -84,9 +84,10 @@ impl OutputLoopManager {
         serial_state: Arc<SerialState>,
         sacn_state: Arc<SacnState>,
         wled_state: Arc<WledState>,
+        rebuild_guard: &MutexGuard<'_, ()>,
     ) -> Result<(), String> {
         // Stop existing loop if running
-        self.stop_loop(output_id).await?;
+        self.stop_loop(output_id, rebuild_guard).await?;
 
         let (cancel_tx, cancel_rx) = tokio::sync::watch::channel(false);
         let output_type_clone = output_type.clone();
@@ -125,7 +126,11 @@ impl OutputLoopManager {
         Ok(())
     }
 
-    async fn stop_loop(&self, output_id: u64) -> Result<(), String> {
+    async fn stop_loop(
+        &self,
+        output_id: u64,
+        _rebuild_guard: &MutexGuard<'_, ()>,
+    ) -> Result<(), String> {
         let mut loops = self.loops.lock().await;
 
         if let Some(handle) = loops.remove(&output_id) {
@@ -143,11 +148,11 @@ impl OutputLoopManager {
     }
 
     pub async fn stop_all(&self) -> Result<(), String> {
-        let _guard = self.loop_rebuild_lock.lock().await;
+        let rebuild_guard = self.loop_rebuild_lock.lock().await;
 
         let output_ids: Vec<u64> = self.loops.lock().await.keys().copied().collect();
         for output_id in output_ids {
-            self.stop_loop(output_id).await?;
+            self.stop_loop(output_id, &rebuild_guard).await?;
         }
         Ok(())
     }
@@ -158,7 +163,7 @@ impl OutputLoopManager {
         sacn_state: Arc<SacnState>,
         wled_state: Arc<WledState>,
     ) -> Result<(), String> {
-        let _guard = self.loop_rebuild_lock.lock().await;
+        let rebuild_guard = self.loop_rebuild_lock.lock().await;
 
         // Extract desired outputs from project (avoid holding lock during async I/O)
         let desired_outputs: HashMap<u64, OutputType> = project::with_project(|project| {
@@ -255,7 +260,7 @@ impl OutputLoopManager {
                 Some(OutputType::Serial { .. })
             );
             let will_restart = to_start.iter().any(|(id, _)| *id == output_id);
-            self.stop_loop(output_id).await?;
+            self.stop_loop(output_id, &rebuild_guard).await?;
             // Close the serial port when the output is disabled or deleted. Skip
             // this when the loop is being immediately restarted (e.g. FPS change)
             // so we don't briefly drop and reopen the same port.
@@ -272,6 +277,7 @@ impl OutputLoopManager {
                 serial_state.clone(),
                 sacn_state.clone(),
                 wled_state.clone(),
+                &rebuild_guard,
             )
             .await?;
         }
