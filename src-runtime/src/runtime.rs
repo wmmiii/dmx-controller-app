@@ -2,7 +2,6 @@ use dmx_engine::beat::BeatSampler;
 use dmx_engine::project;
 use std::sync::Arc;
 use std::sync::Mutex as StdMutex;
-use tokio::sync::Mutex;
 
 use crate::beat::SharedBeatSampler;
 use crate::events::EventSink;
@@ -11,6 +10,9 @@ use crate::project_store::ProjectStore;
 use crate::sacn::SacnState;
 use crate::serial::SerialState;
 use crate::wled::WledState;
+
+#[cfg(feature = "visualizer")]
+use tokio::sync::Mutex;
 
 #[cfg(feature = "visualizer")]
 use crate::ddp::DdpState;
@@ -40,39 +42,41 @@ pub struct Runtime {
     pub events: Arc<dyn EventSink>,
     pub beat_sampler: SharedBeatSampler,
 
-    pub serial: Arc<Mutex<SerialState>>,
-    pub sacn: Arc<Mutex<SacnState>>,
-    pub wled: Arc<Mutex<WledState>>,
-    pub output_loops: Arc<Mutex<OutputLoopManager>>,
+    pub serial: Arc<SerialState>,
+    pub sacn: Arc<SacnState>,
+    pub wled: Arc<WledState>,
+    pub output_loops: Arc<OutputLoopManager>,
 
     #[cfg(feature = "visualizer")]
     pub ddp: Arc<Mutex<DdpState>>,
     #[cfg(feature = "visualizer")]
-    pub display_loops: Arc<Mutex<DisplayLoopManager>>,
+    pub display_loops: Arc<DisplayLoopManager>,
     /// `None` when the visualizer is disabled or GPU initialization failed.
     #[cfg(feature = "visualizer")]
     pub shader: Option<Arc<StdMutex<ShaderState>>>,
 
     #[cfg(all(feature = "midi", not(target_os = "ios")))]
-    pub midi: Option<Arc<Mutex<MidiState>>>,
+    pub midi: Option<Arc<MidiState>>,
     #[cfg(all(feature = "audio", not(target_os = "ios")))]
-    pub audio: Option<Arc<Mutex<AudioInputState>>>,
+    pub audio: Option<Arc<AudioInputState>>,
 
     persist: Option<Arc<dyn ProjectStore>>,
 }
 
 impl Runtime {
+    // Only ShaderState::new is awaited, so a build without it has nothing to.
+    #[cfg_attr(not(feature = "visualizer"), allow(clippy::unused_async))]
     pub async fn start(config: RuntimeConfig) -> Result<Arc<Self>, String> {
         let events = config.events;
         let beat_sampler: SharedBeatSampler = Arc::new(StdMutex::new(BeatSampler::default()));
 
         #[cfg(all(feature = "midi", not(target_os = "ios")))]
         let midi = if config.enable_midi {
-            let state = Arc::new(Mutex::new(MidiState::new(
+            let state = Arc::new(MidiState::new(
                 Arc::clone(&events),
                 Arc::clone(&beat_sampler),
-            )));
-            state.lock().await.start_device_watcher(Arc::clone(&state));
+            ));
+            state.start_device_watcher();
             Some(state)
         } else {
             None
@@ -80,22 +84,22 @@ impl Runtime {
 
         #[cfg(all(feature = "audio", not(target_os = "ios")))]
         let audio = if config.enable_audio {
-            let state = Arc::new(Mutex::new(AudioInputState::new(
+            let state = Arc::new(AudioInputState::new(
                 Arc::clone(&events),
                 Arc::clone(&beat_sampler),
-            )));
-            state.lock().await.start_device_watcher(Arc::clone(&state));
+            ));
+            state.start_device_watcher();
             Some(state)
         } else {
             None
         };
 
-        let serial = Arc::new(Mutex::new(SerialState::default()));
+        let serial = Arc::new(SerialState::default());
         #[cfg(not(target_os = "ios"))]
-        serial.lock().await.start_port_watcher(Arc::clone(&serial));
+        serial.start_port_watcher();
 
-        let sacn = Arc::new(Mutex::new(SacnState::new()?));
-        let wled = Arc::new(Mutex::new(WledState::new()?));
+        let sacn = Arc::new(SacnState::new()?);
+        let wled = Arc::new(WledState::new()?);
 
         #[cfg(feature = "visualizer")]
         let shader = if config.enable_visualizer {
@@ -117,12 +121,12 @@ impl Runtime {
         #[cfg(feature = "visualizer")]
         let ddp = Arc::new(Mutex::new(DdpState::default()));
         #[cfg(feature = "visualizer")]
-        let display_loops = Arc::new(Mutex::new(DisplayLoopManager::new(
+        let display_loops = Arc::new(DisplayLoopManager::new(
             Arc::clone(&events),
             shader.clone(),
-        )));
+        ));
 
-        let output_loops = Arc::new(Mutex::new(OutputLoopManager::new(Arc::clone(&events))));
+        let output_loops = Arc::new(OutputLoopManager::new(Arc::clone(&events)));
 
         #[cfg(feature = "visualizer")]
         DisplayLoopManager::start_on_load(Arc::clone(&display_loops), Arc::clone(&ddp));
@@ -156,26 +160,21 @@ impl Runtime {
     }
 
     pub async fn rebuild_outputs(&self) -> Result<(), String> {
-        {
-            let serial = self.serial.lock().await;
-            serial.auto_bind_serial_outputs()?;
-        }
+        self.serial.auto_bind_serial_outputs()?;
 
-        {
-            let manager = self.output_loops.lock().await;
-            manager
-                .rebuild_all_loops(
-                    Arc::clone(&self.serial),
-                    Arc::clone(&self.sacn),
-                    Arc::clone(&self.wled),
-                )
-                .await?;
-        }
+        self.output_loops
+            .rebuild_all_loops(
+                Arc::clone(&self.serial),
+                Arc::clone(&self.sacn),
+                Arc::clone(&self.wled),
+            )
+            .await?;
 
         #[cfg(feature = "visualizer")]
         {
-            let manager = self.display_loops.lock().await;
-            manager.rebuild_display_loop(Arc::clone(&self.ddp)).await?;
+            self.display_loops
+                .rebuild_display_loop(Arc::clone(&self.ddp))
+                .await?;
 
             // Keep the GPU in step with project.visualizers so undo/redo/load/copy
             // all stay consistent without ad-hoc compile calls in the UI.
@@ -214,16 +213,10 @@ impl Runtime {
     /// Leaves the last rendered frame on the wire, so blackout must be set
     /// before calling this.
     pub async fn shutdown(&self) -> Result<(), String> {
-        {
-            let manager = self.output_loops.lock().await;
-            manager.stop_all().await?;
-        }
+        self.output_loops.stop_all().await?;
 
         #[cfg(feature = "visualizer")]
-        {
-            let manager = self.display_loops.lock().await;
-            manager.stop_display_loop().await?;
-        }
+        self.display_loops.stop_display_loop().await?;
 
         self.flush_persist();
 

@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::Mutex as StdMutex;
 use std::time::{Duration, Instant};
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, MutexGuard};
 use tokio::task::JoinHandle;
 
 use crate::ddp::DdpState;
@@ -37,7 +37,13 @@ struct DisplayLoopConfig {
 }
 
 pub struct DisplayLoopManager {
-    display_loop: Arc<Mutex<Option<DisplayLoopHandle>>>,
+    display_loop: Mutex<Option<DisplayLoopHandle>>,
+    /// Held for the whole of `rebuild_display_loop` and `stop_display_loop`.
+    /// The `display_loop` slot alone is not enough: the running check and the
+    /// insert that follows it are separate acquisitions, so two overlapping
+    /// rebuilds can each start a loop, and whichever inserts first is
+    /// overwritten and left running with nothing able to cancel it.
+    loop_rebuild_lock: Mutex<()>,
     events: Arc<dyn EventSink>,
     /// `None` when GPU initialization failed. Displays render black rather
     /// than taking the whole loop down with them.
@@ -50,16 +56,16 @@ impl DisplayLoopManager {
         shader_state: Option<Arc<StdMutex<ShaderState>>>,
     ) -> Self {
         DisplayLoopManager {
-            display_loop: Arc::new(Mutex::new(None)),
+            display_loop: Mutex::new(None),
+            loop_rebuild_lock: Mutex::new(()),
             events,
             shader_state,
         }
     }
 
     /// Starts display loop on app load if displays exist.
-    pub fn start_on_load(manager: Arc<Mutex<Self>>, ddp_state: Arc<Mutex<DdpState>>) {
+    pub fn start_on_load(manager: Arc<Self>, ddp_state: Arc<Mutex<DdpState>>) {
         tokio::spawn(async move {
-            let manager = manager.lock().await;
             if let Err(e) = manager.rebuild_display_loop(ddp_state).await {
                 log::error!("Failed to start display loop on startup: {e}");
             }
@@ -72,6 +78,8 @@ impl DisplayLoopManager {
         &self,
         ddp_state: Arc<Mutex<DdpState>>,
     ) -> Result<(), String> {
+        let rebuild_guard = self.loop_rebuild_lock.lock().await;
+
         // Check if any enabled displays exist with mappings in the current patch
         let has_displays: bool = project::with_project(|project| {
             Ok(project.displays.values().any(|display| {
@@ -85,7 +93,7 @@ impl DisplayLoopManager {
         .map_err(|e| format!("Failed to check displays: {e}"))?;
 
         if !has_displays {
-            return self.stop_display_loop().await;
+            return self.stop_display_loop_locked(&rebuild_guard).await;
         }
 
         // The loop re-reads its display and DDP configuration from the project
@@ -96,7 +104,7 @@ impl DisplayLoopManager {
             return Ok(());
         }
 
-        self.start_display_loop(ddp_state).await
+        self.start_display_loop(ddp_state, &rebuild_guard).await
     }
 
     async fn is_display_loop_running(&self) -> bool {
@@ -109,9 +117,13 @@ impl DisplayLoopManager {
 
     /// Starts the unified display loop.
     /// This loop renders all displays in lock-step and outputs to all DDP devices.
-    async fn start_display_loop(&self, ddp_state: Arc<Mutex<DdpState>>) -> Result<(), String> {
+    async fn start_display_loop(
+        &self,
+        ddp_state: Arc<Mutex<DdpState>>,
+        rebuild_guard: &MutexGuard<'_, ()>,
+    ) -> Result<(), String> {
         // Stop existing display loop if running
-        self.stop_display_loop().await?;
+        self.stop_display_loop_locked(rebuild_guard).await?;
 
         let (cancel_tx, cancel_rx) = tokio::sync::watch::channel(false);
         let events = Arc::clone(&self.events);
@@ -134,6 +146,14 @@ impl DisplayLoopManager {
     }
 
     pub async fn stop_display_loop(&self) -> Result<(), String> {
+        let rebuild_guard = self.loop_rebuild_lock.lock().await;
+        self.stop_display_loop_locked(&rebuild_guard).await
+    }
+
+    async fn stop_display_loop_locked(
+        &self,
+        _rebuild_guard: &MutexGuard<'_, ()>,
+    ) -> Result<(), String> {
         let mut display_loop = self.display_loop.lock().await;
 
         if let Some(handle) = display_loop.take() {

@@ -5,7 +5,6 @@ use open_dmx::DMXSerial;
 use serialport::available_ports;
 use std::collections::HashMap;
 use std::sync::Arc;
-use tokio::sync::Mutex;
 
 #[derive(Default)]
 pub struct SerialState {
@@ -15,7 +14,7 @@ pub struct SerialState {
 
 impl SerialState {
     /// Start watching for new serial ports and auto-binding
-    pub fn start_port_watcher(&self, state: Arc<Mutex<SerialState>>) {
+    pub fn start_port_watcher(self: &Arc<Self>) {
         let (cancel_tx, cancel_rx) = tokio::sync::watch::channel(false);
 
         // Store the cancel sender
@@ -24,6 +23,7 @@ impl SerialState {
             *watcher = Some(cancel_tx);
         }
 
+        let state = Arc::clone(self);
         tokio::spawn(async move {
             Self::port_watcher_loop(state, cancel_rx).await;
         });
@@ -32,7 +32,7 @@ impl SerialState {
     }
 
     async fn port_watcher_loop(
-        state: Arc<Mutex<SerialState>>,
+        state: Arc<SerialState>,
         mut cancel_rx: tokio::sync::watch::Receiver<bool>,
     ) {
         let mut known_ports: Vec<String> = Vec::new();
@@ -66,20 +66,16 @@ impl SerialState {
                 if !disappeared_ports.is_empty() {
                     log::info!("Detected disconnected serial ports: {disappeared_ports:?}");
 
-                    let serial = state.lock().await;
-                    serial.close_disconnected_ports(&disappeared_ports);
-                    drop(serial);
+                    state.close_disconnected_ports(&disappeared_ports);
                 }
 
                 // If there are new ports, try to auto-bind
                 if !new_ports.is_empty() {
                     log::info!("Detected new serial ports: {new_ports:?}");
 
-                    let serial = state.lock().await;
-                    if let Err(e) = serial.auto_bind_serial_outputs() {
+                    if let Err(e) = state.auto_bind_serial_outputs() {
                         log::error!("Failed to auto-bind after port detection: {e}");
                     }
-                    drop(serial);
                 }
 
                 known_ports = current_port_names;
