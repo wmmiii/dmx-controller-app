@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::Mutex as StdMutex;
 use std::time::{Duration, Instant};
-use tokio::sync::{Mutex, MutexGuard};
+use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
 
 use crate::ddp::DdpState;
@@ -38,12 +38,6 @@ struct DisplayLoopConfig {
 
 pub struct DisplayLoopManager {
     display_loop: Mutex<Option<DisplayLoopHandle>>,
-    /// Held for the whole of `rebuild_display_loop` and `stop_display_loop`.
-    /// The `display_loop` slot alone is not enough: the running check and the
-    /// insert that follows it are separate acquisitions, so two overlapping
-    /// rebuilds can each start a loop, and whichever inserts first is
-    /// overwritten and left running with nothing able to cancel it.
-    loop_rebuild_lock: Mutex<()>,
     events: Arc<dyn EventSink>,
     /// `None` when GPU initialization failed. Displays render black rather
     /// than taking the whole loop down with them.
@@ -57,7 +51,6 @@ impl DisplayLoopManager {
     ) -> Self {
         DisplayLoopManager {
             display_loop: Mutex::new(None),
-            loop_rebuild_lock: Mutex::new(()),
             events,
             shader_state,
         }
@@ -78,8 +71,6 @@ impl DisplayLoopManager {
         &self,
         ddp_state: Arc<Mutex<DdpState>>,
     ) -> Result<(), String> {
-        let rebuild_guard = self.loop_rebuild_lock.lock().await;
-
         // Check if any enabled displays exist with mappings in the current patch
         let has_displays: bool = project::with_project(|project| {
             Ok(project.displays.values().any(|display| {
@@ -92,27 +83,29 @@ impl DisplayLoopManager {
         })
         .map_err(|e| format!("Failed to check displays: {e}"))?;
 
+        // Held across the whole reconciliation: releasing it between the running
+        // check and the insert that follows would let two overlapping rebuilds
+        // each start a loop, and whichever inserted first would be overwritten
+        // and left running uncancellable.
+        let mut display_loop = self.display_loop.lock().await;
+
         if !has_displays {
-            return self.stop_display_loop_locked(&rebuild_guard).await;
+            stop_loop(&mut display_loop).await;
+            return Ok(());
         }
 
         // The loop re-reads its display and DDP configuration from the project
         // on every iteration, so a running loop already picks up project
         // changes. Restarting it here would stall rendering for up to a frame
         // on every save — including saves that touch nothing display-related.
-        if self.is_display_loop_running().await {
+        if display_loop
+            .as_ref()
+            .is_some_and(|handle| !handle.task.is_finished())
+        {
             return Ok(());
         }
 
-        self.start_display_loop(ddp_state, &rebuild_guard).await
-    }
-
-    async fn is_display_loop_running(&self) -> bool {
-        self.display_loop
-            .lock()
-            .await
-            .as_ref()
-            .is_some_and(|handle| !handle.task.is_finished())
+        self.start_display_loop(ddp_state, &mut display_loop).await
     }
 
     /// Starts the unified display loop.
@@ -120,10 +113,10 @@ impl DisplayLoopManager {
     async fn start_display_loop(
         &self,
         ddp_state: Arc<Mutex<DdpState>>,
-        rebuild_guard: &MutexGuard<'_, ()>,
+        display_loop: &mut Option<DisplayLoopHandle>,
     ) -> Result<(), String> {
         // Stop existing display loop if running
-        self.stop_display_loop_locked(rebuild_guard).await?;
+        stop_loop(display_loop).await;
 
         let (cancel_tx, cancel_rx) = tokio::sync::watch::channel(false);
         let events = Arc::clone(&self.events);
@@ -136,38 +129,15 @@ impl DisplayLoopManager {
             }
         });
 
-        let handle = DisplayLoopHandle { task, cancel_tx };
-
-        let mut display_loop = self.display_loop.lock().await;
-        *display_loop = Some(handle);
+        *display_loop = Some(DisplayLoopHandle { task, cancel_tx });
 
         log::info!("Started unified display loop");
         Ok(())
     }
 
-    pub async fn stop_display_loop(&self) -> Result<(), String> {
-        let rebuild_guard = self.loop_rebuild_lock.lock().await;
-        self.stop_display_loop_locked(&rebuild_guard).await
-    }
-
-    async fn stop_display_loop_locked(
-        &self,
-        _rebuild_guard: &MutexGuard<'_, ()>,
-    ) -> Result<(), String> {
+    pub async fn stop_display_loop(&self) {
         let mut display_loop = self.display_loop.lock().await;
-
-        if let Some(handle) = display_loop.take() {
-            // Signal cancellation
-            let _ = handle.cancel_tx.send(true);
-
-            // Wait for task to finish (with timeout)
-            if (tokio::time::timeout(Duration::from_millis(500), handle.task).await).is_err() {
-                log::warn!("Display loop did not stop within timeout");
-            }
-            log::info!("Stopped display loop");
-        }
-
-        Ok(())
+        stop_loop(&mut display_loop).await;
     }
 
     /// Unified display loop that renders all displays and outputs to all DDP devices.
@@ -387,4 +357,18 @@ fn rgba8_to_display_buffer(
         buffer.pixels[base + 2] = f32::from(px[2]) / 255.0 * dimmer;
     }
     buffer
+}
+
+
+async fn stop_loop(display_loop: &mut Option<DisplayLoopHandle>) {
+    let Some(handle) = display_loop.take() else {
+        return;
+    };
+
+    let _ = handle.cancel_tx.send(true);
+
+    if (tokio::time::timeout(Duration::from_millis(500), handle.task).await).is_err() {
+        log::warn!("Display loop did not stop within timeout");
+    }
+    log::info!("Stopped display loop");
 }
