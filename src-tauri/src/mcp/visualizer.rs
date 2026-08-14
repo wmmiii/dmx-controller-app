@@ -17,14 +17,15 @@ use tauri::Manager;
 
 use super::AppMcp;
 use super::utils::{self, json_result};
+use dmx_runtime::runtime::Runtime;
 use dmx_runtime::shader::ShaderState;
 
 /// Visualizer-specific helpers on the shared [`AppMcp`] server.
 impl AppMcp {
     fn shader_state(&self) -> Result<Arc<Mutex<ShaderState>>, ErrorData> {
         self.app
-            .try_state::<Arc<Mutex<ShaderState>>>()
-            .map(|s| s.inner().clone())
+            .try_state::<Arc<Runtime>>()
+            .and_then(|runtime| runtime.shader.clone())
             .ok_or_else(|| ErrorData::internal_error("Shader engine not initialized", None))
     }
 

@@ -1,19 +1,16 @@
-use crate::event_sink::{self, TauriEventSink};
+use crate::event_sink;
 use dmx_engine::beat::{set_bpm as engine_set_bpm, set_first_beat as engine_set_first_beat};
 use dmx_engine::project;
-use dmx_runtime::beat::SharedBeatSampler;
-use dmx_runtime::shader::ShaderState;
+use dmx_runtime::runtime::Runtime;
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, State};
 
 #[cfg(desktop)]
 use dmx_runtime::audio_input::AudioInputDevice;
 #[cfg(desktop)]
-use dmx_runtime::midi::{MidiPortCandidate, MidiState};
-#[cfg(desktop)]
-use tokio::sync::Mutex as TokioMutex;
+use dmx_runtime::midi::MidiPortCandidate;
 
 #[cfg(desktop)]
 #[tauri::command]
@@ -24,11 +21,15 @@ pub fn list_ports() -> Result<Vec<String>, String> {
 #[tauri::command]
 #[allow(clippy::needless_pass_by_value)]
 pub fn compile_visualizer(
-    shader_state: State<'_, Arc<Mutex<ShaderState>>>,
+    runtime: State<'_, Arc<Runtime>>,
     id: String,
     glsl_source: String,
 ) -> Result<Vec<u8>, String> {
-    dmx_runtime::shader::compile_visualizer(&shader_state, &id, &glsl_source)
+    let shader_state = runtime
+        .shader
+        .as_ref()
+        .ok_or("Shader engine not initialized")?;
+    dmx_runtime::shader::compile_visualizer(shader_state, &id, &glsl_source)
 }
 
 #[tauri::command]
@@ -39,12 +40,9 @@ pub fn get_builtin_visualizers() -> HashMap<String, Vec<u8>> {
 /// Add a beat sample for tempo detection (called from keyboard shortcut).
 #[tauri::command]
 #[allow(clippy::cast_possible_truncation)]
-pub async fn add_beat_sample(
-    app_handle: AppHandle,
-    beat_sampler: State<'_, SharedBeatSampler>,
-) -> Result<(), String> {
-    let beat_sampler = Arc::clone(&beat_sampler);
-    let mut sampler = beat_sampler
+pub async fn add_beat_sample(runtime: State<'_, Arc<Runtime>>) -> Result<(), String> {
+    let mut sampler = runtime
+        .beat_sampler
         .lock()
         .map_err(|e| format!("Failed to lock beat sampler: {e}"))?;
 
@@ -56,7 +54,7 @@ pub async fn add_beat_sample(
         .duration_since(UNIX_EPOCH)
         .map_err(|e| e.to_string())?
         .as_millis() as u64;
-    dmx_runtime::beat::add_sample(&mut sampler, &TauriEventSink::new(app_handle), t);
+    dmx_runtime::beat::add_sample(&mut sampler, runtime.events.as_ref(), t);
 
     Ok(())
 }
@@ -94,19 +92,21 @@ pub fn list_midi_inputs() -> Result<Vec<MidiPortCandidate>, String> {
 #[tauri::command]
 #[allow(clippy::needless_pass_by_value)]
 pub async fn connect_midi(
-    state: State<'_, Arc<TokioMutex<MidiState>>>,
+    runtime: State<'_, Arc<Runtime>>,
     candidate: MidiPortCandidate,
 ) -> Result<(), String> {
-    dmx_runtime::midi::connect_midi(&state, candidate).await
+    let midi = runtime.midi.as_ref().ok_or("MIDI is not enabled")?;
+    dmx_runtime::midi::connect_midi(midi, candidate).await
 }
 
 #[cfg(desktop)]
 #[tauri::command]
 #[allow(clippy::needless_pass_by_value)]
 pub async fn disconnect_midi(
-    state: State<'_, Arc<TokioMutex<MidiState>>>,
+    runtime: State<'_, Arc<Runtime>>,
     device_name: String,
 ) -> Result<(), String> {
-    dmx_runtime::midi::disconnect_midi(&state, &device_name).await;
+    let midi = runtime.midi.as_ref().ok_or("MIDI is not enabled")?;
+    dmx_runtime::midi::disconnect_midi(midi, &device_name).await;
     Ok(())
 }

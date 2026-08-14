@@ -11,6 +11,8 @@ pub mod events;
 #[cfg(all(feature = "midi", not(target_os = "ios")))]
 pub mod midi;
 pub mod output_loop;
+pub mod project_store;
+pub mod runtime;
 pub mod sacn;
 #[cfg_attr(target_os = "ios", path = "serial_ios.rs")]
 pub mod serial;
