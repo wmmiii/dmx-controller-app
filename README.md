@@ -61,6 +61,10 @@ A professional DMX lighting controller built with React, TypeScript, Rust, and T
 - Undo/redo stack (max 100 operations)
 - Import/export project files
 
+**Headless Operation:**
+
+- Run an Autopilot show on a Linux system with no display
+
 ## Output Protocols
 
 ### Serial DMX
@@ -82,6 +86,86 @@ Control DDP-compatible pixel devices over your network. Configure the device IP 
 ## Visualizer
 
 Compose GLSL shaders into blend/sequence trees and drive them onto virtual displays assembled from one or more physical pixel segments (DDP outputs), for video-wall style effects. Configure virtual displays and shaders from the Display and Visualizer tabs on the Patch page.
+
+## Headless
+
+`dmx-controller-headless` runs an Autopilot show with no display, no webview and
+no user interface — for an installation that powers on and starts running.
+
+```bash
+dmx-controller-headless --project show.dmxapp --mode autopilot
+```
+
+Download `dmx-controller-headless-linux-arm64.tar.gz` (Raspberry Pi 3 and later
+running 64-bit Raspberry Pi OS) or `dmx-controller-headless-linux-amd64.tar.gz`
+from [GitHub Releases](https://github.com/wmmiii/dmx-controller-app/releases).
+If you aren't sure which you need, run `dpkg --print-architecture` on the target
+machine — it prints the same name. Binaries are built against glibc 2.35, so
+they run on Raspberry Pi OS bookworm and newer.
+
+To build it yourself you need Rust and `protoc` — either from `pnpm install`,
+which fetches one into `node_modules`, or from your system's
+`protobuf-compiler` package. Nothing else in the JS toolchain is involved.
+
+```bash
+cargo build --release -p dmx-controller-headless
+```
+
+### Options
+
+| Flag                  | Description                                                             |
+| --------------------- | ----------------------------------------------------------------------- |
+| `--project <PATH>`    | Required. A `.dmxapp` file exported from the desktop app.               |
+| `--mode <MODE>`       | Required. `autopilot` is the only mode today.                           |
+| `--log-level <LEVEL>` | Defaults to `info`. `RUST_LOG` refines it per module.                   |
+| `--no-visualizer`     | Skip GPU initialization, disabling visualizer displays and DDP output.  |
+| `--no-audio`          | Skip audio capture, disabling audio-reactive effects and beat matching. |
+| `--no-midi`           | Skip MIDI, disabling controller input.                                  |
+
+### Behavior worth knowing
+
+- **The playlist comes from the project.** Whichever playlist was active when you
+  exported is the one that runs; there is no flag for it. If none was set, the
+  binary exits with an error rather than quietly running black.
+- **It never writes to disk.** No autosave, no data directory, no writeback to
+  the `.dmxapp`. MIDI bindings and beat-matched tempo still change the in-memory
+  project — that is what makes them work — but those changes are gone on
+  restart. Your show file is only ever an input.
+- **Audio tracks and timecoded shows are not supported.** Audio embedded in the
+  `.dmxapp` is dropped at load.
+- **Ctrl-C and `SIGTERM` black out the rig** before the output loops stop, so a
+  stopped service doesn't leave fixtures lit.
+- **Visualizers need a working Vulkan driver.** On a Raspberry Pi that means
+  Pi 4 or later — a Pi 3 has no Vulkan support, so pass `--no-visualizer` there
+  to skip a GPU probe that can only fail. DMX output is unaffected either way,
+  and a failed probe is logged rather than fatal.
+
+### Running as a service
+
+```ini
+[Unit]
+Description=DMX Controller (headless)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/local/bin/dmx-controller-headless \
+    --project /etc/dmx-controller/show.dmxapp \
+    --mode autopilot \
+    --no-visualizer
+Restart=always
+RestartSec=5
+User=dmx
+SupplementaryGroups=dialout audio
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Create the `dmx` user with `sudo useradd --system --no-create-home dmx`. The
+supplementary groups are only needed for optional hardware: `dialout` for
+USB-DMX serial output, `audio` for microphone beat detection. sACN, WLED and DDP
+output need neither, since they use ports above 1024.
 
 ## Prerequisites
 
