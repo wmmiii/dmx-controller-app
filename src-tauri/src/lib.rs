@@ -7,7 +7,7 @@ mod project;
 mod render;
 
 use dmx_runtime::events::EventSink;
-use dmx_runtime::project_store::DiskProjectStore;
+use dmx_runtime::project_store::{DiskProjectStore, ProjectStore};
 use dmx_runtime::runtime::{Runtime, RuntimeConfig};
 use std::sync::Arc;
 use tauri::{Manager, RunEvent};

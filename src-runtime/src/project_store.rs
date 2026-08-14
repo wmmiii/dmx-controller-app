@@ -9,8 +9,11 @@ use tokio::task::JoinHandle;
 const PROJECT_KEY: &str = "tmp-project-1";
 const DEBOUNCE_MS: u64 = 1000;
 
-/// Somewhere to write the project back to. Read-only hosts have none.
+/// Where the project lives between runs.
 pub trait ProjectStore: Send + Sync + 'static {
+    /// Loads the stored project into the engine. Must leave a usable project
+    /// behind, so a store with nothing to load creates a fresh default.
+    fn load(&self) -> Result<(), String>;
     fn queue_write(&self, project_binary: Vec<u8>);
     fn flush_sync(&self);
 }
@@ -35,26 +38,6 @@ impl DiskProjectStore {
         }
     }
 
-    /// Loads the autosaved project into the engine, falling back to a fresh
-    /// default when nothing has been saved yet.
-    pub fn load(&self) -> Result<(), String> {
-        if let Some(dir) = self.path.parent() {
-            std::fs::create_dir_all(dir)
-                .map_err(|e| format!("Failed to create app data dir: {e}"))?;
-        }
-
-        let project_binary = std::fs::read(&self.path).unwrap_or_default();
-        if !project_binary.is_empty() {
-            let project = Project::decode(project_binary.as_slice())
-                .map_err(|e| format!("Failed to decode project: {e}"))?;
-            project::load(project)?;
-        }
-
-        project::ensure_project_exists()?;
-
-        Ok(())
-    }
-
     fn lock_pending(&self) -> std::sync::MutexGuard<'_, Pending> {
         self.pending.lock().unwrap_or_else(|e| {
             log::error!("Project store lock poisoned, recovering");
@@ -70,6 +53,41 @@ fn write(path: &Path, data: &[u8]) {
 }
 
 impl ProjectStore for DiskProjectStore {
+    /// Loads the autosave into the engine. An absent or truncated autosave
+    /// yields a fresh default project — never a zero-valued `Project`, which
+    /// decodes happily from empty bytes but carries no scenes or palettes.
+    fn load(&self) -> Result<(), String> {
+        if let Some(dir) = self.path.parent() {
+            std::fs::create_dir_all(dir)
+                .map_err(|e| format!("Failed to create app data dir: {e}"))?;
+        }
+
+        let project_binary = match std::fs::read(&self.path) {
+            Ok(bytes) => bytes,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Vec::new(),
+            Err(e) => {
+                return Err(format!(
+                    "Failed to read project at {}: {e}",
+                    self.path.display()
+                ));
+            }
+        };
+
+        if project_binary.is_empty() {
+            project::new_project()?;
+            return Ok(());
+        }
+
+        let project = Project::decode(project_binary.as_slice())
+            .map_err(|e| format!("Failed to decode project: {e}"))?;
+        project::load(project)?;
+
+        // Backstop for an autosave that decoded but carries nothing.
+        project::ensure_project_exists()?;
+
+        Ok(())
+    }
+
     fn queue_write(&self, project_binary: Vec<u8>) {
         let mut pending = self.lock_pending();
         pending.project_binary = Some(project_binary);
