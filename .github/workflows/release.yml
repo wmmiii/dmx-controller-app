@@ -113,8 +113,9 @@ jobs:
 
   build-headless:
     # Built natively per architecture rather than cross-compiled: serialport,
-    # cpal and wgpu all want a real sysroot. Ubuntu 22.04 pins glibc to 2.35,
-    # old enough for the binary to run on Raspberry Pi OS bookworm.
+    # cpal and wgpu all want a real sysroot. Ubuntu 22.04 pins glibc to 2.35 —
+    # deliberately old, since a binary runs against any newer glibc but not an
+    # older one, so this covers Raspberry Pi OS bookworm through trixie.
     runs-on: ${{ matrix.runner }}
     needs: check-version
     if: needs.check-version.outputs.version-changed == 'true'
