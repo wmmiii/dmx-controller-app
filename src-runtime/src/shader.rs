@@ -827,7 +827,7 @@ pub fn compile_visualizer(
     let id: u64 = id
         .parse()
         .map_err(|_| format!("Invalid visualizer ID: {id}"))?;
-    let mut state = lock_or_recover(&shader_state, "Shader state");
+    let mut state = lock_or_recover(shader_state, "Shader state");
     Ok(state.compile_shader(id, glsl_source).encode_to_vec())
 }
 
@@ -871,7 +871,7 @@ pub fn sync_visualizer_shaders(shader_state: &Mutex<ShaderState>) {
             }
         };
 
-    let mut state = lock_or_recover(&shader_state, "Shader state");
+    let mut state = lock_or_recover(shader_state, "Shader state");
 
     // Remove user shaders whose IDs are no longer in the project.
     let to_delete: Vec<u64> = state

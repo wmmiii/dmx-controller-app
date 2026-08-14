@@ -3,7 +3,7 @@ name = "dmx-runtime"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.85.0"
-description = "Platform integration for the DMX controller: transports, render loops and device watchers."
+description = "Platform integration for DMX Controller App: transports, render loops and device watchers."
 
 [lib]
 crate-type = ["rlib"]

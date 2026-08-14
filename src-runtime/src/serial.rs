@@ -277,7 +277,7 @@ impl SerialState {
                     }
 
                     // Attempt to bind to the desired port
-                    match self.try_open_port(&output_id_str, &desired_port) {
+                    match self.try_open_port(&output_id_str, desired_port) {
                         Ok(()) => {
                             log::info!(
                                 "Successfully auto-bound output '{output_id_str}' to port '{desired_port}'"

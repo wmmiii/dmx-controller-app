@@ -144,7 +144,7 @@ cargo build --release -p dmx-controller-headless
 
 ```ini
 [Unit]
-Description=DMX Controller (headless)
+Description=DMX Controller App (headless)
 After=network-online.target
 Wants=network-online.target
 

@@ -310,7 +310,7 @@ fn render_display_buffer(
     if let (Some(tree), Some(shader_state)) = (&data.uniforms.visualizer_tree, shader_state) {
         // Readback blocks on GPU work; keep it off the async executor threads.
         let rgba = tokio::task::block_in_place(|| {
-            let mut state = lock_or_recover(&shader_state, "Shader state");
+            let mut state = lock_or_recover(shader_state, "Shader state");
             state.render_and_readback(
                 display_id,
                 tree,

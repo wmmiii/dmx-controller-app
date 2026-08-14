@@ -2,9 +2,9 @@ use crate::event_sink;
 use dmx_engine::beat::{set_bpm as engine_set_bpm, set_first_beat as engine_set_first_beat};
 use dmx_engine::project;
 use dmx_runtime::runtime::Runtime;
+use dmx_runtime::util::now_ms;
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, State};
 
 #[cfg(desktop)]
@@ -39,7 +39,6 @@ pub fn get_builtin_visualizers() -> HashMap<String, Vec<u8>> {
 
 /// Add a beat sample for tempo detection (called from keyboard shortcut).
 #[tauri::command]
-#[allow(clippy::cast_possible_truncation)]
 pub async fn add_beat_sample(runtime: State<'_, Arc<Runtime>>) -> Result<(), String> {
     let mut sampler = runtime
         .beat_sampler
@@ -50,11 +49,7 @@ pub async fn add_beat_sample(runtime: State<'_, Arc<Runtime>>) -> Result<(), Str
         return Ok(());
     }
 
-    let t = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_err(|e| e.to_string())?
-        .as_millis() as u64;
-    dmx_runtime::beat::add_sample(&mut sampler, runtime.events.as_ref(), t);
+    dmx_runtime::beat::add_sample(&mut sampler, runtime.events.as_ref(), now_ms());
 
     Ok(())
 }

@@ -244,7 +244,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ needs.check-version.outputs.version }}
-          name: Release v${{ needs.check-version.outputs.version }}
+          name: DMX Controller App v${{ needs.check-version.outputs.version }}
           generate_release_notes: true
           files: artifacts/*
           fail_on_unmatched_files: true

@@ -3,7 +3,7 @@ name = "dmx-controller-headless"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.85.0"
-description = "Headless DMX controller for unattended installs."
+description = "Headless runtime for DMX Controller App, for unattended installs."
 
 [[bin]]
 name = "dmx-controller-headless"
