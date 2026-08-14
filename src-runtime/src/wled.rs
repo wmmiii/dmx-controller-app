@@ -41,26 +41,25 @@ fn segment_colors(segment: &Segment, color_palette: Option<&ColorPalette>) -> [[
     [color, color, color]
 }
 
-/// WLED's JSON API takes these as 16-bit, so a project carrying a wider value
-/// is reported rather than allowed to panic the output loop.
+/// `fx` and `pal` are whatever the device supports — WLED documents them as
+/// `0..info.fxcount` and `0..info.palcount`, which we would have to query the
+/// device to know — so the project's values pass through as-is and WLED
+/// resolves them against what it actually has. `sx` and `bri` really are
+/// bytes, and those casts saturate.
 #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
 fn to_wled_segment(
     index: usize,
     segment: &Segment,
     color_palette: Option<&ColorPalette>,
-) -> Result<WledSegment, String> {
-    let narrow = |value: u32, field: &str| {
-        u16::try_from(value).map_err(|_| format!("WLED {field} {value} is out of range"))
-    };
-
-    Ok(WledSegment {
-        id: u16::try_from(index).map_err(|_| format!("WLED segment index {index} is out of range"))?,
+) -> WledSegment {
+    WledSegment {
+        id: index,
         col: segment_colors(segment, color_palette),
-        fx: narrow(segment.effect, "effect")?,
+        fx: segment.effect,
         sx: (segment.speed * 255.0).floor() as u8,
-        pal: narrow(segment.palette, "palette")?,
+        pal: segment.palette,
         bri: (segment.brightness * 255.0).floor() as u8,
-    })
+    }
 }
 
 pub struct WledState {
@@ -69,11 +68,11 @@ pub struct WledState {
 
 #[derive(Deserialize, Serialize)]
 struct WledSegment {
-    id: u16,
+    id: usize,
     col: [[u8; 3]; 3],
-    fx: u16,
+    fx: u32,
     sx: u8,
-    pal: u16,
+    pal: u32,
     bri: u8,
 }
 
@@ -98,22 +97,16 @@ impl WledState {
         ip_address: &str,
         wled_render_target: &WledRenderTarget,
     ) -> Result<(), String> {
-        let segments = wled_render_target
-            .segments
-            .iter()
-            .enumerate()
-            .map(|(index, segment)| {
-                to_wled_segment(
-                    index,
-                    segment,
-                    wled_render_target.color_palette.as_ref(),
-                )
-            })
-            .collect::<Result<Vec<_>, _>>()?;
-
         let json = WledJson {
             transition: 0,
-            seg: segments,
+            seg: wled_render_target
+                .segments
+                .iter()
+                .enumerate()
+                .map(|(index, segment)| {
+                    to_wled_segment(index, segment, wled_render_target.color_palette.as_ref())
+                })
+                .collect(),
         };
 
         let url = format!("http://{ip_address}/json/state");
