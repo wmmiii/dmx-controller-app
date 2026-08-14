@@ -32,6 +32,15 @@ jobs:
       - name: Lint Rust (Clippy)
         run: pnpm run lint:rust
 
+      - name: Build headless binary
+        run: cargo build --release -p dmx-controller-headless
+
+      # Nothing else exercises the crate with its subsystems gated off, and the
+      # lints are deny-level, so feature rot would otherwise only surface on a
+      # minimal build someone runs by hand.
+      - name: Check headless binary without optional subsystems
+        run: cargo check -p dmx-controller-headless --no-default-features
+
       - name: Build
         run: pnpm build
 

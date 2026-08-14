@@ -111,6 +111,59 @@ jobs:
           path: target/release/bundle/dmg/*.dmg
           if-no-files-found: error
 
+  build-headless:
+    # Built natively per architecture rather than cross-compiled: serialport,
+    # cpal and wgpu all want a real sysroot. Ubuntu 22.04 pins glibc to 2.35,
+    # old enough for the binary to run on Raspberry Pi OS bookworm.
+    runs-on: ${{ matrix.runner }}
+    needs: check-version
+    if: needs.check-version.outputs.version-changed == 'true'
+
+    strategy:
+      matrix:
+        include:
+          - runner: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+          - runner: ubuntu-22.04-arm
+            target: aarch64-unknown-linux-gnu
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      # Deliberately not ./.github/setup: the headless binary needs neither the
+      # Tauri system libraries nor the JS toolchain. Taking protoc from apt is
+      # what lets us skip `pnpm install` entirely.
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libasound2-dev \
+            libssl-dev \
+            libudev-dev \
+            pkg-config \
+            protobuf-compiler
+
+      - name: Build headless binary
+        run: cargo build --release -p dmx-controller-headless
+        env:
+          PROTOC: /usr/bin/protoc
+
+      - name: Package binary
+        run: |
+          tar -czf dmx-controller-headless-${{ matrix.target }}.tar.gz \
+            -C target/release dmx-controller-headless
+
+      - name: Upload headless binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: headless-${{ matrix.target }}
+          path: dmx-controller-headless-${{ matrix.target }}.tar.gz
+          if-no-files-found: error
+
   # build-ios:
   #   runs-on: macos-latest
   #   needs: check-version
@@ -146,7 +199,7 @@ jobs:
 
   publish-release:
     runs-on: ubuntu-22.04
-    needs: [check-version, build-debian, build-windows, build-macos]
+    needs: [check-version, build-debian, build-windows, build-macos, build-headless]
     if: needs.check-version.outputs.version-changed == 'true'
     permissions:
       contents: write
@@ -168,6 +221,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: macos-installer
+          path: artifacts
+
+      - name: Download headless binaries
+        uses: actions/download-artifact@v4
+        with:
+          pattern: headless-*
+          merge-multiple: true
           path: artifacts
 
       # - name: Download iOS app
