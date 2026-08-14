@@ -46,7 +46,7 @@ pub struct OutputLoopManager {
     /// output's old handle and inserting its new one, so two overlapping
     /// rebuilds can each spawn a loop for that output, and whichever inserts
     /// first is overwritten and left running with nothing able to cancel it.
-    loop_rebuild: Mutex<()>,
+    loop_rebuild_lock: Mutex<()>,
     events: Arc<dyn EventSink>,
 }
 
@@ -54,7 +54,7 @@ impl OutputLoopManager {
     pub fn new(events: Arc<dyn EventSink>) -> Self {
         OutputLoopManager {
             loops: Mutex::new(HashMap::new()),
-            loop_rebuild: Mutex::new(()),
+            loop_rebuild_lock: Mutex::new(()),
             events,
         }
     }
@@ -143,7 +143,7 @@ impl OutputLoopManager {
     }
 
     pub async fn stop_all(&self) -> Result<(), String> {
-        let _guard = self.loop_rebuild.lock().await;
+        let _guard = self.loop_rebuild_lock.lock().await;
 
         let output_ids: Vec<u64> = self.loops.lock().await.keys().copied().collect();
         for output_id in output_ids {
@@ -158,7 +158,7 @@ impl OutputLoopManager {
         sacn_state: Arc<SacnState>,
         wled_state: Arc<WledState>,
     ) -> Result<(), String> {
-        let _guard = self.loop_rebuild.lock().await;
+        let _guard = self.loop_rebuild_lock.lock().await;
 
         // Extract desired outputs from project (avoid holding lock during async I/O)
         let desired_outputs: HashMap<u64, OutputType> = project::with_project(|project| {

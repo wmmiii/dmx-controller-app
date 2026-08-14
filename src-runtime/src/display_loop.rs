@@ -43,7 +43,7 @@ pub struct DisplayLoopManager {
     /// insert that follows it are separate acquisitions, so two overlapping
     /// rebuilds can each start a loop, and whichever inserts first is
     /// overwritten and left running with nothing able to cancel it.
-    loop_rebuild: Mutex<()>,
+    loop_rebuild_lock: Mutex<()>,
     events: Arc<dyn EventSink>,
     /// `None` when GPU initialization failed. Displays render black rather
     /// than taking the whole loop down with them.
@@ -57,7 +57,7 @@ impl DisplayLoopManager {
     ) -> Self {
         DisplayLoopManager {
             display_loop: Mutex::new(None),
-            loop_rebuild: Mutex::new(()),
+            loop_rebuild_lock: Mutex::new(()),
             events,
             shader_state,
         }
@@ -78,7 +78,7 @@ impl DisplayLoopManager {
         &self,
         ddp_state: Arc<Mutex<DdpState>>,
     ) -> Result<(), String> {
-        let _guard = self.loop_rebuild.lock().await;
+        let _guard = self.loop_rebuild_lock.lock().await;
 
         // Check if any enabled displays exist with mappings in the current patch
         let has_displays: bool = project::with_project(|project| {
@@ -142,11 +142,11 @@ impl DisplayLoopManager {
     }
 
     pub async fn stop_display_loop(&self) -> Result<(), String> {
-        let _guard = self.loop_rebuild.lock().await;
+        let _guard = self.loop_rebuild_lock.lock().await;
         self.stop_display_loop_unguarded().await
     }
 
-    /// Caller must already hold `loop_rebuild`.
+    /// Caller must already hold `loop_rebuild_lock`.
     async fn stop_display_loop_unguarded(&self) -> Result<(), String> {
         let mut display_loop = self.display_loop.lock().await;
 
