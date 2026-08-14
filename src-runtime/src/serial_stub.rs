@@ -1,5 +1,7 @@
+/// Stands in for [`crate::serial::SerialState`] when the `serial` feature is
+/// off, so a build without serial support still assembles a runtime.
 #[derive(Default)]
-pub struct SerialState;
+pub struct SerialState {}
 
 impl SerialState {
     pub fn auto_bind_serial_outputs(&self) -> Result<(), String> {

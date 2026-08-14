@@ -22,7 +22,6 @@ axum = "0.8"
 base64 = "0.22"
 chrono = "0.4.44"
 dmx-engine = { path = "../src-engine" }
-dmx-runtime = { path = "../src-runtime" }
 log = "0.4"
 png = "0.17"
 prost = "0.14.1"
@@ -41,7 +40,15 @@ tauri-plugin-process = "2"
 tokio = { version = "1.48.0", features = ["time", "macros", "sync", "net", "rt-multi-thread"] }
 
 [target.'cfg(not(target_os = "ios"))'.dependencies]
+dmx-runtime = { path = "../src-runtime" }
 tauri-plugin-keepawake = "0.1.0"
+
+# iOS has no serial ports, and neither MIDI nor audio capture is wired up for
+# it, so the runtime is built without those subsystems there.
+[target.'cfg(target_os = "ios")'.dependencies]
+dmx-runtime = { path = "../src-runtime", default-features = false, features = [
+  "visualizer",
+] }
 
 [lints.rust]
 dead_code = "deny"
