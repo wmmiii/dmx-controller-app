@@ -35,7 +35,7 @@ pub async fn update_project(
 ) -> Result<(), String> {
     project::update(&project_binary)?;
 
-    runtime.notify_and_rebuild().await
+    runtime.finalize_transient_project_modification().await
 }
 
 /// Undoes the last operation.

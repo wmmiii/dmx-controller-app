@@ -210,9 +210,8 @@ impl Runtime {
         self.rebuild_outputs().await
     }
 
-    /// Finalizes a transient project change — announce and rebuild, but leave
-    /// no undo entry and write nothing to disk.
-    pub async fn notify_and_rebuild(&self) -> Result<(), String> {
+    /// Leaves no undo entry and writes nothing to disk.
+    pub async fn finalize_transient_project_modification(&self) -> Result<(), String> {
         self.events.project_updated();
         self.rebuild_outputs().await
     }
