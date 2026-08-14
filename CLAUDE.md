@@ -45,9 +45,12 @@ CI/CD lives in `.github/workflows/`: `ci.yaml` is the PR gate, `deploy.yaml` dep
 **Prefer self-documenting code over comments:**
 
 - Write clear, descriptive names for functions, variables, and types that convey intent
+- Scope decides how much name a binding needs — `|(i, s)|` in a small closure is right, and expanding it is churn. Descriptive naming is for things whose definition is far from their uses
 - Only add comments when the code cannot reasonably explain itself (non-obvious algorithms, workarounds, external constraints)
 - Don't add comments that restate what the code already expresses
 - Avoid docstrings/JSDoc/Rust doc comments unless they add information not evident from the signature and implementation
+
+**Inline single-use helpers.** A small function called from exactly one place belongs at that call site. Extract only when there's a second caller, or when the body is long enough that the call site stops reading clearly.
 
 **Minimize visibility and mutability** (for code you're actively touching — don't refactor unrelated code just to tighten this):
 
@@ -60,6 +63,7 @@ CI/CD lives in `.github/workflows/`: `ci.yaml` is the PR gate, `deploy.yaml` dep
 
 ## Agent Workflow
 
+- **Be brief in everything written for a human** — chat replies, PR descriptions, commit messages, code comments. State the finding, the decision, or the caveat; skip preamble, recaps of what just happened, and closing summaries. Length is justified by content the reader can't get elsewhere, never by thoroughness for its own sake.
 - **Bulk reads over many small ones.** Read whole files/sections rather than hunting line by line; write complete file contents in one `Write` rather than many small `Edit`s.
 - **CLI tools over manual edits** for mechanical changes (`sed` for renames, `pnpm run proto:generate` after proto changes) rather than hand-editing every occurrence.
 - **Docs over source** when learning a third-party library's API (Base UI, Tauri plugins, wgpu, buf/protobuf-es) — reading source to reverse-engineer usage burns context the library's own docs already spell out. Reserve source-reading for this repo's own code.
