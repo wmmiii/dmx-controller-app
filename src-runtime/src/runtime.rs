@@ -213,10 +213,10 @@ impl Runtime {
     /// Leaves the last rendered frame on the wire, so blackout must be set
     /// before calling this.
     pub async fn shutdown(&self) -> Result<(), String> {
-        self.output_loops.stop_all().await?;
+        self.output_loops.stop_all().await;
 
         #[cfg(feature = "visualizer")]
-        self.display_loops.stop_display_loop().await?;
+        self.display_loops.stop_display_loop().await;
 
         self.flush_persist();
 

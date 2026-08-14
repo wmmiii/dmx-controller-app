@@ -4,7 +4,7 @@ use dmx_engine::render::render::{RenderError, render_dmx, render_wled};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tokio::sync::{Mutex, MutexGuard};
+use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
 
 use crate::events::EventSink;
@@ -41,12 +41,6 @@ struct OutputLoopHandle {
 
 pub struct OutputLoopManager {
     loops: Mutex<HashMap<u64, OutputLoopHandle>>,
-    /// Held for the whole of `rebuild_all_loops` and `stop_all`. The `loops`
-    /// map alone is not enough: `start_loop` releases it between removing an
-    /// output's old handle and inserting its new one, so two overlapping
-    /// rebuilds can each spawn a loop for that output, and whichever inserts
-    /// first is overwritten and left running with nothing able to cancel it.
-    loop_rebuild_lock: Mutex<()>,
     events: Arc<dyn EventSink>,
 }
 
@@ -54,7 +48,6 @@ impl OutputLoopManager {
     pub fn new(events: Arc<dyn EventSink>) -> Self {
         OutputLoopManager {
             loops: Mutex::new(HashMap::new()),
-            loop_rebuild_lock: Mutex::new(()),
             events,
         }
     }
@@ -84,10 +77,10 @@ impl OutputLoopManager {
         serial_state: Arc<SerialState>,
         sacn_state: Arc<SacnState>,
         wled_state: Arc<WledState>,
-        rebuild_guard: &MutexGuard<'_, ()>,
+        loops: &mut HashMap<u64, OutputLoopHandle>,
     ) -> Result<(), String> {
         // Stop existing loop if running
-        self.stop_loop(output_id, rebuild_guard).await?;
+        stop_loop(output_id, loops).await;
 
         let (cancel_tx, cancel_rx) = tokio::sync::watch::channel(false);
         let output_type_clone = output_type.clone();
@@ -120,41 +113,18 @@ impl OutputLoopManager {
             output_type,
         };
 
-        let mut loops = self.loops.lock().await;
         loops.insert(output_id, handle);
 
         Ok(())
     }
 
-    async fn stop_loop(
-        &self,
-        output_id: u64,
-        _rebuild_guard: &MutexGuard<'_, ()>,
-    ) -> Result<(), String> {
+    pub async fn stop_all(&self) {
         let mut loops = self.loops.lock().await;
 
-        if let Some(handle) = loops.remove(&output_id) {
-            // Signal cancellation
-            let _ = handle.cancel_tx.send(true);
-
-            // Wait for task to finish (with timeout)
-            if (tokio::time::timeout(Duration::from_millis(500), handle.task).await).is_err() {
-                log::warn!("Output loop {output_id} did not stop within timeout");
-            }
-            Ok(())
-        } else {
-            Ok(()) // Already stopped
-        }
-    }
-
-    pub async fn stop_all(&self) -> Result<(), String> {
-        let rebuild_guard = self.loop_rebuild_lock.lock().await;
-
-        let output_ids: Vec<u64> = self.loops.lock().await.keys().copied().collect();
+        let output_ids: Vec<u64> = loops.keys().copied().collect();
         for output_id in output_ids {
-            self.stop_loop(output_id, &rebuild_guard).await?;
+            stop_loop(output_id, &mut loops).await;
         }
-        Ok(())
     }
 
     pub async fn rebuild_all_loops(
@@ -163,9 +133,7 @@ impl OutputLoopManager {
         sacn_state: Arc<SacnState>,
         wled_state: Arc<WledState>,
     ) -> Result<(), String> {
-        let rebuild_guard = self.loop_rebuild_lock.lock().await;
-
-        // Extract desired outputs from project (avoid holding lock during async I/O)
+        // Read the project before taking `loops`, so the two locks never nest. (avoid holding lock during async I/O)
         let desired_outputs: HashMap<u64, OutputType> = project::with_project(|project| {
             let active_patch = project
                 .patches
@@ -213,14 +181,16 @@ impl OutputLoopManager {
             Ok(outputs)
         })?;
 
-        // Get current running loops
-        let current_loops = {
-            let loops = self.loops.lock().await;
-            loops
-                .iter()
-                .map(|(id, handle)| (*id, handle.output_type.clone()))
-                .collect::<HashMap<_, _>>()
-        };
+        // Held across the whole reconciliation: releasing it between stopping an
+        // output's old loop and inserting its new handle would let two
+        // overlapping rebuilds each spawn a loop for that output, and whichever
+        // inserted first would be overwritten and left running uncancellable.
+        let mut loops = self.loops.lock().await;
+
+        let current_loops = loops
+            .iter()
+            .map(|(id, handle)| (*id, handle.output_type.clone()))
+            .collect::<HashMap<_, _>>();
 
         // Determine which loops to stop, start, or keep
         let mut to_stop = Vec::new();
@@ -260,7 +230,7 @@ impl OutputLoopManager {
                 Some(OutputType::Serial { .. })
             );
             let will_restart = to_start.iter().any(|(id, _)| *id == output_id);
-            self.stop_loop(output_id, &rebuild_guard).await?;
+            stop_loop(output_id, &mut loops).await;
             // Close the serial port when the output is disabled or deleted. Skip
             // this when the loop is being immediately restarted (e.g. FPS change)
             // so we don't briefly drop and reopen the same port.
@@ -277,7 +247,7 @@ impl OutputLoopManager {
                 serial_state.clone(),
                 sacn_state.clone(),
                 wled_state.clone(),
-                &rebuild_guard,
+                &mut loops,
             )
             .await?;
         }
@@ -415,5 +385,17 @@ impl OutputLoopManager {
         }
 
         Ok(())
+    }
+}
+
+async fn stop_loop(output_id: u64, loops: &mut HashMap<u64, OutputLoopHandle>) {
+    let Some(handle) = loops.remove(&output_id) else {
+        return;
+    };
+
+    let _ = handle.cancel_tx.send(true);
+
+    if (tokio::time::timeout(Duration::from_millis(500), handle.task).await).is_err() {
+        log::warn!("Output loop {output_id} did not stop within timeout");
     }
 }
