@@ -93,7 +93,7 @@ Compose GLSL shaders into blend/sequence trees and drive them onto virtual displ
 no user interface — for an installation that powers on and starts running.
 
 ```bash
-dmx-controller-app-headless --project show.dmxapp --mode autopilot
+dmx-controller-app-headless --project show.dmxapp autopilot
 ```
 
 Download `dmx-controller-app-headless-linux-arm64.tar.gz` (Raspberry Pi 3 and later
@@ -113,14 +113,30 @@ cargo build --release -p dmx-controller-app-headless
 
 ### Options
 
+#### Global options
+
 | Flag                  | Description                                                             |
 | --------------------- | ----------------------------------------------------------------------- |
 | `--project <PATH>`    | Required. A `.dmxapp` file exported from the desktop app.               |
-| `--mode <MODE>`       | Required. `autopilot` is the only mode today.                           |
 | `--log-level <LEVEL>` | Defaults to `info`. `RUST_LOG` refines it per module.                   |
 | `--no-visualizer`     | Skip GPU initialization, disabling visualizer displays and DDP output.  |
 | `--no-audio`          | Skip audio capture, disabling audio-reactive effects and beat matching. |
 | `--no-midi`           | Skip MIDI, disabling controller input.                                  |
+
+#### Autopilot subcommand
+
+`autopilot` runs the playlist from the project, cycling through patterns and palettes.
+The following flags override the project's authored pattern/palette orders and default to
+whatever was set in the project if not specified.
+
+| Flag                   | Description                                                                         |
+| ---------------------- | ----------------------------------------------------------------------------------- |
+| `--pattern-hold <ID>`  | Hold on one pattern instead of cycling. Requires valid pattern ID from the project. |
+| `--pattern-sequential` | Cycle through patterns in order.                                                    |
+| `--pattern-shuffle`    | Cycle through patterns randomly.                                                    |
+| `--palette-hold <ID>`  | Hold on one palette instead of cycling. Requires valid palette ID from the project. |
+| `--palette-sequential` | Cycle through palettes in order.                                                    |
+| `--palette-shuffle`    | Cycle through palettes randomly.                                                    |
 
 ### Behavior worth knowing
 
@@ -151,8 +167,8 @@ Wants=network-online.target
 [Service]
 ExecStart=/usr/local/bin/dmx-controller-app-headless \
     --project /etc/dmx-controller/show.dmxapp \
-    --mode autopilot \
-    --no-visualizer
+    --no-visualizer \
+    autopilot
 Restart=always
 RestartSec=5
 User=dmx
