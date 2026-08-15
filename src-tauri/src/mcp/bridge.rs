@@ -54,7 +54,7 @@ pub async fn compile_visualizer(app: &AppHandle, glsl_source: &str) -> Result<Va
         Err(_) => {
             pending().remove(&id);
             Err(ErrorData::internal_error(
-                "Timed out waiting for the app window to respond. Is the DMX Controller app open?",
+                "Timed out waiting for the app window to respond. Is DMX Controller App open?",
                 None,
             ))
         }

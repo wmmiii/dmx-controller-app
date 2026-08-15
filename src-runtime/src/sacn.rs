@@ -1,6 +1,6 @@
 use sacn::packet::ACN_SDT_MULTICAST_PORT;
 use sacn::source::SacnSource;
-use std::net::{IpAddr, SocketAddr};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
 pub struct SacnState {
     source: std::sync::Mutex<SacnSource>,
@@ -8,8 +8,8 @@ pub struct SacnState {
 
 impl SacnState {
     pub fn new() -> Result<Self, String> {
-        let local_addr: SocketAddr = SocketAddr::new(
-            IpAddr::V4("0.0.0.0".parse().unwrap()),
+        let local_addr = SocketAddr::new(
+            IpAddr::V4(Ipv4Addr::UNSPECIFIED),
             ACN_SDT_MULTICAST_PORT + 1,
         );
 
@@ -21,8 +21,7 @@ impl SacnState {
         })
     }
 
-    /// Internal method for use by output loop
-    pub fn output_sacn_internal(
+    pub(crate) fn output_sacn(
         &self,
         universe: u16,
         ip_address: &str,

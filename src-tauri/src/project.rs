@@ -3,9 +3,9 @@ use dmx_engine::proto::FatProject;
 use dmx_engine::tile::toggle_tile as engine_toggle_tile;
 use dmx_engine::visualizer::utils as visualizer_utils;
 use dmx_runtime::runtime::Runtime;
+use dmx_runtime::util::now_ms;
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, State};
 
 use crate::cas::{read_cas_bytes, write_cas_bytes};
@@ -215,11 +215,7 @@ pub fn toggle_tile(
     let scene_id: u64 = scene_id.parse().map_err(|_| "Invalid scene_id")?;
     let tile_id: u64 = tile_id.parse().map_err(|_| "Invalid tile_id")?;
 
-    #[allow(clippy::cast_possible_truncation)]
-    let t = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_err(|e| e.to_string())?
-        .as_millis() as u64;
+    let t = now_ms();
 
     let (modified, enabled) = project::with_project_mut(|project| {
         let beat = match &project.live_beat {

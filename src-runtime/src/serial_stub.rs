@@ -8,7 +8,10 @@ impl SerialState {
         Ok(())
     }
 
-    pub fn output_dmx_internal(&self, _output_id: &str, _data: &[u8]) -> Result<(), String> {
+    // Mirrors the real SerialState signature so the loops compile unchanged;
+    // the receiver and the Result are load-bearing there, not here.
+    #[allow(clippy::unused_self, clippy::unnecessary_wraps)]
+    pub(crate) fn output_dmx(&self, _output_id: &str, _data: &[u8]) -> Result<(), String> {
         Ok(())
     }
 

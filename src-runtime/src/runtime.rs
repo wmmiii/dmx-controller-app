@@ -42,15 +42,15 @@ pub struct Runtime {
     pub events: Arc<dyn EventSink>,
     pub beat_sampler: SharedBeatSampler,
 
-    pub serial: Arc<SerialState>,
-    pub sacn: Arc<SacnState>,
-    pub wled: Arc<WledState>,
-    pub output_loops: Arc<OutputLoopManager>,
+    serial: Arc<SerialState>,
+    sacn: Arc<SacnState>,
+    wled: Arc<WledState>,
+    output_loops: Arc<OutputLoopManager>,
 
     #[cfg(feature = "visualizer")]
-    pub ddp: Arc<Mutex<DdpState>>,
+    ddp: Arc<Mutex<DdpState>>,
     #[cfg(feature = "visualizer")]
-    pub display_loops: Arc<DisplayLoopManager>,
+    display_loops: Arc<DisplayLoopManager>,
     /// `None` when the visualizer is disabled or GPU initialization failed.
     #[cfg(feature = "visualizer")]
     pub shader: Option<Arc<StdMutex<ShaderState>>>,
@@ -58,7 +58,7 @@ pub struct Runtime {
     #[cfg(feature = "midi")]
     pub midi: Option<Arc<MidiState>>,
     #[cfg(feature = "audio")]
-    pub audio: Option<Arc<AudioInputState>>,
+    audio: Option<Arc<AudioInputState>>,
 
     persist: Option<Arc<dyn ProjectStore>>,
 }
@@ -210,6 +210,9 @@ impl Runtime {
         self.rebuild_outputs().await
     }
 
+    /// Stops every loop, watcher and capture thread this runtime started, then
+    /// flushes any pending write.
+    ///
     /// Leaves the last rendered frame on the wire, so blackout must be set
     /// before calling this.
     pub async fn shutdown(&self) -> Result<(), String> {
@@ -217,6 +220,20 @@ impl Runtime {
 
         #[cfg(feature = "visualizer")]
         self.display_loops.stop_display_loop().await;
+
+        #[cfg(feature = "serial")]
+        self.serial.stop_port_watcher();
+
+        #[cfg(feature = "midi")]
+        if let Some(midi) = &self.midi {
+            midi.stop_device_watcher();
+        }
+
+        #[cfg(feature = "audio")]
+        if let Some(audio) = &self.audio {
+            audio.stop_device_watcher();
+            audio.stop_capture();
+        }
 
         self.flush_persist();
 

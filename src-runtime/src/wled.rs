@@ -47,11 +47,11 @@ pub struct WledState {
 
 #[derive(Deserialize, Serialize)]
 struct WledSegment {
-    id: u16,
+    id: usize,
     col: [[u8; 3]; 3],
-    fx: u16,
+    fx: u32,
     sx: u8,
-    pal: u16,
+    pal: u32,
     bri: u8,
 }
 
@@ -71,9 +71,11 @@ impl WledState {
         Ok(WledState { client })
     }
 
-    /// Internal method for use by output loop
+    // fx and pal go out unnarrowed: WLED documents them as 0..info.fxcount and
+    // 0..info.palcount, so the ceiling is the device's and we would have to
+    // query it to know. sx and bri really are bytes, and those casts saturate.
     #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-    pub async fn output_wled_internal(
+    pub(crate) async fn output_wled(
         &self,
         ip_address: &str,
         wled_render_target: &WledRenderTarget,
@@ -85,14 +87,11 @@ impl WledState {
                 .iter()
                 .enumerate()
                 .map(|(i, s)| WledSegment {
-                    id: u16::try_from(i).unwrap(),
+                    id: i,
                     col: segment_colors(s, wled_render_target.color_palette.as_ref()),
-                    fx: u16::try_from(s.effect).unwrap(),
-                    #[allow(clippy::cast_sign_loss)]
+                    fx: s.effect,
                     sx: (s.speed * 255.0).floor() as u8,
-                    pal: u16::try_from(s.palette).unwrap(),
-                    #[allow(clippy::cast_possible_truncation)]
-                    #[allow(clippy::cast_sign_loss)]
+                    pal: s.palette,
                     bri: (s.brightness * 255.0).floor() as u8,
                 })
                 .collect(),

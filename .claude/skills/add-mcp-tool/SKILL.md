@@ -93,5 +93,5 @@ project when none is loaded).
 - [ ] Raw params validated (ids exist & correct kind, source compiles, a project is open)
       through the same logic on the frontend and backend.
 - [ ] Managed state accessed via `try_state`.
-- [ ] `cargo check -p dmx_controller_app` (or `-p dmx-engine`) passes. Don't run full
+- [ ] `cargo check -p dmx-controller-app` (or `-p dmx-engine`) passes. Don't run full
       build/clippy/lint to "finalize" — the user runs those.

@@ -89,15 +89,15 @@ Compose GLSL shaders into blend/sequence trees and drive them onto virtual displ
 
 ## Headless
 
-`dmx-controller-headless` runs an Autopilot show with no display, no webview and
+`dmx-controller-app-headless` runs an Autopilot show with no display, no webview and
 no user interface — for an installation that powers on and starts running.
 
 ```bash
-dmx-controller-headless --project show.dmxapp --mode autopilot
+dmx-controller-app-headless --project show.dmxapp --mode autopilot
 ```
 
-Download `dmx-controller-headless-linux-arm64.tar.gz` (Raspberry Pi 3 and later
-running 64-bit Raspberry Pi OS) or `dmx-controller-headless-linux-amd64.tar.gz`
+Download `dmx-controller-app-headless-linux-arm64.tar.gz` (Raspberry Pi 3 and later
+running 64-bit Raspberry Pi OS) or `dmx-controller-app-headless-linux-amd64.tar.gz`
 from [GitHub Releases](https://github.com/wmmiii/dmx-controller-app/releases).
 If you aren't sure which you need, run `dpkg --print-architecture` on the target
 machine — it prints the same name. Binaries are built against glibc 2.35, so
@@ -108,7 +108,7 @@ which fetches one into `node_modules`, or from your system's
 `protobuf-compiler` package. Nothing else in the JS toolchain is involved.
 
 ```bash
-cargo build --release -p dmx-controller-headless
+cargo build --release -p dmx-controller-app-headless
 ```
 
 ### Options
@@ -144,12 +144,12 @@ cargo build --release -p dmx-controller-headless
 
 ```ini
 [Unit]
-Description=DMX Controller (headless)
+Description=DMX Controller App (headless)
 After=network-online.target
 Wants=network-online.target
 
 [Service]
-ExecStart=/usr/local/bin/dmx-controller-headless \
+ExecStart=/usr/local/bin/dmx-controller-app-headless \
     --project /etc/dmx-controller/show.dmxapp \
     --mode autopilot \
     --no-visualizer

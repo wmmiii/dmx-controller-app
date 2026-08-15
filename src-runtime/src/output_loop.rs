@@ -8,6 +8,7 @@ use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
 
 use crate::events::EventSink;
+use crate::util::now_ms;
 use crate::sacn::SacnState;
 use crate::serial::SerialState;
 use crate::wled::WledState;
@@ -16,6 +17,25 @@ use crate::wled::WledState;
 const DEFAULT_SERIAL_FPS: u32 = 44;
 const DEFAULT_SACN_FPS: u32 = 44;
 const DEFAULT_WLED_FPS: u32 = 42;
+
+/// Well past any real fixture's refresh rate. Without a ceiling a large enough
+/// configured rate rounds the frame duration to zero, which turns the loop into
+/// a spin that pegs a core.
+const MAX_FPS: u32 = 1000;
+
+fn resolve_fps(configured: u32, default: u32) -> u32 {
+    if configured > 0 {
+        configured.min(MAX_FPS)
+    } else {
+        default
+    }
+}
+
+/// Nanoseconds, not milliseconds: `1000 / 44` truncates to 22ms, which paces
+/// the loop at 45.5 fps rather than the 44 that was asked for.
+fn frame_duration(fps: u32) -> Duration {
+    Duration::from_nanos(1_000_000_000 / u64::from(fps))
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum OutputType {
@@ -150,28 +170,16 @@ impl OutputLoopManager {
                 #[allow(clippy::cast_possible_truncation)]
                 let output_type = match &output.output {
                     Some(ProtoOutput::SerialDmxOutput(_)) => OutputType::Serial {
-                        fps: if output.fps > 0 {
-                            output.fps
-                        } else {
-                            DEFAULT_SERIAL_FPS
-                        },
+                        fps: resolve_fps(output.fps, DEFAULT_SERIAL_FPS),
                     },
                     Some(ProtoOutput::SacnDmxOutput(sacn)) => OutputType::Sacn {
                         universe: sacn.universe as u16,
                         ip_address: sacn.ip_address.clone(),
-                        fps: if output.fps > 0 {
-                            output.fps
-                        } else {
-                            DEFAULT_SACN_FPS
-                        },
+                        fps: resolve_fps(output.fps, DEFAULT_SACN_FPS),
                     },
                     Some(ProtoOutput::WledOutput(wled)) => OutputType::Wled {
                         ip_address: wled.ip_address.clone(),
-                        fps: if output.fps > 0 {
-                            output.fps
-                        } else {
-                            DEFAULT_WLED_FPS
-                        },
+                        fps: resolve_fps(output.fps, DEFAULT_WLED_FPS),
                     },
                     // DDP outputs are handled by DisplayLoopManager; skip None too
                     Some(ProtoOutput::DdpOutput(_)) | None => continue,
@@ -284,7 +292,7 @@ impl OutputLoopManager {
             | OutputType::Wled { fps, .. } => *fps,
         };
 
-        let frame_duration = Duration::from_millis(1000 / u64::from(target_fps));
+        let frame_duration = frame_duration(target_fps);
         let mut frame = 0u32;
 
         log::info!("Starting output loop {output_id} ({output_type:?}) at {target_fps} FPS");
@@ -299,17 +307,13 @@ impl OutputLoopManager {
             let loop_start = Instant::now();
 
             // Render the frame
-            #[allow(clippy::cast_possible_truncation)]
-            let system_t = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_millis() as u64;
+            let system_t = now_ms();
 
             let result = match &output_type {
                 OutputType::Serial { .. } => {
                     match Self::render_and_emit_dmx(output_id, system_t, frame, events.as_ref()) {
                         Ok(dmx_vec) => {
-                            serial_state.output_dmx_internal(&output_id.to_string(), &dmx_vec)
+                            serial_state.output_dmx(&output_id.to_string(), &dmx_vec)
                         }
                         Err(RenderError::OutputNotFound { .. }) => {
                             // Output was deleted - exit loop gracefully
@@ -328,7 +332,7 @@ impl OutputLoopManager {
                 } => {
                     match Self::render_and_emit_dmx(output_id, system_t, frame, events.as_ref()) {
                         Ok(dmx_vec) => {
-                            sacn_state.output_sacn_internal(*universe, ip_address, &dmx_vec)
+                            sacn_state.output_sacn(*universe, ip_address, &dmx_vec)
                         }
                         Err(RenderError::OutputNotFound { .. }) => {
                             // Output was deleted - exit loop gracefully
@@ -346,7 +350,7 @@ impl OutputLoopManager {
                         Ok(wled_data) => {
                             events.wled_render(output_id, &wled_data);
 
-                            wled_state.output_wled_internal(ip_address, &wled_data).await
+                            wled_state.output_wled(ip_address, &wled_data).await
                         }
                         Err(RenderError::OutputNotFound { .. }) => {
                             // Output was deleted - exit loop gracefully
@@ -397,5 +401,36 @@ async fn stop_loop(output_id: u64, loops: &mut HashMap<u64, OutputLoopHandle>) {
 
     if (tokio::time::timeout(Duration::from_millis(500), handle.task).await).is_err() {
         log::warn!("Output loop {output_id} did not stop within timeout");
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn effective_fps(configured: u32, default: u32) -> f64 {
+        1.0 / frame_duration(resolve_fps(configured, default)).as_secs_f64()
+    }
+
+    #[test]
+    fn paces_within_a_frame_of_the_configured_rate() {
+        for fps in [1, 24, 25, 30, 42, 44, 50, 60, 120, MAX_FPS] {
+            let effective = effective_fps(fps, DEFAULT_SERIAL_FPS);
+            assert!(
+                (effective - f64::from(fps)).abs() < 0.001,
+                "{fps} fps paced at {effective}"
+            );
+        }
+    }
+
+    #[test]
+    fn falls_back_to_the_default_when_unset() {
+        assert_eq!(resolve_fps(0, DEFAULT_WLED_FPS), DEFAULT_WLED_FPS);
+    }
+
+    #[test]
+    fn caps_the_rate_so_the_frame_duration_stays_positive() {
+        assert_eq!(resolve_fps(u32::MAX, DEFAULT_SERIAL_FPS), MAX_FPS);
+        assert!(frame_duration(resolve_fps(u32::MAX, DEFAULT_SERIAL_FPS)) > Duration::ZERO);
     }
 }
