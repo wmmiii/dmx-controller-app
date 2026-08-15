@@ -50,8 +50,8 @@ pub fn apply_sequence_effect<T: RenderTarget<T>>(
         for layer in &sequence.layers {
             // This is super expensive to do per fixture per layer. Consider optimizing by creating a BST for each layer per sequence apply.
             let effect_option = layer.effects.iter().find(|e| {
-                (e.start_ms < u32::try_from(sequence_t).unwrap())
-                    && (e.end_ms >= u32::try_from(sequence_t).unwrap())
+                (e.start_ms <= u32::try_from(sequence_t).unwrap())
+                    && (e.end_ms > u32::try_from(sequence_t).unwrap())
             });
             let Some(effect) = effect_option else {
                 continue;

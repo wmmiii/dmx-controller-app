@@ -4,7 +4,8 @@ use std::sync::{LazyLock, Mutex};
 use crate::audio::AudioAnalysis;
 use crate::beat::{beat_t, effective_beat_metadata};
 use crate::palette::interpolated_scene_palette;
-use crate::proto::render_mode::{Autopilot, TimecodedShow};
+use crate::proto::QualifiedFixtureId;
+use crate::proto::render_mode::{Autopilot, FixtureHighlight, TimecodedShow};
 use crate::render::autopilot::render_playlist;
 use crate::render::timecoded_show::render_timecoded_show;
 use crate::visualizer::uniforms::ShaderUniforms;
@@ -327,6 +328,7 @@ fn render<T: RenderTarget<T>>(
         None
         | Some(
             Mode::Blackout(_)
+            | Mode::FixtureHighlight(FixtureHighlight { fixture_id: None })
             | Mode::TimecodedShow(TimecodedShow {
                 show_id: _,
                 state: None,
@@ -336,6 +338,12 @@ fn render<T: RenderTarget<T>>(
             if output_id == fixture_debug.output_id {
                 render_target.apply_fixture_debug(fixture_debug);
             }
+            Ok(())
+        }
+        Some(Mode::FixtureHighlight(FixtureHighlight {
+            fixture_id: Some(fixture_id),
+        })) => {
+            render_fixture_highlight(render_target, fixture_id);
             Ok(())
         }
         Some(Mode::GroupDebug(GroupDebug { group_id })) => {
@@ -399,4 +407,21 @@ fn render_group_debug<T: RenderTarget<T>>(render_target: &mut T, project: &Proje
 
         render_target.apply_state(fixture_id, &state, &ColorPalette::default());
     }
+}
+
+fn render_fixture_highlight<T: RenderTarget<T>>(
+    render_target: &mut T,
+    fixture_id: &QualifiedFixtureId,
+) {
+    let state = FixtureState {
+        light_color: Some(LightColor::Color(Color {
+            red: 0.0,
+            green: 0.0,
+            blue: 0.0,
+            white: Some(1.0),
+        })),
+        ..Default::default()
+    };
+
+    render_target.apply_state(fixture_id, &state, &ColorPalette::default());
 }

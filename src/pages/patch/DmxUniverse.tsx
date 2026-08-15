@@ -5,6 +5,7 @@ import {
   PhysicalDmxFixtureSchema,
 } from '@dmx-controller/proto/dmx_pb';
 import {
+  QualifiedFixtureId,
   QualifiedFixtureIdSchema,
   SacnDmxOutput,
   SerialDmxOutput,
@@ -24,6 +25,8 @@ import { ANGLE_CHANNELS } from '../../engine/channel';
 import { deleteFixture } from '../../engine/fixtures/fixture';
 import { getOutput } from '../../util/projectUtils';
 
+import { RenderModeSchema } from '@dmx-controller/proto/render_pb';
+import { useRenderMode } from '../../hooks/renderMode';
 import { sortedEntries } from '../../util/sortUtils';
 import { DraggableDmxFixture } from './DmxEditor';
 import styles from './DmxUniverse.module.css';
@@ -202,9 +205,14 @@ export function DmxUniverse({
           );
         })}
       </div>
-      {selectedFixture && (
+      {selectedFixture && selectedFixtureId && (
         <EditFixtureDialog
           fixture={selectedFixture}
+          fixtureId={create(QualifiedFixtureIdSchema, {
+            patch: project.activePatch,
+            output: outputId,
+            fixture: selectedFixtureId,
+          })}
           close={() => setSelectedFixtureId(null)}
           onDelete={() => {
             if (selectedFixtureId == null) {
@@ -231,16 +239,30 @@ export function DmxUniverse({
 
 interface EditFixtureDialogProps {
   fixture: PhysicalDmxFixture;
+  fixtureId: QualifiedFixtureId;
   close: () => void;
   onDelete: () => void;
 }
 
 function EditFixtureDialog({
   fixture,
+  fixtureId,
   close,
   onDelete,
 }: EditFixtureDialogProps): JSX.Element {
   const { project, save } = useContext(ProjectContext);
+
+  useRenderMode(
+    create(RenderModeSchema, {
+      mode: {
+        case: 'fixtureHighlight',
+        value: {
+          fixtureId: fixtureId,
+        },
+      },
+    }),
+    [fixtureId],
+  );
 
   const definition: DmxFixtureDefinition | undefined = useMemo(
     () =>

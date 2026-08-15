@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package dmx_controller;
 
+import "proto/output.proto";
+
 message RenderMode {
   message Blackout {}
 
@@ -10,6 +12,8 @@ message RenderMode {
     uint32 channel_offset = 2;
     repeated uint32 channel_values = 3;
   }
+
+  message FixtureHighlight { QualifiedFixtureId fixture_id = 1; };
 
   message GroupDebug { uint64 group_id = 1; }
 
@@ -29,6 +33,7 @@ message RenderMode {
   oneof mode {
     Blackout blackout = 1;
     FixtureDebug fixture_debug = 2;
+    FixtureHighlight fixture_highlight = 7;
     GroupDebug group_debug = 3;
     Scene scene = 4;
     Autopilot autopilot = 6;

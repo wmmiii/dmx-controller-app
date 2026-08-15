@@ -40,6 +40,7 @@ import { PaletteSwatch } from '../components/Palette';
 import { Popover } from '../components/Popover';
 import { Select } from '../components/Select';
 import { Spacer } from '../components/Spacer';
+import { PaletteContext } from '../contexts/PaletteContext';
 import { useShortcuts } from '../contexts/ShortcutContext';
 import { useRenderMode } from '../hooks/renderMode';
 import { DEFAULT_COLOR_PALETTE } from '../util/colorUtil';
@@ -182,6 +183,7 @@ interface PlaylistBodyProps {
 function PlaylistBody({ playlist }: PlaylistBodyProps) {
   const { save, update } = useContext(ProjectContext);
   const [selectedId, setSelectedId] = useState<bigint | null>(null);
+  const [paletteId, setPaletteId] = useState<bigint | null>(null);
   const pattern = useMemo(
     () => playlist.patterns.find((p) => p.id === selectedId) ?? null,
     [playlist, selectedId],
@@ -274,19 +276,21 @@ function PlaylistBody({ playlist }: PlaylistBodyProps) {
         paletteOrder.case === 'paletteHold'
           ? playlist.palettes.findIndex((p) => p.id === paletteOrder.value.id)
           : 0;
+      const paletteSelection = getActivePlaylistSelection(
+        paletteOrder.case,
+        paletteHoldIndex,
+        playlist.palettes.length,
+        playlist.paletteOffsetMs,
+        playlist.dwellMs,
+        playlist.transitionMs,
+      );
       updateBars(
-        getActivePlaylistSelection(
-          paletteOrder.case,
-          paletteHoldIndex,
-          playlist.palettes.length,
-          playlist.paletteOffsetMs,
-          playlist.dwellMs,
-          playlist.transitionMs,
-        ),
+        paletteSelection,
         paletteOrder.case === 'paletteHold',
         playlist.palettes,
         paletteProgressRefs.current,
       );
+      setPaletteId(BigInt(paletteSelection?.currentIndex ?? 0));
     });
   }, [playlist]);
 
@@ -295,307 +299,314 @@ function PlaylistBody({ playlist }: PlaylistBodyProps) {
     save(description);
   };
 
+  const palette = useMemo(
+    () => playlist.palettes[Number(paletteId ?? 0)] || DEFAULT_COLOR_PALETTE,
+    [playlist, paletteId],
+  );
+
   return (
-    <div className={styles.body}>
-      <div className={styles.controls}>
-        <Select
-          className={styles.select}
-          value={playlist.patternOrder.case ?? ''}
-          onChange={(v) => {
-            if (v === 'patternSequential') {
-              snapshotTransition(playlist);
-              playlist.patternOrder = {
-                case: 'patternSequential',
-                value: create(Playlist_SequentialSchema),
-              };
-              save(`Set playlist ${playlist.name} pattern to sequential.`);
-            } else if (v === 'patternShuffle') {
-              snapshotTransition(playlist);
-              playlist.patternOrder = {
-                case: 'patternShuffle',
-                value: create(Playlist_ShuffleSchema),
-              };
-              save(`Set playlist ${playlist.name} pattern to shuffle.`);
-            }
-          }}
-          options={[
-            {
-              label: 'Sequential',
-              value: 'patternSequential',
-            },
-            {
-              label: 'Shuffle',
-              value: 'patternShuffle',
-            },
-            {
-              label: 'Hold',
-              value: 'patternHold',
-              disabled: true,
-            },
-          ]}
-        />
-      </div>
-      <div className={styles.mainControls}>
-        <IconButton
-          title="previous"
-          onClick={() => {
-            skip(playlist, -1n);
-            update();
-          }}
-        >
-          <BiSkipPrevious />
-        </IconButton>
-        <IconButton
-          title="next"
-          onClick={() => {
-            skip(playlist, 1n);
-            update();
-          }}
-        >
-          <BiSkipNext />
-        </IconButton>
-        <Spacer />
-        <label>
-          Dwell
-          <NumberInput
-            title="Dwell"
-            mode="seconds"
-            value={playlist.dwellMs / 1000}
+    <PaletteContext.Provider value={{ palette: palette }}>
+      <div className={styles.body}>
+        <div className={styles.controls}>
+          <Select
+            className={styles.select}
+            value={playlist.patternOrder.case ?? ''}
             onChange={(v) => {
-              snapshotTransition(playlist);
-              playlist.dwellMs = Math.floor(v * 1_000);
-              save(`Set playlist pattern dwell to ${v} seconds.`);
+              if (v === 'patternSequential') {
+                snapshotTransition(playlist);
+                playlist.patternOrder = {
+                  case: 'patternSequential',
+                  value: create(Playlist_SequentialSchema),
+                };
+                save(`Set playlist ${playlist.name} pattern to sequential.`);
+              } else if (v === 'patternShuffle') {
+                snapshotTransition(playlist);
+                playlist.patternOrder = {
+                  case: 'patternShuffle',
+                  value: create(Playlist_ShuffleSchema),
+                };
+                save(`Set playlist ${playlist.name} pattern to shuffle.`);
+              }
             }}
+            options={[
+              {
+                label: 'Sequential',
+                value: 'patternSequential',
+              },
+              {
+                label: 'Shuffle',
+                value: 'patternShuffle',
+              },
+              {
+                label: 'Hold',
+                value: 'patternHold',
+                disabled: true,
+              },
+            ]}
           />
-        </label>
-        <label>
-          Transition
-          <NumberInput
-            title="Transition"
-            mode="seconds"
-            value={playlist.transitionMs / 1000}
+        </div>
+        <div className={styles.mainControls}>
+          <IconButton
+            title="previous"
+            onClick={() => {
+              skip(playlist, -1n);
+              update();
+            }}
+          >
+            <BiSkipPrevious />
+          </IconButton>
+          <IconButton
+            title="next"
+            onClick={() => {
+              skip(playlist, 1n);
+              update();
+            }}
+          >
+            <BiSkipNext />
+          </IconButton>
+          <Spacer />
+          <label>
+            Dwell
+            <NumberInput
+              title="Dwell"
+              mode="seconds"
+              value={playlist.dwellMs / 1000}
+              onChange={(v) => {
+                snapshotTransition(playlist);
+                playlist.dwellMs = Math.floor(v * 1_000);
+                save(`Set playlist pattern dwell to ${v} seconds.`);
+              }}
+            />
+          </label>
+          <label>
+            Transition
+            <NumberInput
+              title="Transition"
+              mode="seconds"
+              value={playlist.transitionMs / 1000}
+              onChange={(v) => {
+                snapshotTransition(playlist);
+                playlist.transitionMs = Math.floor(v * 1_000);
+                save(`Set playlist pattern transition to ${v} seconds.`);
+              }}
+            />
+          </label>
+        </div>
+        <div className={styles.controls}>
+          <Select
+            className={styles.select}
+            value={playlist.paletteOrder.case ?? ''}
             onChange={(v) => {
-              snapshotTransition(playlist);
-              playlist.transitionMs = Math.floor(v * 1_000);
-              save(`Set playlist pattern transition to ${v} seconds.`);
+              if (v === 'paletteSequential') {
+                snapshotTransition(playlist);
+                playlist.paletteOrder = {
+                  case: 'paletteSequential',
+                  value: create(Playlist_SequentialSchema),
+                };
+                save(`Set playlist ${playlist.name} palette to sequential.`);
+              } else if (v === 'paletteShuffle') {
+                snapshotTransition(playlist);
+                playlist.paletteOrder = {
+                  case: 'paletteShuffle',
+                  value: create(Playlist_ShuffleSchema),
+                };
+                save(`Set playlist ${playlist.name} palette to shuffle.`);
+              }
             }}
+            options={[
+              {
+                label: 'Sequential',
+                value: 'paletteSequential',
+              },
+              {
+                label: 'Shuffle',
+                value: 'paletteShuffle',
+              },
+              {
+                label: 'Hold',
+                value: 'paletteHold',
+                disabled: true,
+              },
+            ]}
           />
-        </label>
-      </div>
-      <div className={styles.controls}>
-        <Select
-          className={styles.select}
-          value={playlist.paletteOrder.case ?? ''}
-          onChange={(v) => {
-            if (v === 'paletteSequential') {
+        </div>
+        <Browser
+          items={playlist.patterns.map((pattern, idx) => ({
+            key: String(pattern.id),
+            name: pattern.name,
+            setName: (name) => {
               snapshotTransition(playlist);
-              playlist.paletteOrder = {
-                case: 'paletteSequential',
-                value: create(Playlist_SequentialSchema),
-              };
-              save(`Set playlist ${playlist.name} palette to sequential.`);
-            } else if (v === 'paletteShuffle') {
-              snapshotTransition(playlist);
-              playlist.paletteOrder = {
-                case: 'paletteShuffle',
-                value: create(Playlist_ShuffleSchema),
-              };
-              save(`Set playlist ${playlist.name} palette to shuffle.`);
-            }
-          }}
-          options={[
-            {
-              label: 'Sequential',
-              value: 'paletteSequential',
+              const oldName = pattern.name;
+              pattern.name = name;
+              save(`Rename pattern '${oldName}' to '${name}'.`);
             },
-            {
-              label: 'Shuffle',
-              value: 'paletteShuffle',
-            },
-            {
-              label: 'Hold',
-              value: 'paletteHold',
-              disabled: true,
-            },
-          ]}
+            selected: pattern.id === selectedId,
+            onSelect: () => setSelectedId(pattern.id),
+            renderContent: (name) => (
+              <div className={styles.progressItem}>
+                <div className={styles.progressRow}>
+                  <div className={styles.progressName}>{name}</div>
+                  <span onClick={(ev) => ev.stopPropagation()}>
+                    <PatternControls playlist={playlist} idx={idx} />
+                  </span>
+                </div>
+                <div className={styles.progressTrack}>
+                  <div
+                    className={styles.progressBar}
+                    ref={(el) => {
+                      const key = String(pattern.id);
+                      if (el) {
+                        patternProgressRefs.current.set(key, el);
+                      } else {
+                        patternProgressRefs.current.delete(key);
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+            ),
+          }))}
+          listHeader={
+            <Button
+              className={styles.addButton}
+              icon={<BiPlus size={18} />}
+              onClick={() => {
+                snapshotTransition(playlist);
+                const id = randomUint64();
+                playlist.patterns.push(
+                  create(PatternSchema, {
+                    id,
+                    name: 'New Pattern',
+                    targetedEffects: [],
+                  }),
+                );
+                setSelectedId(id);
+                save(`Add new pattern to ${playlist.name}.`);
+              }}
+            >
+              Add pattern
+            </Button>
+          }
         />
-      </div>
-      <Browser
-        items={playlist.patterns.map((pattern, idx) => ({
-          key: String(pattern.id),
-          name: pattern.name,
-          setName: (name) => {
-            snapshotTransition(playlist);
-            const oldName = pattern.name;
-            pattern.name = name;
-            save(`Rename pattern '${oldName}' to '${name}'.`);
-          },
-          selected: pattern.id === selectedId,
-          onSelect: () => setSelectedId(pattern.id),
-          renderContent: (name) => (
-            <div className={styles.progressItem}>
-              <div className={styles.progressRow}>
-                <div className={styles.progressName}>{name}</div>
-                <span onClick={(ev) => ev.stopPropagation()}>
-                  <PatternControls playlist={playlist} idx={idx} />
-                </span>
-              </div>
-              <div className={styles.progressTrack}>
-                <div
-                  className={styles.progressBar}
-                  ref={(el) => {
-                    const key = String(pattern.id);
-                    if (el) {
-                      patternProgressRefs.current.set(key, el);
-                    } else {
-                      patternProgressRefs.current.delete(key);
-                    }
-                  }}
-                />
-              </div>
-            </div>
-          ),
-        }))}
-        listHeader={
+        <div className={styles.pattern}>
+          {pattern != null ? (
+            <EffectGroupEditor
+              targetedEffects={pattern.targetedEffects}
+              name={pattern.name}
+            />
+          ) : (
+            <Empty>
+              <p>Select a pattern to edit.</p>
+              <p>
+                Autopilot shows allow you to create lighting patterns that are
+                applied sequentially or randomly over time.
+              </p>
+              <p>
+                This allows you to create varied ambient lighting effects
+                without having to be at the controls.
+              </p>
+              <p>
+                You can also define and apply color palettes to randomize your
+                lights even more!
+              </p>
+            </Empty>
+          )}
+        </div>
+        <div className={styles.palettes}>
           <Button
             className={styles.addButton}
             icon={<BiPlus size={18} />}
             onClick={() => {
               snapshotTransition(playlist);
               const id = randomUint64();
-              playlist.patterns.push(
-                create(PatternSchema, {
-                  id,
-                  name: 'New Pattern',
-                  targetedEffects: [],
+              playlist.palettes.push(
+                create(ColorPaletteSchema, {
+                  ...DEFAULT_COLOR_PALETTE,
+                  id: id,
                 }),
               );
               setSelectedId(id);
-              save(`Add new pattern to ${playlist.name}.`);
+              save(`Add new palette to ${playlist.name}.`);
             }}
           >
-            Add pattern
+            Add palette
           </Button>
-        }
-      />
-      <div className={styles.pattern}>
-        {pattern != null ? (
-          <EffectGroupEditor
-            targetedEffects={pattern.targetedEffects}
-            name={pattern.name}
-          />
-        ) : (
-          <Empty>
-            <p>Select a pattern to edit.</p>
-            <p>
-              Autopilot shows allow you to create lighting patterns that are
-              applied sequentially or randomly over time.
-            </p>
-            <p>
-              This allows you to create varied ambient lighting effects without
-              having to be at the controls.
-            </p>
-            <p>
-              You can also define and apply color palettes to randomize your
-              lights even more!
-            </p>
-          </Empty>
-        )}
-      </div>
-      <div className={styles.palettes}>
-        <Button
-          className={styles.addButton}
-          icon={<BiPlus size={18} />}
-          onClick={() => {
-            snapshotTransition(playlist);
-            const id = randomUint64();
-            playlist.palettes.push(
-              create(ColorPaletteSchema, {
-                ...DEFAULT_COLOR_PALETTE,
-                id: id,
-              }),
-            );
-            setSelectedId(id);
-            save(`Add new palette to ${playlist.name}.`);
-          }}
-        >
-          Add palette
-        </Button>
-        <div className={styles.palettesList}>
-          {playlist.palettes.map((p, idx) => (
-            <div key={String(p.id)} className={styles.progressItem}>
-              <div className={styles.progressRow}>
-                <PaletteSwatch
-                  className={styles.progressName}
-                  palette={p}
-                  active={false}
-                  edit={true}
-                  onClick={() => {
-                    snapshotTransition(playlist);
-                    playlist.paletteOrder = {
-                      case: 'paletteHold',
-                      value: create(Playlist_HoldSchema, {
-                        id: p.id,
-                      }),
-                    };
-                    save(`Set ${playlist.name} palette to ${p.name}.`);
-                  }}
-                  onDelete={() => {
-                    snapshotTransition(playlist);
-                    if (playlist.palettes.length === 1) {
-                      return;
+          <div className={styles.palettesList}>
+            {playlist.palettes.map((p, idx) => (
+              <div key={String(p.id)} className={styles.progressItem}>
+                <div className={styles.progressRow}>
+                  <PaletteSwatch
+                    className={styles.progressName}
+                    palette={p}
+                    active={false}
+                    edit={true}
+                    onClick={() => {
+                      snapshotTransition(playlist);
+                      playlist.paletteOrder = {
+                        case: 'paletteHold',
+                        value: create(Playlist_HoldSchema, {
+                          id: p.id,
+                        }),
+                      };
+                      save(`Set ${playlist.name} palette to ${p.name}.`);
+                    }}
+                    onDelete={() => {
+                      snapshotTransition(playlist);
+                      if (playlist.palettes.length === 1) {
+                        return;
+                      }
+                      playlist.palettes.splice(idx, 1);
+                      save(`Delete palette from ${playlist.name}`);
+                    }}
+                  />
+                  <IconButton
+                    title="Move palette up"
+                    disabled={idx === 0}
+                    onClick={() =>
+                      swap(
+                        playlist.palettes,
+                        idx,
+                        idx - 1,
+                        `Reorder palettes in ${playlist.name}.`,
+                      )
                     }
-                    playlist.palettes.splice(idx, 1);
-                    save(`Delete palette from ${playlist.name}`);
-                  }}
-                />
-                <IconButton
-                  title="Move palette up"
-                  disabled={idx === 0}
-                  onClick={() =>
-                    swap(
-                      playlist.palettes,
-                      idx,
-                      idx - 1,
-                      `Reorder palettes in ${playlist.name}.`,
-                    )
-                  }
-                >
-                  <BiChevronUp />
-                </IconButton>
-                <IconButton
-                  title="Move palette down"
-                  disabled={idx === playlist.palettes.length - 1}
-                  onClick={() =>
-                    swap(
-                      playlist.palettes,
-                      idx,
-                      idx + 1,
-                      `Reorder palettes in ${playlist.name}.`,
-                    )
-                  }
-                >
-                  <BiChevronDown />
-                </IconButton>
-              </div>
-              <div className={styles.progressTrack}>
-                <div
-                  className={styles.progressBar}
-                  ref={(el) => {
-                    const key = String(p.id);
-                    if (el) {
-                      paletteProgressRefs.current.set(key, el);
-                    } else {
-                      paletteProgressRefs.current.delete(key);
+                  >
+                    <BiChevronUp />
+                  </IconButton>
+                  <IconButton
+                    title="Move palette down"
+                    disabled={idx === playlist.palettes.length - 1}
+                    onClick={() =>
+                      swap(
+                        playlist.palettes,
+                        idx,
+                        idx + 1,
+                        `Reorder palettes in ${playlist.name}.`,
+                      )
                     }
-                  }}
-                />
+                  >
+                    <BiChevronDown />
+                  </IconButton>
+                </div>
+                <div className={styles.progressTrack}>
+                  <div
+                    className={styles.progressBar}
+                    ref={(el) => {
+                      const key = String(p.id);
+                      if (el) {
+                        paletteProgressRefs.current.set(key, el);
+                      } else {
+                        paletteProgressRefs.current.delete(key);
+                      }
+                    }}
+                  />
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+    </PaletteContext.Provider>
   );
 }
 
