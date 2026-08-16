@@ -83,7 +83,6 @@ export function Select<T extends string | number>({
           side="bottom"
           align="start"
           alignItemWithTrigger={false}
-          collisionAvoidance={{ side: 'none' }}
         >
           <BaseSelect.Popup className={styles.popup}>
             {grouped
