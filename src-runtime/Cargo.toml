@@ -40,11 +40,11 @@ libc = "0.2"
 # the target rather than of any feature.
 [target.'cfg(not(target_os = "ios"))'.dependencies]
 naga = { version = "26.0", features = ["glsl-in", "spv-out"], optional = true }
-wgpu = { version = "26.0", features = ["vulkan", "metal", "wgsl", "glsl"], optional = true }
+wgpu = { version = "26.0", features = ["vulkan", "metal", "gles", "wgsl", "glsl"], optional = true }
 
 [target.'cfg(target_os = "ios")'.dependencies]
 naga = { version = "26.0", default-features = false, features = ["glsl-in", "spv-out"], optional = true }
-wgpu = { version = "26.0", default-features = false, features = ["metal", "wgsl", "glsl"], optional = true }
+wgpu = { version = "26.0", default-features = false, features = ["metal", "gles", "wgsl", "glsl"], optional = true }
 
 [lints.rust]
 dead_code = "deny"
