@@ -1612,6 +1612,7 @@ dependencies = [
  "env_logger",
  "log",
  "prost",
+ "serde_json",
  "tokio",
 ]
 

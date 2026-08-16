@@ -24,7 +24,7 @@ const BLACKOUT_DRAIN: Duration = Duration::from_millis(250);
 
 /// Renders a DMX Controller App project without a display, for unattended installs.
 #[derive(Parser)]
-#[command(name = "dmx-controller-app-headless", version)]
+#[command(name = "dmx-controller-app-headless", version = env!("DMX_CONTROLLER_APP_VERSION"))]
 struct Args {
     /// Path to a .dmxapp project exported from the desktop app.
     #[arg(long, value_name = "PATH")]
