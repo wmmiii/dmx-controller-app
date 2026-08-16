@@ -147,10 +147,11 @@ pub struct ShaderState {
 
 impl ShaderState {
     pub async fn new() -> Result<Self, String> {
-        // Prefer Vulkan/Metal/DX12 over GLES. The GLES backend logs spurious
-        // `eglSwapInterval` errors when rendering to offscreen textures.
+        // Prefer Vulkan/Metal/DX12 over GL. The GL backend logs spurious
+        // `eglSwapInterval` errors when rendering to offscreen textures, but it's
+        // necessary on Raspberry Pi where Vulkan/Metal/DX12 aren't available.
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
-            backends: wgpu::Backends::VULKAN | wgpu::Backends::METAL | wgpu::Backends::DX12,
+            backends: wgpu::Backends::VULKAN | wgpu::Backends::METAL | wgpu::Backends::DX12 | wgpu::Backends::GL,
             ..Default::default()
         });
 
