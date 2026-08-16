@@ -3,6 +3,7 @@
 /// previous-pass texture/sampler.
 const PREAMBLE: &str = "\
 #version 450
+precision highp float;
 
 layout(set = 0, binding = 0, std140) uniform Uniforms {
     vec3 u_color;                // offset 0: display color RGB
