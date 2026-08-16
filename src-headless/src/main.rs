@@ -515,7 +515,7 @@ mod tests {
 
         let error = resolve_render_mode(&mode, &mut project).unwrap_err();
         assert!(error.contains("Pattern 999 does not exist"), "{error}");
-        assert!(error.contains("Pattern A (10)"), "{error}");
+        assert!(error.contains("\"Pattern A\" (10)"), "{error}");
     }
 
     #[test]

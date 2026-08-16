@@ -161,7 +161,7 @@ function DisplayEditorPane({
           <NumberInput
             mode="integer"
             value={display.width}
-            onChange={(width) => {
+            onFinalize={(width) => {
               display.width = width;
               save(`Set display width to ${width}.`);
             }}
@@ -172,7 +172,7 @@ function DisplayEditorPane({
           <NumberInput
             mode="integer"
             value={display.height}
-            onChange={(height) => {
+            onFinalize={(height) => {
               display.height = height;
               save(`Set display height to ${height}.`);
             }}
@@ -291,7 +291,7 @@ function SegmentList({ display }: SegmentListProps) {
                   <NumberInput
                     mode="integer"
                     value={left}
-                    onChange={(newLeft) => {
+                    onFinalize={(newLeft) => {
                       mapping.mapping!.left = newLeft;
                       save(`Set segment left to ${newLeft}.`);
                     }}
@@ -302,7 +302,7 @@ function SegmentList({ display }: SegmentListProps) {
                   <NumberInput
                     mode="integer"
                     value={top}
-                    onChange={(newTop) => {
+                    onFinalize={(newTop) => {
                       mapping.mapping!.top = newTop;
                       save(`Set segment top to ${newTop}.`);
                     }}

@@ -246,7 +246,7 @@ function EditDefinitionDialog({
   close,
   deleteDefinition,
 }: EditDefinitionDialogProps): JSX.Element {
-  const { project, save } = useContext(ProjectContext);
+  const { project, save, update } = useContext(ProjectContext);
   const [testIndex, setTestIndex] = useState(0);
   const [testValues, setTestValues] = useState<number[]>([]);
   const [wheelChannel, setWheelChannel] = useState<number | null>(null);
@@ -414,6 +414,7 @@ function EditDefinitionDialog({
             value={mode.numChannels}
             onChange={(v) => {
               mode.numChannels = v;
+              update();
             }}
             onFinalize={(v) =>
               save(`Set number of channels of ${mode.name} to ${v}.`)
@@ -426,7 +427,7 @@ function EditDefinitionDialog({
           <NumberInput
             mode="dmx_channel"
             value={testIndex + 1}
-            onChange={(v) => setTestIndex(v - 1)}
+            onFinalize={(v) => setTestIndex(v - 1)}
           />
         </label>
       </div>
@@ -546,6 +547,7 @@ function EditDefinitionDialog({
                       value={channel.defaultValue}
                       onChange={(v) => {
                         channel.defaultValue = v;
+                        update();
                       }}
                       onFinalize={(v) =>
                         save(
@@ -565,7 +567,7 @@ function EditDefinitionDialog({
                   <NumberInput
                     mode="dmx"
                     value={testValues[i] || 0}
-                    onChange={(v) => {
+                    onFinalize={(v) => {
                       setTestValues((testValues) => {
                         testValues[i] = v;
                         return [...testValues];
@@ -598,7 +600,7 @@ function ChannelMapping({
   mapping,
   setWheelChannel,
 }: ChannelMappingProps) {
-  const { save } = useContext(ProjectContext);
+  const { save, update } = useContext(ProjectContext);
 
   if (type == null || mapping == null) {
     return <td colSpan={4}></td>;
@@ -616,6 +618,7 @@ function ChannelMapping({
                 if (mapping.case === 'angleMapping') {
                   mapping.value.minDegrees = v;
                 }
+                update();
               }}
               onFinalize={(v) =>
                 save(`Set channel ${index} min degrees to ${v}.`)
@@ -630,6 +633,7 @@ function ChannelMapping({
                 if (mapping.case === 'angleMapping') {
                   mapping.value.maxDegrees = v;
                 }
+                update();
               }}
               onFinalize={(v) =>
                 save(`Set channel ${index} max degrees to ${v}.`)
@@ -652,6 +656,7 @@ function ChannelMapping({
                 if (mapping.case === 'amountMapping') {
                   mapping.value.minValue = value;
                 }
+                update();
               }}
               onFinalize={(value) => {
                 save(`Set channel ${index} min value to ${value}.`);
@@ -667,6 +672,7 @@ function ChannelMapping({
                 if (mapping.case === 'amountMapping') {
                   mapping.value.maxValue = value;
                 }
+                update();
               }}
               onFinalize={(value) =>
                 save(`Set channel ${index} max value to ${value}.`)
@@ -694,7 +700,7 @@ interface ColorWheelEditorProps {
 }
 
 function ColorWheelEditor({ wheel, onClose }: ColorWheelEditorProps) {
-  const { save } = useContext(ProjectContext);
+  const { save, update } = useContext(ProjectContext);
   return (
     <Modal
       title="Edit Color Wheel"
@@ -721,6 +727,7 @@ function ColorWheelEditor({ wheel, onClose }: ColorWheelEditorProps) {
                     value={c.value}
                     onChange={(value) => {
                       c.value = value;
+                      update();
                     }}
                     onFinalize={(value) =>
                       save(`Change color wheel value to ${value}.`)

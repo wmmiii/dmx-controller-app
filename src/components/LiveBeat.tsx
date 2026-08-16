@@ -97,7 +97,7 @@ export function LiveBeat({ className }: LiveBeatProps): JSX.Element {
       <NumberInput
         mode="bpm"
         value={Math.floor(60_000 / (project.liveBeat!.lengthMs || NaN))}
-        onChange={(v) => setBeat(60_000 / v)}
+        onFinalize={(v) => setBeat(60_000 / v)}
       />
 
       <ControllerConnection

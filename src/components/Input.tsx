@@ -15,6 +15,8 @@ import { DRAG_DISTANCE_PX_SQ, LONG_PRESS_MS } from '../util/browserUtils';
 
 import styles from './Input.module.css';
 
+const DEBOUNCE_MS = 300;
+
 interface TextInputProps {
   value: string;
   onChange: (value: string) => void;
@@ -181,8 +183,8 @@ export interface NumberInputProps {
   mode?: NumberInputMode;
   normalized?: boolean;
   value: number;
-  onChange: (value: number) => void;
-  onFinalize?: (value: number) => void;
+  onFinalize: (value: number) => void;
+  onChange?: (value: number) => void;
 }
 
 function getNumberDisplayConfig(
@@ -323,7 +325,7 @@ export function NumberInput({
   onChange,
   onFinalize,
 }: NumberInputProps): JSX.Element {
-  const { update, numberInputMode } = useContext(ProjectContext);
+  const { numberInputMode } = useContext(ProjectContext);
 
   // If normalized is not explicitly provided, infer from mode:
   // - undefined mode means system default (percent/dmx/normalized) for 0-1 values
@@ -348,11 +350,11 @@ export function NumberInput({
     [normalized, max, min, integer],
   );
 
-  // Parse display string to internal value (no range validation)
+  // Parse display string to internal value, returns NaN if not parsable or out of range
   const parseDisplay = useCallback(
     (s: string): number => {
       const v = integer ? parseInt(s) : parseFloat(s);
-      if (isNaN(v)) {
+      if (isNaN(v) || v < min || v > max) {
         return NaN;
       }
       if (normalized) {
@@ -361,15 +363,6 @@ export function NumberInput({
       return v;
     },
     [integer, min, max, normalized],
-  );
-
-  // Check if display string is in valid range
-  const isInRange = useCallback(
-    (s: string): boolean => {
-      const v = integer ? parseInt(s) : parseFloat(s);
-      return !isNaN(v) && v >= min && v <= max;
-    },
-    [integer, min, max],
   );
 
   // Clamp internal value to valid range
@@ -384,83 +377,88 @@ export function NumberInput({
   );
 
   const inputRef = useRef<HTMLInputElement>(null);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [input, setInput] = useState(String(mapToDisplay(value)));
-
-  // Step by delta in display units, snapping to step grid to avoid floating point errors
-  const stepBy = useCallback(
-    (delta: number) => {
-      const displayValue = integer ? parseInt(input) : parseFloat(input);
-      if (isNaN(displayValue)) {
-        return;
-      }
-
-      const snapped = Math.round((displayValue + delta) / step) * step;
-      const clampedDisplay = Math.max(min, Math.min(max, snapped));
-      const internal = normalized
-        ? (clampedDisplay - min) / (max - min)
-        : clampedDisplay;
-
-      onChange(internal);
-      setInput(String(integer ? Math.round(clampedDisplay) : clampedDisplay));
-      update();
-    },
-    [input, integer, step, min, max, normalized, onChange, update],
-  );
 
   // Re-sync display string when the external value or display config changes.
   useEffect(() => setInput(mapToDisplay(value)), [value, mapToDisplay]);
 
-  const onChangeImpl = (newInput: string) => {
-    setInput(newInput);
-    if (isInRange(newInput)) {
-      onChange(parseDisplay(newInput));
-      update();
-    }
-  };
+  // Clear out any pending timers on unmount.
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
-  const isValid = isInRange(input);
+  const scheduleOnChange = useCallback(
+    (internal: number) => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      debounceTimerRef.current = setTimeout(
+        () => onChange?.(internal),
+        DEBOUNCE_MS,
+      );
+    },
+    [onChange],
+  );
 
   const inputEl = (
     <input
       ref={inputRef}
+      type="number"
       className={clsx(
         className,
-        { [styles.parseError]: !isValid },
+        { [styles.parseError]: isNaN(parseDisplay(input)) },
         styles.numberInput,
         styles.input,
       )}
       title={title}
       disabled={disabled}
+      min={min}
+      max={max}
+      step={step}
       onKeyDown={(e) => {
         switch (e.code) {
           case 'Enter':
-          case 'Escape':
             inputRef.current?.blur();
             break;
-          case 'ArrowUp':
-            stepBy(step);
-            break;
-          case 'ArrowDown':
-            stepBy(-step);
+          case 'Escape':
+            setInput(mapToDisplay(value));
+            if (debounceTimerRef.current) {
+              clearTimeout(debounceTimerRef.current);
+              debounceTimerRef.current = null;
+            }
+            inputRef.current?.blur();
             break;
         }
       }}
       value={input}
-      onInput={(e) => onChangeImpl((e.target as HTMLInputElement).value)}
+      onInput={(e) => {
+        const newInput = (e.target as HTMLInputElement).value;
+        setInput(newInput);
+        const parsed = parseDisplay(newInput);
+        if (!isNaN(parsed)) {
+          scheduleOnChange(parsed);
+        }
+      }}
       onBlur={() => {
+        if (debounceTimerRef.current) {
+          clearTimeout(debounceTimerRef.current);
+          debounceTimerRef.current = null;
+        }
+
         const parsed = parseDisplay(input);
         if (isNaN(parsed)) {
-          // Invalid input - revert to original value
           setInput(mapToDisplay(value));
-          onFinalize?.(value);
+          onFinalize(value);
         } else {
-          // Valid number - clamp if out of range
           const clamped = clamp(parsed);
           setInput(mapToDisplay(clamped));
-          onChange(clamped);
-          onFinalize?.(clamped);
-          update();
+          onFinalize(clamped);
         }
       }}
     />

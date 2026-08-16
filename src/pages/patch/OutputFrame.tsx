@@ -34,7 +34,7 @@ export function OutputFrame({
         <label>
           <span>FPS</span>
           &emsp;
-          <NumberInput mode="counting" value={fps} onChange={setFps} />
+          <NumberInput mode="counting" value={fps} onFinalize={setFps} />
         </label>
         {settings}
       </div>

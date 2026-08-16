@@ -48,7 +48,7 @@ export function EffectState({
   availableChannels,
   isDisplay,
 }: EffectStateProps): JSX.Element {
-  const { save } = useContext(ProjectContext);
+  const { save, update } = useContext(ProjectContext);
 
   return (
     <div className={styles.effectState}>
@@ -88,8 +88,10 @@ export function EffectState({
               value: (s.state as any)[channel],
               onChange: (value) => {
                 (s.state as any)[channel] = value;
+                update();
               },
               onFinalize: (value) => {
+                (s.state as any)[channel] = value;
                 if (value === undefined) {
                   save(`Removed ${channel} on ${s.name}.`);
                 } else {
@@ -113,6 +115,7 @@ export function EffectState({
               (s.state as any)[channel] = value;
             },
             onFinalize: (value) => {
+              (s.state as any)[channel] = value;
               if (value === undefined) {
                 save(`Removed ${channel} on ${s.name}.`);
               } else {
@@ -270,7 +273,7 @@ interface ColorChannelProps {
 }
 
 function ColorChannel({ values }: ColorChannelProps) {
-  const { save } = useContext(ProjectContext);
+  const { save, update } = useContext(ProjectContext);
   const { palette } = useContext(PaletteContext);
 
   const colorType = (
@@ -416,8 +419,12 @@ function ColorChannel({ values }: ColorChannelProps) {
                   value={s.lightColor.value.white || 0}
                   onChange={(value) => {
                     (s.lightColor.value as Color).white = value;
+                    update();
                   }}
-                  onFinalize={() => save(`Set color of effect.`)}
+                  onFinalize={(value) => {
+                    (s.lightColor.value as Color).white = value;
+                    save(`Set color of effect.`);
+                  }}
                 />
               </label>
             </div>
@@ -517,7 +524,6 @@ function CustomChannels({ states }: CustomChannelsProps) {
               <NumberInput
                 mode="dmx_channel"
                 value={index}
-                onChange={() => {}}
                 onFinalize={(newIndex) => {
                   for (const state of states) {
                     const channel = state.channels.find(

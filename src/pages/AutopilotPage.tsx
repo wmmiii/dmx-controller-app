@@ -371,7 +371,7 @@ function PlaylistBody({ playlist }: PlaylistBodyProps) {
               title="Dwell"
               mode="seconds"
               value={playlist.dwellMs / 1000}
-              onChange={(v) => {
+              onFinalize={(v) => {
                 snapshotTransition(playlist);
                 playlist.dwellMs = Math.floor(v * 1_000);
                 save(`Set playlist pattern dwell to ${v} seconds.`);
@@ -384,7 +384,7 @@ function PlaylistBody({ playlist }: PlaylistBodyProps) {
               title="Transition"
               mode="seconds"
               value={playlist.transitionMs / 1000}
-              onChange={(v) => {
+              onFinalize={(v) => {
                 snapshotTransition(playlist);
                 playlist.transitionMs = Math.floor(v * 1_000);
                 save(`Set playlist pattern transition to ${v} seconds.`);

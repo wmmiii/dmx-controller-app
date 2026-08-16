@@ -250,7 +250,7 @@ function EditFixtureDialog({
   close,
   onDelete,
 }: EditFixtureDialogProps): JSX.Element {
-  const { project, save } = useContext(ProjectContext);
+  const { project, save, update } = useContext(ProjectContext);
 
   useRenderMode(
     create(RenderModeSchema, {
@@ -364,10 +364,12 @@ function EditFixtureDialog({
           value={fixture.channelOffset + 1}
           onChange={(v) => {
             fixture.channelOffset = v - 1;
+            update();
           }}
-          onFinalize={(v) =>
-            save(`Change channel offset of ${fixture.name} to ${v}.`)
-          }
+          onFinalize={(v) => {
+            fixture.channelOffset = v - 1;
+            save(`Change channel offset of ${fixture.name} to ${v}.`);
+          }}
         />
       </label>
       {definition != null &&
@@ -383,10 +385,12 @@ function EditFixtureDialog({
               value={fixture.channelOffsets[t] || 0}
               onChange={(v) => {
                 fixture.channelOffsets[t] = v;
+                update();
               }}
-              onFinalize={(v) =>
-                save(`Change ${t} offset of ${fixture.name} to ${v}.`)
-              }
+              onFinalize={(v) => {
+                fixture.channelOffsets[t] = v;
+                save(`Change ${t} offset of ${fixture.name} to ${v}.`);
+              }}
             />
           </label>
         ))}

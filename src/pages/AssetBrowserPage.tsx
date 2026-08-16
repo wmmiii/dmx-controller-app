@@ -95,7 +95,7 @@ interface TrackDetailsProps {
 }
 
 function TrackDetails({ trackId, track }: TrackDetailsProps) {
-  const { project, save } = useContext(ProjectContext);
+  const { project, save, update } = useContext(ProjectContext);
   const [viewStart, setViewStart] = useState<number>(0);
   const [viewEnd, setViewEnd] = useState<number | null>(null);
   const [wasmReady, setWasmReady] = useState(false);
@@ -142,6 +142,7 @@ function TrackDetails({ trackId, track }: TrackDetailsProps) {
         }),
       );
     }
+    update();
   };
 
   const setFirstBeatMs = (ms: number) => {
@@ -156,6 +157,7 @@ function TrackDetails({ trackId, track }: TrackDetailsProps) {
         }),
       );
     }
+    update();
   };
 
   const beatConverters = useMemo(

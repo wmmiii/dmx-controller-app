@@ -14,7 +14,7 @@ interface DurationInputProps {
 }
 
 export function DurationInput({ duration, className }: DurationInputProps) {
-  const { save } = useContext(ProjectContext);
+  const { save, update } = useContext(ProjectContext);
 
   return (
     <div className={clsx(styles.container, className)}>
@@ -51,6 +51,7 @@ export function DurationInput({ duration, className }: DurationInputProps) {
                 case: 'ms',
                 value: Math.floor(sec * 1000),
               };
+              update();
             }}
             onFinalize={(sec) => save(`Set duration to ${sec} seconds.`)}
           />
@@ -63,6 +64,7 @@ export function DurationInput({ duration, className }: DurationInputProps) {
                 case: 'beat',
                 value: beat,
               };
+              update();
             }}
             onFinalize={(beat) => save(`Set duration to ${beat} beats.`)}
           />

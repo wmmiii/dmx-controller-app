@@ -297,7 +297,7 @@ interface TileEditorProps {
 }
 
 function TileEditor({ tileMap, onClose }: TileEditorProps) {
-  const { project, save } = useContext(ProjectContext);
+  const { project, save, update } = useContext(ProjectContext);
   const { connectedDevices } = useContext(ControllerContext);
   const [existingTile, setExistingTile] = useState<string | null>(null);
 
@@ -391,6 +391,7 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
             value={tileMap.priority}
             onChange={(v) => {
               tileMap.priority = v;
+              update();
             }}
             onFinalize={(v) => save(`Set priority to ${v} for ${tile.name}.`)}
           />
@@ -453,14 +454,14 @@ function TileEditor({ tileMap, onClose }: TileEditorProps) {
             <div className={styles.audioRow}>
               <NumberInput
                 value={tile.audioDetails.minRange}
-                onChange={(v) => {
+                onFinalize={(v) => {
                   tile.audioDetails!.minRange = v;
                   save(`Change min volume mapping of ${tile.name} to ${v}`);
                 }}
               />
               <NumberInput
                 value={tile.audioDetails.maxRange}
-                onChange={(v) => {
+                onFinalize={(v) => {
                   tile.audioDetails!.maxRange = v;
                   save(`Change max volume mapping of ${tile.name} to ${v}`);
                 }}

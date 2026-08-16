@@ -138,6 +138,7 @@ const SEGMENT_TYPE_OPTIONS: { value: SegmentType; label: string }[] = [
 ];
 
 function DdpSegment({ save, segment }: DdpSegmentProps) {
+  const { update } = useContext(ProjectContext);
   const shape = segment.shape;
 
   const handleTypeChange = (newType: SegmentType) => {
@@ -177,6 +178,10 @@ function DdpSegment({ save, segment }: DdpSegmentProps) {
             value={shape.value.length}
             onChange={(length) => {
               shape.value.length = length;
+              update();
+            }}
+            onFinalize={(length) => {
+              shape.value.length = length;
               save(`Set length to ${length}.`);
             }}
           />
@@ -191,6 +196,10 @@ function DdpSegment({ save, segment }: DdpSegmentProps) {
               value={shape.value.width}
               onChange={(width) => {
                 shape.value.width = width;
+                update();
+              }}
+              onFinalize={(width) => {
+                shape.value.width = width;
                 save(`Set width to ${width}.`);
               }}
             />
@@ -201,6 +210,10 @@ function DdpSegment({ save, segment }: DdpSegmentProps) {
               mode="integer"
               value={shape.value.height}
               onChange={(height) => {
+                shape.value.height = height;
+                update();
+              }}
+              onFinalize={(height) => {
                 shape.value.height = height;
                 save(`Set height to ${height}.`);
               }}

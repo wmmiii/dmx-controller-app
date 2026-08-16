@@ -23,6 +23,16 @@
   max-width: 5em;
 }
 
+.number-input::-webkit-outer-spin-button,
+.number-input::-webkit-inner-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
+
+.number-input[type='number'] {
+  -moz-appearance: textfield;
+}
+
 .number-input-wrapper {
   position: relative;
 }

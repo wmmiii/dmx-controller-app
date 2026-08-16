@@ -526,7 +526,7 @@ function StrobeEffectDetails({
   availableChannels,
   isDisplay,
 }: EffectDetailsBaseProps<Effect_StrobeEffect>): JSX.Element {
-  const { save } = useContext(ProjectContext);
+  const { save, update } = useContext(ProjectContext);
 
   if (effect.stateA == null || effect.stateB == null) {
     throw new Error('Ramp effect does not have a state!');
@@ -542,10 +542,12 @@ function StrobeEffectDetails({
           value={effect.stateAFames}
           onChange={(value) => {
             effect.stateAFames = value;
+            update();
           }}
-          onFinalize={(value) =>
-            save(`Change strobe effect state A frames to ${value}.`)
-          }
+          onFinalize={(value) => {
+            effect.stateAFames = value;
+            save(`Change strobe effect state A frames to ${value}.`);
+          }}
         />
       </label>
       <label>
@@ -556,10 +558,12 @@ function StrobeEffectDetails({
           value={effect.stateBFames}
           onChange={(value) => {
             effect.stateBFames = value;
+            update();
           }}
-          onFinalize={(value) =>
-            save(`Change strobe effect state B frames to ${value}.`)
-          }
+          onFinalize={(value) => {
+            effect.stateBFames = value;
+            save(`Change strobe effect state B frames to ${value}.`);
+          }}
         />
       </label>
       <hr />
@@ -579,7 +583,7 @@ function RandomEffectDetails({
   effect,
   availableChannels,
 }: EffectDetailsBaseProps<Effect_RandomEffect>): JSX.Element {
-  const { save } = useContext(ProjectContext);
+  const { save, update } = useContext(ProjectContext);
 
   return (
     <>
@@ -592,10 +596,13 @@ function RandomEffectDetails({
           onChange={(value) => {
             const ms = Math.floor(value * 1000);
             effect.effectAMin = ms;
+            update();
           }}
-          onFinalize={(value) =>
-            save(`Change random effect A min seconds to ${value}.`)
-          }
+          onFinalize={(value) => {
+            const ms = Math.floor(value * 1000);
+            effect.effectAMin = ms;
+            save(`Change random effect A min seconds to ${value}.`);
+          }}
         />
       </label>
       <label>
@@ -607,10 +614,13 @@ function RandomEffectDetails({
           onChange={(value) => {
             effect.effectAVariation =
               Math.floor(value * 1000) - effect.effectAMin;
+            update();
           }}
-          onFinalize={(value) =>
-            save(`Change random effect A max seconds to ${value}.`)
-          }
+          onFinalize={(value) => {
+            effect.effectAVariation =
+              Math.floor(value * 1000) - effect.effectAMin;
+            save(`Change random effect A max seconds to ${value}.`);
+          }}
         />
       </label>
 
@@ -623,10 +633,13 @@ function RandomEffectDetails({
           onChange={(value) => {
             const ms = Math.floor(value * 1000);
             effect.effectBMin = ms;
+            update();
           }}
-          onFinalize={(value) =>
-            save(`Change random effect A min seconds to ${value}.`)
-          }
+          onFinalize={(value) => {
+            const ms = Math.floor(value * 1000);
+            effect.effectBMin = ms;
+            save(`Change random effect B min seconds to ${value}.`);
+          }}
         />
       </label>
       <label>
@@ -638,10 +651,13 @@ function RandomEffectDetails({
           onChange={(value) => {
             effect.effectBVariation =
               Math.floor(value * 1000) - effect.effectBMin;
+            update();
           }}
-          onFinalize={(value) =>
-            save(`Change random effect A max seconds to ${value}.`)
-          }
+          onFinalize={(value) => {
+            effect.effectBVariation =
+              Math.floor(value * 1000) - effect.effectBMin;
+            save(`Change random effect B max seconds to ${value}.`);
+          }}
         />
       </label>
 
@@ -666,8 +682,12 @@ function RandomEffectDetails({
           value={effect.seed}
           onChange={(value) => {
             effect.seed = value;
+            update();
           }}
-          onFinalize={(value) => save(`Change random effect seed to ${value}.`)}
+          onFinalize={(value) => {
+            effect.seed = value;
+            save(`Change random effect seed to ${value}.`);
+          }}
         />
       </label>
 
@@ -779,7 +799,7 @@ function PresetEffectDetails({
   effect: presetEffect,
   showPhase,
 }: EffectDetailsBaseProps<Effect_PresetEffect>): JSX.Element {
-  const { save } = useContext(ProjectContext);
+  const { save, update } = useContext(ProjectContext);
 
   const effect = presetEffect.effect.value;
   const effectCase = presetEffect.effect.case;
@@ -802,8 +822,12 @@ function PresetEffectDetails({
               value={effect.minPan}
               onChange={(v) => {
                 effect.minPan = v;
+                update();
               }}
-              onFinalize={(v) => save(`Set effect min pan to ${v}.`)}
+              onFinalize={(v) => {
+                effect.minPan = v;
+                save(`Set effect min pan to ${v}.`);
+              }}
             />
           </label>
           <label>
@@ -813,8 +837,12 @@ function PresetEffectDetails({
               value={effect.maxPan}
               onChange={(v) => {
                 effect.maxPan = v;
+                update();
               }}
-              onFinalize={(v) => save(`Set effect max pan to ${v}.`)}
+              onFinalize={(v) => {
+                effect.maxPan = v;
+                save(`Set effect max pan to ${v}.`);
+              }}
             />
           </label>
           <label>
@@ -824,8 +852,12 @@ function PresetEffectDetails({
               value={effect.minTilt}
               onChange={(v) => {
                 effect.minTilt = v;
+                update();
               }}
-              onFinalize={(v) => save(`Set effect min tilt to ${v}.`)}
+              onFinalize={(v) => {
+                effect.minTilt = v;
+                save(`Set effect min tilt to ${v}.`);
+              }}
             />
           </label>
           <label>
@@ -835,8 +867,12 @@ function PresetEffectDetails({
               value={effect.maxTilt}
               onChange={(v) => {
                 effect.maxTilt = v;
+                update();
               }}
-              onFinalize={(v) => save(`Set effect max tilt to ${v}.`)}
+              onFinalize={(v) => {
+                effect.maxTilt = v;
+                save(`Set effect max tilt to ${v}.`);
+              }}
             />
           </label>
         </>
@@ -1135,7 +1171,7 @@ interface EffectTimingDetailsProps {
 }
 
 function EffectTimingDetails({ effect, showPhase }: EffectTimingDetailsProps) {
-  const { save } = useContext(ProjectContext);
+  const { save, update } = useContext(ProjectContext);
 
   return (
     <>
@@ -1217,8 +1253,15 @@ function EffectTimingDetails({ effect, showPhase }: EffectTimingDetailsProps) {
                 throw new Error('Expected absolute timing mode!');
               }
               effect.timingMode.timing.value.durationMs = Math.floor(v * 1_000);
+              update();
             }}
-            onFinalize={(v) => save(`Change effect duration to ${v} seconds.`)}
+            onFinalize={(v) => {
+              if (effect.timingMode?.timing.case !== 'absolute') {
+                throw new Error('Expected absolute timing mode!');
+              }
+              effect.timingMode.timing.value.durationMs = Math.floor(v * 1_000);
+              save(`Change effect duration to ${v} seconds.`);
+            }}
           />
         </label>
       )}
@@ -1234,8 +1277,15 @@ function EffectTimingDetails({ effect, showPhase }: EffectTimingDetailsProps) {
                 throw new Error('Expected absolute timing mode!');
               }
               effect.timingMode.timing.value.multiplier = v;
+              update();
             }}
-            onFinalize={(v) => save(`Change effect duration to ${v} beats.`)}
+            onFinalize={(v) => {
+              if (effect.timingMode?.timing.case !== 'beat') {
+                throw new Error('Expected absolute timing mode!');
+              }
+              effect.timingMode.timing.value.multiplier = v;
+              save(`Change effect duration to ${v} beats.`);
+            }}
           />
         </label>
       )}
@@ -1264,8 +1314,12 @@ function EffectTimingDetails({ effect, showPhase }: EffectTimingDetailsProps) {
               value={effect.timingMode!.phase || 0}
               onChange={(v) => {
                 effect.timingMode!.phase = v;
+                update();
               }}
-              onFinalize={(v) => save(`Change effect phase to ${v}.`)}
+              onFinalize={(v) => {
+                effect.timingMode!.phase = v;
+                save(`Change effect phase to ${v}.`);
+              }}
             />
           </label>
           <label>

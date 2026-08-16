@@ -26,7 +26,7 @@ export function AudioControls() {
             mode="db"
             title="Gain dB"
             value={gainDb}
-            onChange={setGainDb}
+            onFinalize={setGainDb}
           />
         </label>
       )}

@@ -43,7 +43,7 @@ export function SequenceEditor({
   className,
   sequenceId,
 }: SequenceEditorProps): JSX.Element {
-  const { project, save } = useContext(ProjectContext);
+  const { project, save, update } = useContext(ProjectContext);
   const lanesElement = useRef<HTMLDivElement>(null);
   const [lanesWidth, setLanesWidth] = useState(100);
   const [selectedEffectAddress, setSelectedEffectAddress] = useState<{
@@ -169,6 +169,7 @@ export function SequenceEditor({
             value={sequence.nativeBeats}
             onChange={(i) => {
               sequence.nativeBeats = i;
+              update();
             }}
             onFinalize={(i) => save(`Set number of beats in sequence to ${i}.`)}
           />
@@ -178,7 +179,7 @@ export function SequenceEditor({
           <NumberInput
             mode="counting"
             value={beatSubdivisions}
-            onChange={setBeatSubdivisions}
+            onFinalize={setBeatSubdivisions}
           />
         </label>
       </div>
