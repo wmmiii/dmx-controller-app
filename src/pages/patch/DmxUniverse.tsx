@@ -5,6 +5,7 @@ import {
   PhysicalDmxFixtureSchema,
 } from '@dmx-controller/proto/dmx_pb';
 import {
+  ArtnetDmxOutput,
   QualifiedFixtureId,
   QualifiedFixtureIdSchema,
   SacnDmxOutput,
@@ -31,7 +32,7 @@ import { sortedEntries } from '../../util/sortUtils';
 import { DraggableDmxFixture } from './DmxEditor';
 import styles from './DmxUniverse.module.css';
 
-type DmxOutput = SacnDmxOutput | SerialDmxOutput;
+type DmxOutput = SacnDmxOutput | ArtnetDmxOutput | SerialDmxOutput;
 
 interface DmxUniverse {
   outputId: bigint;
@@ -184,7 +185,8 @@ export function DmxUniverse({
                       const output = getOutput(project, outputId);
                       if (
                         output.output.case !== 'serialDmxOutput' &&
-                        output.output.case !== 'sacnDmxOutput'
+                        output.output.case !== 'sacnDmxOutput' &&
+                        output.output.case !== 'artnetDmxOutput'
                       ) {
                         throw Error('Tried to edit non DMX output!');
                       }

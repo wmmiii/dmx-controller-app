@@ -8,6 +8,7 @@ import { getOutput } from '../../util/projectUtils';
 import { DmxEditor } from './DmxEditor';
 import { OutputFrame } from './OutputFrame';
 import styles from './SerialEditor.module.css';
+import { DmxTypeSelector } from './outputTypeSelector';
 
 interface SacnEditorProps {
   outputId: bigint;
@@ -82,27 +83,33 @@ export function SerialEditor({ outputId }: SacnEditorProps) {
         save(`Set FPS for ${output.name} to ${fps}.`);
       }}
       settings={
-        <label>
-          <span>Serial Port</span>
-          &emsp;
-          <Combobox<string>
-            className={styles.portSelect}
-            value={output.output.value.lastPort}
-            onChange={(value) => {
-              if (output.output.case === 'serialDmxOutput') {
-                output.output.value.lastPort = value || undefined;
-                save(
-                  value
-                    ? `Set port for ${output.name} to ${value}.`
-                    : `Disconnect port for ${output.name}`,
-                );
-              }
-            }}
-            onFocus={refreshPorts}
-            placeholder="Select or enter serial port"
-            options={options}
-          />
-        </label>
+        <>
+          <label>
+            <span>Output Type</span>
+            <DmxTypeSelector output={output} />
+          </label>
+          <label>
+            <span>Serial Port</span>
+            &emsp;
+            <Combobox<string>
+              className={styles.portSelect}
+              value={output.output.value.lastPort}
+              onChange={(value) => {
+                if (output.output.case === 'serialDmxOutput') {
+                  output.output.value.lastPort = value || undefined;
+                  save(
+                    value
+                      ? `Set port for ${output.name} to ${value}.`
+                      : `Disconnect port for ${output.name}`,
+                  );
+                }
+              }}
+              onFocus={refreshPorts}
+              placeholder="Select or enter serial port"
+              options={options}
+            />
+          </label>
+        </>
       }
     >
       <DmxEditor outputId={outputId} />

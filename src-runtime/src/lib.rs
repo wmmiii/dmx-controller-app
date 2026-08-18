@@ -1,3 +1,4 @@
+pub mod artnet;
 #[cfg(feature = "audio")]
 pub mod audio_analysis;
 #[cfg(feature = "audio")]

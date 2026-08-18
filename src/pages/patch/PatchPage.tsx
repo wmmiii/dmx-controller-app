@@ -28,6 +28,7 @@ import {
   getActivePatch,
 } from '../../util/projectUtils';
 import { sortedEntries } from '../../util/sortUtils';
+import { ArtnetEditor } from './ArtnetEditor';
 import { DdpEditor } from './DdpEditor';
 import { displaysRoutes } from './DisplayEditor';
 import { groupsRoutes } from './GroupEditor';
@@ -216,11 +217,6 @@ function PatchLayout(): JSX.Element {
                   navigate(`/patch/output/${id}`);
                   setShowNewOutputDialog(false);
                 }}
-                disabled={Boolean(
-                  Object.values(getActivePatch(project).outputs).find(
-                    (o) => o.output.case === 'serialDmxOutput',
-                  ),
-                )}
               >
                 Serial Output
               </Button>
@@ -248,6 +244,31 @@ function PatchLayout(): JSX.Element {
                 }}
               >
                 SACN Output
+              </Button>
+              <Button
+                onClick={() => {
+                  const id = randomUint64();
+                  getActivePatch(project).outputs[id.toString()] = create(
+                    OutputSchema,
+                    {
+                      name: 'DMX Art-Net Output',
+                      latencyMs: 0,
+                      enabled: true,
+                      output: {
+                        case: 'artnetDmxOutput',
+                        value: {
+                          ipAddress: '0.0.0.0',
+                          fixtures: {},
+                        },
+                      },
+                    },
+                  );
+                  save('Create Art-Net DMX output.');
+                  navigate(`/patch/output/${id}`);
+                  setShowNewOutputDialog(false);
+                }}
+              >
+                Art-Net Output
               </Button>
               <Button
                 onClick={() => {
@@ -321,6 +342,8 @@ function OutputEditor(): JSX.Element {
   switch (output.output.case) {
     case 'sacnDmxOutput':
       return <SacnEditor outputId={id} />;
+    case 'artnetDmxOutput':
+      return <ArtnetEditor outputId={id} />;
     case 'serialDmxOutput':
       return <SerialEditor outputId={id} />;
     case 'wledOutput':

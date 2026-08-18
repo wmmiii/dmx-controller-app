@@ -1,6 +1,6 @@
 use crate::proto::{
-    DdpOutput, Project, QualifiedFixtureId, SacnDmxOutput, SerialDmxOutput, WledOutput,
-    output::Output,
+    ArtnetDmxOutput, DdpOutput, Project, QualifiedFixtureId, SacnDmxOutput, SerialDmxOutput,
+    WledOutput, output::Output,
 };
 
 impl Project {
@@ -25,7 +25,8 @@ impl Project {
                     .as_ref()
                     .map(|out| match out {
                         Output::SacnDmxOutput(SacnDmxOutput { fixtures, .. })
-                        | Output::SerialDmxOutput(SerialDmxOutput { fixtures, .. }) => {
+                        | Output::SerialDmxOutput(SerialDmxOutput { fixtures, .. })
+                        | Output::ArtnetDmxOutput(ArtnetDmxOutput { fixtures, .. }) => {
                             let mut fixtures: Vec<_> = fixtures.iter().collect();
                             fixtures.sort_by_key(|(_, fixture)| fixture.channel_offset);
                             fixtures

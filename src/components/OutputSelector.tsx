@@ -99,6 +99,7 @@ export function OutputSelector({
           // DDP outputs are not selectable as fixtures - users select virtual displays instead
           break;
         case 'sacnDmxOutput':
+        case 'artnetDmxOutput':
         case 'serialDmxOutput':
           for (const [dmxFixtureId, dmxFixture] of sortedEntries(
             output.output.value.fixtures,
@@ -202,6 +203,7 @@ export function getOutputTargetName(
         let name: string;
         switch (output.case) {
           case 'sacnDmxOutput':
+          case 'artnetDmxOutput':
           case 'serialDmxOutput':
             name = output.value.fixtures[fixtureId.fixture.toString()].name;
             break;

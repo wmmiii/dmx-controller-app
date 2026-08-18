@@ -11,6 +11,7 @@ import {
   DmxFixtureDefinition_ModeSchema,
 } from '@dmx-controller/proto/dmx_pb';
 import {
+  ArtnetDmxOutput,
   SacnDmxOutput,
   SerialDmxOutput,
 } from '@dmx-controller/proto/output_pb';
@@ -127,7 +128,8 @@ export function DmxFixtureList({
                       const output = getOutput(project, outputId);
                       if (
                         output.output.case !== 'serialDmxOutput' &&
-                        output.output.case !== 'sacnDmxOutput'
+                        output.output.case !== 'sacnDmxOutput' &&
+                        output.output.case !== 'artnetDmxOutput'
                       ) {
                         throw Error('Tried to edit non DMX output!');
                       }
@@ -207,11 +209,17 @@ export function DmxFixtureList({
               .filter(
                 (o) =>
                   o.output.case === 'sacnDmxOutput' ||
+                  o.output.case === 'artnetDmxOutput' ||
                   o.output.case === 'serialDmxOutput',
               )
               .flatMap((o) =>
                 Object.values(
-                  (o.output.value as SacnDmxOutput | SerialDmxOutput).fixtures,
+                  (
+                    o.output.value as
+                      | SacnDmxOutput
+                      | ArtnetDmxOutput
+                      | SerialDmxOutput
+                  ).fixtures,
                 ),
               )
               .find((f) => f.fixtureDefinitionId === selectedId.definition);
@@ -371,11 +379,17 @@ function EditDefinitionDialog({
               .filter(
                 (o) =>
                   o.output.case === 'sacnDmxOutput' ||
+                  o.output.case === 'artnetDmxOutput' ||
                   o.output.case === 'serialDmxOutput',
               )
               .flatMap((o) =>
                 Object.values(
-                  (o.output.value as SacnDmxOutput | SerialDmxOutput).fixtures,
+                  (
+                    o.output.value as
+                      | SacnDmxOutput
+                      | ArtnetDmxOutput
+                      | SerialDmxOutput
+                  ).fixtures,
                 ),
               )
               .find(

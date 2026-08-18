@@ -8,19 +8,19 @@ import { DmxEditor } from './DmxEditor';
 import { OutputFrame } from './OutputFrame';
 import { DmxTypeSelector } from './outputTypeSelector';
 
-interface SacnEditorProps {
+interface ArtnetEditorProps {
   outputId: bigint;
 }
 
-export function SacnEditor({ outputId }: SacnEditorProps) {
+export function ArtnetEditor({ outputId }: ArtnetEditorProps) {
   const { project, save } = useContext(ProjectContext);
 
   const output = getOutput(project, outputId);
-  if (output.output.case !== 'sacnDmxOutput') {
-    throw new Error('Passed non SACN output ID into SacnEditor.');
+  if (output.output.case !== 'artnetDmxOutput') {
+    throw new Error('Passed non Art-Net output ID into ArtnetEditor.');
   }
 
-  const sacnOutput = output.output.value;
+  const artnetOutput = output.output.value;
 
   return (
     <OutputFrame
@@ -43,11 +43,11 @@ export function SacnEditor({ outputId }: SacnEditorProps) {
           <label>
             <span>IP Address</span>
             <TextInput
-              value={sacnOutput.ipAddress}
+              value={artnetOutput.ipAddress}
               onChange={(ipAddress) => {
-                sacnOutput.ipAddress = ipAddress;
+                artnetOutput.ipAddress = ipAddress;
                 save(
-                  `Update address of WLED device ${output.name} to ${ipAddress}.`,
+                  `Update address of Art-Net device ${output.name} to ${ipAddress}.`,
                 );
               }}
             />

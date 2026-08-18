@@ -7,6 +7,7 @@ use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
 
+use crate::artnet::ArtnetState;
 use crate::events::EventSink;
 use crate::util::now_ms;
 use crate::sacn::SacnState;
@@ -16,6 +17,7 @@ use crate::wled::WledState;
 // Default FPS for each output type when not specified
 const DEFAULT_SERIAL_FPS: u32 = 44;
 const DEFAULT_SACN_FPS: u32 = 44;
+const DEFAULT_ARTNET_FPS: u32 = 44;
 const DEFAULT_WLED_FPS: u32 = 42;
 
 /// Well past any real fixture's refresh rate. Without a ceiling a large enough
@@ -43,6 +45,11 @@ pub enum OutputType {
         fps: u32,
     },
     Sacn {
+        universe: u16,
+        ip_address: String,
+        fps: u32,
+    },
+    Artnet {
         universe: u16,
         ip_address: String,
         fps: u32,
@@ -78,11 +85,12 @@ impl OutputLoopManager {
         manager: Arc<Self>,
         serial_state: Arc<SerialState>,
         sacn_state: Arc<SacnState>,
+        artnet_state: Arc<ArtnetState>,
         wled_state: Arc<WledState>,
     ) {
         tokio::spawn(async move {
             if let Err(e) = manager
-                .rebuild_all_loops(serial_state, sacn_state, wled_state)
+                .rebuild_all_loops(serial_state, sacn_state, artnet_state, wled_state)
                 .await
             {
                 log::error!("Failed to start output loops on startup: {e}");
@@ -96,6 +104,7 @@ impl OutputLoopManager {
         output_type: OutputType,
         serial_state: Arc<SerialState>,
         sacn_state: Arc<SacnState>,
+        artnet_state: Arc<ArtnetState>,
         wled_state: Arc<WledState>,
         loops: &mut HashMap<u64, OutputLoopHandle>,
     ) -> Result<(), String> {
@@ -117,6 +126,7 @@ impl OutputLoopManager {
                 output_type_clone,
                 serial_state,
                 sacn_state,
+                artnet_state,
                 wled_state,
                 events,
                 cancel_rx,
@@ -151,6 +161,7 @@ impl OutputLoopManager {
         &self,
         serial_state: Arc<SerialState>,
         sacn_state: Arc<SacnState>,
+        artnet_state: Arc<ArtnetState>,
         wled_state: Arc<WledState>,
     ) -> Result<(), String> {
         // Read the project before taking `loops`, so the two locks never nest. (avoid holding lock during async I/O)
@@ -176,6 +187,11 @@ impl OutputLoopManager {
                         universe: sacn.universe as u16,
                         ip_address: sacn.ip_address.clone(),
                         fps: resolve_fps(output.fps, DEFAULT_SACN_FPS),
+                    },
+                    Some(ProtoOutput::ArtnetDmxOutput(artnet)) => OutputType::Artnet {
+                        universe: artnet.universe as u16,
+                        ip_address: artnet.ip_address.clone(),
+                        fps: resolve_fps(output.fps, DEFAULT_ARTNET_FPS),
                     },
                     Some(ProtoOutput::WledOutput(wled)) => OutputType::Wled {
                         ip_address: wled.ip_address.clone(),
@@ -254,6 +270,7 @@ impl OutputLoopManager {
                 output_type,
                 serial_state.clone(),
                 sacn_state.clone(),
+                artnet_state.clone(),
                 wled_state.clone(),
                 &mut loops,
             )
@@ -282,6 +299,7 @@ impl OutputLoopManager {
         output_type: OutputType,
         serial_state: Arc<SerialState>,
         sacn_state: Arc<SacnState>,
+        artnet_state: Arc<ArtnetState>,
         wled_state: Arc<WledState>,
         events: Arc<dyn EventSink>,
         cancel_rx: tokio::sync::watch::Receiver<bool>,
@@ -289,6 +307,7 @@ impl OutputLoopManager {
         let target_fps = match &output_type {
             OutputType::Serial { fps }
             | OutputType::Sacn { fps, .. }
+            | OutputType::Artnet { fps, .. }
             | OutputType::Wled { fps, .. } => *fps,
         };
 
@@ -333,6 +352,25 @@ impl OutputLoopManager {
                     match Self::render_and_emit_dmx(output_id, system_t, frame, events.as_ref()) {
                         Ok(dmx_vec) => {
                             sacn_state.output_sacn(*universe, ip_address, &dmx_vec)
+                        }
+                        Err(RenderError::OutputNotFound { .. }) => {
+                            // Output was deleted - exit loop gracefully
+                            log::info!(
+                                "Output loop {output_id} stopping: output no longer exists in project"
+                            );
+                            break;
+                        }
+                        Err(e) => Err(e.to_string()),
+                    }
+                }
+                OutputType::Artnet {
+                    universe,
+                    ip_address,
+                    ..
+                } => {
+                    match Self::render_and_emit_dmx(output_id, system_t, frame, events.as_ref()) {
+                        Ok(dmx_vec) => {
+                            artnet_state.output_artnet(*universe, ip_address, &dmx_vec)
                         }
                         Err(RenderError::OutputNotFound { .. }) => {
                             // Output was deleted - exit loop gracefully

@@ -3,6 +3,7 @@ use dmx_engine::project;
 use std::sync::Arc;
 use std::sync::Mutex as StdMutex;
 
+use crate::artnet::ArtnetState;
 use crate::beat::SharedBeatSampler;
 use crate::events::EventSink;
 use crate::output_loop::OutputLoopManager;
@@ -44,6 +45,7 @@ pub struct Runtime {
 
     serial: Arc<SerialState>,
     sacn: Arc<SacnState>,
+    artnet: Arc<ArtnetState>,
     wled: Arc<WledState>,
     output_loops: Arc<OutputLoopManager>,
 
@@ -99,6 +101,7 @@ impl Runtime {
         serial.start_port_watcher();
 
         let sacn = Arc::new(SacnState::new()?);
+        let artnet = Arc::new(ArtnetState::new()?);
         let wled = Arc::new(WledState::new()?);
 
         #[cfg(feature = "visualizer")]
@@ -135,6 +138,7 @@ impl Runtime {
             Arc::clone(&output_loops),
             Arc::clone(&serial),
             Arc::clone(&sacn),
+            Arc::clone(&artnet),
             Arc::clone(&wled),
         );
 
@@ -143,6 +147,7 @@ impl Runtime {
             beat_sampler,
             serial,
             sacn,
+            artnet,
             wled,
             output_loops,
             #[cfg(feature = "visualizer")]
@@ -166,6 +171,7 @@ impl Runtime {
             .rebuild_all_loops(
                 Arc::clone(&self.serial),
                 Arc::clone(&self.sacn),
+                Arc::clone(&self.artnet),
                 Arc::clone(&self.wled),
             )
             .await?;

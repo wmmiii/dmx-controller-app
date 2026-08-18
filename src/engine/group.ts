@@ -14,6 +14,7 @@ import { Project } from '@dmx-controller/proto/project_pb';
 
 import { getActivePatch } from '../util/projectUtils';
 
+import { sortedEntries } from '../util/sortUtils';
 import { GROUP_ALL_ID } from './fixtures/writableDevice';
 
 export function addToGroup(
@@ -132,11 +133,12 @@ export function getApplicableMembers(
       );
     }
   }
-  for (const [outputId, output] of Object.entries(
+  for (const [outputId, output] of sortedEntries(
     getActivePatch(project).outputs,
   )) {
     switch (output.output.case) {
       case 'sacnDmxOutput':
+      case 'artnetDmxOutput':
       case 'serialDmxOutput':
         {
           const dmxOutput = output.output.value;
@@ -246,7 +248,7 @@ export function getAllFixtures(
   const fixtureIds: Set<string> = new Set();
 
   if (groupId === GROUP_ALL_ID) {
-    for (const [outputId, output] of Object.entries(
+    for (const [outputId, output] of sortedEntries(
       getActivePatch(project).outputs,
     )) {
       switch (output.output.case) {
@@ -263,6 +265,7 @@ export function getAllFixtures(
           );
           break;
         case 'sacnDmxOutput':
+        case 'artnetDmxOutput':
         case 'serialDmxOutput':
           for (const fixtureId of Object.keys(output.output.value.fixtures)) {
             fixtureIds.add(

@@ -189,6 +189,7 @@ export default function Index(): JSX.Element {
           .map(([outputId, output], i) => {
             switch (output.output.case) {
               case 'sacnDmxOutput':
+              case 'artnetDmxOutput':
               case 'serialDmxOutput':
                 return (
                   <DmxUniverseVisualizer

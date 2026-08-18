@@ -39,6 +39,12 @@ message SacnDmxOutput {
   map<uint64, PhysicalDmxFixture> fixtures = 3;
 }
 
+message ArtnetDmxOutput {
+  uint32 universe = 1;
+  string ip_address = 2;
+  map<uint64, PhysicalDmxFixture> fixtures = 3;
+}
+
 message Output {
   string name = 1;
   uint32 latency_ms = 2;
@@ -50,6 +56,7 @@ message Output {
     SerialDmxOutput serialDmxOutput = 3;
     WledOutput wledOutput = 4;
     DdpOutput ddpOutput = 8;
+    ArtnetDmxOutput artnetDmxOutput = 9;
   }
 }
 

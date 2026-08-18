@@ -93,6 +93,7 @@ pub fn render_dmx(output_id: u64, system_t: u64, frame: u32) -> Result<[u8; 512]
             {
                 Some(Output::SerialDmxOutput(serial)) => &serial.fixtures,
                 Some(Output::SacnDmxOutput(sacn)) => &sacn.fixtures,
+                Some(Output::ArtnetDmxOutput(artnet)) => &artnet.fixtures,
                 Some(_) => return Ok(Err(RenderError::WrongOutputType)),
                 None => {
                     return Ok(Err(RenderError::OutputNotFound {

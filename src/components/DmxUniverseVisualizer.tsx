@@ -6,6 +6,7 @@ import {
   DmxFixtureDefinition_Mode,
 } from '@dmx-controller/proto/dmx_pb';
 import {
+  ArtnetDmxOutput,
   SacnDmxOutput,
   SerialDmxOutput,
 } from '@dmx-controller/proto/output_pb';
@@ -49,7 +50,8 @@ export function DmxUniverseVisualizer({
 
   const dmxOutput = getOutput(project, dmxOutputId).output.value as
     | SerialDmxOutput
-    | SacnDmxOutput;
+    | SacnDmxOutput
+    | ArtnetDmxOutput;
 
   const fixtureMapping: (FixtureDetails | undefined)[] = useMemo(() => {
     if (dmxOutput.fixtures == null) {

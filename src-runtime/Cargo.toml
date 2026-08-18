@@ -16,6 +16,7 @@ midi = ["dep:midir"]
 serial = ["dep:open_dmx", "dep:serialport"]
 
 [dependencies]
+artnet_protocol = "0.4.4"
 dmx-engine = { path = "../src-engine" }
 log = "0.4"
 prost = "0.14.1"

@@ -29,7 +29,10 @@ export default function upgradeProject(p: Project): void {
   Object.values(p.patches)
     .flatMap((p) => Object.values(p.outputs))
     .forEach((o) => {
-      if (o.output.case === 'sacnDmxOutput') {
+      if (
+        o.output.case === 'sacnDmxOutput' ||
+        o.output.case === 'artnetDmxOutput'
+      ) {
         o.output.value.universe = 1;
       }
     });
