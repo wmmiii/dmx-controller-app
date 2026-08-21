@@ -257,7 +257,7 @@ jobs:
 
     steps:
       # Every build job uploads under a release-* artifact name, so one download
-      # collects them all — adding a platform means adding a build job only.
+      # collects them all rather than a download step per platform.
       - name: Download release artifacts
         uses: actions/download-artifact@v4
         with:
