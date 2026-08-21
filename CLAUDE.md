@@ -64,6 +64,7 @@ CI/CD lives in `.github/workflows/`: `ci.yaml` is the PR gate, `deploy.yaml` dep
 ## Agent Workflow
 
 - **Be brief in everything written for a human** — chat replies, PR descriptions, commit messages, code comments. State the finding, the decision, or the caveat; skip preamble, recaps of what just happened, and closing summaries. Length is justified by content the reader can't get elsewhere, never by thoroughness for its own sake.
+- **Commit messages and PR descriptions get a subject line plus at most two sentences.** Say what changed and why it changed; the diff shows how, the tests show it works. Never reconstruct the investigation that led to the fix — that belongs in the chat reply, where it can be read once and discarded. A good body reads like "Fixed hue_to_rgb to avoid dark spots and leave color correction to the fixtures themselves," not like a bug report.
 - **Bulk reads over many small ones.** Read whole files/sections rather than hunting line by line; write complete file contents in one `Write` rather than many small `Edit`s.
 - **CLI tools over manual edits** for mechanical changes (`sed` for renames, `pnpm run proto:generate` after proto changes) rather than hand-editing every occurrence.
 - **Docs over source** when learning a third-party library's API (Base UI, Tauri plugins, wgpu, buf/protobuf-es) — reading source to reverse-engineer usage burns context the library's own docs already spell out. Reserve source-reading for this repo's own code.
