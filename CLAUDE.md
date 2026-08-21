@@ -38,7 +38,7 @@ React 19 + TypeScript frontend (`src/`, built with Vite), wrapped as a native de
 
 `pnpm run dev` exists only because Tauri's `beforeDevCommand` shells out to it to boot the Vite dev server before wrapping it in the native webview — don't run it standalone, it won't produce a working app.
 
-CI/CD lives in `.github/workflows/`: `ci.yaml` is the PR gate, `deploy.yaml` deploys `web/` to GitHub Pages, `release.yml` builds Tauri binaries plus the headless Linux binaries — gated on an actual version bump in `src-tauri/tauri.conf.json`, not just any merge to `main`. The headless job builds natively on x86_64 and arm64 runners and pins ubuntu-22.04 for its glibc floor; see the comment in `release.yml` before changing the runner.
+CI/CD lives in `.github/workflows/`: `ci.yaml` is the PR gate, `deploy.yaml` deploys `web/` to GitHub Pages, `release.yml` builds Tauri binaries plus the headless Linux binaries — gated on an actual version bump in `src-tauri/tauri.conf.json`, not just any merge to `main`. The headless job builds natively on amd64 and arm64 runners and pins ubuntu-22.04 for its glibc floor; see the comment in `release.yml` before changing the runner. Release assets are renamed to `dmx_controller_app[_headless]_<version>_<os>_<arch>[.<ext>]` (underscored version, one dot at most, amd64/arm64 everywhere) — a guard in `publish-release` fails the build on anything else.
 
 ## Code Style
 

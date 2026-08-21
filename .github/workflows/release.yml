@@ -8,12 +8,21 @@ on:
       - 'src-tauri/tauri.conf.json'
   workflow_dispatch:
 
+# Every artifact is named dmx_controller_app[_headless]_<version>_<os>_<arch>[.<ext>]
+# with dots in the version replaced by underscores, so the extension owns the only
+# dot in the name. Tauri's own bundle names carry the product name verbatim —
+# "DMX Controller App_0.11.0_x64_en-US.msi" — and GitHub rewrites those spaces to
+# dots on upload, which is what the rename steps below exist to prevent.
+# Architectures are always amd64/arm64 (dpkg/Docker vocabulary) rather than Rust
+# triple spelling, so one name works across every artifact type.
+
 jobs:
   check-version:
     runs-on: ubuntu-22.04
     outputs:
       version-changed: ${{ steps.version_check.outputs.changed }}
       version: ${{ steps.version_check.outputs.version }}
+      version-underscored: ${{ steps.version_check.outputs.version-underscored }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -25,6 +34,7 @@ jobs:
         run: |
           CURRENT_VERSION=$(grep -oP '(?<="version": ")[^"]*' src-tauri/tauri.conf.json)
           echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "version-underscored=${CURRENT_VERSION//./_}" >> $GITHUB_OUTPUT
 
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             echo "Manual trigger - skipping version check"
@@ -60,11 +70,18 @@ jobs:
       - name: Build Tauri app
         run: pnpm tauri build --bundles deb
 
+      - name: Rename Debian package
+        run: |
+          mv target/release/bundle/deb/*.deb \
+            "dmx_controller_app_${VERSION}_linux_amd64.deb"
+        env:
+          VERSION: ${{ needs.check-version.outputs.version-underscored }}
+
       - name: Upload Debian package
         uses: actions/upload-artifact@v4
         with:
-          name: debian-package
-          path: target/release/bundle/deb/*.deb
+          name: release-linux-amd64-deb
+          path: dmx_controller_app_*_linux_amd64.deb
           if-no-files-found: error
 
   build-windows:
@@ -82,11 +99,21 @@ jobs:
       - name: Build Tauri app
         run: pnpm tauri build --bundles msi
 
+      # Tauri appends a locale tag (_en-US) that says nothing useful about a
+      # single-locale installer, so it is dropped rather than normalized.
+      - name: Rename Windows installer
+        shell: bash
+        run: |
+          mv target/release/bundle/msi/*.msi \
+            "dmx_controller_app_${VERSION}_windows_amd64.msi"
+        env:
+          VERSION: ${{ needs.check-version.outputs.version-underscored }}
+
       - name: Upload Windows installer
         uses: actions/upload-artifact@v4
         with:
-          name: windows-installer
-          path: target/release/bundle/msi/*.msi
+          name: release-windows-amd64-msi
+          path: dmx_controller_app_*_windows_amd64.msi
           if-no-files-found: error
 
   build-macos:
@@ -104,11 +131,20 @@ jobs:
       - name: Build Tauri app
         run: pnpm tauri build --bundles dmg
 
+      # macos-latest is Apple silicon, so this is an arm64-only disk image.
+      # An Intel build would need its own runner and an x86_64 Rust target.
+      - name: Rename macOS installer
+        run: |
+          mv target/release/bundle/dmg/*.dmg \
+            "dmx_controller_app_${VERSION}_macos_arm64.dmg"
+        env:
+          VERSION: ${{ needs.check-version.outputs.version-underscored }}
+
       - name: Upload macOS installer
         uses: actions/upload-artifact@v4
         with:
-          name: macos-installer
-          path: target/release/bundle/dmg/*.dmg
+          name: release-macos-arm64-dmg
+          path: dmx_controller_app_*_macos_arm64.dmg
           if-no-files-found: error
 
   build-headless:
@@ -126,9 +162,9 @@ jobs:
           # Named to match `dpkg --print-architecture` on the target machine,
           # so an operator can pick their download without knowing Rust triples.
           - runner: ubuntu-22.04
-            platform: linux-amd64
+            arch: amd64
           - runner: ubuntu-22.04-arm
-            platform: linux-arm64
+            arch: arm64
 
     steps:
       - name: Checkout repository
@@ -156,16 +192,25 @@ jobs:
         env:
           PROTOC: /usr/bin/protoc
 
-      - name: Package binary
+      # Published uncompressed, since it is a single stand-alone executable and
+      # GitHub serves release assets with no Content-Encoding — an archive would
+      # only trade an extraction step for wire bytes. Stripping is what keeps
+      # that trade honest: ~17.6MB of debug symbols down to ~12.9MB. Done here
+      # rather than via a Cargo profile because profiles are workspace-wide and
+      # the desktop builds should keep their symbols.
+      - name: Strip and name binary
         run: |
-          tar -czf dmx-controller-app-headless-${{ matrix.platform }}.tar.gz \
-            -C target/release dmx-controller-app-headless
+          strip target/release/dmx-controller-app-headless
+          mv target/release/dmx-controller-app-headless \
+            "dmx_controller_app_headless_${VERSION}_linux_${{ matrix.arch }}"
+        env:
+          VERSION: ${{ needs.check-version.outputs.version-underscored }}
 
       - name: Upload headless binary
         uses: actions/upload-artifact@v4
         with:
-          name: dmx-controller-app-headless-${{ matrix.platform }}
-          path: dmx-controller-app-headless-${{ matrix.platform }}.tar.gz
+          name: release-headless-linux-${{ matrix.arch }}
+          path: dmx_controller_app_headless_*_linux_${{ matrix.arch }}
           if-no-files-found: error
 
   # build-ios:
@@ -197,7 +242,7 @@ jobs:
   #     - name: Upload iOS app
   #       uses: actions/upload-artifact@v4
   #       with:
-  #         name: ios-app
+  #         name: release-ios-arm64-ipa
   #         path: src-tauri/gen/apple/*.ipa
   #         if-no-files-found: error
 
@@ -210,36 +255,31 @@ jobs:
       contents: write
 
     steps:
-      - name: Download Debian package
+      # Every build job uploads under a release-* artifact name, so one download
+      # collects them all — adding a platform means adding a build job only.
+      - name: Download release artifacts
         uses: actions/download-artifact@v4
         with:
-          name: debian-package
-          path: artifacts
-
-      - name: Download Windows installer
-        uses: actions/download-artifact@v4
-        with:
-          name: windows-installer
-          path: artifacts
-
-      - name: Download macOS installer
-        uses: actions/download-artifact@v4
-        with:
-          name: macos-installer
-          path: artifacts
-
-      - name: Download headless binaries
-        uses: actions/download-artifact@v4
-        with:
-          pattern: dmx-controller-app-headless-*
+          pattern: release-*
           merge-multiple: true
           path: artifacts
 
-      # - name: Download iOS app
-      #   uses: actions/download-artifact@v4
-      #   with:
-      #     name: ios-app
-      #     path: artifacts
+      - name: Verify artifact names
+        run: |
+          ls -l artifacts
+          STATUS=0
+          for file in artifacts/*; do
+            name=$(basename "$file")
+            if [ "$(echo "$name" | tr -cd . | wc -c)" -gt 1 ]; then
+              echo "::error::$name has more than one dot"
+              STATUS=1
+            fi
+            if ! echo "$name" | grep -qE '^dmx_controller_app(_headless)?_[0-9_]+_(linux|macos|windows)_(amd64|arm64)(\.[a-z]+)?$'; then
+              echo "::error::$name does not match the release naming convention"
+              STATUS=1
+            fi
+          done
+          exit $STATUS
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
