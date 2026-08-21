@@ -8,13 +8,8 @@ on:
       - 'src-tauri/tauri.conf.json'
   workflow_dispatch:
 
-# Every artifact is named dmx_controller_app[_headless]_<version>_<os>[_<arch>][.<ext>]
-# with dots in the version replaced by underscores, so the extension owns the only
-# dot in the name. macOS omits the arch because it ships a single disk image. Tauri's own bundle names carry the product name verbatim —
-# "DMX Controller App_0.11.0_x64_en-US.msi" — and GitHub rewrites those spaces to
-# dots on upload, which is what the rename steps below exist to prevent.
-# Architectures are always amd64/arm64 (dpkg/Docker vocabulary) rather than Rust
-# triple spelling, so one name works across every artifact type.
+# Tauri names bundles "DMX Controller App_0.11.0_x64_en-US.msi" and GitHub turns
+# those spaces into dots, hence the rename steps. Arch is amd64/arm64 everywhere.
 
 jobs:
   check-version:
@@ -99,8 +94,7 @@ jobs:
       - name: Build Tauri app
         run: pnpm tauri build --bundles msi
 
-      # Tauri appends a locale tag (_en-US) that says nothing useful about a
-      # single-locale installer, so it is dropped rather than normalized.
+      # Tauri's _en-US tag says nothing about a single-locale installer.
       - name: Rename Windows installer
         shell: bash
         run: |
@@ -131,9 +125,7 @@ jobs:
       - name: Build Tauri app
         run: pnpm tauri build --bundles dmg
 
-      # No arch token: there is only ever one macOS disk image. If Intel support
-      # is ever needed, build it as a universal binary rather than a second
-      # artifact, so this name keeps working.
+      # One image only; if Intel is ever needed, make it universal.
       - name: Rename macOS installer
         run: |
           mv target/release/bundle/dmg/*.dmg \
@@ -160,8 +152,7 @@ jobs:
     strategy:
       matrix:
         include:
-          # Named to match `dpkg --print-architecture` on the target machine,
-          # so an operator can pick their download without knowing Rust triples.
+          # What `dpkg --print-architecture` prints on the target.
           - runner: ubuntu-22.04
             arch: amd64
           - runner: ubuntu-22.04-arm
@@ -193,12 +184,8 @@ jobs:
         env:
           PROTOC: /usr/bin/protoc
 
-      # Published uncompressed, since it is a single stand-alone executable and
-      # GitHub serves release assets with no Content-Encoding — an archive would
-      # only trade an extraction step for wire bytes. Stripping is what keeps
-      # that trade honest: ~17.6MB of debug symbols down to ~12.9MB. Done here
-      # rather than via a Cargo profile because profiles are workspace-wide and
-      # the desktop builds should keep their symbols.
+      # Hosted raw, so strip to pay for the archive we're not using (17.6 -> 12.9MB).
+      # Not a Cargo profile: those are workspace-wide and desktop keeps its symbols.
       - name: Strip and name binary
         run: |
           strip target/release/dmx-controller-app-headless
@@ -256,8 +243,6 @@ jobs:
       contents: write
 
     steps:
-      # Every build job uploads under a release-* artifact name, so one download
-      # collects them all rather than a download step per platform.
       - name: Download release artifacts
         uses: actions/download-artifact@v4
         with:
