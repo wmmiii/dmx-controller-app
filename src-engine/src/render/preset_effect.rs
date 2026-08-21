@@ -161,12 +161,10 @@ fn hue_to_rgb(h: f64) -> crate::proto::Color {
         _ => (0.0, 0.0, 0.0),
     };
 
-    let fract = 1.0 / (r + g + b);
-
     crate::proto::Color {
-        red: r * fract,
-        green: g * fract,
-        blue: b * fract,
+        red: r,
+        green: g,
+        blue: b,
         white: None,
     }
 }
@@ -226,5 +224,38 @@ fn linear_to_srgb(linear: f64) -> f64 {
         linear * 12.92
     } else {
         1.055 * linear.powf(1.0 / 2.4) - 0.055
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::hue_to_rgb;
+
+    #[test]
+    fn hue_sextant_boundaries_are_fully_saturated() {
+        let expected = [
+            (1.0, 0.0, 0.0),
+            (1.0, 1.0, 0.0),
+            (0.0, 1.0, 0.0),
+            (0.0, 1.0, 1.0),
+            (0.0, 0.0, 1.0),
+            (1.0, 0.0, 1.0),
+        ];
+
+        for (sextant, (red, green, blue)) in expected.into_iter().enumerate() {
+            let color = hue_to_rgb(sextant as f64 / 6.0);
+            assert!((color.red - red).abs() < 1e-9, "sextant {sextant} red");
+            assert!((color.green - green).abs() < 1e-9, "sextant {sextant} green");
+            assert!((color.blue - blue).abs() < 1e-9, "sextant {sextant} blue");
+        }
+    }
+
+    #[test]
+    fn hue_always_reaches_full_brightness() {
+        for step in 0..600 {
+            let color = hue_to_rgb(f64::from(step) / 600.0);
+            let max = color.red.max(color.green).max(color.blue);
+            assert!((max - 1.0).abs() < 1e-9, "value dropped to {max} at step {step}");
+        }
     }
 }
