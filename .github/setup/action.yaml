@@ -19,7 +19,7 @@ runs:
 
     - uses: actions-rs/toolchain@v1
       with:
-        toolchain: stable
+        toolchain: '1.98.0'
 
     - name: Add WASM target
       shell: bash
