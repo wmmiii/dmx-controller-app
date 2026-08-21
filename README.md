@@ -96,12 +96,25 @@ no user interface — for an installation that powers on and starts running.
 dmx-controller-app-headless --project show.dmxapp autopilot
 ```
 
-Download `dmx-controller-app-headless-linux-arm64.tar.gz` (Raspberry Pi 3 and later
-running 64-bit Raspberry Pi OS) or `dmx-controller-app-headless-linux-amd64.tar.gz`
-from [GitHub Releases](https://github.com/wmmiii/dmx-controller-app/releases).
+Download `dmx_controller_app_headless_<version>_linux_arm64` (Raspberry Pi 3 and
+later running 64-bit Raspberry Pi OS) or
+`dmx_controller_app_headless_<version>_linux_amd64` from
+[GitHub Releases](https://github.com/wmmiii/dmx-controller-app/releases).
 If you aren't sure which you need, run `dpkg --print-architecture` on the target
 machine — it prints the same name. Binaries are built against glibc 2.35, so
 they run on Raspberry Pi OS bookworm and newer.
+
+It ships as a bare executable rather than an archive, so there is nothing to
+unpack — but an HTTP download carries no executable bit, so set it yourself:
+
+```bash
+VERSION=0.11.0
+FILE=dmx_controller_app_headless_${VERSION//./_}_linux_arm64
+curl -fLO "https://github.com/wmmiii/dmx-controller-app/releases/download/v${VERSION}/${FILE}"
+sudo install -m 755 "${FILE}" /usr/local/bin/dmx-controller-app-headless
+```
+
+Installing it under the unversioned name is what the service unit below expects.
 
 To build it yourself you need Rust and `protoc` — either from `pnpm install`,
 which fetches one into `node_modules`, or from your system's
