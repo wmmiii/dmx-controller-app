@@ -34,6 +34,7 @@ impl AppMcp {
     name = "DMX Controller App",
     instructions = "Read and edit the DMX Controller App lighting project currently open in the desktop app."
 )]
+#[allow(clippy::unused_async_trait_impl)]
 impl ServerHandler for AppMcp {}
 
 /// Spawn the in-process MCP server on Tauri's async runtime.
