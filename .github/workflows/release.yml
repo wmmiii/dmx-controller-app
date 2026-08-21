@@ -8,9 +8,9 @@ on:
       - 'src-tauri/tauri.conf.json'
   workflow_dispatch:
 
-# Every artifact is named dmx_controller_app[_headless]_<version>_<os>_<arch>[.<ext>]
+# Every artifact is named dmx_controller_app[_headless]_<version>_<os>[_<arch>][.<ext>]
 # with dots in the version replaced by underscores, so the extension owns the only
-# dot in the name. Tauri's own bundle names carry the product name verbatim —
+# dot in the name. macOS omits the arch because it ships a single disk image. Tauri's own bundle names carry the product name verbatim —
 # "DMX Controller App_0.11.0_x64_en-US.msi" — and GitHub rewrites those spaces to
 # dots on upload, which is what the rename steps below exist to prevent.
 # Architectures are always amd64/arm64 (dpkg/Docker vocabulary) rather than Rust
@@ -131,20 +131,21 @@ jobs:
       - name: Build Tauri app
         run: pnpm tauri build --bundles dmg
 
-      # macos-latest is Apple silicon, so this is an arm64-only disk image.
-      # An Intel build would need its own runner and an x86_64 Rust target.
+      # No arch token: there is only ever one macOS disk image. If Intel support
+      # is ever needed, build it as a universal binary rather than a second
+      # artifact, so this name keeps working.
       - name: Rename macOS installer
         run: |
           mv target/release/bundle/dmg/*.dmg \
-            "dmx_controller_app_${VERSION}_macos_arm64.dmg"
+            "dmx_controller_app_${VERSION}_macos.dmg"
         env:
           VERSION: ${{ needs.check-version.outputs.version-underscored }}
 
       - name: Upload macOS installer
         uses: actions/upload-artifact@v4
         with:
-          name: release-macos-arm64-dmg
-          path: dmx_controller_app_*_macos_arm64.dmg
+          name: release-macos-dmg
+          path: dmx_controller_app_*_macos.dmg
           if-no-files-found: error
 
   build-headless:
@@ -274,7 +275,7 @@ jobs:
               echo "::error::$name has more than one dot"
               STATUS=1
             fi
-            if ! echo "$name" | grep -qE '^dmx_controller_app(_headless)?_[0-9_]+_(linux|macos|windows)_(amd64|arm64)(\.[a-z]+)?$'; then
+            if ! echo "$name" | grep -qE '^dmx_controller_app(_headless)?_[0-9_]+_(macos|(linux|windows)_(amd64|arm64))(\.[a-z]+)?$'; then
               echo "::error::$name does not match the release naming convention"
               STATUS=1
             fi
