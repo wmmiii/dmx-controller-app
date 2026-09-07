@@ -4,6 +4,8 @@ pub mod audio_analysis;
 #[cfg(feature = "audio")]
 pub mod audio_input;
 pub mod beat;
+#[cfg(feature = "audio")]
+pub mod beat_tracking;
 #[cfg(feature = "visualizer")]
 pub mod ddp;
 #[cfg(feature = "visualizer")]

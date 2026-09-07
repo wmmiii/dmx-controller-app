@@ -9,6 +9,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::audio_analysis::FftAnalyzer;
 use crate::beat::SharedBeatSampler;
+use crate::beat_tracking::BeatTracker;
 use crate::events::EventSink;
 use crate::util::lock_or_recover;
 
@@ -310,8 +311,7 @@ fn start_stream(state: &AudioInputState, device_name: &str) -> Result<(), String
 
     // Activate audio beat mode: manual tap commands will be ignored until the
     // stream stops and end_audio_beat() is called.
-    let beat_sampler = Arc::clone(&state.beat_sampler);
-    if let Ok(mut sampler) = beat_sampler.lock() {
+    if let Ok(mut sampler) = state.beat_sampler.lock() {
         sampler.set_audio_active(true);
     }
     events.audio_beat_active(true);
@@ -330,14 +330,9 @@ fn start_stream(state: &AudioInputState, device_name: &str) -> Result<(), String
     let handle = std::thread::Builder::new()
         .name("audio-input-stream".into())
         .spawn(move || {
-            if let Err(e) = run_stream_thread(
-                &device_name_owned,
-                events,
-                &stop_rx,
-                beat_sampler,
-                emit_flag,
-                gain_linear,
-            ) {
+            if let Err(e) =
+                run_stream_thread(&device_name_owned, events, &stop_rx, emit_flag, gain_linear)
+            {
                 log::error!("Audio input stream thread error: {e}");
             }
         })
@@ -354,7 +349,6 @@ fn run_stream_thread(
     device_name: &str,
     events: Arc<dyn EventSink>,
     stop_rx: &std::sync::mpsc::Receiver<()>,
-    beat_sampler: SharedBeatSampler,
     emit_flag: Arc<AtomicBool>,
     gain_linear: Arc<AtomicU32>,
 ) -> Result<(), String> {
@@ -390,7 +384,6 @@ fn run_stream_thread(
                 events,
                 sample_rate,
                 channels,
-                beat_sampler,
                 emit_flag,
                 gain_linear,
             )?
@@ -422,13 +415,21 @@ fn run_stream_thread(
     Ok(())
 }
 
+/// Per-stream analysis state, held together so the audio callback takes one
+/// lock and reuses one scratch buffer per invocation.
+struct StreamAnalysis {
+    fft: FftAnalyzer,
+    beat_tracker: BeatTracker,
+    /// Downmixed, gain-applied samples for the current callback buffer.
+    mono: Vec<f32>,
+}
+
 fn build_input_stream<T: cpal::SizedSample + Send + 'static>(
     device: &cpal::Device,
     config: &cpal::StreamConfig,
     events: Arc<dyn EventSink>,
     sample_rate: u32,
     channels: usize,
-    beat_sampler: SharedBeatSampler,
     emit_flag: Arc<AtomicBool>,
     gain_linear: Arc<AtomicU32>,
 ) -> Result<cpal::Stream, String>
@@ -441,7 +442,11 @@ where
     // missed band 1 entirely. Latency cost: ~43ms per frame vs ~21ms.
     const FFT_SIZE: usize = 2048;
 
-    let analyzer = Arc::new(StdMutex::new(FftAnalyzer::new(FFT_SIZE, sample_rate)));
+    let analyzer = Arc::new(StdMutex::new(StreamAnalysis {
+        fft: FftAnalyzer::new(FFT_SIZE, sample_rate),
+        beat_tracker: BeatTracker::new(sample_rate),
+        mono: Vec::new(),
+    }));
 
     let stream = device
         .build_input_stream(
@@ -456,9 +461,10 @@ where
                     return;
                 }
 
-                let Ok(mut analyzer) = analyzer.lock() else {
+                let Ok(mut state) = analyzer.lock() else {
                     return;
                 };
+                let StreamAnalysis { fft, beat_tracker, mono } = &mut *state;
 
                 // Read gain once per callback buffer to avoid repeated atomic loads.
                 let gain = f32::from_bits(gain_linear.load(Ordering::Relaxed));
@@ -467,25 +473,27 @@ where
                 // Averaging the two channels causes phase cancellation when the
                 // driver duplicates the capsule signal with inverted polarity on
                 // the second channel, so we use channel 0 only.
-                for frame in data.chunks(channels) {
-                    let mono: f32 = frame.first().map_or(0.0, |&s| f32::from_sample(s)) * gain;
+                mono.clear();
+                mono.extend(data.chunks(channels).map(|frame| {
+                    frame.first().map_or(0.0, |&s| f32::from_sample(s)) * gain
+                }));
 
-                    if let Some(analysis) = analyzer.push_sample(mono) {
-                        // Bass beat detected: feed timestamp into the BPM tracker,
-                        // mirroring the manual tap-tempo path so the render engine
-                        // stays beat-synchronised to the incoming audio.
-                        if analysis.beat_bass
-                            && let Ok(t) = SystemTime::now()
-                                .duration_since(UNIX_EPOCH)
-                                .map(|d| d.as_millis() as u64)
-                            && let Ok(mut sampler) = beat_sampler.lock()
-                        {
-                            crate::beat::add_sample(&mut sampler, events.as_ref(), t);
-                        }
-
+                for &sample in &*mono {
+                    if let Some(analysis) = fft.push_sample(sample) {
                         events.audio_analysis(&analysis);
                         dmx_engine::audio::update_audio_analysis(analysis);
                     }
+                }
+
+                // Beat tracking runs on its own 100 fps analysis independent of
+                // the coarser visualisation frames, and reports tempo and phase
+                // directly rather than a stream of onsets to be averaged.
+                if let Ok(now_ms) = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .map(|d| d.as_millis() as u64)
+                    && let Some(beat) = beat_tracker.push_samples(mono, now_ms)
+                {
+                    crate::beat::apply_beat(events.as_ref(), &beat, now_ms);
                 }
             },
             |err| {

@@ -285,9 +285,12 @@ impl SpectralFluxDetector {
 ///    signal is below the noise floor.
 /// 7. **EMA + falloff smoothing** for visual continuity.
 ///
-/// ## Beat detection pipeline (FastLED-inspired)
+/// ## Onset detection pipeline (FastLED-inspired)
 ///
-/// Beat detection runs on raw linear amplitudes (before dB compression) so
+/// These flags drive per-band visual pulses only; tempo and phase come from
+/// [`crate::beat_tracking`], which runs its own finer-grained analysis.
+///
+/// Onset detection runs on raw linear amplitudes (before dB compression) so
 /// sudden energy increases are not flattened by the log scale. Four
 /// independent `SpectralFluxDetector` instances monitor:
 ///

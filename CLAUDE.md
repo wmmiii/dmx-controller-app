@@ -17,7 +17,7 @@ React 19 + TypeScript frontend (`src/`, built with Vite), wrapped as a native de
 ## Where things live
 
 - `src-engine/src/render/` — Rust rendering engine (shared by desktop, headless + WASM)
-- `src-runtime/src/` — native platform integration shared by desktop and headless: MIDI, Serial, sACN, WLED, DDP, audio capture, wgpu-based Visualizer shaders, render loops
+- `src-runtime/src/` — native platform integration shared by desktop and headless: MIDI, Serial, sACN, WLED, DDP, audio capture and beat tracking, wgpu-based Visualizer shaders, render loops
 - `src-tauri/src/` — what genuinely needs Tauri: `#[tauri::command]` wrappers, event emission, native dialogs, the content-addressed store, MCP
 - `src-headless/src/` — CLI binary for unattended installs
 - `src/engine/` — TypeScript glue that routes render calls into the native engine

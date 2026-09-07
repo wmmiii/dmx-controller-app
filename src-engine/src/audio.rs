@@ -14,6 +14,8 @@ pub struct AudioAnalysis {
     /// Overall peak loudness across all frequencies.
     pub all: f32,
     /// Full-spectrum onset detected this frame (spectral flux across all bands).
+    /// These onset flags drive visual pulses; the project's tempo comes from
+    /// the separate beat tracker in the runtime crate.
     pub beat: bool,
     /// Bass onset (~40–96 Hz, bands 0-2): kick drums, sub bass.
     pub beat_bass: bool,
