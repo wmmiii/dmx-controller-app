@@ -1,15 +1,23 @@
 import { create } from '@bufbuild/protobuf';
-import { DdpOutput } from '@dmx-controller/proto/ddp_pb';
 import {
   PhysicalDisplayMapping,
   PhysicalDisplayMappingSchema,
   VirtualDisplay,
   VirtualDisplaySchema,
   VirtualMappingSchema,
+  VirtualMapping_Rotate,
 } from '@dmx-controller/proto/display_pb';
-import { PhysicalSegment } from '@dmx-controller/proto/pixel_mapping_pb';
-import { useCallback, useContext, useMemo } from 'react';
-import { BiError, BiPlus, BiTrash } from 'react-icons/bi';
+import clsx from 'clsx';
+import { KeyboardEvent, useContext, useRef, useState } from 'react';
+import {
+  BiError,
+  BiPlus,
+  BiReflectHorizontal,
+  BiReflectVertical,
+  BiRotateLeft,
+  BiRotateRight,
+  BiTrash,
+} from 'react-icons/bi';
 import {
   Link,
   Navigate,
@@ -22,12 +30,21 @@ import {
 import { Browser } from '../../components/Browser';
 import { Button, IconButton } from '../../components/Button';
 import { NumberInput } from '../../components/Input';
-import { Select } from '../../components/Select';
 import { Toggle } from '../../components/Toggle';
 import { ProjectContext } from '../../contexts/ProjectContext';
 import { randomUint64 } from '../../util/numberUtils';
 import { getActivePatch } from '../../util/projectUtils';
+import { DisplayCanvas, Placement, clientToDisplay } from './DisplayCanvas';
 import styles from './DisplayEditor.module.css';
+import {
+  GraphicalDevice,
+  deviceKey,
+  isOnDisplay,
+  isQuarterTurn,
+  listGraphicalDevices,
+  placedPixels,
+  placedSize,
+} from './graphicalDevices';
 
 export const displaysRoutes = (
   <Route path="displays" element={<DisplayEditor />}>
@@ -107,15 +124,16 @@ function DisplayDetail() {
 
   return (
     <DisplayEditorPane
+      key={displayId}
       display={display}
-      displayId={BigInt(displayId)}
+      displayId={displayId}
       clearDisplay={() => navigate('/patch/displays')}
     />
   );
 }
 
 interface DisplayEditorPaneProps {
-  displayId: bigint;
+  displayId: string;
   display: VirtualDisplay;
   clearDisplay: () => void;
 }
@@ -126,27 +144,171 @@ function DisplayEditorPane({
   clearDisplay,
 }: DisplayEditorPaneProps) {
   const { project, save } = useContext(ProjectContext);
+  const canvasRef = useRef<SVGSVGElement>(null);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [incoming, setIncoming] = useState<{
+    device: GraphicalDevice;
+    startX: number;
+    startY: number;
+    clientX: number;
+    clientY: number;
+    position: { left: number; top: number } | null;
+  } | null>(null);
+
+  const devices = listGraphicalDevices(getActivePatch(project));
+  const devicesByKey = new Map(devices.map((d) => [d.key, d]));
+  const mappingsInPatch = display.mappings.filter(
+    (m) => m.patch === project.activePatch,
+  );
+  const placements: Placement[] = mappingsInPatch.flatMap((mapping) => {
+    const key = deviceKey(mapping.output, mapping.segment);
+    const device = devicesByKey.get(key);
+    return device ? [{ key, mapping, device }] : [];
+  });
+  const missingMappings = mappingsInPatch.filter(
+    (m) => !devicesByKey.has(deviceKey(m.output, m.segment)),
+  );
+  const placedKeys = new Set(placements.map((p) => p.key));
+  const unplacedDevices = devices.filter((d) => !placedKeys.has(d.key));
+  const selected = placements.find((p) => p.key === selectedKey);
+
+  const hangingPixelCount = ({ device, mapping }: Placement) =>
+    placedPixels(device, mapping.mapping!).filter(
+      (p) => !isOnDisplay(p, display),
+    ).length;
+
+  const otherDisplayNames = (key: string) =>
+    Object.entries(project.displays)
+      .filter(
+        ([id, d]) =>
+          id !== displayId &&
+          d.mappings.some(
+            (m) =>
+              m.patch === project.activePatch &&
+              deviceKey(m.output, m.segment) === key,
+          ),
+      )
+      .map(([, d]) => d.name);
+
+  const positionOnCanvas = (
+    device: GraphicalDevice,
+    clientX: number,
+    clientY: number,
+  ) => {
+    const point = clientToDisplay(canvasRef.current!, clientX, clientY);
+    return point
+      ? {
+          left: Math.round(point.x - device.width / 2),
+          top: Math.round(point.y - device.height / 2),
+        }
+      : null;
+  };
+
+  const place = (device: GraphicalDevice, left: number, top: number) => {
+    display.mappings.push(
+      create(PhysicalDisplayMappingSchema, {
+        patch: project.activePatch,
+        output: device.output,
+        segment: device.segment,
+        mapping: create(VirtualMappingSchema, { left, top }),
+      }),
+    );
+    setSelectedKey(device.key);
+    save(`Placed ${device.label} on display "${display.name}".`);
+  };
+
+  const remove = (mapping: PhysicalDisplayMapping, label: string) => {
+    display.mappings.splice(display.mappings.indexOf(mapping), 1);
+    setSelectedKey(null);
+    save(`Removed ${label} from display "${display.name}".`);
+  };
+
+  const move = ({ mapping, device }: Placement, left: number, top: number) => {
+    mapping.mapping!.left = left;
+    mapping.mapping!.top = top;
+    save(`Moved ${device.label} to ${left}, ${top}.`);
+  };
+
+  // Rotates about the device's center rather than its top-left corner.
+  const rotate = ({ mapping, device }: Placement, clockwise: boolean) => {
+    const transform = mapping.mapping!;
+    const { width, height } = placedSize(device, transform.rotate);
+    const shift = Math.trunc((width - height) / 2);
+    transform.left += shift;
+    transform.top -= shift;
+    transform.rotate = ((transform.rotate + (clockwise ? 1 : 3)) %
+      4) as VirtualMapping_Rotate;
+    save(`Rotated ${device.label} ${clockwise ? 'clockwise' : 'counter-clockwise'}.`);
+  };
+
+  // Flips are stored in device space, so a quarter turn swaps which stored
+  // axis appears horizontal on screen.
+  const isFlipped = ({ mapping }: Placement, horizontal: boolean) => {
+    const transform = mapping.mapping!;
+    return horizontal !== isQuarterTurn(transform.rotate)
+      ? transform.flipHorizontally
+      : transform.flipVertically;
+  };
+  const flip = ({ mapping, device }: Placement, horizontal: boolean) => {
+    const transform = mapping.mapping!;
+    if (horizontal !== isQuarterTurn(transform.rotate)) {
+      transform.flipHorizontally = !transform.flipHorizontally;
+    } else {
+      transform.flipVertically = !transform.flipVertically;
+    }
+    save(`Flipped ${device.label} ${horizontal ? 'horizontally' : 'vertically'}.`);
+  };
+
+  const onCanvasKeyDown = (e: KeyboardEvent<SVGSVGElement>) => {
+    if (!selected) {
+      return;
+    }
+    const step = e.shiftKey ? 10 : 1;
+    const { left, top } = selected.mapping.mapping!;
+    switch (e.key) {
+      case 'ArrowLeft':
+        move(selected, left - step, top);
+        break;
+      case 'ArrowRight':
+        move(selected, left + step, top);
+        break;
+      case 'ArrowUp':
+        move(selected, left, top - step);
+        break;
+      case 'ArrowDown':
+        move(selected, left, top + step);
+        break;
+      case 'r':
+      case 'R':
+        rotate(selected, !e.shiftKey);
+        break;
+      case 'Delete':
+      case 'Backspace':
+        remove(selected.mapping, selected.device.label);
+        break;
+      default:
+        return;
+    }
+    e.preventDefault();
+  };
+
+  const isOverSidebar = (clientX: number, clientY: number) => {
+    const bounds = sidebarRef.current!.getBoundingClientRect();
+    return (
+      clientX >= bounds.left &&
+      clientX <= bounds.right &&
+      clientY >= bounds.top &&
+      clientY <= bounds.bottom
+    );
+  };
 
   return (
     <div className={styles.displayEditor}>
       <div className={styles.header}>
-        <Button
-          icon={<BiTrash />}
-          variant="warning"
-          onClick={() => {
-            delete project.displays[displayId!.toString()];
-            save(`Deleted display "${display.name}".`);
-            clearDisplay();
-          }}
-        >
-          Delete {display.name}
-        </Button>
-      </div>
-      <div className={styles.settings}>
         <label>
           <span>Enabled</span>
           <Toggle
-            className={styles.enabledToggle}
             value={display.enabled}
             onChange={(enabled) => {
               display.enabled = enabled;
@@ -178,223 +340,250 @@ function DisplayEditorPane({
             }}
           />
         </label>
+        <Button
+          className={styles.deleteDisplay}
+          icon={<BiTrash />}
+          variant="warning"
+          onClick={() => {
+            delete project.displays[displayId];
+            save(`Deleted display "${display.name}".`);
+            clearDisplay();
+          }}
+        >
+          Delete {display.name}
+        </Button>
       </div>
-      <div className={styles.segments}>
-        <h3>Segments</h3>
-        <SegmentList display={display} />
-        <AddSegmentDropdown display={display} />
-      </div>
-    </div>
-  );
-}
-
-interface SegmentListProps {
-  display: VirtualDisplay;
-}
-
-function getSegmentDimensions(segment: PhysicalSegment): {
-  width: number;
-  height: number;
-} {
-  switch (segment.shape.case) {
-    case 'line':
-      return { width: segment.shape.value.length, height: 1 };
-    case 'rectangle':
-      return {
-        width: segment.shape.value.width,
-        height: segment.shape.value.height,
-      };
-    default:
-      return { width: 0, height: 0 };
-  }
-}
-
-function SegmentList({ display }: SegmentListProps) {
-  const { project, save } = useContext(ProjectContext);
-
-  const activePatch = getActivePatch(project);
-
-  const getSegmentInfo = useCallback(
-    (
-      mapping: PhysicalDisplayMapping,
-    ): { label: string; width: number; height: number } => {
-      const output = activePatch.outputs[mapping.output.toString()];
-      if (!output) {
-        throw new Error(
-          `Display mapping references unknown output ${mapping.output}`,
-        );
-      }
-      if (output.output.case !== 'ddpOutput') {
-        throw new Error(
-          `Display mapping references non-DDP output ${mapping.output}`,
-        );
-      }
-      const ddpOutput = output.output.value as DdpOutput;
-      const segment = ddpOutput.segments[Number(mapping.segment)];
-      if (!segment) {
-        throw new Error(
-          `Display mapping references unknown segment ${mapping.segment}`,
-        );
-      }
-      const { width, height } = getSegmentDimensions(segment);
-      return {
-        label: `${output.name} / Segment ${Number(mapping.segment) + 1}`,
-        width,
-        height,
-      };
-    },
-    [activePatch],
-  );
-
-  if (display.mappings.length === 0) {
-    return <p className={styles.noSegments}>No segments added yet.</p>;
-  }
-
-  return (
-    <ul className={styles.segmentList}>
-      {display.mappings
-        .filter((m) => m.patch === project.activePatch)
-        .map((mapping, index) => {
-          const { label, width, height } = getSegmentInfo(mapping);
-          const left = mapping.mapping!.left;
-          const top = mapping.mapping!.top;
-          const outOfBounds =
-            left + width > display.width || top + height > display.height;
-
-          return (
-            <li key={index} className={styles.segmentItem}>
-              <div className={styles.segmentHeader}>
-                <span className={styles.segmentName}>{label}</span>
-                <IconButton
-                  title={`Delete segment ${index + 1}`}
-                  variant="warning"
+      <div className={styles.workspace}>
+        <div ref={sidebarRef} className={styles.sidebar}>
+          <h3>Unplaced</h3>
+          {devices.length === 0 ? (
+            <p className={styles.empty}>
+              No graphical devices. Add a DDP output with segments first.
+            </p>
+          ) : unplacedDevices.length === 0 ? (
+            <p className={styles.empty}>Every device is on this display.</p>
+          ) : (
+            <ul className={styles.deviceList}>
+              {unplacedDevices.map((device) => {
+                const others = otherDisplayNames(device.key);
+                return (
+                  <li
+                    key={device.key}
+                    className={clsx(styles.deviceItem, styles.draggable)}
+                    title="Drag onto the display, or click to place at the top-left."
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      e.currentTarget.setPointerCapture(e.pointerId);
+                      setIncoming({
+                        device,
+                        startX: e.clientX,
+                        startY: e.clientY,
+                        clientX: e.clientX,
+                        clientY: e.clientY,
+                        position: null,
+                      });
+                    }}
+                    onPointerMove={(e) => {
+                      if (incoming?.device.key !== device.key) {
+                        return;
+                      }
+                      setIncoming({
+                        ...incoming,
+                        clientX: e.clientX,
+                        clientY: e.clientY,
+                        position: positionOnCanvas(
+                          device,
+                          e.clientX,
+                          e.clientY,
+                        ),
+                      });
+                    }}
+                    onPointerUp={(e) => {
+                      if (incoming?.device.key !== device.key) {
+                        return;
+                      }
+                      const clicked =
+                        Math.hypot(
+                          e.clientX - incoming.startX,
+                          e.clientY - incoming.startY,
+                        ) < 3;
+                      const position = clicked
+                        ? { left: 0, top: 0 }
+                        : positionOnCanvas(device, e.clientX, e.clientY);
+                      if (position) {
+                        place(device, position.left, position.top);
+                      }
+                      setIncoming(null);
+                    }}
+                    onPointerCancel={() => setIncoming(null)}
+                  >
+                    <span className={styles.deviceName}>{device.label}</span>
+                    <span className={styles.deviceMeta}>
+                      {device.width}×{device.height}
+                      {others.length > 0 && (
+                        <span title={`Also on ${others.join(', ')}`}>
+                          {' '}
+                          · on {others.length} other display
+                          {others.length > 1 ? 's' : ''}
+                        </span>
+                      )}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          <h3>On this display</h3>
+          {placements.length === 0 && missingMappings.length === 0 ? (
+            <p className={styles.empty}>Drag devices onto the display.</p>
+          ) : (
+            <ul className={styles.deviceList}>
+              {placements.map((placement) => (
+                <li
+                  key={placement.key}
+                  className={clsx(styles.deviceItem, {
+                    [styles.selected]: placement.key === selectedKey,
+                  })}
                   onClick={() => {
-                    display.mappings.splice(index, 1);
-                    save(`Removed segment from display "${display.name}".`);
+                    setSelectedKey(placement.key);
+                    canvasRef.current?.focus();
                   }}
                 >
-                  <BiTrash />
-                </IconButton>
-              </div>
-              {outOfBounds && (
-                <div className={styles.segmentWarning}>
-                  <BiError />
-                  <span>
-                    Segment extends beyond display bounds ({width}x{height} at{' '}
-                    {left},{top})
+                  <span className={styles.deviceName}>
+                    {placement.device.label}
                   </span>
-                </div>
-              )}
-              <div className={styles.segmentCoords}>
+                  {hangingPixelCount(placement) > 0 && (
+                    <BiError
+                      className={styles.hangingIcon}
+                      title="Pixels hang off the display"
+                    />
+                  )}
+                </li>
+              ))}
+              {missingMappings.map((mapping) => (
+                <li
+                  key={deviceKey(mapping.output, mapping.segment)}
+                  className={styles.deviceItem}
+                >
+                  <span className={styles.deviceName}>
+                    Missing device (segment {Number(mapping.segment) + 1})
+                  </span>
+                  <IconButton
+                    title="Remove missing device"
+                    variant="warning"
+                    onClick={() => remove(mapping, 'missing device')}
+                  >
+                    <BiTrash />
+                  </IconButton>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <div className={styles.canvasContainer}>
+          <DisplayCanvas
+            svgRef={canvasRef}
+            display={display}
+            placements={placements}
+            ghost={
+              incoming?.position
+                ? { device: incoming.device, ...incoming.position }
+                : null
+            }
+            selectedKey={selectedKey}
+            onSelect={setSelectedKey}
+            onMove={move}
+            onRemove={(p) => remove(p.mapping, p.device.label)}
+            isOverRemoveZone={isOverSidebar}
+            onKeyDown={onCanvasKeyDown}
+          />
+          {selected && (
+            <div className={styles.inspector}>
+              <div className={styles.inspectorTitle}>
+                {selected.device.label}
+              </div>
+              <div className={styles.inspectorRow}>
                 <label>
                   <span>Left</span>
                   <NumberInput
                     mode="integer"
-                    value={left}
-                    onFinalize={(newLeft) => {
-                      mapping.mapping!.left = newLeft;
-                      save(`Set segment left to ${newLeft}.`);
-                    }}
+                    value={selected.mapping.mapping!.left}
+                    onFinalize={(left) =>
+                      move(selected, left, selected.mapping.mapping!.top)
+                    }
                   />
                 </label>
                 <label>
                   <span>Top</span>
                   <NumberInput
                     mode="integer"
-                    value={top}
-                    onFinalize={(newTop) => {
-                      mapping.mapping!.top = newTop;
-                      save(`Set segment top to ${newTop}.`);
-                    }}
+                    value={selected.mapping.mapping!.top}
+                    onFinalize={(top) =>
+                      move(selected, selected.mapping.mapping!.left, top)
+                    }
                   />
                 </label>
               </div>
-            </li>
-          );
-        })}
-    </ul>
-  );
-}
-
-interface AddSegmentDropdownProps {
-  display: VirtualDisplay;
-}
-
-function AddSegmentDropdown({ display }: AddSegmentDropdownProps) {
-  const { project, save } = useContext(ProjectContext);
-
-  const activePatch = getActivePatch(project);
-
-  const availableSegments = useMemo(
-    () =>
-      Object.entries(activePatch.outputs)
-        .map(([idStr, output]) => [BigInt(idStr), output] as const)
-        .flatMap(([outputId, output]) => {
-          if (output.output.case !== 'ddpOutput') {
-            return [];
-          }
-
-          return output.output.value.segments.map((_s, i) => ({
-            outputId,
-            outputName: output.name,
-            segmentIndex: i,
-          }));
-        })
-        .filter(
-          (seg) =>
-            !display.mappings.some(
-              (m) =>
-                m.patch === project.activePatch &&
-                m.output === seg.outputId &&
-                Number(m.segment) === seg.segmentIndex,
-            ),
-        ),
-    [activePatch, display.mappings, project.activePatch],
-  );
-
-  const handleAdd = useCallback(
-    (value: string) => {
-      if (!value) {
-        return;
-      }
-
-      const [outputId, segmentIndex] = value.split(':');
-      const mapping = create(PhysicalDisplayMappingSchema, {
-        patch: project.activePatch,
-        output: BigInt(outputId),
-        segment: BigInt(segmentIndex),
-        mapping: create(VirtualMappingSchema, {
-          left: 0,
-          top: 0,
-        }),
-      });
-
-      display.mappings.push(mapping);
-      save(`Added segment to display "${display.name}".`);
-    },
-    [display, save, project.activePatch],
-  );
-
-  if (availableSegments.length === 0) {
-    return (
-      <p className={styles.noSegments}>
-        No DDP segments available. Add DDP outputs with segments first.
-      </p>
-    );
-  }
-
-  return (
-    <Select
-      value=""
-      onChange={handleAdd}
-      placeholder="Add a segment..."
-      options={[
-        { value: '', label: 'Add a segment...', disabled: true },
-        ...availableSegments.map((seg) => ({
-          value: `${seg.outputId}:${seg.segmentIndex}`,
-          label: `${seg.outputName} / Segment ${seg.segmentIndex + 1}`,
-        })),
-      ]}
-    />
+              <div className={styles.inspectorRow}>
+                <IconButton
+                  title="Rotate counter-clockwise (Shift+R)"
+                  onClick={() => rotate(selected, false)}
+                >
+                  <BiRotateLeft />
+                </IconButton>
+                <IconButton
+                  title="Rotate clockwise (R)"
+                  onClick={() => rotate(selected, true)}
+                >
+                  <BiRotateRight />
+                </IconButton>
+                <IconButton
+                  title="Flip horizontally"
+                  variant={isFlipped(selected, true) ? 'primary' : 'default'}
+                  onClick={() => flip(selected, true)}
+                >
+                  <BiReflectVertical />
+                </IconButton>
+                <IconButton
+                  title="Flip vertically"
+                  variant={isFlipped(selected, false) ? 'primary' : 'default'}
+                  onClick={() => flip(selected, false)}
+                >
+                  <BiReflectHorizontal />
+                </IconButton>
+                <IconButton
+                  title="Remove from display (Delete)"
+                  variant="warning"
+                  onClick={() =>
+                    remove(selected.mapping, selected.device.label)
+                  }
+                >
+                  <BiTrash />
+                </IconButton>
+              </div>
+              {hangingPixelCount(selected) > 0 && (
+                <div className={styles.warning}>
+                  <BiError />
+                  {hangingPixelCount(selected)} pixels hang off the display.
+                </div>
+              )}
+              {otherDisplayNames(selected.key).length > 0 && (
+                <div className={styles.inspectorNote}>
+                  Also on {otherDisplayNames(selected.key).join(', ')}.
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+      {incoming && !incoming.position && (
+        <div
+          className={styles.dragLabel}
+          style={{ left: incoming.clientX, top: incoming.clientY }}
+        >
+          {incoming.device.label}
+        </div>
+      )}
+    </div>
   );
 }
